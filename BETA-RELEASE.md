@@ -1,6 +1,12 @@
-# SaNa Little Hands Beta v0.1
+# SaNa Little Hands Beta v0.2
 
-Status: uploaded to the repository's `main` branch. GitHub Pages activation is pending the repository owner's Pages setting. The connected collaborator account has write access but cannot activate Pages. This is not yet a verified live deployment.
+The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.1 was verified live in Chrome and WebKit. Version 0.2 adds sharing and has the local validation results below; verify the Pages build commit and run the live checks after publishing each update.
+
+## Share with a testing group
+
+On the welcome screen choose **Share app**. **WhatsApp** opens a draft invitation containing the Beta URL and a request to try installation and the activities; choose a group/contact and send it yourself. **Copy link** copies the direct Beta URL. **More apps** opens the device share menu when supported. If clipboard access is unavailable, the link is selected for manual copying. Cancelling the native share menu is handled without an error.
+
+The app does not send invitations automatically or collect group feedback. Members can send feedback to the person who shared the link. Sharing always uses the public canonical Beta URL, including when the app was opened with a query string or from an installed shortcut.
 
 ## Publish
 
@@ -27,8 +33,9 @@ Clearing browser/site data can remove the offline cache. Reopen online once to p
 
 `node check-beta.mjs` uses Playwright. Set `MM_PLAYWRIGHT` to the installed Playwright test module if needed; `MM_CHROME` selects a Chrome executable. Set `PLAYROOM_BROWSER=webkit` for WebKit. `BETA_URL` can select the published URL for live verification.
 
-- Chromium: 14 passing Beta checks, including zero manifest/installability errors in a fresh normal Chrome profile, all icons available, native-prompt event wiring, manual install guidance, welcome-to-game navigation, matching, level persistence, and all activities available offline.
-- Playwright WebKit: 13 passing checks, including offline welcome/game navigation with the actual local origin server stopped.
+- Chromium: 22 passing Beta checks, including zero manifest/installability errors in a fresh normal Chrome profile, all icons available, native-prompt event wiring, manual install guidance, welcome-to-game navigation, matching, level persistence, and all activities available offline.
+- Playwright WebKit: 21 passing checks, including offline welcome/game navigation with the actual local origin server stopped.
+- Sharing: WhatsApp draft URL/message, copied canonical link, native share data and cancellation, clipboard-denied manual selection, dialog keyboard focus/return, phone/tablet/rotated-portrait layouts, and availability of Share while the app is offline. Sending to others requires network access in the chosen sharing app.
 - The native install event tests simulate the app's event contract without installing an application on the development machine.
 - WebKit network-offline emulation has a documented service-worker navigation limitation; the local test uses an origin shutdown instead. Live WebKit checks omit the emulated offline portion and rely on the local outage proof.
 
@@ -36,4 +43,4 @@ The accepted game logic is unchanged. The Beta build adds branding, a welcome li
 
 ## Future updates
 
-Keep the manifest `id` and scope stable for this Beta. Increment the cache version in `beta-runtime/sw.js` whenever shipped assets change, rebuild, then publish. Cache cleanup deletes only old `sana-little-hands-beta-*` caches. The SW precaches the welcome page, play page, game script, install script, manifest and icons before reporting readiness.
+Keep the manifest `id` and scope stable for this Beta. Increment the cache version in `beta-runtime/sw.js` whenever shipped assets change, rebuild, then publish. Version 0.2 uses `sana-little-hands-beta-v2`. Cache cleanup deletes only old `sana-little-hands-beta-*` caches. The SW precaches the welcome page, play page, game script, install and share scripts, sharing stylesheet, manifest and icons before reporting readiness. Existing installed copies may need a refresh after loading online to display an update.

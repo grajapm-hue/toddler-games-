@@ -108,7 +108,12 @@ h1 span{display:block;font-size:.52em;letter-spacing:-.8px;margin-bottom:8px;col
   document.addEventListener('keydown',event=>{
     if(shade.hidden)return;
     if(event.key==='Escape'){event.preventDefault();close();}
-    if(event.key==='Tab'){event.preventDefault();document.getElementById('close-dialog').focus();}
+    if(event.key==='Tab'){
+      const controls=[...panel.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),[tabindex]:not([tabindex="-1"])')].filter(el=>el.getClientRects().length);
+      const first=controls[0],last=controls.at(-1);
+      if(event.shiftKey&&(document.activeElement===first||document.activeElement===panel)){event.preventDefault();last?.focus();}
+      else if(!event.shiftKey&&(document.activeElement===last||document.activeElement===panel)){event.preventDefault();first?.focus();}
+    }
   });
 })();
 </script>
