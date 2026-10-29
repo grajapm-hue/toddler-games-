@@ -34,8 +34,10 @@ try{
       const context=await browser.newContext({viewport:{width,height},hasTouch:true,serviceWorkers:'block',reducedMotion:'reduce'}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
       await page.goto(new URL(process.env.FLOW_SECTION==='menu'?'play.html':'index.html',base).href);
       if(process.env.FLOW_SECTION!=='menu'){
-        await expect(page.locator('#frame')).not.toHaveClass(/rotated/);const frame=await page.locator('#frame').boundingBox();assert(frame.width<=width+1&&frame.height<=height+1,'Welcome uses the natural viewport');
-        if(height>width)assert(frame.height>frame.width,'Portrait welcome stays upright');
+        const phone=Math.min(width,height)<600;
+        const logical=await page.locator('#frame').evaluate(el=>({width:el.clientWidth,height:el.clientHeight}));
+        if(phone||height>width)assert(logical.height>logical.width,'Phone welcome must stay portrait even when the device reports landscape');
+        const frame=await page.locator('#frame').boundingBox();assert(frame.width<=width+1&&frame.height<=height+1,'Welcome fits the physical viewport');
         for(const selector of ['#play','#install','#update-app','#share-app','#about']){const item=page.locator(selector);await item.scrollIntoViewIfNeeded();const box=await item.boundingBox();assert(box.x>=-1&&box.x+box.width<=width+1,'Welcome controls do not overflow sideways');await expect(item).toBeInViewport();}
         await page.locator('#frame').evaluate(el=>{el.scrollTop=0;});await page.screenshot({path:resolve(out,`${name}-welcome.png`)});
         await page.getByRole('button',{name:'Share app',exact:true}).click();await expect(page.getByRole('dialog')).toBeInViewport();await page.getByRole('button',{name:'Got it',exact:true}).click();
@@ -61,8 +63,28 @@ try{
       await page.locator('[data-piece="circle"]').click();await page.locator('[data-target="circle"]').click();await expect(page.locator('#result-score')).toHaveText('Matched 1 / 4');
       if(height>width){await page.setViewportSize({width:height,height:width});await expect(page.locator('#app')).not.toHaveClass(/rotated/);await expect(page.locator('#result-score')).toHaveText('Matched 1 / 4');await page.setViewportSize({width,height});await expect(page.locator('#app')).toHaveClass(/rotated/);}
       assert.equal(await page.evaluate(()=>document.fullscreenElement),null);await page.getByRole('button',{name:'Games',exact:true}).click();await expect(page.locator('#home-view')).toBeVisible();
-      await page.getByRole('link',{name:'SaNa Beta welcome',exact:true}).click();await expect(page.locator('#frame')).not.toHaveClass(/rotated/);checks++;
+      await page.getByRole('link',{name:'SaNa Beta welcome',exact:true}).click();if(Math.min(width,height)<600)assert(await page.locator('#frame').evaluate(el=>el.clientHeight>el.clientWidth),'Returning from play restores phone portrait, including landscape devices');checks++;
       assert.deepEqual(errors,[]);await context.close();
+    }
+    for(const [name,phone,installed,answer,angle] of [['android-accepted',true,true,'resolve',90],['android-denied',true,true,'reject',90],['android-throws',true,true,'throw',90],['iphone-unavailable',true,true,'missing',90],['phone-reverse',true,true,'reject',270],['phone-browser',true,false,'resolve',90],['touch-tablet',false,true,'resolve',90],['desktop-small-window',false,false,'resolve',90]]){
+      const context=await browser.newContext({viewport:{width:844,height:390},screen:phone?{width:844,height:390}:{width:1280,height:800},hasTouch:name!=='desktop-small-window',serviceWorkers:'block',reducedMotion:'reduce',userAgent:phone?(name.startsWith('iphone')?'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1':'Mozilla/5.0 (Linux; Android 15; moto g45 5G) AppleWebKit/537.36 Chrome/140.0.0.0 Mobile Safari/537.36'):'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140.0.0.0 Safari/537.36'});
+      await context.addInitScript(({installed,answer,angle,useDisplayMode})=>{
+        window.orientationRequests=[];window.nativeFullscreenRequests=0;
+        Object.defineProperty(navigator,'standalone',{value:installed&&!useDisplayMode});
+        if(useDisplayMode){const query=window.matchMedia.bind(window);window.matchMedia=value=>{const result=query(value);if(value==='(display-mode:standalone)')Object.defineProperty(result,'matches',{value:true});return result;};}
+        Object.defineProperty(screen.orientation,'angle',{value:angle});
+        Object.defineProperty(screen.orientation,'lock',{value:answer==='missing'?undefined:orientation=>{window.orientationRequests.push(orientation);if(answer==='throw')throw new DOMException('Orientation unavailable','SecurityError');return answer==='reject'?Promise.reject(new DOMException('Orientation unavailable','NotSupportedError')):Promise.resolve();}});
+        Element.prototype.requestFullscreen=()=>{window.nativeFullscreenRequests++;return Promise.reject(new Error('Unexpected native fullscreen'));};
+      },{installed,answer,angle,useDisplayMode:name==='android-accepted'});
+      const page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));await page.goto(new URL('index.html',base).href);
+      assert.equal(await page.locator('#frame').evaluate(el=>el.clientHeight>el.clientWidth),phone,'Only phones retain portrait in a landscape viewport');
+      assert.deepEqual(await page.evaluate(()=>window.orientationRequests),phone&&installed&&answer!=='missing'?['portrait']:[],'Native portrait preference is restricted to installed phones');
+      if(name==='phone-reverse')await expect(page.locator('#frame')).toHaveAttribute('data-turn','90');
+      for(const selector of ['#play','#install','#update-app','#share-app','#about']){const node=page.locator(selector);await node.scrollIntoViewIfNeeded();await expect(node).toBeInViewport();}
+      await page.getByRole('button',{name:'Update app',exact:true}).click();await expect(page.getByRole('dialog')).toBeInViewport();await page.keyboard.press('Escape');
+      await page.screenshot({path:resolve(out,`${name}-welcome.png`)});await page.getByRole('link',{name:'Tap to play',exact:true}).click();await expect(page.getByRole('button',{name:'Drag shapes',exact:true})).toBeVisible();
+      assert(await page.locator('#app').evaluate(el=>el.clientWidth>el.clientHeight));assert.deepEqual(await page.evaluate(()=>window.orientationRequests),phone&&installed&&answer!=='missing'?['landscape']:[],'Play uses the landscape preference with the same safe fallback');
+      assert.equal(await page.evaluate(()=>window.nativeFullscreenRequests),0);assert.deepEqual(errors,[]);await context.close();checks++;
     }
     const manifest=await (await fetch(new URL('manifest.webmanifest',base))).json();assert.equal(manifest.orientation,'any','Installed welcome must not be forced into landscape');assert.equal(manifest.id,'./');checks++;
     console.log(`PASS: ${checks} portrait welcome, fixed-size cards and swipe navigation checks (${engine})`);

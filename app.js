@@ -585,4 +585,8 @@
   window.addEventListener('pagehide',()=>{stopBubbles();cancelGesture();clearEffects();if(audio?.state==='running')audio.suspend().catch(()=>{});});
   if(!document.documentElement.hasAttribute('data-self-contained')&&'serviceWorker'in navigator&&location.protocol.startsWith('http'))window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});
   levelControls();soundButton();home();fitFrame();
+  // Installed phones may support orientation preferences without native fullscreen.
+  if((navigator.userAgentData?.mobile===true||/iPhone|iPod|Android.*Mobile/i.test(navigator.userAgent)||(matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<600))&&(navigator.standalone||matchMedia('(display-mode:standalone)').matches)){
+    try{Promise.resolve(screen.orientation?.lock?.('landscape')).catch(()=>{});}catch{/* The existing landscape frame is the fallback. */}
+  }
 })();
