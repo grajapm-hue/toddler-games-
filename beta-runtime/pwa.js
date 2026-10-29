@@ -2,6 +2,9 @@
   const button=document.getElementById('install');
   const status=document.getElementById('offline-status');
   const updateButton=document.getElementById('update-app');
+  const updateLabel=updateButton?.querySelector('[data-update-label]');
+  const normalUpdateLabel=updateLabel?.textContent;
+  const app=document.getElementById('app');
   const release=document.querySelector('meta[name="sana-release"]')?.content;
   const standalone=window.matchMedia('(display-mode: standalone)');
   let nativePrompt=null,installed=standalone.matches||navigator.standalone===true;
@@ -44,21 +47,43 @@
       worker.addEventListener('statechange',check);check();
     });
   }
-  const updateDialog=(title,copy)=>window.sanaAppDialog?.(title,copy,updateButton);
+  const canShowUpdate=()=>!app||app.dataset.view==='home';
+  function updateDialog(title,copy){
+    if(!canShowUpdate())return;
+    if(window.sanaAppDialog){window.sanaAppDialog(title,copy,updateButton);return;}
+    let shade=document.getElementById('sana-update-shade');
+    if(!shade){
+      shade=document.createElement('div');shade.id='sana-update-shade';shade.className='sana-update-shade';shade.hidden=true;
+      shade.innerHTML='<section class="sana-update-panel" role="dialog" aria-modal="true" aria-labelledby="sana-update-title" tabindex="-1"><h2 id="sana-update-title"></h2><div id="sana-update-copy"></div><button type="button">Got it</button></section>';
+      app.append(shade);
+      const close=()=>{shade.hidden=true;updateButton.focus({preventScroll:true});};
+      shade.querySelector('button').addEventListener('click',close);
+      shade.addEventListener('click',event=>{if(event.target===shade)close();});
+      document.addEventListener('keydown',event=>{
+        if(shade.hidden)return;
+        if(event.key==='Escape'){event.preventDefault();close();}
+        if(event.key==='Tab'){event.preventDefault();shade.querySelector('button').focus();}
+      });
+    }
+    shade.querySelector('h2').textContent=title;shade.querySelector('#sana-update-copy').innerHTML=copy;
+    shade.hidden=false;shade.querySelector('[role="dialog"]').focus({preventScroll:true});
+  }
   updateButton?.addEventListener('click',async()=>{
+    if(!canShowUpdate())return;
     updateButton.disabled=true;updateButton.setAttribute('aria-busy','true');
-    updateButton.querySelector('[data-update-label]').textContent='Checking…';
+    updateLabel.textContent=app?'Wait…':'Checking…';
     try{
       if(!navigator.onLine||!('serviceWorker'in navigator)||!window.isSecureContext)throw new Error('An online secure connection is needed');
       const registration=await navigator.serviceWorker.getRegistration()||await navigator.serviceWorker.register('sw.js',{scope:'./',updateViaCache:'none'});
       await registration.update();
       const worker=registration.installing||registration.waiting||registration.active;
       if(!worker)throw new Error('No app update available');
-      if(worker.state!=='activated')updateButton.querySelector('[data-update-label]').textContent='Updating…';
+      if(worker.state!=='activated')updateLabel.textContent=app?'Wait…':'Updating…';
       await activated(worker);
       const ready=await workerStatus(worker);
       if(!ready?.ready||!ready.version||!release)throw new Error('Update files are not ready');
       if(ready.version!==release){
+        if(!canShowUpdate())return;
         try{sessionStorage.setItem('sana-update-complete',ready.version);}catch{/* Updating also works without optional session storage. */}
         location.reload();return;
       }
@@ -67,7 +92,7 @@
       updateDialog('Update unavailable','<p>Connect to the internet and try again. Your downloaded games and saved settings are still available.</p>');
     }finally{
       updateButton.disabled=false;updateButton.setAttribute('aria-busy','false');
-      updateButton.querySelector('[data-update-label]').textContent='Update app';
+      updateLabel.textContent=normalUpdateLabel;
     }
   });
   if(updateButton){
