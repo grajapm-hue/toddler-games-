@@ -36,7 +36,7 @@ try{
   await expect(page).toHaveTitle(/Beta/);
   await expect(page.getByRole('link',{name:'Tap to play'})).toHaveAttribute('href','play.html');
   const manifestResponse=await context.request.get(new URL('manifest.webmanifest',site).href);assert.equal(manifestResponse.status(),200);
-  const manifest=await manifestResponse.json();assert.equal(manifest.name,'SaNa Little Hands Beta');assert.equal(manifest.orientation,'any');
+  const manifest=await manifestResponse.json();assert.equal(manifest.name,'SaNa Little Hands Beta');assert.equal(manifest.orientation,'portrait');
   assert.equal(new URL(manifest.start_url,site).pathname,new URL('index.html',site).pathname);
   assert.equal(manifest.scope,'./');assert.equal(manifest.display,'standalone');checks++;
   const styles=await context.request.get(new URL('share.css',site).href);

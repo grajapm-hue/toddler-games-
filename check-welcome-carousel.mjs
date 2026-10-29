@@ -86,7 +86,7 @@ try{
       assert(await page.locator('#app').evaluate(el=>el.clientWidth>el.clientHeight));assert.deepEqual(await page.evaluate(()=>window.orientationRequests),phone&&installed&&answer!=='missing'?['landscape']:[],'Play uses the landscape preference with the same safe fallback');
       assert.equal(await page.evaluate(()=>window.nativeFullscreenRequests),0);assert.deepEqual(errors,[]);await context.close();checks++;
     }
-    const manifest=await (await fetch(new URL('manifest.webmanifest',base))).json();assert.equal(manifest.orientation,'any','Installed welcome must not be forced into landscape');assert.equal(manifest.id,'./');checks++;
+    const manifest=await (await fetch(new URL('manifest.webmanifest',base))).json();assert.equal(manifest.orientation,'portrait','Installed welcome must not be forced into landscape');assert.equal(manifest.id,'./');checks++;
     console.log(`PASS: ${checks} portrait welcome, fixed-size cards and swipe navigation checks (${engine})`);
   }
 }finally{await browser.close();await new Promise(done=>server.close(done));}
