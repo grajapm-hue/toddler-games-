@@ -47,11 +47,11 @@ try{
     await page.screenshot({path:resolve(output,`${name}-drag.png`)});
     await page.getByRole('button',{name:'Home',exact:true}).click();
     await page.getByRole('button',{name:'Pop bubbles',exact:true}).click();
-    while(await page.locator('[data-bubble]').count()){
-      const point=await center(page.locator('[data-bubble]').first());
+    for(let popped=0;popped<6;popped++){
+      const point=await center(page.locator('[data-bubble][data-onstage="true"]').first());
       if(touch)await page.touchscreen.tap(point.x,point.y);else await page.mouse.click(point.x,point.y);
     }
-    await expect(page.getByRole('status')).toContainText('Pop, pop, hooray');checks++;
+    await expect(page.locator('#bubble-score')).toHaveText('Popped 6');checks++;
     await page.getByRole('button',{name:'Home',exact:true}).click();
     await page.getByRole('button',{name:'Slide to reveal',exact:true}).click();
     for(let i=0;i<2;i++){
@@ -85,12 +85,9 @@ try{
     await page.getByRole('button',{name:'Home',exact:true}).click();
     await page.getByRole('button',{name:'Pop bubbles',exact:true}).click();
     await expect(page.locator('[data-bubble]')).toHaveCount(9);
-    await page.locator('[data-allowed="false"]').first().click();
-    await expect(page.locator('[data-bubble]')).toHaveCount(9);
-    await page.locator('[data-allowed="true"]').first().click();
-    await expect(page.locator('[data-allowed="true"]')).toHaveCount(2);
-    while(await page.locator('[data-bubble]').count())await page.locator('[data-allowed="true"]').first().click();
-    await expect(page.getByRole('status')).toContainText('Pop, pop, hooray');checks++;
+    const bubblePoint=await center(page.locator('[data-bubble][data-onstage="true"]').first());
+    if(touch)await page.touchscreen.tap(bubblePoint.x,bubblePoint.y);else await page.mouse.click(bubblePoint.x,bubblePoint.y);
+    await expect(page.locator('#bubble-score')).toHaveText('Popped 1');checks++;
     await page.getByRole('button',{name:'Home',exact:true}).click();
     await page.getByRole('button',{name:'Slide to reveal',exact:true}).click();
     await expect(page.locator('[data-slider-handle]')).toHaveCount(3);

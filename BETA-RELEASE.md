@@ -1,6 +1,12 @@
-# SaNa Little Hands Beta v0.6
+# SaNa Little Hands Beta v0.7
 
-The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.5 added brush sizes, erasing, picture boundaries and SaNa's painting reward. Version 0.6 makes the art pictures and difficulty match Explore, Play and Challenge; verify the Pages build commit and run the live checks after publishing each update.
+The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.6 made the art pictures and difficulty match Explore, Play and Challenge. Version 0.7 adds continuous rising bubbles with Plain, 1–20, A–Z and Shapes choices; verify the Pages build commit and run the live checks after publishing each update.
+
+## Rising bubbles
+
+Choose Plain for free popping with a counter, or collect all numbers 1–20, uppercase letters A–Z or six shapes. Bubbles rise from randomly varied positions in a fixed pool of four, six or nine according to level. Touch, mouse or keyboard pops a bubble into colored droplets, removes it, then brings a new bubble from below. The matching top-list item takes that exact bubble color; duplicates cannot complete a different item. Uncollected content is prioritized and missed content returns. Completing a set triggers SaNa's congratulations while bubbles continue rising. Again resets the current collection. Home and hidden pages stop animation; the play-page Share dialog pauses it.
+
+`node check-bubbles.mjs` exercises upward movement, actual touch pops, splash spread/cleanup, exact target colors, complete sets, continued play and bounded bubble counts, difficulty levels and responsive target lists. Set `BUBBLES_URL` to the hosted play page for live checks, including Share dialog pause. Beta cache v7 updates existing installations online.
 
 ## Painting
 

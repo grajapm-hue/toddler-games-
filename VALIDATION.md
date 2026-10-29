@@ -21,7 +21,7 @@ The following results are from the original prototype validation before this rep
 - Playwright WebKit: 60 passing checks.
 - Viewports: laptop 1280×800, tablet 1024×768, landscape phone 844×390, and portrait phone 390×844 with the landscape frame rotated.
 - Activities: matching shapes, popping bubbles, reveal sliders, brushing dirt, finger-paint strokes, and painting reset.
-- Levels: the default ages-2–4 Play level, simpler Explore level, and harder Challenge level. Challenge bubbles follow the indicated color group.
+- Levels: the default ages-2–4 Play level, simpler Explore level, and harder Challenge level. Bubble levels use four, six and nine rising bubbles with increasing speed. The four content choices and exact top-list color matching are checked by `check-bubbles.mjs`.
 - Input: mouse/trackpad-style pointer gestures, Chromium touch swipes, touchscreen taps, rotated-coordinate mapping, and pointer cancellation followed by a new successful drag.
 - Offline: Chromium uses network-offline emulation; WebKit uses an actual local-origin shutdown because its offline flag has a documented service-worker navigation limitation. Both engines open and play the self-contained HTML with HTTP unavailable.
 - Settings: selected level persists across an offline reload.
