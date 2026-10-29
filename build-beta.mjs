@@ -6,7 +6,7 @@ await mkdir(out,{recursive:true});
 let welcome=await readFile(resolve(root,'welcome-preview.html'),'utf8');
 welcome=welcome.replace('<title>SaNa Little Hands · Welcome preview</title>','<title>SaNa Little Hands Beta</title>')
   .replace('</head>','<link rel="manifest" href="manifest.webmanifest">\n<link rel="icon" href="icon.svg" type="image/svg+xml">\n<link rel="apple-touch-icon" href="icon-192.png">\n<link rel="stylesheet" href="share.css">\n<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-title" content="SaNa Beta">\n</head>')
-  .replace('Welcome preview · 01','Beta · v0.2')
+  .replace('Welcome preview · 01','Beta · v0.3')
   .replace('href="SaNa-Little-Hands-Prototype.html"','href="play.html"')
   .replace('</svg>Install app</button>','</svg><span data-install-label>Install app</span></button>')
   .replace('Made for ages 2–4 · Three playful levels','Made for ages 2–4 · Three playful levels<br><span id="offline-status" role="status">Preparing offline play…</span>')
@@ -18,9 +18,11 @@ if(welcome.includes('Installation will be available'))throw new Error('Preview i
 await writeFile(resolve(out,'index.html'),welcome);
 let play=await readFile(resolve(root,'index.html'),'utf8');
 play=play.replace('<title>SaNa · Little Hands</title>','<title>SaNa Little Hands Beta · Play</title>')
+  .replace('</head>','<link rel="stylesheet" href="share.css">\n</head>')
   .replace('<div class="brand">','<a class="brand" href="index.html" aria-label="SaNa Beta welcome" style="color:inherit;text-decoration:none">')
   .replace('<small>little hands</small></div></div>','<small>little hands · beta</small></div></a>')
-  .replace('<script src="app.js"></script>','<script src="app.js"></script>\n<script src="pwa.js"></script>');
+  .replace('<button class="icon-button" id="sound"','<button class="icon-button share-play-button" type="button" id="share-app" aria-label="Share app" title="Share app"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="4" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="20" r="3"/><path d="M9 10L15 6M9 14L15 18"/></svg><span>Share</span></button>\n  <button class="icon-button" id="sound"')
+  .replace('<script src="app.js"></script>','<script src="app.js"></script>\n<script src="pwa.js"></script>\n<script src="share.js"></script>');
 await writeFile(resolve(out,'play.html'),play);
 let game=await readFile(resolve(root,'app.js'),'utf8');
 game=game.replace(/  if\(!document\.documentElement\.hasAttribute\('data-self-contained'\)[^\n]*\n/,'');

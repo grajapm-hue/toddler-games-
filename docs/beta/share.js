@@ -1,6 +1,31 @@
 (() => {
   const button=document.getElementById('share-app');
   if(!button)return;
+  // The play page needs the same dialog inside its rotated landscape frame.
+  if(!window.sanaAppDialog){
+    const shade=document.createElement('div');
+    shade.className='play-share-shade';shade.hidden=true;
+    shade.innerHTML='<section class="dialog-panel" role="dialog" aria-modal="true" aria-labelledby="share-dialog-title" tabindex="-1"><h2 id="share-dialog-title"></h2><div id="share-dialog-copy"></div><button type="button" id="close-dialog">Got it</button></section>';
+    document.getElementById('app').appendChild(shade);
+    const panel=shade.querySelector('.dialog-panel');let opener;
+    window.sanaAppDialog=(heading,copy,source)=>{
+      opener=source;document.getElementById('share-dialog-title').textContent=heading;
+      document.getElementById('share-dialog-copy').innerHTML=copy;shade.hidden=false;panel.focus();
+    };
+    const close=()=>{shade.hidden=true;opener?.focus();};
+    document.getElementById('close-dialog').addEventListener('click',close);
+    shade.addEventListener('click',event=>{if(event.target===shade)close();});
+    document.addEventListener('keydown',event=>{
+      if(shade.hidden)return;
+      if(event.key==='Escape'){event.preventDefault();close();}
+      if(event.key==='Tab'){
+        const controls=[...panel.querySelectorAll('a[href],button:not([disabled]),input:not([disabled])')].filter(el=>el.getClientRects().length);
+        const first=controls[0],last=controls.at(-1);
+        if(event.shiftKey&&(document.activeElement===first||document.activeElement===panel)){event.preventDefault();last?.focus();}
+        else if(!event.shiftKey&&(document.activeElement===last||document.activeElement===panel)){event.preventDefault();first?.focus();}
+      }
+    });
+  }
   const url='https://grajapm-hue.github.io/toddler-games-/beta/index.html';
   const title='SaNa Little Hands Beta';
   const text='Please try this play app, mainly for ages 2–4, on your phone or tablet. Check installation, dragging, tapping, sliding, brushing and painting. Please send your feedback to the person who shared this link.';
