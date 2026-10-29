@@ -78,3 +78,6 @@ The installed prototype serves its versioned files from cache. Increment the cac
 Screenshots and test evidence are written to `../artifacts/toddler-playroom/`. The test covers matching, popping, reveal sliders, cleaning, painting/reset, three levels, touch gestures, landscape and the rotated portrait frame. Browser emulation does not replace a child's hands-on device trial.
 
 The installed-cache check uses network-offline emulation in Chromium. Playwright WebKit has a documented [offline-emulation limitation](https://github.com/microsoft/playwright/issues/42775), so its check stops the actual local origin server and requires the cached playroom to load and reload without that server. The self-contained HTML is checked with HTTP unavailable in both engines. These are distinct browser-test controls, not physical iOS installation certification.
+
+
+The play frame keeps every game clear of device safe-area insets and adds 32px camera margins on phones, including rotated portrait and fullscreen. SaNa appreciation is centered in its own top row above the results and controls. `node check-camera.mjs` verifies both layouts across five sizes and simulated cutouts.

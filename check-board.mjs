@@ -23,7 +23,7 @@ async function boardLayout(page){
   await expect(page.locator('#brush-modes')).toBeVisible({visible:activity==='brush'});
   const board=await page.locator('.play-mat').boundingBox(),results=await page.locator('#game-results').boundingBox(),options=await page.locator('#play-options').boundingBox();
   assert(results&&options,'Results and sub-levels must be inside the black play rectangle');
-  const scene=await page.locator('#scene').boundingBox();assert(scene.width>80&&scene.height>80,'The controls leave room to play');
+  const scene=await page.locator('#scene').boundingBox();assert(scene.width>80&&scene.height>80,`The controls leave room to play: ${activity} ${JSON.stringify(page.viewportSize())} ${JSON.stringify(scene)}`);
   for(const selector of ['#game-back','#game-front','#game-home','#play-options','#game-results']){
     const box=await page.locator(selector).boundingBox();assert(box&&box.x>=board.x-1&&box.y>=board.y-1&&box.x+box.width<=board.x+board.width+1&&box.y+box.height<=board.y+board.height+1,'All game controls remain inside the board');
     assert(!intersects(box,scene),'Controls do not cover playable content');

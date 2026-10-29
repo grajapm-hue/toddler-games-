@@ -1,6 +1,14 @@
-# SaNa Little Hands Beta v0.15
+# SaNa Little Hands Beta v0.16
 
-The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.15 shows all ten abacus colour counts from the start, including zero, and keeps every numeral and English word visible as beads move; verify the Pages build commit and run the live checks after publishing each update.
+The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.16 centers SaNa appreciation above the board controls and keeps gameplay clear of phone cameras and system cutouts; verify the Pages build commit and run the live checks after publishing each update.
+
+## Camera clearance and appreciation
+
+The shared play frame uses all four device safe-area insets before applying its landscape rotation. Phones also reserve at least 32 CSS pixels at both landscape edges (portrait top and bottom), including browsers that report no camera inset. Larger reported cutouts take precedence; tablets and desktops keep their available space. The same frame fitting applies to every game, menu, normal play, native fullscreen and fallback fullscreen. Touch coordinates continue to use the rendered SVG matrix.
+
+SaNa congratulations appear in a centered top row above the results and sub-level controls. That row is outside the animated scene and does not cover beads, pictures or controls. Every game's completion uses it; Again clears it. Small-phone letter targets use tighter gaps to retain a useful play area inside the camera margins.
+
+`node check-camera.mjs` checks all five games at five screen sizes, with default margins and simulated asymmetric cutouts at the CSS device-inset boundary, normal/fullscreen, abacus and matching completion, centered rewards and reset. `CAMERA_URL` selects a hosted play page. These are browser layout checks, not a physical-phone camera test.
 
 ## Free abacus counting
 
@@ -10,7 +18,7 @@ Rainbow order and circle regions are unchanged. A positive row count fills its r
 
 Before version 0.14 the app disabled completed and future rows, rebuilt all bead nodes after a slide, and trusted the last move event rather than the release position. The repair keeps bead nodes stable, caches gesture geometry and element references, updates only the moving row and relevant labels, picks the nearest bead, and handles a final position delivered on pointerup. It does not rebuild the scene for ordinary counting. Count text stays fully visible immediately, using a small pulse instead of fading out after release.
 
-`node check-abacus.mjs` moves every bead forward and backward in arbitrary row order, verifies 0–10 numerals/words and colour changes, groups moving before release, stable DOM nodes, final-position-only input, short/cancelled slides, keyboard, reward/reset, resize and five screen sizes in normal/fullscreen. `ABACUS_URL` selects a hosted play page. Beta cache v15 updates existing installations online.
+`node check-abacus.mjs` moves every bead forward and backward in arbitrary row order, verifies 0–10 numerals/words and colour changes, groups moving before release, stable DOM nodes, final-position-only input, short/cancelled slides, keyboard, reward/reset, resize and five screen sizes in normal/fullscreen. `ABACUS_URL` selects a hosted play page. Beta cache v16 updates existing installations online.
 
 ## Welcome and About
 
@@ -32,7 +40,7 @@ The home introduction uses one row at the same size as the hint above it. The de
 
 Fullscreen hides the main header, instructions and outer speed/size or art settings. Results and active sub-level choices remain inside the top of the black board. The bottom navigation row keeps Back, Front, Games, sound and Exit fullscreen clear of gameplay. Games leaves fullscreen and returns to the activity menu; Back and Front continue through the game steps. Gameplay continues and exiting restores the same round, collected colors, painting and settings. The menu can also enter fullscreen before a game is chosen. Supported browsers use native fullscreen and attempt landscape lock; otherwise in-page immersive play remains available. The exit button, Escape and native browser exit restore the regular layout.
 
-`node check-immersive.mjs` checks five viewport sizes in Chrome and WebKit, real native entry/exit, sound, full-field geometry, touch popping, matching, revealing, painting, preserved progress and fallback when native fullscreen is denied or unavailable. `IMMERSIVE_URL` selects a hosted play page. Beta cache v15 updates existing installations online.
+`node check-immersive.mjs` checks five viewport sizes in Chrome and WebKit, real native entry/exit, sound, full-field geometry, touch popping, matching, revealing, painting, preserved progress and fallback when native fullscreen is denied or unavailable. `IMMERSIVE_URL` selects a hosted play page. Beta cache v16 updates existing installations online.
 
 ## Screen layout
 

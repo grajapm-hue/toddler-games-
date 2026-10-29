@@ -55,7 +55,7 @@
   }
   function celebrate(text){
     state.done=true;hint(text);tone(523,true);clearTimeout(rewardTimer);
-    $('celebrate').hidden=false;
+    $('celebrate').hidden=false;$('art-reward').hidden=false;
     rewardTimer=setTimeout(()=>{$('celebrate').hidden=true;},1400);
   }
   function applause(){
@@ -514,7 +514,10 @@
   $('sound').addEventListener('click',()=>{state.sound=!state.sound;save();soundButton();if(state.sound)tone(600);else if(audio?.state==='running')audio.suspend().catch(()=>{});});
   function fitFrame(){
     const visual=window.visualViewport,w=visual?.width||innerWidth,h=visual?.height||innerHeight,rotated=w<h;
-    const width=rotated?h:w,height=rotated?w:h;
+    // Read physical screen insets before rotating the landscape play frame.
+    const padding=getComputedStyle($('viewport')),left=parseFloat(padding.paddingLeft)||0,right=parseFloat(padding.paddingRight)||0,top=parseFloat(padding.paddingTop)||0,bottom=parseFloat(padding.paddingBottom)||0;
+    const availableW=Math.max(1,w-left-right),availableH=Math.max(1,h-top-bottom),width=rotated?availableH:availableW,height=rotated?availableW:availableH;
+    app.style.left=`${(visual?.offsetLeft||0)+left+availableW/2}px`;app.style.top=`${(visual?.offsetTop||0)+top+availableH/2}px`;
     cancelGesture();app.style.setProperty('--frame-w',`${width}px`);app.style.setProperty('--frame-h',`${height}px`);app.classList.toggle('rotated',rotated);app.classList.toggle('compact',height<530);app.classList.toggle('narrow',width<740);
   }
   let fullscreenBusy=false;
