@@ -33,9 +33,9 @@
         link.focus({preventScroll:true});link.select();link.setSelectionRange(0,url.length);
         // Compatibility fallback only: older/embedded browsers may block Async Clipboard.
         let copied=false;
-        try{copied=document.execCommand?.('copy')===true;}catch{/* Keep the link selected for manual copying. */}
-        result.textContent=copied?'Link copied. Paste it into your group.':'Select and copy the test link. Press and hold it to choose Copy.';
-        if(copied)copyButton.focus({preventScroll:true});
+        try{copied=document.execCommand?.('copy')===true;}catch{/* Explicit sharing options remain available. */}
+        result.textContent=copied?'Link copied. Paste it into your group.':'Copy is unavailable here. Use WhatsApp to share the link.';
+        link.setSelectionRange(0,0);window.getSelection()?.removeAllRanges();copyButton.focus({preventScroll:true});
       }
     });
     document.getElementById('native-share')?.addEventListener('click',async event=>{

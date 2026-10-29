@@ -12,6 +12,7 @@
 <style>
 :root{color-scheme:light;--ink:#173e35;--quiet:#173e35;--paper:#fffaf0;--mint:#bbe5c4;--green:#287c60;--blue:#347f9d;--peach:#f0ac90;--yellow:#ffe17a;--line:#d9ccb0;--shadow:#cfbea0;font-family:"Trebuchet MS","Arial Rounded MT Bold",ui-rounded,system-ui,sans-serif}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;width:100%;height:100%;overflow:hidden}body{background:#e9dfcd;color:var(--ink)}button{font:inherit;cursor:pointer;touch-action:manipulation;color:inherit}button,svg{-webkit-user-select:none;user-select:none}button:focus-visible,[tabindex]:focus-visible{outline:4px solid #215e97;outline-offset:3px}[hidden]{display:none!important}
+#app,#app *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
 #viewport{--device-safe-top:env(safe-area-inset-top,0px);--device-safe-right:env(safe-area-inset-right,0px);--device-safe-bottom:env(safe-area-inset-bottom,0px);--device-safe-left:env(safe-area-inset-left,0px);--play-edge-x:64px;--play-edge-y:0px;position:fixed;inset:0;overflow:hidden;background:#000;padding:max(var(--play-edge-y),var(--device-safe-top)) var(--device-safe-right) var(--device-safe-bottom) max(var(--play-edge-x),var(--device-safe-left))}
 @media(orientation:portrait){#viewport{--play-edge-x:0px;--play-edge-y:64px}}
 #app{position:absolute;left:50%;top:50%;width:var(--frame-w,100vw);height:var(--frame-h,100dvh);transform:translate(-50%,-50%);transform-origin:center;background:var(--paper);border:2px solid #d5c6aa;border-radius:18px;box-shadow:none;display:grid;grid-template-rows:64px auto minmax(0,1fr);overflow:hidden}
@@ -119,6 +120,7 @@
   'use strict';
   const $=id=>document.getElementById(id);
   const app=$('app'),scene=$('scene');
+  for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});
   const colors=['#df7f68','#edbf42','#629fca','#8d83c2','#65a58a','#405f76'];
   const colorNames=['Coral','Yellow','Blue','Purple','Green','Ink'];
   const puppyTail='M650 253Q744 198 705 173L723 159Q779 204 660 273Z';
@@ -637,41 +639,25 @@
     app.style.left=`${(visual?.offsetLeft||0)+left+availableW/2}px`;app.style.top=`${(visual?.offsetTop||0)+top+availableH/2}px`;
     cancelGesture();app.style.setProperty('--frame-w',`${width}px`);app.style.setProperty('--frame-h',`${height}px`);app.classList.toggle('rotated',rotated);app.classList.toggle('compact',height<530);app.classList.toggle('narrow',width<740);
   }
-  let fullscreenBusy=false;
   function immersiveMode(active){
     cancelGesture();app.classList.toggle('immersive',active);
     const button=$('fullscreen'),label=active?'Exit fullscreen':'Fullscreen';
     button.setAttribute('aria-label',label);button.setAttribute('aria-pressed',String(active));button.title=label;
     button.querySelector('use').setAttribute('href',active?'#exit-fullscreen-icon':'#fullscreen-icon');
-    if(!active){try{screen.orientation?.unlock?.();}catch{/* Orientation may be managed by the browser. */}button.focus({preventScroll:true});}
+    if(!active)button.focus({preventScroll:true});
     fitFrame();
   }
   const gameSteps=Object.keys(activities).filter(activity=>activity!=='abacus').flatMap(activity=>[1,2,3].flatMap(level=>(activity==='bubbles'?['plain','numbers','letters','shapes']:activity==='brush'?['clean','paint']:['']).map(mode=>({activity,level,mode})))).concat({activity:'abacus',level:1,mode:''});
   function currentStep(){return gameSteps.findIndex(step=>step.activity===state.activity&&(state.activity==='abacus'||step.level===state.level)&&step.mode===(state.activity==='bubbles'?state.bubbleMode:state.activity==='brush'?(state.paintMode?'paint':'clean'):''));}
   function stepLabel(step){return step?`${activities[step.activity].title} · ${['','Explore','Play','Challenge'][step.level]}${step.mode?' · '+(bubbleModes[step.mode]?.label||step.mode):''}`:'Games';}
   function updateGameNavigation(){const index=currentStep();for(const [id,direction] of [['game-back',-1],['game-front',1]]){$(id).title=stepLabel(gameSteps[index+direction]);$(id).setAttribute('aria-description',$(id).title);}}
-  async function gameMenu(){
-    if(document.fullscreenElement){try{await document.exitFullscreen();}catch{/* The menu remains reachable in the current browser frame. */}}
-    immersiveMode(false);home();$('home').focus({preventScroll:true});
-  }
+  function gameMenu(){immersiveMode(false);home();$('home').focus({preventScroll:true});}
   function stepGame(direction){const next=gameSteps[currentStep()+direction];if(!next){void gameMenu();return;}setLevel(next.level,false);if(next.activity==='bubbles')state.bubbleMode=next.mode;startActivity(next.activity,next.mode==='paint');}
   $('game-back').addEventListener('click',()=>stepGame(-1));$('game-front').addEventListener('click',()=>stepGame(1));$('game-home').addEventListener('click',gameMenu);
-  $('fullscreen').addEventListener('click',async()=>{
-    if(fullscreenBusy)return;fullscreenBusy=true;
-    try{
-      if(app.classList.contains('immersive')){
-        if(document.fullscreenElement){try{await document.exitFullscreen();}catch{return;}}
-        immersiveMode(false);
-      }else{
-        immersiveMode(true);
-        // In-page immersive play also works where native fullscreen is unavailable or denied.
-        try{await $('viewport').requestFullscreen?.();}catch{/* Keep immersive play and its exit control available. */}
-        if(document.fullscreenElement){try{await screen.orientation?.lock?.('landscape');}catch{/* The landscape frame remains available. */}}
-      }
-    }finally{fullscreenBusy=false;fitFrame();}
-  });
-  document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&app.classList.contains('immersive'))immersiveMode(false);else fitFrame();});
-  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&app.classList.contains('immersive')&&!document.fullscreenElement)immersiveMode(false);});
+  // Expand inside the page to keep browser-owned fullscreen notices out of play.
+  $('fullscreen').addEventListener('click',()=>immersiveMode(!app.classList.contains('immersive')));
+  document.addEventListener('fullscreenchange',fitFrame);
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&app.classList.contains('immersive'))immersiveMode(false);});
   window.addEventListener('resize',fitFrame);window.visualViewport?.addEventListener('resize',fitFrame);window.addEventListener('orientationchange',fitFrame);
   document.addEventListener('visibilitychange',()=>{if(document.hidden){stopBubbles();cancelGesture();if(audio?.state==='running')audio.suspend().catch(()=>{});}else if(state.activity==='bubbles'&&bubbleFrame===null)bubbleFrame=requestAnimationFrame(bubbleTick);});
   window.addEventListener('pagehide',()=>{stopBubbles();cancelGesture();clearEffects();if(audio?.state==='running')audio.suspend().catch(()=>{});});

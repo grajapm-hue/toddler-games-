@@ -79,9 +79,9 @@ try{
   await expect(page.locator('#share-result')).toHaveText('Link copied. Paste it into your group.');checks++;
   await page.evaluate(()=>{document.execCommand=()=>false;});
   await page.getByRole('button',{name:'Copy link',exact:true}).click();
-  await expect(page.locator('#share-result')).toContainText('Select and copy');
+  await expect(page.locator('#share-result')).toContainText('Use WhatsApp');
   await expect(page.getByRole('textbox',{name:'Beta test link'})).toHaveValue(canonical);
-  assert.equal(await page.getByRole('textbox',{name:'Beta test link'}).evaluate(el=>document.activeElement===el&&el.selectionStart===0&&el.selectionEnd===el.value.length),true);checks++;
+  await expect(page.getByRole('button',{name:'Copy link',exact:true})).toBeFocused();assert.equal(await page.getByRole('textbox',{name:'Beta test link'}).evaluate(el=>el.selectionStart===0&&el.selectionEnd===0),true);checks++;
   await page.getByRole('button',{name:'Got it'}).focus();await page.keyboard.press('Tab');
   assert.equal(await page.getByRole('link',{name:'WhatsApp',exact:true}).evaluate(el=>document.activeElement===el),true);
   await page.keyboard.press('Shift+Tab');assert.equal(await page.getByRole('button',{name:'Got it'}).evaluate(el=>document.activeElement===el),true);

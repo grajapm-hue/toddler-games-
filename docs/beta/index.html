@@ -13,6 +13,7 @@ button,a{font:inherit;touch-action:manipulation;-webkit-user-select:none;user-se
 button{cursor:pointer}a{color:inherit;text-decoration:none}
 button:focus-visible,a:focus-visible{outline:4px solid #fff;outline-offset:5px}
 [hidden]{display:none!important}
+#frame,#frame *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
 #frame{--w:100vw;--h:100dvh;position:absolute;left:50%;top:50%;width:var(--w);height:var(--h);transform:translate(-50%,-50%);overflow:hidden;background:radial-gradient(ellipse at 7% 10%,#f459b6 0,transparent 46%),radial-gradient(ellipse at 93% 84%,#28d3e0 0,transparent 47%),linear-gradient(125deg,#bd3fb7,#51409a 58%,#6d87d3);display:grid;grid-template-rows:auto minmax(0,1fr) auto;padding:25px 4.5% 20px;isolation:isolate}
 #frame.rotated{transform:translate(-50%,-50%) rotate(90deg)}
 .topline{display:flex;justify-content:space-between;align-items:center;gap:20px;font-size:22px;font-weight:900;color:#fff5e8}
@@ -60,11 +61,11 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
 <link rel="stylesheet" href="share.css">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="SaNa Beta">
-<meta name="sana-release" content="sana-little-hands-beta-v19">
+<meta name="sana-release" content="sana-little-hands-beta-v20">
 </head>
 <body>
 <main id="frame">
-  <header class="topline"><div class="family"><span aria-hidden="true">🐒</span> A little world with SaNa</div><div class="release-tools"><span class="preview-tag">Beta · v0.19</span><button class="update-button" id="update-app" type="button" aria-label="Update app" aria-busy="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7V3M20 7H16M20 7A8 8 0 1 0 21 14"/></svg><span data-update-label>Update app</span></button></div></header>
+  <header class="topline"><div class="family"><span aria-hidden="true">🐒</span> A little world with SaNa</div><div class="release-tools"><span class="preview-tag">Beta · v0.20</span><button class="update-button" id="update-app" type="button" aria-label="Update app" aria-busy="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7V3M20 7H16M20 7A8 8 0 1 0 21 14"/></svg><span data-update-label>Update app</span></button></div></header>
   <section class="hero" aria-labelledby="welcome-title">
     <div class="mascot-space">
       <p class="sana-says">Hello, little explorer!</p>
@@ -104,6 +105,7 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
 <script>
 (() => {
   const frame=document.getElementById('frame');
+  for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});
   function fit(){
     const viewport=window.visualViewport;
     const width=viewport?.width||window.innerWidth,height=viewport?.height||window.innerHeight;
@@ -120,7 +122,7 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
   document.getElementById('about').addEventListener('click',event=>show('📜 About this project',`
     <section class="about-card"><h3>🐒 SaNa Little Hands</h3><p>Kids Puzzle Library · for ages 2–4</p><p class="about-quote">“Little hands, happy discoveries.”</p><p>Drag and match shapes · Pop plain, 1–20, A–Z and shape bubbles · Slide to find friends · Brush clean and finger paint · Count abacus beads to colour a rainbow and circle</p><p>Explore · Play · Challenge</p><p>No ads, accounts or trackers. Optional sound and offline play after the first online load.</p></section>
     <section class="about-card safety">🛡️ Low brightness · short breaks · play with a parent</section>
-    <section class="about-card">Created by G.RajaPathamuthu · Kids Puzzle Library<br>Guided by : JNT<br>Code Coordinated by : AI-Assistances<br><i>(What we get is all we ask for.)</i><p>Found something odd? Send us your feedback.<br>Mail To : <a href="mailto:grajapm@gmail.com?subject=SaNa%20Little%20Hands%20Feedback%20%26%20Suggestion">✉️ Feedback &amp; Suggestion</a></p><span class="about-version">App <span data-app-version>Beta v0.19</span></span></section>`,event.currentTarget));
+    <section class="about-card">Created by G.RajaPathamuthu · Kids Puzzle Library<br>Guided by : JNT<br>Code Coordinated by : AI-Assistances<br><i>(What we get is all we ask for.)</i><p>Found something odd? Send us your feedback.<br>Mail To : <a href="mailto:grajapm@gmail.com?subject=SaNa%20Little%20Hands%20Feedback%20%26%20Suggestion">✉️ Feedback &amp; Suggestion</a></p><span class="about-version">App <span data-app-version>Beta v0.20</span></span></section>`,event.currentTarget));
   document.getElementById('close-dialog').addEventListener('click',close);
   shade.addEventListener('click',event=>{if(event.target===shade)close();});
   document.addEventListener('keydown',event=>{
