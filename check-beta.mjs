@@ -158,7 +158,7 @@ try{
     }).toBe(true);
     await page.screenshot({path:resolve(output,`play-back-${label}.png`)});
   }
-  await page.getByRole('button',{name:'Back',exact:true}).click();await expect(page.locator('#home-view')).toBeVisible();
+  await page.getByRole('button',{name:'Games',exact:true}).click();await expect(page.locator('#home-view')).toBeVisible();
   await page.setViewportSize({width:844,height:390});checks++;
   await page.screenshot({path:resolve(output,'play.png')});
   await page.getByRole('button',{name:'Home',exact:true}).click();

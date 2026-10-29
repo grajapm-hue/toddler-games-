@@ -33,7 +33,7 @@ try{
     await page.screenshot({path:resolve(out,`${name}-about.png`)});await page.keyboard.press('Escape');await expect(dialog).toBeHidden();await expect(about).toBeFocused();checks++;
     await page.getByRole('link',{name:'Tap to play',exact:true}).click();await expect(page.locator('#share-app')).toHaveCount(0);await expect(page.locator('#game-back')).toBeHidden();
     for(const name of ['Drag shapes','Pop bubbles','Slide to reveal','Brush and paint']){
-      await page.getByRole('button',{name,exact:true}).click();await expect(page.locator('#share-app')).toHaveCount(0);await page.getByRole('button',{name:'Back',exact:true}).click();await expect(page.locator('#home-view')).toBeVisible();
+      await page.getByRole('button',{name,exact:true}).click();await expect(page.locator('#share-app')).toHaveCount(0);await expect(page.getByRole('button',{name:'Back',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Front',exact:true})).toBeVisible();await page.getByRole('button',{name:'Games',exact:true}).click();await expect(page.locator('#home-view')).toBeVisible();
     }checks++;
     assert.deepEqual(errors,[]);await context.close();
   }
