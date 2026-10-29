@@ -18,9 +18,11 @@
   };
   let saved={};try{const stored=JSON.parse(localStorage.getItem('sanaLittleHandsV1')||'{}');saved=stored&&typeof stored==='object'?stored:{};}catch{/* Settings are optional. */}
   const state={level:[1,2,3].includes(saved.level)?saved.level:2,activity:null,done:false,pointer:null,selected:null,paintMode:false,paintColor:colors[0],strokes:[],shapes:[],bubbles:[],sliders:[],dirt:[],sound:saved.sound===true};
-  Object.assign(state,{brushSize:['','large','medium','small'][state.level],erase:false,coverage:[]});
+  Object.assign(state,{brushSize:['','large','medium','small'][state.level],erase:false,coverage:[],bubbleMode:'plain',bubbleHits:new Map(),bubblePops:0,bubbleRecent:[],bubbleEffects:[],bubbleSerial:0,bubbleWidth:1000});
+  const bubbleModes={plain:{label:'Plain',items:[]},numbers:{label:'1–20',items:Array.from({length:20},(_,i)=>String(i+1))},letters:{label:'A–Z',items:Array.from({length:26},(_,i)=>String.fromCharCode(65+i))},shapes:{label:'Shapes',items:shapes.map(shape=>shape.id)}};
+  const bubbleColors=['#a6d1d3','#e6a6a4','#cfbfdf','#f0d47a','#afd1a2','#f1bd91'];
   const brushWidths={small:18,medium:38,large:72};
-  let audio=null,lastTone=0,rewardTimer=null,guideTimer=null;
+  let audio=null,lastTone=0,rewardTimer=null,guideTimer=null,bubbleFrame=null,lastBubbleTime=0;
   const save=()=>{try{localStorage.setItem('sanaLittleHandsV1',JSON.stringify({level:state.level,sound:state.sound}));}catch{/* Play works without storage. */}};
   const hint=text=>{$('hint').textContent=text;};
   function tone(frequency=590,win=false){
@@ -127,12 +129,14 @@
     if(pointer?.kind==='drag')renderDrag();
     scene.querySelector('#brush-cursor')?.remove();
   }
-  function home(){cancelGesture();clearEffects();state.activity=null;state.selected=null;app.dataset.view='home';$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
+  function home(){stopBubbles();cancelGesture();clearEffects();state.activity=null;state.selected=null;app.dataset.view='home';$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
   function levelControls(){document.querySelectorAll('[data-level]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.level)===state.level)));}
   function setLevel(level){cancelGesture();if(state.level!==level)state.brushSize=['','large','medium','small'][level];state.level=level;levelControls();save();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');if(state.activity)resetRound();else hint(level===2?'Play level: a lovely place for ages 2–4. Choose a picture!':level===1?'Explore level: fewer, bigger things to try.':'Challenge level: a few more things to discover.');}
   function startActivity(id){state.activity=id;state.paintMode=false;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
   function resetRound(){
-    cancelGesture();clearEffects();state.done=false;state.selected=null;state.strokes=[];
+    stopBubbles();cancelGesture();clearEffects();state.done=false;state.selected=null;state.strokes=[];
+    $('bubble-modes').hidden=state.activity!=='bubbles';$('bubble-tracker').hidden=state.activity!=='bubbles';$('step-note').hidden=state.activity==='bubbles';
+    scene.parentElement.classList.toggle('bubble-mat',state.activity==='bubbles');scene.setAttribute('viewBox','0 0 1000 440');
     $('brush-modes').hidden=state.activity!=='brush';$('paint-tools').hidden=state.activity!=='brush'||!state.paintMode;
     $('art-tools').hidden=state.activity!=='brush';
     state.erase=false;updateArtTools();
@@ -144,8 +148,7 @@
       const count=[0,2,4,6][state.level],ys=count===2?[140,310]:count===4?[120,310]:[85,220,355];
       state.shapes=shapes.slice(0,count).map((shape,i)=>({...shape,placed:false,x:count===2?250:150+(i%2)*190,y:ys[count===2?i:Math.floor(i/2)],tx:count===2?750:660+(i%2)*190,ty:ys[count===2?i:Math.floor(i/2)]}));renderDrag();
     }else if(state.activity==='bubbles'){
-      const count=[0,4,6,9][state.level],cols=count===4?2:3;
-      state.bubbles=Array.from({length:count},(_,i)=>({id:i,x:cols===2?300+(i%2)*400:225+(i%3)*275,y:count===9?90+Math.floor(i/cols)*130:130+Math.floor(i/cols)*180,r:[0,70,62,49][state.level],color:['#a6d1d3','#e6a6a4','#cfbfdf'][i%3],name:['blue','pink','purple'][i%3],popped:false}));renderBubbles();
+      renderBubbles();
     }else if(state.activity==='slide'){
       const count=state.level,w=count===1?400:count===2?278:232,gap=count===1?0:count===2?55:35,total=count*w+(count-1)*gap,left=(1000-total)/2;
       state.sliders=Array.from({length:count},(_,i)=>({id:i,x:left+i*(w+gap),y:42,w,h:270,value:0,friend:['fox','owl','frog'][i]}));renderSlide();
@@ -154,7 +157,7 @@
       state.dirt=points.slice(0,[0,4,8,14][state.level]).map(([x,y],i)=>({id:i,x,y,r:state.level===3?22:29,health:state.level===1?1:state.level===2?2.5:4,max:state.level===1?1:state.level===2?2.5:4}));renderClean();
     }
     hint(state.activity==='brush'?(state.paintMode?`Pick a color and paint inside the ${artPicture().name}. SaNa will cheer you on!`:`Brush the muddy ${artPicture().name}. Give it a gentle wash.`):activities[state.activity].hint);
-    if(state.activity==='bubbles'&&state.level===3)hint(`Find the ${activeBubble()?.name} bubbles. Look for the color dot!`);
+    if(state.activity==='bubbles')hint(state.bubbleMode==='plain'?'Tap the rising bubbles. Splash, pop! They keep coming.':'Pop a bubble to color its matching item above. Find them all!');
   }
   function renderDrag(){
     const done=state.shapes.filter(shape=>shape.placed).length;
@@ -162,19 +165,93 @@
     progress(done,state.shapes.length);
   }
   function matchShape(id){const shape=state.shapes.find(item=>item.id===id);if(!shape||shape.placed)return;shape.placed=true;state.selected=null;renderDrag();tone(640);if(state.shapes.every(item=>item.placed))celebrate('Lovely matching! Every shape found its little home.');else hint('A perfect fit! Find another little shape.');}
-  const activeBubble=()=>state.level===3?['blue','pink','purple'].map(name=>state.bubbles.find(bubble=>!bubble.popped&&bubble.name===name)).find(Boolean):state.bubbles.find(bubble=>!bubble.popped);
+  const activeBubble=()=>state.bubbles.find(bubble=>bubble.element?.dataset.onstage==='true');
+  function stopBubbles(){if(bubbleFrame!==null)cancelAnimationFrame(bubbleFrame);bubbleFrame=null;lastBubbleTime=0;}
+  function bubbleTracker(){
+    const mode=bubbleModes[state.bubbleMode];
+    $('bubble-score').textContent=state.bubbleMode==='plain'?`Popped ${state.bubblePops}`:`${mode.label} · ${state.bubbleHits.size}/${mode.items.length}`;
+    $('bubble-targets').innerHTML=mode.items.length?mode.items.map(token=>{
+      const color=state.bubbleHits.get(token);
+      const content=state.bubbleMode==='shapes'?`<svg viewBox="-68 -68 136 136" aria-hidden="true">${primitive(token,'none')}</svg>`:token;
+      return `<span class="bubble-target" role="listitem" data-bubble-target="${token}" data-collected="${!!color}" style="${color?`background-color:${color}`:''}" aria-label="${token}${color?' popped':' not popped'}">${content}</span>`;
+    }).join(''):state.bubbleRecent.map(color=>`<i class="pop-dot" style="background:${color}" aria-hidden="true"></i>`).join('');
+    document.querySelectorAll('[data-bubble-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.bubbleMode===state.bubbleMode)));
+  }
+  function fitBubbleField(){
+    const width=Math.max(600,440*scene.clientWidth/Math.max(1,scene.clientHeight));
+    if(Math.abs(width-state.bubbleWidth)>.5){
+      const ratio=width/state.bubbleWidth;state.bubbles.forEach(bubble=>{bubble.x*=ratio;});state.bubbleWidth=width;
+    }
+    if(Math.abs(scene.viewBox.baseVal.width-width)>.5)scene.setAttribute('viewBox',`0 0 ${width.toFixed(1)} 440`);
+  }
+  function positionBubble(bubble){
+    if(!bubble.element)return;
+    bubble.element.setAttribute('transform',`translate(${bubble.x.toFixed(1)} ${bubble.y.toFixed(1)})`);
+    const onstage=bubble.y>=bubble.r&&bubble.y<=440-bubble.r;
+    if(bubble.element.dataset.onstage!==String(onstage)){
+      bubble.element.dataset.onstage=String(onstage);bubble.element.setAttribute('tabindex',onstage?'0':'-1');bubble.element.setAttribute('aria-hidden',String(!onstage));
+    }
+  }
+  function spawnBubble(bubble,initial=false){
+    const items=bubbleModes[state.bubbleMode].items;
+    const missing=items.filter(token=>!state.bubbleHits.has(token));
+    const available=(missing.length?missing:items).filter(token=>!state.bubbles.some(other=>other!==bubble&&other.element&&other.token===token));
+    const pool=available.length?available:missing.length?missing:items;
+    bubble.token=pool.length?pool[Math.floor(Math.random()*pool.length)]:'';
+    bubble.id=++state.bubbleSerial;bubble.color=bubbleColors[Math.floor(Math.random()*bubbleColors.length)];bubble.r=[0,78,68,58][state.level];
+    const lane=state.bubbleWidth/state.bubbles.length;
+    bubble.x=Math.max(bubble.r+4,Math.min(state.bubbleWidth-bubble.r-4,(bubble.slot+.5+(Math.random()-.5)*.3)*lane));
+    bubble.y=initial?135+(bubble.slot%3)*100+Math.random()*12:440+bubble.r+8;bubble.wait=0;
+    const element=document.createElementNS('http://www.w3.org/2000/svg','g');bubble.element=element;
+    element.classList.add('bubble');element.dataset.bubble=String(bubble.id);element.dataset.token=bubble.token;element.dataset.color=bubble.color;
+    element.setAttribute('role','button');element.setAttribute('aria-label',`Pop ${bubble.token||'plain'} bubble`);
+    const content=state.bubbleMode==='plain'?face(0,8):state.bubbleMode==='shapes'?`<g transform="scale(${bubble.r/95})">${primitive(bubble.token,'none','#29463e')}</g>`:`<text text-anchor="middle" dominant-baseline="central" font-family="inherit" font-size="${bubble.r*(bubble.token.length===2?.9:1.1)}" font-weight="900" fill="#29463e">${bubble.token}</text>`;
+    element.innerHTML=`<circle r="${bubble.r}" fill="${bubble.color}" stroke="#fffdf3" stroke-width="5"/><circle r="${bubble.r-11}" fill="none" stroke="white" stroke-opacity=".35" stroke-width="3"/><path d="M${-bubble.r*.56} ${-bubble.r*.38}Q${-bubble.r*.45} ${-bubble.r*.72} ${-bubble.r*.1} ${-bubble.r*.74}" fill="none" stroke="white" stroke-width="7" stroke-linecap="round" opacity=".8"/>${content}`;
+    $('bubble-layer').appendChild(element);positionBubble(bubble);
+  }
   function renderBubbles(){
-    const active=activeBubble();
-    scene.innerHTML=`<path d="M0 396Q230 350 500 395Q780 352 1000 392V440H0Z" fill="#dce9d4"/><path d="M118 389Q94 329 124 316Q143 346 129 394M887 395Q868 350 893 335Q914 360 901 396" fill="#bad1b0"/>${state.level===3&&active?`<circle cx="936" cy="38" r="22" fill="${active.color}" stroke="#809b93" stroke-width="3"/><path d="M892 38H903" stroke="#809b93" stroke-width="4" stroke-linecap="round"/>`:''}`+state.bubbles.filter(bubble=>!bubble.popped).map(bubble=>`<g data-bubble="${bubble.id}" data-allowed="${state.level<3||bubble.color===active?.color}" class="bubble ${state.level<3||bubble.color===active?.color?'allowed':'disallowed'}" transform="translate(${bubble.x} ${bubble.y})" role="button" tabindex="0" aria-label="Pop ${bubble.name} bubble"><circle r="${bubble.r}" fill="${bubble.color}" stroke="#fffdf3" stroke-width="5"/><circle r="${bubble.r-11}" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="3"/><path d="M${-bubble.r*.56} ${-bubble.r*.38}Q${-bubble.r*.45} ${-bubble.r*.72} ${-bubble.r*.1} ${-bubble.r*.74}" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" opacity=".7"/>${face(0,8)}</g>`).join('');
-    progress(state.bubbles.filter(b=>b.popped).length,state.bubbles.length);
+    state.bubbleHits=new Map();state.bubblePops=0;state.bubbleRecent=[];state.bubbleEffects=[];
+    state.bubbles=[];bubbleTracker();fitBubbleField();
+    scene.innerHTML='<g id="bubble-layer"></g><g id="splash-layer" pointer-events="none"></g>';scene.setAttribute('aria-label','Rising bubbles');
+    state.bubbles=Array.from({length:[0,4,6,9][state.level]},(_,slot)=>({slot,element:null}));
+    state.bubbles.forEach(bubble=>spawnBubble(bubble,true));progress(0,0);bubbleFrame=requestAnimationFrame(bubbleTick);
+  }
+  function bubbleTick(now){
+    if(state.activity!=='bubbles'||document.hidden){bubbleFrame=null;return;}
+    bubbleFrame=requestAnimationFrame(bubbleTick);
+    const elapsed=lastBubbleTime?Math.min(.05,(now-lastBubbleTime)/1000):0;lastBubbleTime=now;
+    if(app.querySelector('.play-share-shade:not([hidden])'))return;
+    fitBubbleField();
+    for(const bubble of state.bubbles){
+      if(!bubble.element){bubble.wait-=elapsed;if(bubble.wait<=0)spawnBubble(bubble);continue;}
+      bubble.y-=elapsed*[0,25,34,44][state.level];
+      if(bubble.y < -bubble.r){bubble.element.remove();bubble.element=null;spawnBubble(bubble);}
+      positionBubble(bubble);
+    }
+    for(const splash of state.bubbleEffects){
+      splash.age+=elapsed;const t=Math.min(1,splash.age/.48);splash.element.setAttribute('opacity',1-t);
+      splash.drops.forEach((drop,i)=>{const angle=i*Math.PI/4;drop.setAttribute('cx',Math.cos(angle)*splash.radius*t);drop.setAttribute('cy',Math.sin(angle)*splash.radius*t+12*t*t);drop.setAttribute('r',9*(1-t)+1);});
+      if(t===1)splash.element.remove();
+    }
+    state.bubbleEffects=state.bubbleEffects.filter(splash=>splash.age<.48);
   }
   function popBubble(bubble){
-    if(bubble.popped)return;
-    if(state.level===3&&bubble.color!==activeBubble()?.color){hint(`Try the ${activeBubble()?.name} bubbles. Follow the color dot!`);return;}
-    bubble.popped=true;tone(450+bubble.id*55);renderBubbles();
-    if(state.bubbles.every(b=>b.popped))celebrate('Pop, pop, hooray! A garden full of happy little pops.');
-    else if(state.level===3)hint(`Find the ${activeBubble()?.name} bubbles. Follow the color dot!`);
+    if(!bubble?.element)return;
+    const focused=document.activeElement===bubble.element;
+    const splash=document.createElementNS('http://www.w3.org/2000/svg','g');splash.dataset.splash='';splash.setAttribute('transform',`translate(${bubble.x} ${bubble.y})`);splash.setAttribute('fill',bubble.color);
+    splash.innerHTML=Array.from({length:8},()=>'<circle r="9"/>').join('');$('splash-layer').appendChild(splash);
+    state.bubbleEffects.push({element:splash,drops:[...splash.children],age:0,radius:bubble.r*.85});
+    bubble.element.remove();bubble.element=null;bubble.wait=.6;state.bubblePops++;state.bubbleRecent=[...state.bubbleRecent.slice(-7),bubble.color];
+    if(bubble.token)state.bubbleHits.set(bubble.token,bubble.color);bubbleTracker();tone(450+(bubble.id%8)*55);
+    if(focused)activeBubble()?.element.focus();
+    if(state.bubbleMode==='plain'){
+      if(state.bubblePops%10===0)celebrate('Pop, pop, hooray! SaNa says well done. Keep popping!');
+      else hint(`Splash, pop! ${state.bubblePops} ${state.bubblePops===1?'bubble':'bubbles'} popped. Keep going!`);
+    }else if(state.bubbleHits.size===bubbleModes[state.bubbleMode].items.length&&!state.done){
+      celebrate(`SaNa says hooray! You found all the ${state.bubbleMode==='numbers'?'numbers':state.bubbleMode==='letters'?'letters':'shapes'}. Keep popping!`);
+    }else if(!state.done)hint(`Splash! ${bubble.token} is now the same color above. Keep looking!`);
   }
+
   function renderSlide(){
     scene.innerHTML=`<defs>${state.sliders.map(s=>`<clipPath id="window${s.id}"><rect x="${s.x+6}" y="${s.y+6}" width="${s.w-12}" height="${s.h-12}" rx="20"/></clipPath>`).join('')}</defs>`+state.sliders.map(s=>`<g><rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" rx="25" fill="#fffaf0" stroke="#b5cbb9" stroke-width="5"/><g clip-path="url(#window${s.id})"><rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" fill="${['#f2e7c9','#e0e5ef','#d9ead8'][s.id]}"/>${friend(s.friend,s.x+s.w/2,s.y+s.h*.54,Math.min(1.25,s.w/220))}<rect data-curtain="${s.id}" x="${s.x+s.value*s.w}" y="${s.y}" width="${(1-s.value)*s.w}" height="${s.h}" fill="#8cb8be"/><path data-curtain-pattern="${s.id}" d="M${s.x+s.value*s.w+20} ${s.y+10}V${s.y+s.h-10}" stroke="#b5d2d2" stroke-width="10" opacity=".5"/></g><line data-slider-track="${s.id}" x1="${s.x+25}" y1="${s.y+s.h+53}" x2="${s.x+s.w-25}" y2="${s.y+s.h+53}" stroke="#c6d3c1" stroke-width="14" stroke-linecap="round"/><g class="slider-handle" data-slider-handle="${s.id}" transform="translate(${s.x+25+s.value*(s.w-50)} ${s.y+s.h+53})" role="slider" tabindex="0" aria-label="Reveal ${s.friend}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(s.value*100)}"><circle r="29" fill="#f3ce67" stroke="#bc9d49" stroke-width="3"/>${face(0,-1)}<path d="M-12 17H12" stroke="#bd9d43" stroke-width="2"/></g></g>`).join('');
     progress(state.sliders.filter(s=>s.value===1).length,state.sliders.length);
@@ -259,7 +336,7 @@
     cursor.setAttribute('transform',`translate(${point.x} ${point.y}) scale(${{small:.6,medium:1,large:1.4}[state.brushSize]})`);
   }
   function localPoint(event){const matrix=scene.getScreenCTM();if(!matrix)return null;return new DOMPoint(event.clientX,event.clientY).matrixTransform(matrix.inverse());}
-  function hitBubble(point){const bubble=state.bubbles.find(b=>!b.popped&&Math.hypot(point.x-b.x,point.y-b.y)<b.r+8);if(bubble)popBubble(bubble);}
+  function hitBubble(point){const bubble=state.bubbles.find(b=>b.element&&Math.hypot(point.x-b.x,point.y-b.y)<b.r+8);if(bubble)popBubble(bubble);}
   function pointerDown(event){
     if(state.pointer||event.button>0||!state.activity)return;
     const point=localPoint(event);if(!point)return;
@@ -273,7 +350,7 @@
       state.pointer={id:event.pointerId,kind:'drag',shape,dx:point.x-shape.x,dy:point.y-shape.y,x:shape.x,y:shape.y};
       item.classList.add('selected');
     }else if(state.activity==='bubbles'){
-      if(state.done)return;state.pointer={id:event.pointerId,kind:'bubble'};hitBubble(point);
+      state.pointer={id:event.pointerId,kind:'bubble'};hitBubble(point);
     }else if(state.activity==='slide'){
       const handle=event.target.closest('[data-slider-handle]');if(!handle)return;
       const slider=state.sliders.find(s=>s.id===Number(handle.dataset.sliderHandle));state.pointer={id:event.pointerId,kind:'slide',slider};slideTo(slider,point.x);
@@ -317,13 +394,13 @@
     }else if(event.key==='Enter'||event.key===' '){
       event.preventDefault();if(piece){state.selected=piece.dataset.piece;renderDrag();hint('Now choose the matching shadow.');scene.querySelector(`[data-target="${state.selected}"]`)?.focus();}
       else if(target&&target.dataset.target===state.selected)matchShape(state.selected);
-      else if(bubble)popBubble(state.bubbles[Number(bubble.dataset.bubble)]);
+      else if(bubble)popBubble(state.bubbles.find(item=>item.id===Number(bubble.dataset.bubble)));
     }
   });
   function showMe(){
     clearTimeout(guideTimer);scene.querySelector('[data-guide]')?.remove();let x=460,y=190;
     if(state.activity==='drag'){const shape=state.shapes.find(s=>!s.placed);if(shape){x=shape.x+10;y=shape.y+20;}hint('Touch a shape, hold it, and move it to the same shadow.');}
-    else if(state.activity==='bubbles'){const bubble=activeBubble();if(bubble){x=bubble.x+5;y=bubble.y+10;}hint(state.level===3?`Touch the ${activeBubble()?.name||'colored'} bubbles. Match the dot!`:'Touch a bubble with one finger. Try a little sweep too!');}
+    else if(state.activity==='bubbles'){const bubble=activeBubble();if(bubble){x=bubble.x+5;y=bubble.y+10;}hint(state.bubbleMode==='plain'?'Touch a rising bubble with one finger. Splash, pop!':'Touch a rising bubble. Its matching item above will turn the same color!');}
     else if(state.activity==='slide'){const s=state.sliders.find(s=>s.value<1)||state.sliders[0];x=s.x+30+s.value*(s.w-50);y=s.y+s.h+45;hint('Hold a sunny handle. Slide it along its path.');}
     else hint(state.paintMode?`Hold one finger inside the ${artPicture().name} and move it. Choose a size or erase to tidy up!`:`Rub a muddy spot back and forth. Watch the ${artPicture().name} get clean!`);
     const hand=document.createElementNS('http://www.w3.org/2000/svg','g');hand.dataset.guide='';hand.setAttribute('transform',`translate(${x} ${y})`);hand.innerHTML='<g class="guide-hand"><circle r="26" fill="white" opacity=".8"/><use href="#hand-icon" x="-13" y="-14" width="49" height="49" fill="#4b7d68"/></g>';hand.style.pointerEvents='none';scene.appendChild(hand);guideTimer=setTimeout(()=>hand.remove(),4200);
@@ -331,6 +408,7 @@
   $('home').addEventListener('click',home);$('again').addEventListener('click',resetRound);$('show-me').addEventListener('click',showMe);
   document.querySelectorAll('[data-activity]').forEach(button=>button.addEventListener('click',()=>{tone(500);startActivity(button.dataset.activity);}));
   document.querySelectorAll('[data-level]').forEach(button=>button.addEventListener('click',()=>setLevel(Number(button.dataset.level))));
+  document.querySelectorAll('[data-bubble-mode]').forEach(button=>button.addEventListener('click',()=>{state.bubbleMode=button.dataset.bubbleMode;resetRound();}));
   $('paint-mode').addEventListener('click',()=>{state.paintMode=true;resetRound();});$('clean-mode').addEventListener('click',()=>{state.paintMode=false;resetRound();});
   document.querySelectorAll('[data-paint]').forEach(button=>button.addEventListener('click',()=>{cancelGesture();state.erase=false;state.paintColor=button.dataset.paint;updateArtTools();tone(620);}));
   document.querySelectorAll('[data-brush-size]').forEach(button=>button.addEventListener('click',()=>{cancelGesture();state.brushSize=button.dataset.brushSize;updateArtTools();}));
@@ -351,8 +429,8 @@
   });
   $('fullscreen').hidden=typeof $('viewport').requestFullscreen!=='function';
   window.addEventListener('resize',fitFrame);window.visualViewport?.addEventListener('resize',fitFrame);window.addEventListener('orientationchange',fitFrame);
-  document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelGesture();if(audio?.state==='running')audio.suspend().catch(()=>{});}});
-  window.addEventListener('pagehide',()=>{cancelGesture();clearEffects();if(audio?.state==='running')audio.suspend().catch(()=>{});});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden){stopBubbles();cancelGesture();if(audio?.state==='running')audio.suspend().catch(()=>{});}else if(state.activity==='bubbles'&&bubbleFrame===null)bubbleFrame=requestAnimationFrame(bubbleTick);});
+  window.addEventListener('pagehide',()=>{stopBubbles();cancelGesture();clearEffects();if(audio?.state==='running')audio.suspend().catch(()=>{});});
   if(!document.documentElement.hasAttribute('data-self-contained')&&'serviceWorker'in navigator&&location.protocol.startsWith('http'))window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});
   levelControls();soundButton();home();fitFrame();
 })();

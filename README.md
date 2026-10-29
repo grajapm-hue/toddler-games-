@@ -30,14 +30,14 @@ With Node.js available, run `node serve.mjs` in this folder and open `http://127
 
 - **Explore:** two large shapes, four large bubbles, one reveal slider, a simple fish with four muddy patches and a large brush. Painting about half the fish earns the reward.
 - **Play — ages 2–4:** four shapes, six bubbles, two sliders, the puppy with eight muddy patches and a medium brush. Painting about two thirds earns the reward. This is the default.
-- **Challenge:** six shapes, nine bubbles grouped by color, three sliders, a detailed butterfly with fourteen muddy patches and a small brush. Painting about four fifths earns the reward.
+- **Challenge:** six shapes, nine faster rising bubbles, three sliders, a detailed butterfly with fourteen muddy patches and a small brush. Painting about four fifths earns the reward.
 
 The level labels describe activity difficulty. A grown-up can choose whichever level feels comfortable.
 
 ## Activities
 
 1. **Drag — Shape picnic:** move each shape onto its matching shadow. Tapping a shape and then its shadow also works.
-2. **Tap — Bubble garden:** tap or sweep across bubbles. Challenge asks for bubbles that match the color dot.
+2. **Tap — Bubble garden:** choose Plain, 1–20, A–Z or Shapes. Bubbles rise continuously from random positions. Tap or sweep to splash and pop them; new bubbles enter from below. The matching number, letter or shape in the top list turns the popped bubble's exact color. Missed items return until the full set is collected, then SaNa cheers and play continues. Plain keeps a pop count and recent colors. Explore has four slower, larger bubbles; Play has six; Challenge has nine faster bubbles. Again clears the current collection.
 3. **Slide — Peek-a-boo friends:** move the sunny handles along their tracks to reveal the fox, owl and frog.
 4. **Brush & paint — Little art studio:** Explore shows a fish, Play a puppy and Challenge a butterfly in both modes. Choose Small, Medium or Large for cleaning and painting. Finger paint stays inside the selected picture. Use Eraser to remove paint, then choose a color to paint again. SaNa congratulates you when the level's coloring goal is reached, with applause when sound is on. Again starts a fresh picture.
 
@@ -53,7 +53,7 @@ The installed prototype serves its versioned files from cache. Increment the cac
 
 ## Developer checks
 
-`node check-playroom.mjs` uses Playwright to exercise the actual interface. `node check-art.mjs` checks picture clipping, brush sizes, erasing and repainting using rendered pixels, completion/reset, cleaning reach and responsive controls. Set `MM_PLAYWRIGHT` to the installed Playwright test module when it is not available locally. `MM_CHROME` can select a Chromium executable. `PLAYROOM_BROWSER=webkit` selects Playwright WebKit. `ART_URL` selects a hosted play page for the art checks.
+`node check-playroom.mjs` uses Playwright to exercise the actual interface. `node check-art.mjs` checks picture clipping, brush sizes, erasing and repainting using rendered pixels, completion/reset, cleaning reach and responsive controls. `node check-bubbles.mjs` checks rising motion, touch popping, splash cleanup, exact matching colors, complete number/letter/shape collections, continued play, fixed bubble counts and responsive lists. Set `MM_PLAYWRIGHT` to the installed Playwright test module when it is not available locally. `MM_CHROME` can select a Chromium executable. `PLAYROOM_BROWSER=webkit` selects Playwright WebKit. `ART_URL` and `BUBBLES_URL` select a hosted play page for their respective checks.
 
 Screenshots and test evidence are written to `../artifacts/toddler-playroom/`. The test covers matching, popping, reveal sliders, cleaning, painting/reset, three levels, touch gestures, landscape and the rotated portrait frame. Browser emulation does not replace a child's hands-on device trial.
 
