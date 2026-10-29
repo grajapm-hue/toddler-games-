@@ -50,8 +50,9 @@ try{
     await expect(page.locator('[data-bubble-target][data-collected="true"]')).toHaveCount(1);checks++;
     for(let attempt=0;attempt<150&&await page.locator('[data-bubble-target][data-collected="true"]').count()<count;attempt++){
       const keys=await page.locator('[data-bubble-target][data-collected="false"]').evaluateAll(els=>els.map(el=>el.dataset.bubbleTarget));
-      const candidates=await page.locator('[data-bubble][data-onstage="true"]').all();let found=false;
-      for(const bubble of candidates){if(keys.includes(await bubble.getAttribute('data-token'))){await pop(bubble);found=true;}}
+      // Bind identities before popping; positional locators shift as earlier bubbles disappear.
+      const candidates=await page.locator('[data-bubble][data-onstage="true"]').evaluateAll(els=>els.map(el=>({id:el.dataset.bubble,token:el.dataset.token})));let found=false;
+      for(const bubble of candidates){if(keys.includes(bubble.token)){await pop(page.locator(`[data-bubble="${bubble.id}"]`));found=true;}}
       await page.clock.runFor(found?600:2000);
     }
     await expect(page.locator('[data-bubble-target][data-collected="true"]')).toHaveCount(count);

@@ -34,6 +34,8 @@ With Node.js available, run `node serve.mjs` in this folder and open `http://127
 
 The level labels describe activity difficulty. A grown-up can choose whichever level feels comfortable.
 
+In Bubble Garden, **Speed: Slow / Medium / Fast** and **Size: Small / Medium / Large** can be changed while playing. Existing bubbles resize immediately, and changing either setting keeps the current collection. The choices apply to all four content modes and are remembered in this browser. Until a setting is chosen, the selected level supplies its default; an explicit choice also stays in effect when changing levels. Large bubbles fit the available space on short screens.
+
 ## Activities
 
 1. **Drag — Shape picnic:** move each shape onto its matching shadow. Tapping a shape and then its shadow also works.
@@ -53,7 +55,7 @@ The installed prototype serves its versioned files from cache. Increment the cac
 
 ## Developer checks
 
-`node check-playroom.mjs` uses Playwright to exercise the actual interface. `node check-art.mjs` checks picture clipping, brush sizes, erasing and repainting using rendered pixels, completion/reset, cleaning reach and responsive controls. `node check-bubbles.mjs` checks rising motion, touch popping, splash cleanup, exact matching colors, complete number/letter/shape collections, continued play, fixed bubble counts and responsive lists. Set `MM_PLAYWRIGHT` to the installed Playwright test module when it is not available locally. `MM_CHROME` can select a Chromium executable. `PLAYROOM_BROWSER=webkit` selects Playwright WebKit. `ART_URL` and `BUBBLES_URL` select a hosted play page for their respective checks.
+`node check-playroom.mjs` uses Playwright to exercise the actual interface. `node check-art.mjs` checks picture clipping, brush sizes, erasing and repainting using rendered pixels, completion/reset, cleaning reach and responsive controls. `node check-bubbles.mjs` checks rising motion, touch popping, splash cleanup, exact matching colors, complete number/letter/shape collections, continued play, fixed bubble counts and responsive lists. `node check-bubble-settings.mjs` checks measured travel at different speeds, immediate resizing, collection preservation, all four content modes, persistence and responsive controls. Set `MM_PLAYWRIGHT` to the installed Playwright test module when it is not available locally. `MM_CHROME` can select a Chromium executable. `PLAYROOM_BROWSER=webkit` selects Playwright WebKit. `ART_URL` and `BUBBLES_URL` select a hosted play page for their respective checks.
 
 Screenshots and test evidence are written to `../artifacts/toddler-playroom/`. The test covers matching, popping, reveal sliders, cleaning, painting/reset, three levels, touch gestures, landscape and the rotated portrait frame. Browser emulation does not replace a child's hands-on device trial.
 
