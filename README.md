@@ -34,7 +34,9 @@ With Node.js available, run `node serve.mjs` in this folder and open `http://127
 
 The level labels describe activity difficulty. A grown-up can choose whichever level feels comfortable.
 
-In Bubble Garden, **Speed: Slow / Medium / Fast** and **Size: Small / Medium / Large** can be changed while playing. Existing bubbles resize immediately, and changing either setting keeps the current collection. The choices apply to all four content modes and are remembered in this browser. Until a setting is chosen, the selected level supplies its default; an explicit choice also stays in effect when changing levels. Large bubbles fit the available space on short screens.
+The playroom fills the available screen. SaNa's guidance, Show me and Again sit above the menu or game, and the bubble and art settings sit above the table. Larger dark bold labels and filled green, yellow, blue and peach controls keep the choices readable. Wider screens put the bubble choices and speed/size settings on one row to leave more room for play.
+
+Above the Bubble Garden table, **Speed: Slow / Medium / Fast** and **Size: Small / Medium / Large** can be changed while playing. Existing bubbles resize immediately, and changing either setting keeps the current collection. The choices apply to all four content modes and are remembered in this browser. Until a setting is chosen, the selected level supplies its default; an explicit choice also stays in effect when changing levels. Large bubbles fit the available space on short screens.
 
 ## Activities
 
