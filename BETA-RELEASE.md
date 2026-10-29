@@ -1,10 +1,12 @@
-# SaNa Little Hands Beta v0.5
+# SaNa Little Hands Beta v0.6
 
-The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.4 repaired clipboard compatibility and native-share capability checks. Version 0.5 adds brush sizes, erasing, picture boundaries and SaNa's painting reward; verify the Pages build commit and run the live checks after publishing each update.
+The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.5 added brush sizes, erasing, picture boundaries and SaNa's painting reward. Version 0.6 makes the art pictures and difficulty match Explore, Play and Challenge; verify the Pages build commit and run the live checks after publishing each update.
 
 ## Painting
 
-Small, Medium and Large select the actual brush size for cleaning and painting without clearing the picture. Paint is clipped to the puppy silhouette; gestures starting on the blank paper add no paint. Eraser removes existing paint while preserving the outline, and choosing any color resumes painting over erased areas. Coverage reaching about 65 percent triggers a SaNa congratulations badge and stars, with generated applause when Sound is on. The reward occurs once per round, and Again clears the painting and progress. Beta cache v5 updates installed copies after they reconnect online.
+Explore uses a simple fish, four muddy patches, a large default brush and a 50 percent painting goal. Play uses the puppy, eight patches, a medium brush and a 65 percent goal. Challenge uses a detailed butterfly, fourteen patches, a small brush and an 80 percent goal. Both cleaning and painting follow the level; the heading, home card, hints and reward name the selected picture. Changing levels starts a fresh round and sets that level's default brush.
+
+Small, Medium and Large select the actual brush size without clearing the picture. Paint is clipped to the current picture silhouette; gestures starting on the blank paper add no paint. Eraser removes existing paint while preserving the outline, and choosing any color resumes painting over erased areas. Reaching the level's painting goal triggers a SaNa congratulations badge and stars, with generated applause when Sound is on. The reward occurs once per round, and Again clears the painting and progress. Beta cache v6 updates installed copies after they reconnect online.
 
 `node check-art.mjs` checks actual SVG pixels for picture boundaries and erasing/repainting, selected brush size, completion/reset, cleaning reach and phone/tablet/rotated layouts. Chromium uses touch input; WebKit uses pointer input. Set `ART_URL` to the hosted play page for live checks.
 

@@ -1,4 +1,4 @@
-const CACHE='sana-little-hands-beta-v5';
+const CACHE='sana-little-hands-beta-v6';
 const PREFIX='sana-little-hands-beta-';
 const ASSETS=['./index.html','./play.html','./app.js','./pwa.js','./share.js','./share.css','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',event=>{

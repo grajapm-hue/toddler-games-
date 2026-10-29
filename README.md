@@ -28,9 +28,9 @@ With Node.js available, run `node serve.mjs` in this folder and open `http://127
 
 ## Levels
 
-- **Explore:** two large shapes, four large bubbles, one reveal slider, fewer muddy patches and a wide paintbrush.
-- **Play — ages 2–4:** four shapes, six bubbles, two sliders, eight muddy patches and a medium paintbrush. This is the default.
-- **Challenge:** six shapes, nine bubbles grouped by color, three sliders, more muddy patches and a finer paintbrush.
+- **Explore:** two large shapes, four large bubbles, one reveal slider, a simple fish with four muddy patches and a large brush. Painting about half the fish earns the reward.
+- **Play — ages 2–4:** four shapes, six bubbles, two sliders, the puppy with eight muddy patches and a medium brush. Painting about two thirds earns the reward. This is the default.
+- **Challenge:** six shapes, nine bubbles grouped by color, three sliders, a detailed butterfly with fourteen muddy patches and a small brush. Painting about four fifths earns the reward.
 
 The level labels describe activity difficulty. A grown-up can choose whichever level feels comfortable.
 
@@ -39,7 +39,7 @@ The level labels describe activity difficulty. A grown-up can choose whichever l
 1. **Drag — Shape picnic:** move each shape onto its matching shadow. Tapping a shape and then its shadow also works.
 2. **Tap — Bubble garden:** tap or sweep across bubbles. Challenge asks for bubbles that match the color dot.
 3. **Slide — Peek-a-boo friends:** move the sunny handles along their tracks to reveal the fox, owl and frog.
-4. **Brush & paint — Little art studio:** choose Small, Medium or Large for cleaning and painting. Finger paint stays inside the puppy. Use Eraser to remove paint, then choose a color to paint again. SaNa congratulates you once about two thirds of the picture is colored, with applause when sound is on. Again starts a fresh picture.
+4. **Brush & paint — Little art studio:** Explore shows a fish, Play a puppy and Challenge a butterfly in both modes. Choose Small, Medium or Large for cleaning and painting. Finger paint stays inside the selected picture. Use Eraser to remove paint, then choose a color to paint again. SaNa congratulates you when the level's coloring goal is reached, with applause when sound is on. Again starts a fresh picture.
 
 **Home** returns to the activity pictures. **Again** resets the current round or clears the painting. **Show me** gives a visual hand hint. The sound button toggles gentle generated tones; sound starts off. The last level and sound preference are stored only in this browser when storage is available. There are no ads, sign-ins, trackers, external fonts or external media downloads.
 
