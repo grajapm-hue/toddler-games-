@@ -21,9 +21,14 @@
   Object.assign(state,{brushSize:['','large','medium','small'][state.level],erase:false,coverage:[],bubbleMode:'plain',bubbleHits:new Map(),bubblePops:0,bubbleRecent:[],bubbleEffects:[],bubbleSerial:0,bubbleWidth:1000});
   const bubbleModes={plain:{label:'Plain',items:[]},numbers:{label:'1–20',items:Array.from({length:20},(_,i)=>String(i+1))},letters:{label:'A–Z',items:Array.from({length:26},(_,i)=>String.fromCharCode(65+i))},shapes:{label:'Shapes',items:shapes.map(shape=>shape.id)}};
   const bubbleColors=['#a6d1d3','#e6a6a4','#cfbfdf','#f0d47a','#afd1a2','#f1bd91'];
+  const bubbleSpeeds={slow:18,medium:34,fast:58},bubbleDiameters={small:44,medium:60,large:80};
+  state.bubbleSpeed=Object.hasOwn(bubbleSpeeds,saved.bubbleSpeed)?saved.bubbleSpeed:null;
+  state.bubbleSize=Object.hasOwn(bubbleDiameters,saved.bubbleSize)?saved.bubbleSize:null;
+  const selectedBubbleSpeed=()=>state.bubbleSpeed??['','slow','medium','fast'][state.level];
+  const selectedBubbleSize=()=>state.bubbleSize??['','large','medium','small'][state.level];
   const brushWidths={small:18,medium:38,large:72};
   let audio=null,lastTone=0,rewardTimer=null,guideTimer=null,bubbleFrame=null,lastBubbleTime=0;
-  const save=()=>{try{localStorage.setItem('sanaLittleHandsV1',JSON.stringify({level:state.level,sound:state.sound}));}catch{/* Play works without storage. */}};
+  const save=()=>{try{localStorage.setItem('sanaLittleHandsV1',JSON.stringify({level:state.level,sound:state.sound,bubbleSpeed:state.bubbleSpeed,bubbleSize:state.bubbleSize}));}catch{/* Play works without storage. */}};
   const hint=text=>{$('hint').textContent=text;};
   function tone(frequency=590,win=false){
     if(!state.sound||document.hidden)return;
@@ -136,6 +141,7 @@
   function resetRound(){
     stopBubbles();cancelGesture();clearEffects();state.done=false;state.selected=null;state.strokes=[];
     $('bubble-modes').hidden=state.activity!=='bubbles';$('bubble-tracker').hidden=state.activity!=='bubbles';$('step-note').hidden=state.activity==='bubbles';
+    $('bubble-settings').hidden=state.activity!=='bubbles';updateBubbleSettings();
     scene.parentElement.classList.toggle('bubble-mat',state.activity==='bubbles');scene.setAttribute('viewBox','0 0 1000 440');
     $('brush-modes').hidden=state.activity!=='brush';$('paint-tools').hidden=state.activity!=='brush'||!state.paintMode;
     $('art-tools').hidden=state.activity!=='brush';
@@ -183,9 +189,18 @@
       const ratio=width/state.bubbleWidth;state.bubbles.forEach(bubble=>{bubble.x*=ratio;});state.bubbleWidth=width;
     }
     if(Math.abs(scene.viewBox.baseVal.width-width)>.5)scene.setAttribute('viewBox',`0 0 ${width.toFixed(1)} 440`);
+    const radius=bubbleRadius();
+    state.bubbles.forEach(bubble=>{if(bubble.element&&Math.abs(bubble.r-radius)>.1){bubble.r=radius;drawBubble(bubble);positionBubble(bubble);}});
   }
+  function updateBubbleSettings(){
+    document.querySelectorAll('[data-bubble-speed]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.bubbleSpeed===selectedBubbleSpeed())));
+    document.querySelectorAll('[data-bubble-size]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.bubbleSize===selectedBubbleSize())));
+  }
+  // Keep touch sizes useful across phone/tablet layouts and fit short play fields.
+  function bubbleRadius(){return Math.max(14,Math.min(132,bubbleDiameters[selectedBubbleSize()]*220/Math.max(1,scene.clientHeight)));}
   function positionBubble(bubble){
     if(!bubble.element)return;
+    bubble.x=Math.max(bubble.r+4,Math.min(state.bubbleWidth-bubble.r-4,bubble.x));
     bubble.element.setAttribute('transform',`translate(${bubble.x.toFixed(1)} ${bubble.y.toFixed(1)})`);
     const onstage=bubble.y>=bubble.r&&bubble.y<=440-bubble.r;
     if(bubble.element.dataset.onstage!==String(onstage)){
@@ -198,16 +213,19 @@
     const available=(missing.length?missing:items).filter(token=>!state.bubbles.some(other=>other!==bubble&&other.element&&other.token===token));
     const pool=available.length?available:missing.length?missing:items;
     bubble.token=pool.length?pool[Math.floor(Math.random()*pool.length)]:'';
-    bubble.id=++state.bubbleSerial;bubble.color=bubbleColors[Math.floor(Math.random()*bubbleColors.length)];bubble.r=[0,78,68,58][state.level];
+    bubble.id=++state.bubbleSerial;bubble.color=bubbleColors[Math.floor(Math.random()*bubbleColors.length)];bubble.r=bubbleRadius();
     const lane=state.bubbleWidth/state.bubbles.length;
     bubble.x=Math.max(bubble.r+4,Math.min(state.bubbleWidth-bubble.r-4,(bubble.slot+.5+(Math.random()-.5)*.3)*lane));
     bubble.y=initial?135+(bubble.slot%3)*100+Math.random()*12:440+bubble.r+8;bubble.wait=0;
     const element=document.createElementNS('http://www.w3.org/2000/svg','g');bubble.element=element;
     element.classList.add('bubble');element.dataset.bubble=String(bubble.id);element.dataset.token=bubble.token;element.dataset.color=bubble.color;
     element.setAttribute('role','button');element.setAttribute('aria-label',`Pop ${bubble.token||'plain'} bubble`);
-    const content=state.bubbleMode==='plain'?face(0,8):state.bubbleMode==='shapes'?`<g transform="scale(${bubble.r/95})">${primitive(bubble.token,'none','#29463e')}</g>`:`<text text-anchor="middle" dominant-baseline="central" font-family="inherit" font-size="${bubble.r*(bubble.token.length===2?.9:1.1)}" font-weight="900" fill="#29463e">${bubble.token}</text>`;
-    element.innerHTML=`<circle r="${bubble.r}" fill="${bubble.color}" stroke="#fffdf3" stroke-width="5"/><circle r="${bubble.r-11}" fill="none" stroke="white" stroke-opacity=".35" stroke-width="3"/><path d="M${-bubble.r*.56} ${-bubble.r*.38}Q${-bubble.r*.45} ${-bubble.r*.72} ${-bubble.r*.1} ${-bubble.r*.74}" fill="none" stroke="white" stroke-width="7" stroke-linecap="round" opacity=".8"/>${content}`;
+    drawBubble(bubble);
     $('bubble-layer').appendChild(element);positionBubble(bubble);
+  }
+  function drawBubble(bubble){
+    const content=state.bubbleMode==='plain'?`<g transform="scale(${bubble.r/68})">${face(0,8)}</g>`:state.bubbleMode==='shapes'?`<g transform="scale(${bubble.r/95})">${primitive(bubble.token,'none','#29463e')}</g>`:`<text text-anchor="middle" dominant-baseline="central" font-family="inherit" font-size="${bubble.r*(bubble.token.length===2?.9:1.1)}" font-weight="900" fill="#29463e">${bubble.token}</text>`;
+    bubble.element.innerHTML=`<circle r="${bubble.r}" fill="${bubble.color}" stroke="#fffdf3" stroke-width="${bubble.r*.07}"/><circle r="${bubble.r*.83}" fill="none" stroke="white" stroke-opacity=".35" stroke-width="${bubble.r*.04}"/><path d="M${-bubble.r*.56} ${-bubble.r*.38}Q${-bubble.r*.45} ${-bubble.r*.72} ${-bubble.r*.1} ${-bubble.r*.74}" fill="none" stroke="white" stroke-width="${bubble.r*.1}" stroke-linecap="round" opacity=".8"/>${content}`;
   }
   function renderBubbles(){
     state.bubbleHits=new Map();state.bubblePops=0;state.bubbleRecent=[];state.bubbleEffects=[];
@@ -224,7 +242,7 @@
     fitBubbleField();
     for(const bubble of state.bubbles){
       if(!bubble.element){bubble.wait-=elapsed;if(bubble.wait<=0)spawnBubble(bubble);continue;}
-      bubble.y-=elapsed*[0,25,34,44][state.level];
+      bubble.y-=elapsed*bubbleSpeeds[selectedBubbleSpeed()];
       if(bubble.y < -bubble.r){bubble.element.remove();bubble.element=null;spawnBubble(bubble);}
       positionBubble(bubble);
     }
@@ -336,7 +354,7 @@
     cursor.setAttribute('transform',`translate(${point.x} ${point.y}) scale(${{small:.6,medium:1,large:1.4}[state.brushSize]})`);
   }
   function localPoint(event){const matrix=scene.getScreenCTM();if(!matrix)return null;return new DOMPoint(event.clientX,event.clientY).matrixTransform(matrix.inverse());}
-  function hitBubble(point){const bubble=state.bubbles.find(b=>b.element&&Math.hypot(point.x-b.x,point.y-b.y)<b.r+8);if(bubble)popBubble(bubble);}
+  function hitBubble(point,id){const candidates=state.bubbles.filter(b=>b.element&&Math.hypot(point.x-b.x,point.y-b.y)<b.r+8);const bubble=candidates.find(b=>String(b.id)===id)||candidates.toSorted((a,b)=>Math.hypot(point.x-a.x,point.y-a.y)-Math.hypot(point.x-b.x,point.y-b.y))[0];if(bubble)popBubble(bubble);}
   function pointerDown(event){
     if(state.pointer||event.button>0||!state.activity)return;
     const point=localPoint(event);if(!point)return;
@@ -350,7 +368,7 @@
       state.pointer={id:event.pointerId,kind:'drag',shape,dx:point.x-shape.x,dy:point.y-shape.y,x:shape.x,y:shape.y};
       item.classList.add('selected');
     }else if(state.activity==='bubbles'){
-      state.pointer={id:event.pointerId,kind:'bubble'};hitBubble(point);
+      state.pointer={id:event.pointerId,kind:'bubble'};hitBubble(point,event.target.closest('[data-bubble]')?.dataset.bubble);
     }else if(state.activity==='slide'){
       const handle=event.target.closest('[data-slider-handle]');if(!handle)return;
       const slider=state.sliders.find(s=>s.id===Number(handle.dataset.sliderHandle));state.pointer={id:event.pointerId,kind:'slide',slider};slideTo(slider,point.x);
@@ -409,6 +427,8 @@
   document.querySelectorAll('[data-activity]').forEach(button=>button.addEventListener('click',()=>{tone(500);startActivity(button.dataset.activity);}));
   document.querySelectorAll('[data-level]').forEach(button=>button.addEventListener('click',()=>setLevel(Number(button.dataset.level))));
   document.querySelectorAll('[data-bubble-mode]').forEach(button=>button.addEventListener('click',()=>{state.bubbleMode=button.dataset.bubbleMode;resetRound();}));
+  document.querySelectorAll('[data-bubble-speed]').forEach(button=>button.addEventListener('click',()=>{state.bubbleSpeed=button.dataset.bubbleSpeed;updateBubbleSettings();save();}));
+  document.querySelectorAll('[data-bubble-size]').forEach(button=>button.addEventListener('click',()=>{state.bubbleSize=button.dataset.bubbleSize;updateBubbleSettings();fitBubbleField();save();}));
   $('paint-mode').addEventListener('click',()=>{state.paintMode=true;resetRound();});$('clean-mode').addEventListener('click',()=>{state.paintMode=false;resetRound();});
   document.querySelectorAll('[data-paint]').forEach(button=>button.addEventListener('click',()=>{cancelGesture();state.erase=false;state.paintColor=button.dataset.paint;updateArtTools();tone(620);}));
   document.querySelectorAll('[data-brush-size]').forEach(button=>button.addEventListener('click',()=>{cancelGesture();state.brushSize=button.dataset.brushSize;updateArtTools();}));
