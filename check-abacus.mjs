@@ -31,19 +31,23 @@ async function countIs(page,row,n){
   await expect(page.locator(`[data-color-label="${row}"]`)).toHaveText(`${n} ${words[n]} ${colors[row]}`);await expect(page.locator(`[data-color-label="${row}"]`)).toBeVisible();assert.equal(await page.locator('#scene').evaluate((svg,index)=>getComputedStyle(svg.querySelector(`[data-color-label="${index}"]`)).opacity,row),'1','The changing numeral and word must stay readable immediately');
   await expect(page.locator(`[data-bead-row="${row}"][data-moved="true"]`)).toHaveCount(n);await expect(page.locator(`[data-color-region="${row}"]`)).toHaveAttribute('fill',n?fills[row]:'#000');
 }
+async function zeroCounts(page){
+  await expect(page.locator('[data-color-label]:visible')).toHaveCount(10);
+  for(let row=0;row<10;row++)await countIs(page,row,0);
+}
 try{
   const context=await browser.newContext({viewport:{width:1024,height:768},hasTouch:true,serviceWorkers:'block'}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(base);await page.getByRole('button',{name:'Abacus colors',exact:true}).click();
   await expect(page.locator('[data-bead-row]')).toHaveCount(100);await expect(page.locator('[data-bead-row][aria-disabled="true"]')).toHaveCount(0);checks++;
   for(const region of await page.locator('[data-color-region]').all()){await expect(region).toHaveAttribute('fill','#000');await expect(region).toHaveAttribute('stroke','#90969e');}
-  await expect(page.locator('[data-color-label]:visible')).toHaveCount(0);await expect(page.locator('#rainbow-picture text,#circle-picture text')).toHaveCount(0);checks++;
+  await zeroCounts(page);await expect(page.locator('#rainbow-picture text,#circle-picture text')).toHaveCount(0);checks++;
   await page.evaluate(()=>{window.abacusNodes=[...document.querySelectorAll('[data-bead-row]')];});
   await gesture(page,4,5);await countIs(page,4,5);await expect(page.locator('#result-score')).toContainText('5 Five');checks++;
   await gesture(page,0,5);await countIs(page,0,5);await gesture(page,0,4);await countIs(page,0,6);await gesture(page,0,4,1,false,'left');await countIs(page,0,5);checks++;
   await gesture(page,0,0);await countIs(page,0,10);await gesture(page,0,9,1,false,'left');await countIs(page,0,0);checks++;
   assert(await page.evaluate(()=>window.abacusNodes.every((node,i)=>node===document.querySelectorAll('[data-bead-row]')[i])),'Dragging updates the existing beads instead of replacing their DOM nodes');checks++;
   await page.getByRole('button',{name:'Again',exact:true}).click();
-  await gesture(page,0,5,.2);await expect(page.locator('[data-bead-row][data-moved="true"]')).toHaveCount(0);await expect(page.locator('[data-color-label]:visible')).toHaveCount(0);
-  await gesture(page,0,5,.9,true);await expect(page.locator('[data-bead-row][data-moved="true"]')).toHaveCount(0);await expect(page.locator('[data-color-label]:visible')).toHaveCount(0);checks++;
+  await gesture(page,0,5,.2);await zeroCounts(page);
+  await gesture(page,0,5,.9,true);await zeroCounts(page);checks++;
   // Check real pointer movement before release: neighbouring beads move with the selected group.
   const bead=page.locator('[data-bead-row="0"][data-bead-index="5"]'),from=await bead.boundingBox(),end=await page.locator('[data-abacus-destination="0"]').boundingBox();
   const transforms=await page.locator('[data-bead-row="0"]').evaluateAll(els=>els.map(el=>el.getAttribute('transform')));
@@ -68,10 +72,11 @@ try{
   await expect(page.locator('[data-circle-region="outer"]')).toHaveAttribute('fill',fills[7]);await expect(page.locator('[data-circle-region="middle"]')).toHaveAttribute('fill',fills[9]);await expect(page.locator('[data-circle-region="inner"]')).toHaveAttribute('fill',fills[8]);await expect(page.locator('#art-reward')).toBeVisible();await page.screenshot({path:resolve(out,'free-counting-ten.png')});checks++;
   await gesture(page,2,9,1,false,'left');await countIs(page,2,0);await expect(page.locator('#art-reward')).toBeHidden();checks++;
   for(const [name,width,height,row] of [['phone',844,390,9],['small-phone',667,375,4],['portrait',390,844,7],['tablet',1024,768,3],['wide',1600,720,8]]){
-    await page.setViewportSize({width,height});await page.getByRole('button',{name:'Again',exact:true}).click();await gesture(page,row,5);await countIs(page,row,5);
+    await page.setViewportSize({width,height});await page.getByRole('button',{name:'Again',exact:true}).click();await zeroCounts(page);await gesture(page,row,5);await countIs(page,row,5);
+    for(let other=0;other<10;other++)if(other!==row)await countIs(page,other,0);
     for(const selector of ['#abacus-frame','#rainbow-picture','#circle-picture',`[data-color-label="${row}"]`]){const box=await page.locator(selector).boundingBox();assert(box&&box.x>=0&&box.y>=0&&box.x+box.width<=width+1&&box.y+box.height<=height+1,'Abacus, drawings and count labels fit the screen');}
-    await page.screenshot({path:resolve(out,`${name}-free-counting.png`)});await page.getByRole('button',{name:'Fullscreen',exact:true}).click();await countIs(page,row,5);await gesture(page,row,0);await countIs(page,row,10);await gesture(page,row,9,1,false,'left');await countIs(page,row,0);await page.screenshot({path:resolve(out,`${name}-free-fullscreen.png`)});await page.getByRole('button',{name:'Exit fullscreen',exact:true}).click();await countIs(page,row,0);checks++;
+    await page.screenshot({path:resolve(out,`${name}-free-counting.png`)});await page.getByRole('button',{name:'Fullscreen',exact:true}).click();await countIs(page,row,5);await gesture(page,row,0);await countIs(page,row,10);await gesture(page,row,9,1,false,'left');await zeroCounts(page);await page.screenshot({path:resolve(out,`${name}-free-fullscreen.png`)});await page.getByRole('button',{name:'Exit fullscreen',exact:true}).click();await zeroCounts(page);checks++;
   }
-  await page.getByRole('button',{name:'Again',exact:true}).click();await expect(page.locator('[data-color-label]:visible')).toHaveCount(0);await expect(page.locator('[data-bead-row][data-moved="true"]')).toHaveCount(0);checks++;
+  await page.getByRole('button',{name:'Again',exact:true}).click();await zeroCounts(page);checks++;
   assert.deepEqual(errors,[]);await context.close();console.log(`PASS: ${checks} free abacus counting, grouping and response checks (${engine})`);
 }finally{await browser.close();await new Promise(done=>server.close(done));}

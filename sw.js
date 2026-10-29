@@ -1,4 +1,4 @@
-const CACHE='sana-little-hands-prototype-v11';
+const CACHE='sana-little-hands-prototype-v12';
 const ASSETS=['./index.html','./app.js','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS.map(path=>new Request(path,{cache:'reload'})))));
