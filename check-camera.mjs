@@ -16,11 +16,11 @@ const browser=await ({chromium,webkit})[engine].launch({headless:true,...(engine
 const out=resolve(root,'artifacts','camera',engine);await mkdir(out,{recursive:true});let checks=0;
 const base=process.env.CAMERA_URL||`http://127.0.0.1:${server.address().port}/docs/beta/play.html`;
 async function safeFrame(page,insets){
-  const size=page.viewportSize(),phone=Math.min(size.width,size.height)<=600,rotated=size.width<size.height;
-  const fallback=phone?32:0;
-  const top=Math.max(insets.top,rotated?fallback:0),bottom=Math.max(insets.bottom,rotated?fallback:0),left=Math.max(insets.left,rotated?0:fallback),right=Math.max(insets.right,rotated?0:fallback);
+  const size=page.viewportSize(),rotated=size.width<size.height;
+  const clearance=64;
+  const top=Math.max(insets.top,rotated?clearance:0),bottom=insets.bottom,left=Math.max(insets.left,rotated?0:clearance),right=insets.right;
   const frame=await page.locator('#app').boundingBox();
-  assert(frame.x>=left-1&&frame.y>=top-1&&frame.x+frame.width<=size.width-right+1&&frame.y+frame.height<=size.height-bottom+1,'The whole frame must stay clear of camera and system safe areas');
+  assert(frame.x>=left-1&&frame.y>=top-1&&frame.x+frame.width<=size.width-right+1&&frame.y+frame.height<=size.height-bottom+1,'The play border must keep a fixed left gutter on every device and honor larger system insets');
   assert(frame.width>=size.width-left-right-5&&frame.height>=size.height-top-bottom-5,'Use the full remaining safe area');
 }
 async function centeredReward(page){
@@ -32,7 +32,7 @@ async function centeredReward(page){
 try{
   for(const [name,width,height] of [['phone',844,390],['small-phone',667,375],['portrait',390,844],['tablet',1024,768],['wide',1600,720]]){
     const context=await browser.newContext({viewport:{width,height},hasTouch:true,serviceWorkers:'block'}),page=await context.newPage();await page.goto(base);
-    for(const insets of [{top:0,right:0,bottom:0,left:0},{top:0,right:0,bottom:0,left:62},{top:54,right:66,bottom:20,left:0}]){
+    for(const insets of [{top:0,right:0,bottom:0,left:0},{top:0,right:0,bottom:0,left:96},{top:54,right:66,bottom:20,left:0}]){
       // Supply device inset values at the CSS boundary; run the real frame-fitting and input code.
       await page.addStyleTag({content:`#viewport{--device-safe-top:${insets.top}px;--device-safe-right:${insets.right}px;--device-safe-bottom:${insets.bottom}px;--device-safe-left:${insets.left}px}`});
       await page.evaluate(()=>window.dispatchEvent(new Event('resize')));
