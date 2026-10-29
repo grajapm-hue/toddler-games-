@@ -51,6 +51,7 @@ try{
   await expect(page.getByRole('button',{name:'Share app',exact:true})).toBeVisible({timeout:2000});
   await page.evaluate(()=>{
     Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.sharedData=data;}});
+    Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>true});
     Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.copiedLink=text;}}});
   });
   await page.getByRole('button',{name:'Share app',exact:true}).click();
@@ -69,6 +70,14 @@ try{
   await page.getByRole('button',{name:'More apps',exact:true}).click();
   await expect(page.locator('#share-result')).toContainText('cancelled');checks++;
   await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw new DOMException('Denied','NotAllowedError');}}}));
+  await page.evaluate(()=>{document.execCommand=command=>{window.compatCopy={command,value:document.querySelector('.share-link input').value};return true;};});
+  await page.getByRole('button',{name:'Copy link',exact:true}).click();
+  await expect(page.locator('#share-result')).toHaveText('Link copied. Paste it into your group.');
+  assert.equal((await page.evaluate(()=>window.compatCopy)).value,canonical);checks++;
+  await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:undefined}));
+  await page.getByRole('button',{name:'Copy link',exact:true}).click();
+  await expect(page.locator('#share-result')).toHaveText('Link copied. Paste it into your group.');checks++;
+  await page.evaluate(()=>{document.execCommand=()=>false;});
   await page.getByRole('button',{name:'Copy link',exact:true}).click();
   await expect(page.locator('#share-result')).toContainText('Select and copy');
   await expect(page.getByRole('textbox',{name:'Beta test link'})).toHaveValue(canonical);
@@ -77,6 +86,22 @@ try{
   assert.equal(await page.getByRole('link',{name:'WhatsApp',exact:true}).evaluate(el=>document.activeElement===el),true);
   await page.keyboard.press('Shift+Tab');assert.equal(await page.getByRole('button',{name:'Got it'}).evaluate(el=>document.activeElement===el),true);
   await page.keyboard.press('Escape');assert.equal(await page.getByRole('button',{name:'Share app',exact:true}).evaluate(el=>document.activeElement===el),true);checks++;
+  await page.evaluate(()=>{
+    Object.defineProperty(navigator,'canShare',{configurable:true,value:data=>Object.keys(data).length===1&&!!data.url});
+    Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.urlOnlyShare=data;}});
+  });
+  await page.getByRole('button',{name:'Share app',exact:true}).click();
+  await page.getByRole('button',{name:'More apps',exact:true}).click();
+  assert.deepEqual(await page.evaluate(()=>window.urlOnlyShare),{url:canonical});checks++;
+  await page.evaluate(()=>Object.defineProperty(navigator,'share',{configurable:true,value:async()=>{throw new DOMException('Blocked','NotAllowedError');}}));
+  await page.getByRole('button',{name:'More apps',exact:true}).click();
+  await expect(page.locator('#share-result')).toContainText('Chrome or Safari');checks++;
+  await page.getByRole('button',{name:'Got it'}).click();
+  await page.evaluate(()=>Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>false}));
+  await page.getByRole('button',{name:'Share app',exact:true}).click();
+  await expect(page.getByRole('button',{name:'More apps',exact:true})).toHaveCount(0);
+  await expect(page.locator('#share-result')).toContainText('unavailable');
+  await page.getByRole('button',{name:'Got it'}).click();checks++;
   await page.evaluate(()=>Object.defineProperty(navigator,'share',{configurable:true,value:undefined}));
   for(const [label,width,height] of [['phone',844,390],['tablet',1024,768],['portrait',390,844],['small-phone',667,375]]){
     await page.setViewportSize({width,height});await page.getByRole('button',{name:'Share app',exact:true}).click();
