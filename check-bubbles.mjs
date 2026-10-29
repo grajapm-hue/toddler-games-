@@ -78,13 +78,6 @@ try{
     assert((await page.locator('#scene').boundingBox()).width>80);
     await page.screenshot({path:resolve(output,`letters-${label}.png`)});checks++;
   }
-  if(await page.locator('#share-app').count()){
-    await page.getByRole('button',{name:'Share app',exact:true}).click();
-    const before=await page.locator('[data-bubble]').first().getAttribute('transform');
-    await page.clock.runFor(2000);
-    assert.equal(await page.locator('[data-bubble]').first().getAttribute('transform'),before,'Share dialog must pause bubble motion');
-    await page.getByRole('button',{name:'Got it',exact:true}).click();checks++;
-  }
   await page.getByRole('button',{name:'Home',exact:true}).click();await page.clock.runFor(2000);
   await expect(page.locator('#bubble-tracker')).toBeHidden();
   await page.getByRole('button',{name:'Drag shapes',exact:true}).click();

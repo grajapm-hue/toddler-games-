@@ -1,14 +1,20 @@
-# SaNa Little Hands Beta v0.10
+# SaNa Little Hands Beta v0.11
 
-The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.10 compacts the home introduction, removes the decorative menu picture, gives all games black play backgrounds and expands fullscreen to the playable field with just floating sound and exit controls; verify the Pages build commit and run the live checks after publishing each update.
+The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.11 enlarges the marked welcome text and SaNa, keeps game results visible in fullscreen, adds Back in every game, confines sharing to the opening screen, and adds a Kids Puzzle Library About sheet; verify the Pages build commit and run the live checks after publishing each update.
+
+## Welcome and About
+
+The opening-screen family label, small SaNa/monkey, title’s SaNa label and age/offline notes use larger bold type. About uses scrollable cream cards with current activities, parent guidance, G.RajaPathamuthu / Kids Puzzle Library, JNT and AI-Assistances credits, the supplied motto, current version and the existing feedback address. It does not claim a separate Feedback tab. Its close button stays visible while the contents scroll.
+
+`node check-parents.mjs` checks five screen sizes, About scrolling/focus/contact, welcome-only sharing and Back in all four games. `PARENTS_URL` selects a hosted welcome page.
 
 ## Immersive play
 
 The home introduction uses one row at the same size as the hint above it. The decorative picture and eyebrow are removed, leaving the four game cards the remaining space. Every animated game field has a black background; painting retains its light paper.
 
-Fullscreen hides all app chrome, instructions, game settings and the bubble collection strip. The game fills the frame with only two floating controls: sound and Exit fullscreen. Gameplay continues and exiting restores the same round, collected colors, painting and settings. The menu can also enter fullscreen before a game is chosen. Supported browsers use native fullscreen and attempt landscape lock; otherwise in-page immersive play remains available. The exit button, Escape and native browser exit restore the regular layout.
+Fullscreen hides the main header, instructions and game settings. Colored bubble collections and other game progress remain at the top of the black play field, clear of three floating controls: Back, sound and Exit fullscreen. Back leaves fullscreen and returns to the activity menu. Gameplay continues and exiting restores the same round, collected colors, painting and settings. The menu can also enter fullscreen before a game is chosen. Supported browsers use native fullscreen and attempt landscape lock; otherwise in-page immersive play remains available. The exit button, Escape and native browser exit restore the regular layout.
 
-`node check-immersive.mjs` checks five viewport sizes in Chrome and WebKit, real native entry/exit, sound, full-field geometry, touch popping, matching, revealing, painting, preserved progress and fallback when native fullscreen is denied or unavailable. `IMMERSIVE_URL` selects a hosted play page. Beta cache v10 updates existing installations online.
+`node check-immersive.mjs` checks five viewport sizes in Chrome and WebKit, real native entry/exit, sound, full-field geometry, touch popping, matching, revealing, painting, preserved progress and fallback when native fullscreen is denied or unavailable. `IMMERSIVE_URL` selects a hosted play page. Beta cache v11 updates existing installations online.
 
 ## Screen layout
 
@@ -18,7 +24,7 @@ SaNa's hints, Show me and Again are above both the home menu and games. Bubble s
 
 ## Rising bubbles
 
-Choose Plain for free popping with a counter, or collect all numbers 1–20, uppercase letters A–Z or six shapes. Bubbles rise from randomly varied positions in a fixed pool of four, six or nine according to level. Touch, mouse or keyboard pops a bubble into colored droplets, removes it, then brings a new bubble from below. The matching top-list item takes that exact bubble color; duplicates cannot complete a different item. Uncollected content is prioritized and missed content returns. Completing a set triggers SaNa's congratulations while bubbles continue rising. Again resets the current collection. Home and hidden pages stop animation; the play-page Share dialog pauses it.
+Choose Plain for free popping with a counter, or collect all numbers 1–20, uppercase letters A–Z or six shapes. Bubbles rise from randomly varied positions in a fixed pool of four, six or nine according to level. Touch, mouse or keyboard pops a bubble into colored droplets, removes it, then brings a new bubble from below. The matching top-list item takes that exact bubble color; duplicates cannot complete a different item. Uncollected content is prioritized and missed content returns. Completing a set triggers SaNa's congratulations while bubbles continue rising. Again resets the current collection. Home, Back and hidden pages stop animation.
 
 Above the play area, Speed offers Slow, Medium and Fast; Size offers Small, Medium and Large. Both apply immediately to the existing bubbles without clearing collected items or changing their colors. Explicit choices survive mode changes, Again, level changes and reload, using optional browser-local settings. Unchosen settings follow the level default. The size scales the contents and touch hit area together and fits short phone play fields. Overlapping bubbles use the actual tapped bubble for exact matching.
 
@@ -34,7 +40,7 @@ Small, Medium and Large select the actual brush size without clearing the pictur
 
 ## Share with a testing group
 
-On the welcome screen choose **Share app**, or use **Share** at the top right of the activity menu or any game. Opening and closing Share keeps the current activity and round. **WhatsApp** opens a draft invitation containing the Beta URL and a request to try installation and the activities; choose a group/contact and send it yourself. **Copy link** copies the direct Beta URL. If Async Clipboard is unavailable or denied, it tries a compatibility selection-copy operation; only success reports Link copied. If both methods fail, the link remains selected with manual-copy instructions.
+On the welcome screen choose **Share app**. Share controls are confined to that opening screen for parents, teachers and supervisors; they are absent from the activity menu and games. **WhatsApp** opens a draft invitation containing the Beta URL and a request to try installation and the activities; choose a group/contact and send it yourself. **Copy link** copies the direct Beta URL. If Async Clipboard is unavailable or denied, it tries a compatibility selection-copy operation; only success reports Link copied. If both methods fail, the link remains selected with manual-copy instructions.
 
 **More apps** checks `canShare` where supported and is hidden when the browser reports that the payload cannot be shared. A plain URL is used when the browser cannot share the full invitation. A browser that rejects native sharing gets explicit guidance to open the link in Chrome or Safari; the app cannot override the browser/OS permission or provide native share targets that are not installed. User cancellation and missing native share targets are handled without claiming a successful send.
 
@@ -68,7 +74,7 @@ Clearing browser/site data can remove the offline cache. Reopen online once to p
 - Chromium: 31 passing Beta checks, including zero manifest/installability errors in a fresh normal Chrome profile, all icons available, native-prompt event wiring, manual install guidance, welcome-to-game navigation, matching, level persistence, and all activities available offline.
 - Playwright WebKit: 30 passing checks, including offline welcome/game navigation with the actual local origin server stopped.
 - `node check-share-browser.mjs`: four checks using the real browser clipboard APIs in Chrome and WebKit, with normal and denied-policy documents. Chrome's denied-policy case uses the actual selection-copy fallback and confirms the public Beta link in the system clipboard. Native share choosers are not opened or messages sent by these tests.
-- Sharing: WhatsApp draft URL/message, copied canonical link, native share data and cancellation, clipboard-denied manual selection, dialog keyboard focus/return, phone/tablet/rotated-portrait layouts, activity-menu access, preservation of a partly played round, and availability of Share while the app is offline. Sending to others requires network access in the chosen sharing app.
+- Sharing: WhatsApp draft URL/message, copied canonical link, native share data and cancellation, clipboard-denied manual selection, dialog keyboard focus/return, phone/tablet/rotated-portrait layouts, sharing absent from the play page, Back navigation, and availability of welcome-screen Share while the app is offline. Sending to others requires network access in the chosen sharing app.
 - The native install event tests simulate the app's event contract without installing an application on the development machine.
 - WebKit network-offline emulation has a documented service-worker navigation limitation; the local test uses an origin shutdown instead. Live WebKit checks omit the emulated offline portion and rely on the local outage proof.
 
