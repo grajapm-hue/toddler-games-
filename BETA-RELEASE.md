@@ -1,10 +1,12 @@
-# SaNa Little Hands Beta v0.25
+# SaNa Little Hands Beta v0.26
 
-The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.25 restyles the welcome from the supplied MathMatrix splash reference, with SaNa artwork and the existing portrait/play flow; verify the Pages build commit and run the live checks after publishing each update.
+The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.26 aligns the welcome with the exact linked MathMatrix opening source, including its rolling die and centred About composition; verify the Pages build commit and run the live checks after publishing each update.
 
 ## Welcome reference styling
 
-The welcome follows the supplied Kids Puzzle splash reference: pink/purple/cyan background, a centred mascot and one-line SaNa Little Hands title on phones, green supporting text, a dark three-point health card, then large yellow Play and cyan Install buttons. About this project and Share follow below, with the age/offline note last. Version/Update remain at the top. The mascot is an inline vector based on the existing SaNa face, so its appearance does not change with the device emoji font. Wide tablet/computer layouts keep the side-by-side composition.
+The welcome follows the supplied Kids Puzzle splash reference: pink/purple/cyan background, a centred mascot and one-line SaNa Little Hands title on phones, green supporting text, a dark three-point health card, then large yellow Play and cyan Install buttons. About this project is centred below Play/Install, with the age/offline note last. Version, Update and an accessible Share icon remain together at the top. The mascot is an inline vector based on the existing SaNa face, so its appearance does not change with the device emoji font. Wide tablet/computer layouts keep the side-by-side composition.
+
+The exact reference was read from `grajapm-hue/web-assets-` main commit `953eadc38059adb037a9dfe7d445783fb94eae0b`, `mathmatrix/beta-app/index.html`. Its splash uses an orbiting, rolling die and a centred About button. SaNa now follows those details with inline SVG/CSS: the die cycles through one to six pips, remains inside the mascot area, and stops at a single-pip face with reduced motion. No runtime library or new asset download is needed. MathMatrix source is a read-only reference.
 
 The health card reminds families to use low brightness/Night Mode after dark, take short breaks and play with a parent or guardian. It precedes Play/Install in both visual and document order. The portrait frame and installed-phone orientation handling from v0.24 remain intact. Short windows can scroll their welcome, and the SVG is constrained to its layout track so it cannot overlap the title. Game cards and game rooms are unchanged. About, Share, Install and Update retain their existing behavior.
 
@@ -48,7 +50,7 @@ Rainbow order and circle regions are unchanged. A positive row count fills its r
 
 Before version 0.14 the app disabled completed and future rows, rebuilt all bead nodes after a slide, and trusted the last move event rather than the release position. The repair keeps bead nodes stable, caches gesture geometry and element references, updates only the moving row and relevant labels, picks the nearest bead, and handles a final position delivered on pointerup. It does not rebuild the scene for ordinary counting. Count text stays fully visible immediately, using a small pulse instead of fading out after release.
 
-`node check-abacus.mjs` moves every bead forward and backward in arbitrary row order, verifies 0–10 numerals/words and colour changes, groups moving before release, stable DOM nodes, final-position-only input, short/cancelled slides, keyboard, reward/reset, resize and five screen sizes in normal/fullscreen. `ABACUS_URL` selects a hosted play page. Beta cache v25 updates existing installations online.
+`node check-abacus.mjs` moves every bead forward and backward in arbitrary row order, verifies 0–10 numerals/words and colour changes, groups moving before release, stable DOM nodes, final-position-only input, short/cancelled slides, keyboard, reward/reset, resize and five screen sizes in normal/fullscreen. `ABACUS_URL` selects a hosted play page. Beta cache v26 updates existing installations online.
 
 ## Welcome and About
 
@@ -70,7 +72,7 @@ The home introduction uses one row at the same size as the hint above it. The de
 
 Fullscreen hides the main header, instructions and outer speed/size or art settings. Results and active sub-level choices remain inside the top of the black board. The bottom navigation row keeps Back, Front, Games, sound and Exit fullscreen clear of gameplay. Games leaves fullscreen and returns to the activity menu; Back and Front continue through the game steps. Gameplay continues and exiting restores the same round, collected colors, painting and settings. The menu can also enter fullscreen before a game is chosen. Expansion stays within the page on all browsers without native fullscreen requests. Installed-phone page-entry orientation preferences are separate from expansion. The exit button, Escape and Games restore the regular layout. Browser chrome is controlled by the browser and may remain visible.
 
-`node check-immersive.mjs` checks five viewport sizes in Chrome and WebKit, in-page entry/exit, sound, full-field geometry, touch popping, matching, revealing, painting, preserved progress and operation when native fullscreen is denied or unavailable. `IMMERSIVE_URL` selects a hosted play page. Beta cache v25 updates existing installations online.
+`node check-immersive.mjs` checks five viewport sizes in Chrome and WebKit, in-page entry/exit, sound, full-field geometry, touch popping, matching, revealing, painting, preserved progress and operation when native fullscreen is denied or unavailable. `IMMERSIVE_URL` selects a hosted play page. Beta cache v26 updates existing installations online.
 
 ## Screen layout
 
