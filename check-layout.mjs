@@ -10,7 +10,7 @@ const server=createServer(async(req,res)=>{try{const path=resolve(root,'.'+new U
 await new Promise(done=>server.listen(0,'127.0.0.1',done));
 const browser=await ({chromium,webkit})[engine].launch({headless:true,...(engine==='chromium'?{executablePath:process.env.MM_CHROME||'C:/Program Files/Google/Chrome/Application/chrome.exe'}:{})});
 const out=resolve(root,'artifacts','layout',engine);await mkdir(out,{recursive:true});let checks=0;
-const metrics={};let previous={};try{previous=JSON.parse(await readFile(resolve(out,'before.json'),'utf8'));}catch{/* Fresh checkouts have no local comparison. */}
+const metrics={};
 try{
   for(const [label,width,height] of [['phone',844,390],['small-phone',667,375],['portrait',390,844],['tablet',1024,768],['wide',1600,720]]){
     const context=await browser.newContext({viewport:{width,height},hasTouch:true,serviceWorkers:'block',reducedMotion:'reduce'}),page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
@@ -30,7 +30,7 @@ try{
       assert(measure.boardBottom>=measure.height-12,'The game table must extend to the bottom of the available frame');
       assert(measure.hintSize>=14&&measure.settingSize>=13&&measure.hintWeight>=800&&measure.settingWeight>=800,'Instructions and settings must have larger bold type');
       assert(measure.hintColor.match(/\d+/g).slice(0,3).every(n=>Number(n)<110),'Instruction text must remain dark');
-      if(previous[label])assert(measure.fieldHeight>=previous[label].fieldHeight+8,`${label} must gain playable height`);
+      assert(measure.fieldHeight>=80,`${label} must retain playable height with the in-board controls`);
       for(const control of await page.locator('button:visible').all()){
         const rect=await control.boundingBox();assert(rect.x>=-1&&rect.y>=-1&&rect.x+rect.width<=width+1&&rect.y+rect.height<=height+1,'All controls must fit the screen');
       }

@@ -1,6 +1,6 @@
-# SaNa Little Hands Beta v0.11
+# SaNa Little Hands Beta v0.12
 
-The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.11 enlarges the marked welcome text and SaNa, keeps game results visible in fullscreen, adds Back in every game, confines sharing to the opening screen, and adds a Kids Puzzle Library About sheet; verify the Pages build commit and run the live checks after publishing each update.
+The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.12 moves game navigation and sub-level choices inside the black play rectangle and makes Back/Front navigate both sub-levels and games; verify the Pages build commit and run the live checks after publishing each update.
 
 ## Welcome and About
 
@@ -8,13 +8,21 @@ The opening-screen family label, small SaNa/monkey, title’s SaNa label and age
 
 `node check-parents.mjs` checks five screen sizes, About scrolling/focus/contact, welcome-only sharing and Back in all four games. `PARENTS_URL` selects a hosted welcome page.
 
+## Board navigation and results
+
+Every game has a rectangular result box at the top left and its active sub-level choices at the top right of the black board. Explore/Play/Challenge move into that box of choices during play and return to the header on the menu. Bubble contents and brush modes are shown only in their relevant game, including fullscreen. Bubble collections remain below the top row.
+
+Back is at the board’s bottom left, Front at its bottom right. They visit the levels and available modes within each game, continuing to the neighboring game at the ends: three Drag steps, twelve Bubble steps, three Slide steps and six Brush/Paint steps. Passing either end of the full sequence returns to the menu. Games returns there directly. Sound and fullscreen controls sit alongside Games. The toolbar, animation and navigation occupy separate rows to prevent overlap.
+
+`node check-board.mjs` checks all four games at five sizes in normal and fullscreen modes, control bounds, non-overlap, appropriate modes, room to play, and both directions through all 24 steps. `BOARD_URL` selects a hosted play page.
+
 ## Immersive play
 
 The home introduction uses one row at the same size as the hint above it. The decorative picture and eyebrow are removed, leaving the four game cards the remaining space. Every animated game field has a black background; painting retains its light paper.
 
-Fullscreen hides the main header, instructions and game settings. Colored bubble collections and other game progress remain at the top of the black play field, clear of three floating controls: Back, sound and Exit fullscreen. Back leaves fullscreen and returns to the activity menu. Gameplay continues and exiting restores the same round, collected colors, painting and settings. The menu can also enter fullscreen before a game is chosen. Supported browsers use native fullscreen and attempt landscape lock; otherwise in-page immersive play remains available. The exit button, Escape and native browser exit restore the regular layout.
+Fullscreen hides the main header, instructions and outer speed/size or art settings. Results and active sub-level choices remain inside the top of the black board. The bottom navigation row keeps Back, Front, Games, sound and Exit fullscreen clear of gameplay. Games leaves fullscreen and returns to the activity menu; Back and Front continue through the game steps. Gameplay continues and exiting restores the same round, collected colors, painting and settings. The menu can also enter fullscreen before a game is chosen. Supported browsers use native fullscreen and attempt landscape lock; otherwise in-page immersive play remains available. The exit button, Escape and native browser exit restore the regular layout.
 
-`node check-immersive.mjs` checks five viewport sizes in Chrome and WebKit, real native entry/exit, sound, full-field geometry, touch popping, matching, revealing, painting, preserved progress and fallback when native fullscreen is denied or unavailable. `IMMERSIVE_URL` selects a hosted play page. Beta cache v11 updates existing installations online.
+`node check-immersive.mjs` checks five viewport sizes in Chrome and WebKit, real native entry/exit, sound, full-field geometry, touch popping, matching, revealing, painting, preserved progress and fallback when native fullscreen is denied or unavailable. `IMMERSIVE_URL` selects a hosted play page. Beta cache v12 updates existing installations online.
 
 ## Screen layout
 

@@ -45,7 +45,8 @@
     }catch{/* Unsupported audio never blocks play. */}
   }
   function progress(done,total){
-    $('game-results').hidden=!total||state.activity==='bubbles';
+    $('game-results').hidden=!state.activity;
+    $('result-score').hidden=state.activity==='bubbles';
     $('result-score').textContent=total?`${({drag:'Matched',slide:'Friends',brush:state.paintMode?'Painted':'Cleaned'})[state.activity]||'Done'} ${done} / ${total}`:'';
     $('progress').hidden=!total;
     $('progress').setAttribute('aria-label',`${done} of ${total} complete`);
@@ -136,13 +137,14 @@
     if(pointer?.kind==='drag')renderDrag();
     scene.querySelector('#brush-cursor')?.remove();
   }
-  function home(){stopBubbles();cancelGesture();clearEffects();state.activity=null;state.selected=null;$('game-back').hidden=true;app.dataset.view='home';$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
+  function home(){stopBubbles();cancelGesture();clearEffects();state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('play-levels'),$('sound'),$('fullscreen'));app.dataset.view='home';$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
   function levelControls(){document.querySelectorAll('[data-level]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.level)===state.level)));}
-  function setLevel(level){cancelGesture();if(state.level!==level)state.brushSize=['','large','medium','small'][level];state.level=level;levelControls();save();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');if(state.activity)resetRound();else hint(level===2?'Play level: a lovely place for ages 2–4. Choose a picture!':level===1?'Explore level: fewer, bigger things to try.':'Challenge level: a few more things to discover.');}
-  function startActivity(id){$('game-back').hidden=false;state.activity=id;state.paintMode=false;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
+  function setLevel(level,reset=true){cancelGesture();if(state.level!==level)state.brushSize=['','large','medium','small'][level];state.level=level;levelControls();save();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');if(reset&&state.activity)resetRound();else if(reset)hint(level===2?'Play level: a lovely place for ages 2–4. Choose a picture!':level===1?'Explore level: fewer, bigger things to try.':'Challenge level: a few more things to discover.');}
+  function startActivity(id,paintMode=false){$('play-options').prepend($('play-levels'));$('game-mid-controls').append($('sound'),$('fullscreen'));state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
   function resetRound(){
     stopBubbles();cancelGesture();clearEffects();state.done=false;state.selected=null;state.strokes=[];
-    $('bubble-modes').hidden=state.activity!=='bubbles';$('bubble-tracker').hidden=state.activity!=='bubbles';$('step-note').hidden=state.activity==='bubbles';
+    $('bubble-score').hidden=state.activity!=='bubbles';
+    $('bubble-modes').hidden=state.activity!=='bubbles';$('bubble-tracker').hidden=state.activity!=='bubbles';$('step-note').hidden=true;
     $('bubble-settings').hidden=state.activity!=='bubbles';updateBubbleSettings();
     scene.parentElement.classList.toggle('bubble-mat',state.activity==='bubbles');scene.setAttribute('viewBox','0 0 1000 440');
     $('brush-modes').hidden=state.activity!=='brush';$('paint-tools').hidden=state.activity!=='brush'||!state.paintMode;
@@ -165,6 +167,7 @@
       state.dirt=points.slice(0,[0,4,8,14][state.level]).map(([x,y],i)=>({id:i,x,y,r:state.level===3?22:29,health:state.level===1?1:state.level===2?2.5:4,max:state.level===1?1:state.level===2?2.5:4}));renderClean();
     }
     hint(state.activity==='brush'?(state.paintMode?`Pick a color and paint inside the ${artPicture().name}. SaNa will cheer you on!`:`Brush the muddy ${artPicture().name}. Give it a gentle wash.`):activities[state.activity].hint);
+    updateGameNavigation();
     if(state.activity==='bubbles')hint(state.bubbleMode==='plain'?'Tap the rising bubbles. Splash, pop! They keep coming.':'Pop a bubble to color its matching item above. Find them all!');
   }
   function renderDrag(){
@@ -199,7 +202,7 @@
     document.querySelectorAll('[data-bubble-size]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.bubbleSize===selectedBubbleSize())));
   }
   // Keep touch sizes useful across phone/tablet layouts and fit short play fields.
-  function bubbleRadius(){return Math.max(14,Math.min(132,bubbleDiameters[selectedBubbleSize()]*220/Math.max(1,scene.clientHeight)));}
+  function bubbleRadius(){return Math.max(14,Math.min(196,bubbleDiameters[selectedBubbleSize()]*220/Math.max(1,scene.clientHeight)));}
   function positionBubble(bubble){
     if(!bubble.element)return;
     bubble.x=Math.max(bubble.r+4,Math.min(state.bubbleWidth-bubble.r-4,bubble.x));
@@ -218,7 +221,7 @@
     bubble.id=++state.bubbleSerial;bubble.color=bubbleColors[Math.floor(Math.random()*bubbleColors.length)];bubble.r=bubbleRadius();
     const lane=state.bubbleWidth/state.bubbles.length;
     bubble.x=Math.max(bubble.r+4,Math.min(state.bubbleWidth-bubble.r-4,(bubble.slot+.5+(Math.random()-.5)*.3)*lane));
-    bubble.y=initial?135+(bubble.slot%3)*100+Math.random()*12:440+bubble.r+8;bubble.wait=0;
+    bubble.y=initial?Math.max(bubble.r+5,Math.min(435-bubble.r,135+(bubble.slot%3)*100+Math.random()*12)):440+bubble.r+8;bubble.wait=0;
     const element=document.createElementNS('http://www.w3.org/2000/svg','g');bubble.element=element;
     element.classList.add('bubble');element.dataset.bubble=String(bubble.id);element.dataset.token=bubble.token;element.dataset.color=bubble.color;
     element.setAttribute('role','button');element.setAttribute('aria-label',`Pop ${bubble.token||'plain'} bubble`);
@@ -450,10 +453,16 @@
     if(!active){try{screen.orientation?.unlock?.();}catch{/* Orientation may be managed by the browser. */}button.focus({preventScroll:true});}
     fitFrame();
   }
-  $('game-back').addEventListener('click',async()=>{
+  const gameSteps=Object.keys(activities).flatMap(activity=>[1,2,3].flatMap(level=>(activity==='bubbles'?['plain','numbers','letters','shapes']:activity==='brush'?['clean','paint']:['']).map(mode=>({activity,level,mode}))));
+  function currentStep(){return gameSteps.findIndex(step=>step.activity===state.activity&&step.level===state.level&&step.mode===(state.activity==='bubbles'?state.bubbleMode:state.activity==='brush'?(state.paintMode?'paint':'clean'):''));}
+  function stepLabel(step){return step?`${activities[step.activity].title} · ${['','Explore','Play','Challenge'][step.level]}${step.mode?' · '+(bubbleModes[step.mode]?.label||step.mode):''}`:'Games';}
+  function updateGameNavigation(){const index=currentStep();for(const [id,direction] of [['game-back',-1],['game-front',1]]){$(id).title=stepLabel(gameSteps[index+direction]);$(id).setAttribute('aria-description',$(id).title);}}
+  async function gameMenu(){
     if(document.fullscreenElement){try{await document.exitFullscreen();}catch{/* The menu remains reachable in the current browser frame. */}}
     immersiveMode(false);home();$('home').focus({preventScroll:true});
-  });
+  }
+  function stepGame(direction){const next=gameSteps[currentStep()+direction];if(!next){void gameMenu();return;}setLevel(next.level,false);if(next.activity==='bubbles')state.bubbleMode=next.mode;startActivity(next.activity,next.mode==='paint');}
+  $('game-back').addEventListener('click',()=>stepGame(-1));$('game-front').addEventListener('click',()=>stepGame(1));$('game-home').addEventListener('click',gameMenu);
   $('fullscreen').addEventListener('click',async()=>{
     if(fullscreenBusy)return;fullscreenBusy=true;
     try{

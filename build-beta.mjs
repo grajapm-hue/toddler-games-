@@ -6,8 +6,8 @@ await mkdir(out,{recursive:true});
 let welcome=await readFile(resolve(root,'welcome-preview.html'),'utf8');
 welcome=welcome.replace('<title>SaNa Little Hands · Welcome preview</title>','<title>SaNa Little Hands Beta</title>')
   .replace('</head>','<link rel="manifest" href="manifest.webmanifest">\n<link rel="icon" href="icon.svg" type="image/svg+xml">\n<link rel="apple-touch-icon" href="icon-192.png">\n<link rel="stylesheet" href="share.css">\n<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-title" content="SaNa Beta">\n</head>')
-  .replace('Welcome preview · 01','Beta · v0.11')
-  .replace('Little Hands preview','Beta v0.11')
+  .replace('Welcome preview · 01','Beta · v0.12')
+  .replace('Little Hands preview','Beta v0.12')
   .replace('href="SaNa-Little-Hands-Prototype.html"','href="play.html"')
   .replace('</svg>Install app</button>','</svg><span data-install-label>Install app</span></button>')
   .replace('Made for ages 2–4 · Three playful levels','Made for ages 2–4 · Three playful levels<br><span id="offline-status" role="status">Preparing offline play…</span>')
