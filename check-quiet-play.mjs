@@ -32,7 +32,7 @@ try{
   await expect(loading.getByRole('button',{name:'Abacus colors',exact:true})).toBeVisible();await early.close();
   const context=await browser.newContext({viewport:{width:844,height:390},hasTouch:true,serviceWorkers:'block'}),page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.goto(new URL('index.html',base).href);await protectedText(page,'.family');await protectedText(page,'.tagline');
-  await page.getByRole('button',{name:'About this little world',exact:true}).click();await protectedText(page,'.about-card h3');await page.getByRole('button',{name:'Close About',exact:true}).click();
+  await page.getByRole('button',{name:'About this project',exact:true}).click();await protectedText(page,'.about-card h3');await page.getByRole('button',{name:'Close About',exact:true}).click();
   await page.getByRole('button',{name:'Share app',exact:true}).click();
   await expect(page.getByRole('textbox',{name:'Beta test link'})).toHaveCSS('pointer-events','none');await page.getByRole('button',{name:'Got it',exact:true}).click();checks++;
   await page.getByRole('link',{name:'Tap to play',exact:true}).click();await expect(page.getByRole('button',{name:'Abacus colors',exact:true})).toBeVisible();await protectedText(page,'#hint');await protectedText(page,'.welcome h1');
