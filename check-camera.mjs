@@ -49,7 +49,7 @@ try{
     await centeredReward(page);await page.getByRole('button',{name:'Fullscreen',exact:true}).click();await centeredReward(page);
     await page.screenshot({path:resolve(out,`${name}-appreciation.png`)});await page.getByRole('button',{name:'Exit fullscreen',exact:true}).click();
     await page.getByRole('button',{name:'Again',exact:true}).click();await expect(page.locator('#art-reward')).toBeHidden();checks++;
-    await page.getByRole('button',{name:'Games',exact:true}).click();await page.getByRole('button',{name:'Explore level',exact:true}).click();await page.getByRole('button',{name:'Drag shapes',exact:true}).click();
+    await page.getByRole('button',{name:'Games',exact:true}).click();await page.getByRole('button',{name:'Drag shapes',exact:true}).click();await page.getByRole('button',{name:'Explore level',exact:true}).click();
     for(const id of ['circle','triangle']){await page.locator(`[data-piece="${id}"]`).click();await page.locator(`[data-target="${id}"]`).click();}
     await centeredReward(page);checks++;
     await context.close();
