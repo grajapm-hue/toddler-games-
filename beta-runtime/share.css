@@ -18,9 +18,10 @@
 .compact .share-link input{min-height:34px;height:34px;font-size:12px;padding:6px 9px;margin-top:3px}
 .compact .dialog-panel .share-result{font-size:12px;line-height:16px;margin-top:6px}
 .compact .dialog-panel:has(.share-options) #close-dialog{margin-top:8px;min-height:40px;padding:8px 24px}
-.icon-button.share-play-button{min-width:52px;width:52px;display:flex;flex-direction:column;gap:1px;padding:3px 8px;font-size:9px;line-height:1;background:#eee4fb;border-color:#c7b1db;color:#543d78}
+.icon-button.share-play-button{min-width:52px;width:52px;display:flex;flex-direction:column;gap:1px;padding:3px 8px;font-size:11px;font-weight:900;line-height:1;background:#d4c0f0;border-color:#c7b1db;color:#543d78}
 .icon-button.share-play-button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8}
-.compact .icon-button.share-play-button{min-width:48px;width:48px}
+.compact .icon-button.share-play-button{min-width:44px;width:44px;font-size:10px}
+.compact .icon-button.share-play-button svg{width:18px;height:18px}
 .play-share-shade{position:absolute;inset:0;z-index:10;background:#22204a99;display:grid;place-items:center;padding:22px}
 .dialog-panel{color:#3c3452;background:#fff8e9;border:3px solid #ffe18c;border-radius:27px;width:min(560px,86%);max-height:100%;overflow:auto;padding:26px 30px;box-shadow:0 20px 70px #17143355}
 .dialog-panel:focus{outline:none}.dialog-panel h2{margin:0 0 13px;font-size:27px;letter-spacing:-.6px}

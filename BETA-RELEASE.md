@@ -1,12 +1,18 @@
-# SaNa Little Hands Beta v0.8
+# SaNa Little Hands Beta v0.9
 
-The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.7 added continuous rising bubbles with Plain, 1–20, A–Z and Shapes choices. Version 0.8 adds independent speed and size settings; verify the Pages build commit and run the live checks after publishing each update.
+The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.8 added independent bubble speed and size settings. Version 0.9 moves guidance and settings above the games, expands the play area and increases text weight, size and color contrast; verify the Pages build commit and run the live checks after publishing each update.
+
+## Screen layout
+
+SaNa's hints, Show me and Again are above both the home menu and games. Bubble speed/size and art tools are above their tables, with no bottom control strip. The playroom fills the available viewport, removing the desktop size cap and outer inset. Compact headers, smaller outer padding and a combined wide-screen bubble toolbar give the table more space. Labels use larger dark bold type, and green, yellow, blue, peach and purple boxes distinguish choices while preserving collected bubble colors.
+
+`node check-layout.mjs` verifies guidance and controls above the board, use of the bottom edge, readable type, control bounds and art tool placement at phone, small-phone, rotated, tablet and wide-screen sizes. `LAYOUT_URL` selects a hosted play page. `LAYOUT_BASELINE=1` records local before measurements for comparison; evidence is stored under ignored `artifacts/layout/`. Beta cache v9 updates existing installations online.
 
 ## Rising bubbles
 
 Choose Plain for free popping with a counter, or collect all numbers 1–20, uppercase letters A–Z or six shapes. Bubbles rise from randomly varied positions in a fixed pool of four, six or nine according to level. Touch, mouse or keyboard pops a bubble into colored droplets, removes it, then brings a new bubble from below. The matching top-list item takes that exact bubble color; duplicates cannot complete a different item. Uncollected content is prioritized and missed content returns. Completing a set triggers SaNa's congratulations while bubbles continue rising. Again resets the current collection. Home and hidden pages stop animation; the play-page Share dialog pauses it.
 
-Below the play area, Speed offers Slow, Medium and Fast; Size offers Small, Medium and Large. Both apply immediately to the existing bubbles without clearing collected items or changing their colors. Explicit choices survive mode changes, Again, level changes and reload, using optional browser-local settings. Unchosen settings follow the level default. The size scales the contents and touch hit area together and fits short phone play fields. Overlapping bubbles use the actual tapped bubble for exact matching.
+Above the play area, Speed offers Slow, Medium and Fast; Size offers Small, Medium and Large. Both apply immediately to the existing bubbles without clearing collected items or changing their colors. Explicit choices survive mode changes, Again, level changes and reload, using optional browser-local settings. Unchosen settings follow the level default. The size scales the contents and touch hit area together and fits short phone play fields. Overlapping bubbles use the actual tapped bubble for exact matching.
 
 `node check-bubbles.mjs` exercises upward movement, actual touch pops, splash spread/cleanup, exact target colors, complete sets, continued play and bounded bubble counts, difficulty levels and responsive target lists. `node check-bubble-settings.mjs` measures motion over equal time intervals, checks resizing of the same bubble, collection preservation, mode independence, persistence and responsive controls. Set `BUBBLES_URL` to the hosted play page for live checks. Beta cache v8 updates existing installations online.
 

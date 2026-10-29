@@ -433,12 +433,12 @@
   document.querySelectorAll('[data-paint]').forEach(button=>button.addEventListener('click',()=>{cancelGesture();state.erase=false;state.paintColor=button.dataset.paint;updateArtTools();tone(620);}));
   document.querySelectorAll('[data-brush-size]').forEach(button=>button.addEventListener('click',()=>{cancelGesture();state.brushSize=button.dataset.brushSize;updateArtTools();}));
   $('erase-paint').addEventListener('click',()=>{cancelGesture();state.erase=!state.erase;updateArtTools();hint(state.erase?'Rub over the paint to erase. The picture stays safe.':`Choose a color and paint inside the ${artPicture().name}.`);});
-  function soundButton(){$('sound').setAttribute('aria-pressed',String(state.sound));$('sound').setAttribute('aria-label',state.sound?'Sound on':'Sound off');$('sound').style.opacity=state.sound?'1':'.6';}
+  function soundButton(){$('sound').setAttribute('aria-pressed',String(state.sound));$('sound').setAttribute('aria-label',state.sound?'Sound on':'Sound off');$('sound').style.opacity='1';}
   $('sound').addEventListener('click',()=>{state.sound=!state.sound;save();soundButton();if(state.sound)tone(600);else if(audio?.state==='running')audio.suspend().catch(()=>{});});
   function fitFrame(){
     const visual=window.visualViewport,w=visual?.width||innerWidth,h=visual?.height||innerHeight,rotated=w<h;
-    const width=rotated?h:w,height=rotated?w:h,inset=width>1100&&height>600?24:0;
-    cancelGesture();app.style.setProperty('--frame-w',`${Math.min(width-inset,1480)}px`);app.style.setProperty('--frame-h',`${Math.min(height-inset,980)}px`);app.classList.toggle('rotated',rotated);app.classList.toggle('compact',height<530);app.classList.toggle('narrow',width<740);
+    const width=rotated?h:w,height=rotated?w:h;
+    cancelGesture();app.style.setProperty('--frame-w',`${width}px`);app.style.setProperty('--frame-h',`${height}px`);app.classList.toggle('rotated',rotated);app.classList.toggle('compact',height<530);app.classList.toggle('narrow',width<740);
   }
   $('fullscreen').addEventListener('click',async()=>{
     try{
