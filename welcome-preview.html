@@ -91,6 +91,14 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
 #frame.portrait-welcome .bottomline{gap:10px;flex-direction:column-reverse}#frame.portrait-welcome .footer-actions{gap:9px;width:100%;max-width:600px}#frame.portrait-welcome .footer-actions #about{flex:1;background:#33215f8c;color:#fff}#frame.portrait-welcome .footer-actions #share-app{font-size:13px;background:#fff7e9;color:#483575;border-color:#fff7e9}
 #frame.portrait-welcome .bottomline p{font-size:14px;line-height:1.4}#frame.portrait-welcome .about-button{min-height:46px;font-size:16px;padding:8px 14px}
 #frame.portrait-welcome.short-welcome .mascot-space{height:115px;max-height:115px;width:210px}#frame.portrait-welcome.short-welcome .tagline{font-size:14px;margin:7px 0 12px}#frame.portrait-welcome.short-welcome .parent-note{font-size:13px;padding:10px 12px;margin-bottom:14px}#frame.portrait-welcome.short-welcome .parent-note strong{font-size:14px;margin-bottom:6px}#frame.portrait-welcome.short-welcome .play-button,#frame.portrait-welcome.short-welcome .install-button{min-height:50px;font-size:16px}
+/* Rolling die and centred About follow the linked app opening. */
+.welcome-dice-orbit{transform-origin:0 0;animation:welcomeDiceOrbit 6.4s linear infinite}.welcome-dice-face{transform-origin:0 0;animation:welcomeDiceRoll 1.4s ease-in-out infinite}
+.die-pip{opacity:0;animation-duration:2.4s;animation-timing-function:step-end;animation-iteration-count:infinite}.die-corner{animation-name:welcomeDieCorner}.die-four{animation-name:welcomeDieFour}.die-six{animation-name:welcomeDieSix}.die-centre{opacity:1;animation-name:welcomeDieCentre}
+@keyframes welcomeDiceOrbit{to{transform:rotate(360deg)}}@keyframes welcomeDiceRoll{0%,100%{transform:rotate(0)}18%{transform:rotate(-24deg)}34%{transform:rotate(18deg)}50%{transform:rotate(-10deg)}66%{transform:rotate(6deg)}}
+@keyframes welcomeDieCorner{0%{opacity:0}16.667%,100%{opacity:1}}@keyframes welcomeDieFour{0%{opacity:0}50%,100%{opacity:1}}@keyframes welcomeDieSix{0%{opacity:0}83.334%,100%{opacity:1}}@keyframes welcomeDieCentre{0%{opacity:1}16.667%{opacity:0}33.334%{opacity:1}50%{opacity:0}66.667%{opacity:1}83.334%,100%{opacity:0}}
+.release-tools .welcome-share{display:flex;align-items:center;justify-content:center;flex:none;width:44px;height:44px;min-height:44px;padding:10px;border:2px solid #fff7e9;border-radius:14px;background:#fff7e9;color:#483575;box-shadow:none}.welcome-share svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8}
+#frame.portrait-welcome .release-tools{gap:8px}#frame.portrait-welcome .release-tools .welcome-share{width:40px;height:40px;min-height:40px;padding:8px}
+#frame.portrait-welcome .footer-actions{justify-content:center}#frame.portrait-welcome .footer-actions #about{flex:0 1 270px;width:100%;min-height:48px}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
@@ -101,7 +109,7 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
   <section class="hero" aria-labelledby="welcome-title">
     <div class="mascot-space">
       <p class="sana-says">Hello, little explorer!</p>
-      <svg class="mascot-art" viewBox="0 0 460 390" role="img" aria-label="SaNa the monkey with colorful play shapes">
+      <svg class="mascot-art" viewBox="0 0 460 390" role="img" aria-label="SaNa the monkey with a die and colourful play shapes">
         <defs><linearGradient id="sun" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#ffeaa0"/><stop offset="1" stop-color="#ffbf36"/></linearGradient></defs>
         <ellipse cx="226" cy="354" rx="134" ry="19" fill="#382262" opacity=".22"/>
         <g class="mascot-float">
@@ -114,7 +122,10 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
             <ellipse cx="211" cy="295" rx="27" ry="11" fill="#96634f"/><ellipse cx="262" cy="292" rx="27" ry="12" fill="#96634f"/>
             <g transform="translate(156 99) scale(1.45)"><circle cx="21" cy="49" r="16" fill="#96634f"/><circle cx="79" cy="49" r="16" fill="#96634f"/><circle cx="21" cy="49" r="9" fill="#f2b5a0"/><circle cx="79" cy="49" r="9" fill="#f2b5a0"/><path d="M20 48Q20 13 50 17Q82 13 81 49L75 71Q50 88 25 71Z" fill="#96634f"/><path d="M28 42Q29 25 48 37Q67 23 74 43L73 67Q50 84 28 66Z" fill="#f7d2b3"/><ellipse cx="38" cy="47" rx="4" ry="5" fill="#173e35"/><ellipse cx="63" cy="47" rx="4" ry="5" fill="#173e35"/><circle cx="37" cy="45" r="1.3" fill="white"/><circle cx="62" cy="45" r="1.3" fill="white"/><ellipse cx="50" cy="58" rx="5" ry="3.5" fill="#b87d64"/><path d="M38 65Q50 77 63 65" stroke="#775044" fill="none" stroke-width="3.5" stroke-linecap="round"/><path d="M45 18Q35 3 52 8Q61 5 60 17" fill="#96634f"/></g>
           </g>
-          <g transform="translate(58 205) rotate(-19 44 44)"><rect x="0" y="7" width="88" height="88" rx="22" fill="#50306e" opacity=".6"/><rect width="88" height="88" rx="22" fill="#fff9e6" stroke="#fff" stroke-width="3"/><circle cx="44" cy="44" r="11" fill="#f05c7c"/></g>
+          <g transform="translate(231 194)"><g class="welcome-dice-orbit"><g transform="translate(-125 0)"><g class="welcome-dice-face">
+            <rect x="-44" y="-39" width="88" height="88" rx="22" fill="#50306e" opacity=".55"/><rect x="-44" y="-44" width="88" height="88" rx="22" fill="#fff9e6" stroke="#fff" stroke-width="3"/>
+            <g fill="#2e2208"><circle class="die-pip die-corner" cx="-20" cy="-20" r="6"/><circle class="die-pip die-corner" cx="20" cy="20" r="6"/><circle class="die-pip die-four" cx="20" cy="-20" r="6"/><circle class="die-pip die-four" cx="-20" cy="20" r="6"/><circle class="die-pip die-six" cx="-20" cy="0" r="6"/><circle class="die-pip die-six" cx="20" cy="0" r="6"/><circle class="die-pip die-centre" cx="0" cy="0" r="6" fill="#e23b4a"/></g>
+          </g></g></g></g>
           <path d="M357 267L385 321H328Z" fill="#4bdef0" stroke="#b0f8ff" stroke-width="4" stroke-linejoin="round"/>
           <circle cx="357" cy="102" r="23" fill="#fd8dbd" stroke="#ffd5e7" stroke-width="4"/>
         </g>
