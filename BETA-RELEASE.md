@@ -1,6 +1,12 @@
-# SaNa Little Hands Beta v0.26
+# SaNa Little Hands Beta v0.27
 
-The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.26 aligns the welcome with the exact linked MathMatrix opening source, including its rolling die and centred About composition; verify the Pages build commit and run the live checks after publishing each update.
+The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.27 sets the installed app to launch in native portrait, matching the reference app and aligning system UI with the portrait welcome; verify the Pages build commit and run the live checks after publishing each update.
+
+## Native portrait launch and system status bar
+
+The reference app uses manifest orientation `portrait`, while SaNa v0.26 still used `any`. Page rotation alone can leave the system status/signal bar on the physical landscape edge. The Beta now uses the same native portrait launch default as the reference. Its manifest filename, identity, scope, start URL, display mode and icons are unchanged. The welcome still requests portrait on supported installed phones and retains its visual fallback; the play page still requests landscape where supported and keeps its landscape frame. Normal browser tabs and operating systems that ignore manifest orientation retain platform control of their bars.
+
+The Update button refreshes app files, including the cached manifest, but cannot force Chrome to apply the installed WebAPK metadata. Fully close and relaunch the installed app after updating. Chrome manages the native manifest refresh separately; older versions can defer it. See https://web.dev/articles/manifest-updates and https://developer.chrome.com/blog/improvements-to-web-app-updates. Chrome/WebKit checks validate the manifest, offline update and browser flow; physical Moto/iPhone system-bar placement cannot be verified without the device. No system bar is drawn, hidden or imitated by the app.
 
 ## Welcome reference styling
 
@@ -12,7 +18,7 @@ The health card reminds families to use low brightness/Night Mode after dark, ta
 
 ## Portrait welcome and sliding game cards
 
-The phone opening page always uses a portrait logical frame. Phone identification uses the mobile browser signal/user agent or a small physical touch screen, rather than the current viewport orientation alone. An installed phone requests native portrait orientation when supported; the phone welcome also rotates its portrait frame inside a landscape viewport if native locking is rejected, missing or stale. Reverse landscape and safe-area mapping follow the reported screen angle. Short layouts scroll vertically, and sizing uses the logical welcome dimensions. Tablets and computers retain their natural layout. Tap to play enters the landscape frame and requests a landscape preference only on installed phones. Both native preference calls tolerate synchronous errors and rejected promises and never request browser fullscreen. Returning through SaNa restores the portrait welcome, including history restoration. The Beta manifest remains orientation `any` with its identity, start URL and scope unchanged. Browser and system bars remain controlled by the platform.
+The phone opening page always uses a portrait logical frame. Phone identification uses the mobile browser signal/user agent or a small physical touch screen, rather than the current viewport orientation alone. An installed phone requests native portrait orientation when supported; the phone welcome also rotates its portrait frame inside a landscape viewport if native locking is rejected, missing or stale. Reverse landscape and safe-area mapping follow the reported screen angle. Short layouts scroll vertically, and sizing uses the logical welcome dimensions. Tablets and computers retain responsive layouts. Tap to play enters the landscape frame and requests a landscape preference only on installed phones. Both native preference calls tolerate synchronous errors and rejected promises and never request browser fullscreen. Returning through SaNa restores the portrait welcome, including history restoration. The Beta manifest now defaults to native `portrait`; its identity, start URL and scope are unchanged. Browser and system bars remain controlled by the platform.
 
 The game menu shows five cards at their previous width and height. Extra cards extend the same row instead of squeezing its columns. A clearly labelled More games / Coming soon space follows the five playable games. Swipe or drag the row in either direction, or use Previous games and Next games in the menu header. Keyboard Home, End and arrow keys also browse the focused row. Gestures follow the rotated frame on upright phones and do not accidentally open a game. The navigation hides inside game rooms. Adding future game entries automatically extends the row; the placeholder has no game action.
 
@@ -50,7 +56,7 @@ Rainbow order and circle regions are unchanged. A positive row count fills its r
 
 Before version 0.14 the app disabled completed and future rows, rebuilt all bead nodes after a slide, and trusted the last move event rather than the release position. The repair keeps bead nodes stable, caches gesture geometry and element references, updates only the moving row and relevant labels, picks the nearest bead, and handles a final position delivered on pointerup. It does not rebuild the scene for ordinary counting. Count text stays fully visible immediately, using a small pulse instead of fading out after release.
 
-`node check-abacus.mjs` moves every bead forward and backward in arbitrary row order, verifies 0–10 numerals/words and colour changes, groups moving before release, stable DOM nodes, final-position-only input, short/cancelled slides, keyboard, reward/reset, resize and five screen sizes in normal/fullscreen. `ABACUS_URL` selects a hosted play page. Beta cache v26 updates existing installations online.
+`node check-abacus.mjs` moves every bead forward and backward in arbitrary row order, verifies 0–10 numerals/words and colour changes, groups moving before release, stable DOM nodes, final-position-only input, short/cancelled slides, keyboard, reward/reset, resize and five screen sizes in normal/fullscreen. `ABACUS_URL` selects a hosted play page. Beta cache v27 updates existing installations online.
 
 ## Welcome and About
 
@@ -72,7 +78,7 @@ The home introduction uses one row at the same size as the hint above it. The de
 
 Fullscreen hides the main header, instructions and outer speed/size or art settings. Results and active sub-level choices remain inside the top of the black board. The bottom navigation row keeps Back, Front, Games, sound and Exit fullscreen clear of gameplay. Games leaves fullscreen and returns to the activity menu; Back and Front continue through the game steps. Gameplay continues and exiting restores the same round, collected colors, painting and settings. The menu can also enter fullscreen before a game is chosen. Expansion stays within the page on all browsers without native fullscreen requests. Installed-phone page-entry orientation preferences are separate from expansion. The exit button, Escape and Games restore the regular layout. Browser chrome is controlled by the browser and may remain visible.
 
-`node check-immersive.mjs` checks five viewport sizes in Chrome and WebKit, in-page entry/exit, sound, full-field geometry, touch popping, matching, revealing, painting, preserved progress and operation when native fullscreen is denied or unavailable. `IMMERSIVE_URL` selects a hosted play page. Beta cache v26 updates existing installations online.
+`node check-immersive.mjs` checks five viewport sizes in Chrome and WebKit, in-page entry/exit, sound, full-field geometry, touch popping, matching, revealing, painting, preserved progress and operation when native fullscreen is denied or unavailable. `IMMERSIVE_URL` selects a hosted play page. Beta cache v27 updates existing installations online.
 
 ## Screen layout
 
