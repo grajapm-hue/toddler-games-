@@ -10,7 +10,7 @@ For a local hosted trial, run `node serve.mjs 8778 docs` and open `http://127.0.
 
 Publish GitHub Pages from **main → /docs**. The intended Beta URL is `https://grajapm-hue.github.io/toddler-games-/beta/`. See `BETA-RELEASE.md` for installation, checks and deployment status. Main release is a later step.
 
-The Beta welcome screen includes **Share app** with WhatsApp, Copy link, and the device share menu when available. Share the link with your test group so members can try installation and each activity and reply to you with feedback.
+The Beta welcome screen includes **Share app**, and the activity menu and games have **Share** at the top right. The options are WhatsApp, Copy link, and the device share menu when available. Share the link with your test group so members can try installation and each activity and reply to you with feedback.
 
 ## Welcome screen: preview 01
 

@@ -26,6 +26,7 @@
 .narrow .brand-copy,.narrow .step-note,.narrow .soft-button .button-label{display:none}.narrow .brand{margin-right:0}.narrow .level{padding-left:9px;padding-right:9px}.narrow .topbar{gap:7px}.narrow .bottom-bar{gap:8px}.narrow .activity-card small{display:none}.narrow .activity-card b{font-size:17px}.narrow .progress{display:none}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
+<link rel="stylesheet" href="share.css">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true"><defs>
@@ -45,6 +46,7 @@
     <button class="level" type="button" data-level="2" aria-label="Play level, ages 2 to 4" aria-pressed="true">Play<small>ages 2–4</small></button>
     <button class="level" type="button" data-level="3" aria-label="Challenge level" aria-pressed="false">Challenge<small>extra fun</small></button>
   </div>
+  <button class="icon-button share-play-button" type="button" id="share-app" aria-label="Share app" title="Share app"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="4" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="20" r="3"/><path d="M9 10L15 6M9 14L15 18"/></svg><span>Share</span></button>
   <button class="icon-button" id="sound" type="button" aria-label="Sound off" aria-pressed="false"><svg aria-hidden="true"><use href="#sound-icon"/></svg></button>
   <button class="icon-button" id="fullscreen" type="button" aria-label="Fullscreen"><svg aria-hidden="true"><use href="#fullscreen-icon"/></svg></button>
 </header>
@@ -69,5 +71,6 @@
 </div></div>
 <script src="app.js"></script>
 <script src="pwa.js"></script>
+<script src="share.js"></script>
 </body>
 </html>

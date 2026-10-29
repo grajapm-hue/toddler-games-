@@ -2,7 +2,7 @@
 .share-button{display:flex;align-items:center;justify-content:center;gap:7px;background:#fff7e9;color:#483575;border-color:#fff7e9}
 .share-button svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8}
 .share-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:9px}
-.dialog-panel .share-option{display:flex;align-items:center;justify-content:center;margin:0;min-height:46px;border:2px solid transparent;border-radius:14px;padding:10px 13px;background:#563f8c;color:white;font-size:15px;font-weight:800;white-space:nowrap}
+.dialog-panel .share-option{display:flex;align-items:center;justify-content:center;margin:0;min-height:46px;border:2px solid transparent;border-radius:14px;padding:10px 13px;background:#563f8c;color:white;font-size:15px;font-weight:800;white-space:nowrap;text-decoration:none}
 .dialog-panel .share-option.whatsapp{background:#267a55}
 .dialog-panel .share-option.more{background:#ddf3f6;color:#214f62;border-color:#b5d8df}
 .share-link{display:block;font-size:12px;font-weight:800;margin-top:16px}
@@ -18,3 +18,10 @@
 .compact .share-link input{min-height:34px;height:34px;font-size:12px;padding:6px 9px;margin-top:3px}
 .compact .dialog-panel .share-result{font-size:12px;line-height:16px;margin-top:6px}
 .compact .dialog-panel:has(.share-options) #close-dialog{margin-top:8px;min-height:40px;padding:8px 24px}
+.icon-button.share-play-button{min-width:52px;width:52px;display:flex;flex-direction:column;gap:1px;padding:3px 8px;font-size:9px;line-height:1;background:#eee4fb;border-color:#c7b1db;color:#543d78}
+.icon-button.share-play-button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8}
+.compact .icon-button.share-play-button{min-width:48px;width:48px}
+.play-share-shade{position:absolute;inset:0;z-index:10;background:#22204a99;display:grid;place-items:center;padding:22px}
+.dialog-panel{color:#3c3452;background:#fff8e9;border:3px solid #ffe18c;border-radius:27px;width:min(560px,86%);max-height:100%;overflow:auto;padding:26px 30px;box-shadow:0 20px 70px #17143355}
+.dialog-panel:focus{outline:none}.dialog-panel h2{margin:0 0 13px;font-size:27px;letter-spacing:-.6px}
+.dialog-panel button{display:block;margin:20px 0 0 auto;background:#563f8c;color:white;min-height:46px;border:0;border-radius:24px;padding:10px 26px;font-weight:800}
