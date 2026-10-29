@@ -39,7 +39,7 @@ The level labels describe activity difficulty. A grown-up can choose whichever l
 1. **Drag — Shape picnic:** move each shape onto its matching shadow. Tapping a shape and then its shadow also works.
 2. **Tap — Bubble garden:** tap or sweep across bubbles. Challenge asks for bubbles that match the color dot.
 3. **Slide — Peek-a-boo friends:** move the sunny handles along their tracks to reveal the fox, owl and frog.
-4. **Brush & paint — Little art studio:** rub muddy patches to clean the puppy, or select Finger paint and draw with six colors.
+4. **Brush & paint — Little art studio:** choose Small, Medium or Large for cleaning and painting. Finger paint stays inside the puppy. Use Eraser to remove paint, then choose a color to paint again. SaNa congratulates you once about two thirds of the picture is colored, with applause when sound is on. Again starts a fresh picture.
 
 **Home** returns to the activity pictures. **Again** resets the current round or clears the painting. **Show me** gives a visual hand hint. The sound button toggles gentle generated tones; sound starts off. The last level and sound preference are stored only in this browser when storage is available. There are no ads, sign-ins, trackers, external fonts or external media downloads.
 
@@ -53,7 +53,7 @@ The installed prototype serves its versioned files from cache. Increment the cac
 
 ## Developer checks
 
-`node check-playroom.mjs` uses Playwright to exercise the actual interface. Set `MM_PLAYWRIGHT` to the installed Playwright test module when it is not available locally. `MM_CHROME` can select a Chromium executable. `PLAYROOM_BROWSER=webkit` selects Playwright WebKit.
+`node check-playroom.mjs` uses Playwright to exercise the actual interface. `node check-art.mjs` checks picture clipping, brush sizes, erasing and repainting using rendered pixels, completion/reset, cleaning reach and responsive controls. Set `MM_PLAYWRIGHT` to the installed Playwright test module when it is not available locally. `MM_CHROME` can select a Chromium executable. `PLAYROOM_BROWSER=webkit` selects Playwright WebKit. `ART_URL` selects a hosted play page for the art checks.
 
 Screenshots and test evidence are written to `../artifacts/toddler-playroom/`. The test covers matching, popping, reveal sliders, cleaning, painting/reset, three levels, touch gestures, landscape and the rotated portrait frame. Browser emulation does not replace a child's hands-on device trial.
 

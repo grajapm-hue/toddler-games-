@@ -164,8 +164,11 @@ try{
   await expect(page.locator('[data-piece]')).toHaveCount(3);checks++;
   for(const [label,width,height] of [['phone',844,390],['small-phone',667,375],['portrait',390,844]]){
     await page.setViewportSize({width,height});
-    const shareBounds=await page.getByRole('button',{name:'Share app',exact:true}).boundingBox();
-    assert(shareBounds.x>=0&&shareBounds.y>=0&&shareBounds.x+shareBounds.width<=width+1&&shareBounds.y+shareBounds.height<=height+1);
+    // visualViewport resize can arrive after setViewportSize resolves.
+    await expect.poll(async()=>{
+      const box=await page.getByRole('button',{name:'Share app',exact:true}).boundingBox();
+      return box&&box.x>=0&&box.y>=0&&box.x+box.width<=width+1&&box.y+box.height<=height+1;
+    }).toBe(true);
     await page.getByRole('button',{name:'Share app',exact:true}).click();
     await page.screenshot({path:resolve(output,`play-share-${label}.png`)});
     await page.getByRole('button',{name:'Got it'}).click();

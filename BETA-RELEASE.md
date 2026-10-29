@@ -1,6 +1,12 @@
-# SaNa Little Hands Beta v0.4
+# SaNa Little Hands Beta v0.5
 
-The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.3 added Share to the activity menu and all games and was verified live in Chrome and WebKit. Version 0.4 repairs clipboard compatibility and checks actual native-share capability; verify the Pages build commit and run the live checks after publishing each update.
+The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.4 repaired clipboard compatibility and native-share capability checks. Version 0.5 adds brush sizes, erasing, picture boundaries and SaNa's painting reward; verify the Pages build commit and run the live checks after publishing each update.
+
+## Painting
+
+Small, Medium and Large select the actual brush size for cleaning and painting without clearing the picture. Paint is clipped to the puppy silhouette; gestures starting on the blank paper add no paint. Eraser removes existing paint while preserving the outline, and choosing any color resumes painting over erased areas. Coverage reaching about 65 percent triggers a SaNa congratulations badge and stars, with generated applause when Sound is on. The reward occurs once per round, and Again clears the painting and progress. Beta cache v5 updates installed copies after they reconnect online.
+
+`node check-art.mjs` checks actual SVG pixels for picture boundaries and erasing/repainting, selected brush size, completion/reset, cleaning reach and phone/tablet/rotated layouts. Chromium uses touch input; WebKit uses pointer input. Set `ART_URL` to the hosted play page for live checks.
 
 ## Share with a testing group
 
@@ -42,7 +48,7 @@ Clearing browser/site data can remove the offline cache. Reopen online once to p
 - The native install event tests simulate the app's event contract without installing an application on the development machine.
 - WebKit network-offline emulation has a documented service-worker navigation limitation; the local test uses an origin shutdown instead. Live WebKit checks omit the emulated offline portion and rely on the local outage proof.
 
-The accepted game logic is unchanged. The Beta build adds branding, a welcome link, and common PWA registration; it does not change activity rules or levels. Screenshots and test profiles remain local under ignored `artifacts/beta/`.
+The Beta build adds branding, a welcome link, and common PWA registration. The painting changes described above also apply to the editable source and regenerated self-contained HTML. Screenshots and test profiles remain local under ignored `artifacts/`.
 
 ## Future updates
 
