@@ -1,6 +1,6 @@
-const CACHE='sana-little-hands-beta-v1';
+const CACHE='sana-little-hands-beta-v2';
 const PREFIX='sana-little-hands-beta-';
-const ASSETS=['./index.html','./play.html','./app.js','./pwa.js','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png'];
+const ASSETS=['./index.html','./play.html','./app.js','./pwa.js','./share.js','./share.css','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',event=>{
   event.waitUntil((async()=>{
     const cache=await caches.open(CACHE);

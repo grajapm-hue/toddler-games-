@@ -16,7 +16,7 @@ const server=createServer(async(req,res)=>{
     const file=resolve(docs,'.'+path);
     if(!file.startsWith(docs+sep)){res.writeHead(403).end();return;}
     const body=await readFile(file);
-    res.writeHead(200,{'Content-Type':({'.html':'text/html','.js':'text/javascript','.webmanifest':'application/manifest+json','.svg':'image/svg+xml','.png':'image/png'})[extname(file)]||'application/octet-stream','Cache-Control':'no-cache'}).end(body);
+    res.writeHead(200,{'Content-Type':({'.html':'text/html','.js':'text/javascript','.css':'text/css','.webmanifest':'application/manifest+json','.svg':'image/svg+xml','.png':'image/png'})[extname(file)]||'application/octet-stream','Cache-Control':'no-cache'}).end(body);
   }catch{res.writeHead(404).end();}
 });
 await new Promise(done=>server.listen(0,'127.0.0.1',done));
@@ -39,6 +39,8 @@ try{
   const manifest=await manifestResponse.json();assert.equal(manifest.name,'SaNa Little Hands Beta');assert.equal(manifest.orientation,'landscape');
   assert.equal(new URL(manifest.start_url,site).pathname,new URL('index.html',site).pathname);
   assert.equal(manifest.scope,'./');assert.equal(manifest.display,'standalone');checks++;
+  const styles=await context.request.get(new URL('share.css',site).href);
+  assert(styles.headers()['content-type']?.startsWith('text/css'),'Share stylesheet must be served as CSS');
   for(const icon of manifest.icons){const response=await context.request.get(new URL(icon.src,site).href);assert.equal(response.status(),200);}checks++;
   // A neighbor cache must survive activation of this Beta worker.
   await page.evaluate(async()=>{await caches.open('sana-little-hands-main-preserve');});
@@ -46,6 +48,48 @@ try{
   await expect.poll(()=>page.evaluate(()=>!!navigator.serviceWorker.controller),{timeout:20000}).toBe(true);
   const details=await page.evaluate(async()=>({scope:(await navigator.serviceWorker.getRegistration()).scope,keys:await caches.keys()}));
   assert.equal(details.scope,site);assert(details.keys.includes('sana-little-hands-main-preserve'));checks++;
+  await expect(page.getByRole('button',{name:'Share app',exact:true})).toBeVisible({timeout:2000});
+  await page.evaluate(()=>{
+    Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.sharedData=data;}});
+    Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.copiedLink=text;}}});
+  });
+  await page.getByRole('button',{name:'Share app',exact:true}).click();
+  await expect(page.getByRole('dialog')).toContainText('Share SaNa Beta');
+  const canonical='https://grajapm-hue.github.io/toddler-games-/beta/index.html';
+  const whatsapp=new URL(await page.getByRole('link',{name:'WhatsApp',exact:true}).getAttribute('href'));
+  assert.equal(whatsapp.origin,'https://wa.me');assert(whatsapp.searchParams.get('text').includes(canonical));
+  assert(whatsapp.searchParams.get('text').includes('installation'));checks++;
+  await page.screenshot({path:resolve(output,'share-native-contract.png')});
+  await page.getByRole('button',{name:'Copy link',exact:true}).click();
+  assert.equal(await page.evaluate(()=>window.copiedLink),canonical);
+  await expect(page.locator('#share-result')).toHaveText('Link copied. Paste it into your group.');checks++;
+  await page.getByRole('button',{name:'More apps',exact:true}).click();
+  assert.equal((await page.evaluate(()=>window.sharedData)).url,canonical);checks++;
+  await page.evaluate(()=>Object.defineProperty(navigator,'share',{configurable:true,value:async()=>{throw new DOMException('User cancelled','AbortError');}}));
+  await page.getByRole('button',{name:'More apps',exact:true}).click();
+  await expect(page.locator('#share-result')).toContainText('cancelled');checks++;
+  await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw new DOMException('Denied','NotAllowedError');}}}));
+  await page.getByRole('button',{name:'Copy link',exact:true}).click();
+  await expect(page.locator('#share-result')).toContainText('Select and copy');
+  await expect(page.getByRole('textbox',{name:'Beta test link'})).toHaveValue(canonical);
+  assert.equal(await page.getByRole('textbox',{name:'Beta test link'}).evaluate(el=>document.activeElement===el&&el.selectionStart===0&&el.selectionEnd===el.value.length),true);checks++;
+  await page.getByRole('button',{name:'Got it'}).focus();await page.keyboard.press('Tab');
+  assert.equal(await page.getByRole('link',{name:'WhatsApp',exact:true}).evaluate(el=>document.activeElement===el),true);
+  await page.keyboard.press('Shift+Tab');assert.equal(await page.getByRole('button',{name:'Got it'}).evaluate(el=>document.activeElement===el),true);
+  await page.keyboard.press('Escape');assert.equal(await page.getByRole('button',{name:'Share app',exact:true}).evaluate(el=>document.activeElement===el),true);checks++;
+  await page.evaluate(()=>Object.defineProperty(navigator,'share',{configurable:true,value:undefined}));
+  for(const [label,width,height] of [['phone',844,390],['tablet',1024,768],['portrait',390,844],['small-phone',667,375]]){
+    await page.setViewportSize({width,height});await page.getByRole('button',{name:'Share app',exact:true}).click();
+    await expect(page.getByRole('button',{name:'More apps',exact:true})).toHaveCount(0);
+    await expect(page.getByRole('link',{name:'WhatsApp',exact:true})).toBeVisible();
+    for(const control of [page.getByRole('button',{name:'Got it'}),page.getByRole('link',{name:'WhatsApp',exact:true})]){
+      const box=await control.boundingBox();assert(box.x>=0&&box.y>=0&&box.x+box.width<=width+1&&box.y+box.height<=height+1,'Share controls fit the landscape frame');
+    }
+    await page.screenshot({path:resolve(output,`share-${label}.png`)});
+    await page.getByRole('button',{name:'Got it'}).click();
+  }
+  checks++;
+  await page.setViewportSize({width:844,height:390});
   if(engine==='chromium'){
     // Normal persistent profile: incognito contexts are deliberately not installable.
     const profile=await mkdtemp(resolve(output,'install-profile-'));
@@ -90,6 +134,9 @@ try{
   if(engine!=='webkit'||!process.env.BETA_URL){
     await page.goto(site+'?offline=1',{waitUntil:'domcontentloaded'});
     await expect(page.getByRole('link',{name:'Tap to play'})).toBeVisible();
+    await page.getByRole('button',{name:'Share app',exact:true}).click();
+    await expect(page.getByRole('textbox',{name:'Beta test link'})).toHaveValue(canonical);
+    await page.getByRole('button',{name:'Got it'}).click();checks++;
     await page.getByRole('link',{name:'Tap to play'}).click();
     await expect(page.getByRole('button',{name:'Challenge level'})).toHaveAttribute('aria-pressed','true');
     await page.reload({waitUntil:'domcontentloaded'});await expect(page.getByRole('button',{name:'Drag shapes',exact:true})).toBeVisible();
