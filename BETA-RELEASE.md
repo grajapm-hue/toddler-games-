@@ -1,6 +1,6 @@
 # SaNa Little Hands Beta v0.1
 
-Status: prepared and tested locally. Upload and GitHub Pages activation are pending repository write/admin access.
+Status: uploaded to the repository's `main` branch. GitHub Pages activation is pending the repository owner's Pages setting. The connected collaborator account has write access but cannot activate Pages. This is not yet a verified live deployment.
 
 ## Publish
 
