@@ -4,6 +4,7 @@
   const app=$('app'),scene=$('scene');
   const colors=['#df7f68','#edbf42','#629fca','#8d83c2','#65a58a','#405f76'];
   const colorNames=['Coral','Yellow','Blue','Purple','Green','Ink'];
+  const puppyTail='M650 253Q744 198 705 173L723 159Q779 204 660 273Z';
   const shapes=[
     {id:'circle',color:'#de927b'}, {id:'triangle',color:'#ebc34e'},
     {id:'square',color:'#71abc6'}, {id:'star',color:'#a295c4'},
@@ -17,6 +18,8 @@
   };
   let saved={};try{const stored=JSON.parse(localStorage.getItem('sanaLittleHandsV1')||'{}');saved=stored&&typeof stored==='object'?stored:{};}catch{/* Settings are optional. */}
   const state={level:[1,2,3].includes(saved.level)?saved.level:2,activity:null,done:false,pointer:null,selected:null,paintMode:false,paintColor:colors[0],strokes:[],shapes:[],bubbles:[],sliders:[],dirt:[],sound:saved.sound===true};
+  Object.assign(state,{brushSize:['','large','medium','small'][state.level],erase:false,coverage:[]});
+  const brushWidths={small:18,medium:38,large:72};
   let audio=null,lastTone=0,rewardTimer=null,guideTimer=null;
   const save=()=>{try{localStorage.setItem('sanaLittleHandsV1',JSON.stringify({level:state.level,sound:state.sound}));}catch{/* Play works without storage. */}};
   const hint=text=>{$('hint').textContent=text;};
@@ -44,6 +47,18 @@
     $('celebrate').hidden=false;
     rewardTimer=setTimeout(()=>{$('celebrate').hidden=true;},1400);
   }
+  function applause(){
+    if(!state.sound||!audio||document.hidden)return;
+    try{
+      const buffer=audio.createBuffer(1,Math.ceil(audio.sampleRate*.12),audio.sampleRate),samples=buffer.getChannelData(0);
+      for(let i=0;i<samples.length;i++)samples[i]=(Math.random()*2-1)*(1-i/samples.length);
+      for(let i=0;i<8;i++){
+        const source=audio.createBufferSource(),gain=audio.createGain(),start=audio.currentTime+i*.16;
+        source.buffer=buffer;gain.gain.setValueAtTime(.08,start);gain.gain.exponentialRampToValueAtTime(.001,start+.12);
+        source.connect(gain);gain.connect(audio.destination);source.onended=()=>{source.disconnect();gain.disconnect();};source.start(start);
+      }
+    }catch{/* Applause is optional when sound is unavailable. */}
+  }
   function primitive(id,fill,stroke='#34534a'){
     const common=`fill="${fill}" stroke="${stroke}" stroke-width="4" stroke-linejoin="round"`;
     if(id==='circle')return `<circle r="55" ${common}/>`;
@@ -67,7 +82,7 @@
   function puppy(outline=false){
     const fill=outline?'none':'#e6bd86',faceFill=outline?'none':'#f2d6ad',ear=outline?'none':'#bd9275';
     return `<g stroke="#5c6555" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M655 263Q760 199 714 166" fill="none" stroke="${outline?'#5c6555':'#bd9275'}" stroke-width="22"/>
+      <path d="${puppyTail}" fill="${outline?'none':'#bd9275'}"/>
       <ellipse cx="509" cy="270" rx="165" ry="93" fill="${fill}"/>
       <rect x="391" y="308" width="63" height="53" rx="26" fill="${faceFill}"/><rect x="562" y="308" width="63" height="53" rx="26" fill="${faceFill}"/>
       <path d="M408 145Q337 85 350 192Q369 245 410 199M603 145Q674 85 662 192Q641 245 600 199" fill="${ear}"/>
@@ -87,7 +102,7 @@
   }
   $('activity-grid').innerHTML=Object.entries(activities).map(([id,a])=>`<button class="activity-card" type="button" data-activity="${id}" aria-label="${a.label}"><span class="card-arrow" aria-hidden="true">↗</span><svg class="card-art" viewBox="0 0 220 180" aria-hidden="true">${preview(id)}</svg><b>${a.word}</b><small>${a.caption}</small></button>`).join('');
   $('paint-tools').insertAdjacentHTML('beforeend',colors.map((color,i)=>`<button class="paint-color" type="button" data-paint="${color}" style="--paint:${color}" aria-label="${colorNames[i]} paint" aria-pressed="${i===0}"></button>`).join(''));
-  function clearEffects(){clearTimeout(rewardTimer);clearTimeout(guideTimer);$('celebrate').hidden=true;scene.querySelector('[data-guide]')?.remove();}
+  function clearEffects(){clearTimeout(rewardTimer);clearTimeout(guideTimer);$('celebrate').hidden=true;$('art-reward').hidden=true;scene.querySelector('[data-guide]')?.remove();}
   function cancelGesture(){
     const pointer=state.pointer;state.pointer=null;
     if(pointer&&scene.hasPointerCapture?.(pointer.id)){try{scene.releasePointerCapture(pointer.id);}catch{/* Gesture may already have ended. */}}
@@ -101,6 +116,8 @@
   function resetRound(){
     cancelGesture();clearEffects();state.done=false;state.selected=null;state.strokes=[];
     $('brush-modes').hidden=state.activity!=='brush';$('paint-tools').hidden=state.activity!=='brush'||!state.paintMode;
+    $('art-tools').hidden=state.activity!=='brush';
+    state.erase=false;updateArtTools();
     $('clean-mode').setAttribute('aria-pressed',String(!state.paintMode));$('paint-mode').setAttribute('aria-pressed',String(state.paintMode));
     scene.style.background=({drag:'#edf3e7',bubbles:'#eef2e6',slide:'#e9f1ee',brush:'#f5ead8'})[state.activity];
     if(state.activity==='drag'){
@@ -116,7 +133,7 @@
       const points=[[451,129],[554,135],[423,246],[524,243],[609,259],[476,300],[582,307],[495,94],[389,290],[560,196],[648,290],[449,192],[538,326],[581,104]];
       state.dirt=points.slice(0,[0,4,8,14][state.level]).map(([x,y],i)=>({id:i,x,y,r:state.level===3?22:29,health:state.level===1?1:state.level===2?2.5:4,max:state.level===1?1:state.level===2?2.5:4}));renderClean();
     }
-    hint(state.activity==='brush'&&state.paintMode?'Pick a color and let your fingers wander.':activities[state.activity].hint);
+    hint(state.activity==='brush'&&state.paintMode?'Pick a color and paint inside the puppy. SaNa will cheer you on!':activities[state.activity].hint);
     if(state.activity==='bubbles'&&state.level===3)hint(`Find the ${activeBubble()?.name} bubbles. Look for the color dot!`);
   }
   function renderDrag(){
@@ -158,11 +175,52 @@
     progress(state.dirt.filter(d=>d.health<=0).length,state.dirt.length);
   }
   function renderPaint(){
-    scene.innerHTML=`<defs><clipPath id="paper-clip"><rect x="132" y="26" width="736" height="388" rx="22"/></clipPath></defs><rect id="paint-paper" x="126" y="20" width="748" height="400" rx="26" fill="#fffdf5" stroke="#d8c8a6" stroke-width="4"/><g id="strokes" clip-path="url(#paper-clip)"></g><g opacity=".3" pointer-events="none">${puppy(true)}</g><path d="M147 46L160 33M837 405L852 391" stroke="#debb7c" stroke-width="5" stroke-linecap="round"/>`;progress(0,0);
+    scene.innerHTML=`<defs><clipPath id="picture-clip"><path d="${puppyTail}"/><ellipse cx="509" cy="270" rx="165" ry="93"/><rect x="391" y="308" width="63" height="53" rx="26"/><rect x="562" y="308" width="63" height="53" rx="26"/><path d="M408 145Q337 85 350 192Q369 245 410 199M603 145Q674 85 662 192Q641 245 600 199"/><ellipse cx="506" cy="165" rx="110" ry="99"/></clipPath></defs><rect id="paint-paper" x="126" y="20" width="748" height="400" rx="26" fill="#fffdf5" stroke="#d8c8a6" stroke-width="4"/><g id="strokes" clip-path="url(#picture-clip)"></g><g opacity=".55" pointer-events="none">${puppy(true)}</g><path d="M147 46L160 33M837 405L852 391" stroke="#debb7c" stroke-width="5" stroke-linecap="round"/>`;
+    state.coverage=[];
+    for(let y=75;y<365;y+=14)for(let x=345;x<745;x+=14)if(insidePicture({x,y}))state.coverage.push({x,y,painted:false});
+    progress(0,5);
+  }
+  function insidePicture(point){return [...scene.querySelectorAll('#picture-clip > *')].some(shape=>shape.isPointInFill(new DOMPoint(point.x,point.y)));}
+  function updateArtTools(){
+    document.querySelectorAll('[data-brush-size]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.brushSize===state.brushSize)));
+    $('erase-paint').setAttribute('aria-pressed',String(state.erase));
+    document.querySelectorAll('[data-paint]').forEach(button=>button.setAttribute('aria-pressed',String(!state.erase&&button.dataset.paint===state.paintColor)));
+  }
+  function strokePath(color,width){
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    for(const [key,value] of Object.entries({stroke:color,'stroke-width':width,'stroke-linecap':'round','stroke-linejoin':'round',fill:'none'}))path.setAttribute(key,value);
+    return path;
+  }
+  function beginPaint(point,id){
+    if(!insidePicture(point))return null;
+    const width=brushWidths[state.brushSize],paths=[];
+    if(state.erase){
+      for(const stroke of state.strokes){const path=strokePath('black',width);$(stroke.dataset.mask).appendChild(path);paths.push(path);}
+    }else{
+      const mask=document.createElementNS('http://www.w3.org/2000/svg','mask'),maskId=`paint-mask-${state.strokes.length}`;
+      mask.id=maskId;mask.setAttribute('maskUnits','userSpaceOnUse');mask.setAttribute('x','0');mask.setAttribute('y','0');mask.setAttribute('width','1000');mask.setAttribute('height','440');
+      mask.innerHTML='<rect width="1000" height="440" fill="white"/>';scene.querySelector('defs').appendChild(mask);
+      // Give WebKit a full picture bounding box so masks retain round stroke caps.
+      const layer=document.createElementNS('http://www.w3.org/2000/svg','g');layer.setAttribute('mask',`url(#${maskId})`);layer.innerHTML='<rect width="1000" height="440" fill="none"/>';
+      const path=strokePath(state.paintColor,width);path.dataset.stroke='';path.dataset.mask=maskId;layer.appendChild(path);$('strokes').appendChild(layer);state.strokes.push(path);paths.push(path);
+    }
+    const pointer={id,kind:'paint',paths,d:`M${point.x.toFixed(1)} ${point.y.toFixed(1)}l.1 .1`,last:point,width,erase:state.erase};
+    paths.forEach(path=>path.setAttribute('d',pointer.d));paintCoverage(pointer,point);return pointer;
+  }
+  // Sample the picture area rather than counting strokes; erasing removes coverage too.
+  function paintCoverage(pointer,point){
+    const from=pointer.last,dx=point.x-from.x,dy=point.y-from.y,length=dx*dx+dy*dy;
+    for(const sample of state.coverage){
+      const t=length?Math.max(0,Math.min(1,((sample.x-from.x)*dx+(sample.y-from.y)*dy)/length)):0;
+      if(Math.hypot(sample.x-from.x-t*dx,sample.y-from.y-t*dy)<=pointer.width/2)sample.painted=!pointer.erase;
+    }
+    const fraction=state.coverage.filter(sample=>sample.painted).length/state.coverage.length;
+    progress(Math.min(5,Math.floor(fraction/.65*5)),5);
+    if(fraction>=.65&&!state.done){celebrate('Congratulations from SaNa! You painted a beautiful puppy!');$('art-reward').hidden=false;applause();}
   }
   function brushAt(point,distance){
     if(state.done)return;
-    const radius=[0,58,43,33][state.level];
+    const radius={small:20,medium:43,large:64}[state.brushSize];
     for(const dirt of state.dirt){
       if(dirt.health<=0||Math.hypot(point.x-dirt.x,point.y-dirt.y)>dirt.r+radius)continue;
       dirt.health=Math.max(0,dirt.health-(distance===0?.2:.3+Math.min(distance,20)/28));
@@ -176,7 +234,7 @@
   function brushCursor(point){
     let cursor=scene.querySelector('#brush-cursor');
     if(!cursor){cursor=document.createElementNS('http://www.w3.org/2000/svg','g');cursor.id='brush-cursor';cursor.style.pointerEvents='none';cursor.innerHTML='<circle r="39" fill="#d7edf1" opacity=".25"/><g transform="translate(28 10) rotate(25)"><rect x="-8" y="-50" width="16" height="58" rx="8" fill="#6a9a83"/><rect x="-23" y="0" width="46" height="34" rx="7" fill="#f2ddb4" stroke="#c9aa7d" stroke-width="3"/><path d="M-12 23V34M0 23V34M12 23V34" stroke="#bb996f" stroke-width="3"/></g>';scene.appendChild(cursor);}
-    cursor.setAttribute('transform',`translate(${point.x} ${point.y})`);
+    cursor.setAttribute('transform',`translate(${point.x} ${point.y}) scale(${{small:.6,medium:1,large:1.4}[state.brushSize]})`);
   }
   function localPoint(event){const matrix=scene.getScreenCTM();if(!matrix)return null;return new DOMPoint(event.clientX,event.clientY).matrixTransform(matrix.inverse());}
   function hitBubble(point){const bubble=state.bubbles.find(b=>!b.popped&&Math.hypot(point.x-b.x,point.y-b.y)<b.r+8);if(bubble)popBubble(bubble);}
@@ -198,9 +256,7 @@
       const handle=event.target.closest('[data-slider-handle]');if(!handle)return;
       const slider=state.sliders.find(s=>s.id===Number(handle.dataset.sliderHandle));state.pointer={id:event.pointerId,kind:'slide',slider};slideTo(slider,point.x);
     }else if(state.paintMode){
-      if(point.x<132||point.x>868||point.y<26||point.y>414)return;
-      const path=document.createElementNS('http://www.w3.org/2000/svg','path');
-      const d=`M${point.x.toFixed(1)} ${point.y.toFixed(1)}l.1 .1`;path.setAttribute('d',d);path.setAttribute('stroke',state.paintColor);path.setAttribute('stroke-width',state.level===1?28:state.level===2?19:12);path.setAttribute('stroke-linecap','round');path.setAttribute('stroke-linejoin','round');path.setAttribute('fill','none');path.setAttribute('data-stroke','');$('strokes').appendChild(path);state.strokes.push(path);state.pointer={id:event.pointerId,kind:'paint',path,d};
+      state.pointer=beginPaint(point,event.pointerId);if(!state.pointer)return;
     }else{
       if(state.done)return;state.pointer={id:event.pointerId,kind:'brush',last:point};brushAt(point,0);brushCursor(point);
     }
@@ -215,7 +271,7 @@
     }else if(pointer.kind==='bubble')hitBubble(point);
     else if(pointer.kind==='slide')slideTo(pointer.slider,point.x);
     else if(pointer.kind==='paint'){
-      const x=Math.max(132,Math.min(868,point.x)),y=Math.max(26,Math.min(414,point.y));pointer.d+=` L${x.toFixed(1)} ${y.toFixed(1)}`;pointer.path.setAttribute('d',pointer.d);
+      pointer.d+=` L${point.x.toFixed(1)} ${point.y.toFixed(1)}`;pointer.paths.forEach(path=>path.setAttribute('d',pointer.d));paintCoverage(pointer,point);pointer.last=point;
     }else{
       const distance=Math.hypot(point.x-pointer.last.x,point.y-pointer.last.y);if(distance>.5){brushAt(point,distance);pointer.last=point;}brushCursor(point);
     }
@@ -228,7 +284,7 @@
       const distance=Math.hypot(pointer.x-pointer.shape.tx,pointer.y-pointer.shape.ty);
       if(distance<[0,128,96,73][state.level])matchShape(pointer.shape.id);
       else{renderDrag();hint('This shape has a little home. Try its matching shadow.');}
-    }else if(pointer.kind==='paint')hint('Lovely colors! Keep painting, or tap Again for a fresh page.');
+    }else if(pointer.kind==='paint'&&!state.done)hint(pointer.erase?'All tidy! Choose a color to paint again.':'Lovely colors! Keep coloring the puppy. SaNa is watching!');
     scene.querySelector('#brush-cursor')?.remove();
   }
   scene.addEventListener('pointerdown',pointerDown);scene.addEventListener('pointermove',pointerMove);scene.addEventListener('pointerup',pointerUp);scene.addEventListener('pointercancel',cancelGesture);scene.addEventListener('lostpointercapture',()=>{if(state.pointer)cancelGesture();});scene.addEventListener('contextmenu',e=>e.preventDefault());
@@ -247,14 +303,16 @@
     if(state.activity==='drag'){const shape=state.shapes.find(s=>!s.placed);if(shape){x=shape.x+10;y=shape.y+20;}hint('Touch a shape, hold it, and move it to the same shadow.');}
     else if(state.activity==='bubbles'){const bubble=activeBubble();if(bubble){x=bubble.x+5;y=bubble.y+10;}hint(state.level===3?`Touch the ${activeBubble()?.name||'colored'} bubbles. Match the dot!`:'Touch a bubble with one finger. Try a little sweep too!');}
     else if(state.activity==='slide'){const s=state.sliders.find(s=>s.value<1)||state.sliders[0];x=s.x+30+s.value*(s.w-50);y=s.y+s.h+45;hint('Hold a sunny handle. Slide it along its path.');}
-    else hint(state.paintMode?'Hold one finger on the paper and move it. Try different colors!':'Rub a muddy spot back and forth. Watch the puppy get clean!');
+    else hint(state.paintMode?'Hold one finger inside the puppy and move it. Choose a size or erase to tidy up!':'Rub a muddy spot back and forth. Watch the puppy get clean!');
     const hand=document.createElementNS('http://www.w3.org/2000/svg','g');hand.dataset.guide='';hand.setAttribute('transform',`translate(${x} ${y})`);hand.innerHTML='<g class="guide-hand"><circle r="26" fill="white" opacity=".8"/><use href="#hand-icon" x="-13" y="-14" width="49" height="49" fill="#4b7d68"/></g>';hand.style.pointerEvents='none';scene.appendChild(hand);guideTimer=setTimeout(()=>hand.remove(),4200);
   }
   $('home').addEventListener('click',home);$('again').addEventListener('click',resetRound);$('show-me').addEventListener('click',showMe);
   document.querySelectorAll('[data-activity]').forEach(button=>button.addEventListener('click',()=>{tone(500);startActivity(button.dataset.activity);}));
   document.querySelectorAll('[data-level]').forEach(button=>button.addEventListener('click',()=>setLevel(Number(button.dataset.level))));
   $('paint-mode').addEventListener('click',()=>{state.paintMode=true;resetRound();});$('clean-mode').addEventListener('click',()=>{state.paintMode=false;resetRound();});
-  document.querySelectorAll('[data-paint]').forEach(button=>button.addEventListener('click',()=>{state.paintColor=button.dataset.paint;document.querySelectorAll('[data-paint]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));tone(620);}));
+  document.querySelectorAll('[data-paint]').forEach(button=>button.addEventListener('click',()=>{cancelGesture();state.erase=false;state.paintColor=button.dataset.paint;updateArtTools();tone(620);}));
+  document.querySelectorAll('[data-brush-size]').forEach(button=>button.addEventListener('click',()=>{cancelGesture();state.brushSize=button.dataset.brushSize;updateArtTools();}));
+  $('erase-paint').addEventListener('click',()=>{cancelGesture();state.erase=!state.erase;updateArtTools();hint(state.erase?'Rub over the paint to erase. The picture stays safe.':'Choose a color and paint inside the puppy.');});
   function soundButton(){$('sound').setAttribute('aria-pressed',String(state.sound));$('sound').setAttribute('aria-label',state.sound?'Sound on':'Sound off');$('sound').style.opacity=state.sound?'1':'.6';}
   $('sound').addEventListener('click',()=>{state.sound=!state.sound;save();soundButton();if(state.sound)tone(600);else if(audio?.state==='running')audio.suspend().catch(()=>{});});
   function fitFrame(){

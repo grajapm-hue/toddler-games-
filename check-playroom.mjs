@@ -70,8 +70,8 @@ try{
     }
     await expect(page.getByRole('status')).toContainText('All clean');checks++;
     await page.getByRole('button',{name:'Finger paint',exact:true}).click();
-    const paper=await page.locator('#paint-paper').boundingBox();
-    await drag(page,{x:paper.x+paper.width*.3,y:paper.y+paper.height*.3},{x:paper.x+paper.width*.7,y:paper.y+paper.height*.7});
+    const [paintFrom,paintTo]=await page.locator('#scene').evaluate(svg=>[[500,280],[600,290]].map(([x,y])=>{const p=new DOMPoint(x,y).matrixTransform(svg.getScreenCTM());return {x:p.x,y:p.y};}));
+    await drag(page,paintFrom,paintTo);
     await expect(page.locator('[data-stroke]')).toHaveCount(1);checks++;
     await page.getByRole('button',{name:'Again',exact:true}).click();
     await expect(page.locator('[data-stroke]')).toHaveCount(0);checks++;
@@ -122,8 +122,8 @@ try{
   await installed.goto(base);
   await expect.poll(()=>installed.evaluate(async()=>{
     const registration=await navigator.serviceWorker.getRegistration();
-    const cache=await caches.open('sana-little-hands-prototype-v1');
-    return registration?.active?.state==='activated'&&navigator.serviceWorker.controller===registration.active&&!!await cache.match('./index.html');
+    const cached=await caches.match(new URL('./index.html',location.href));
+    return registration?.active?.state==='activated'&&navigator.serviceWorker.controller===registration.active&&!!cached;
   }),{timeout:20000}).toBe(true);
   if(engine==='webkit'){
     // Playwright WebKit offline emulation rejects even literal SW responses (#42775).
