@@ -149,7 +149,7 @@
     scene.setAttribute('aria-label','Play area');
     if(state.activity==='brush')$('activity-name').textContent=`Little art studio · ${artPicture().name[0].toUpperCase()+artPicture().name.slice(1)}`;
     $('clean-mode').setAttribute('aria-pressed',String(!state.paintMode));$('paint-mode').setAttribute('aria-pressed',String(state.paintMode));
-    scene.style.background=({drag:'#edf3e7',bubbles:'#eef2e6',slide:'#e9f1ee',brush:'#f5ead8'})[state.activity];
+    scene.style.background='#000';
     if(state.activity==='drag'){
       const count=[0,2,4,6][state.level],ys=count===2?[140,310]:count===4?[120,310]:[85,220,355];
       state.shapes=shapes.slice(0,count).map((shape,i)=>({...shape,placed:false,x:count===2?250:150+(i%2)*190,y:ys[count===2?i:Math.floor(i/2)],tx:count===2?750:660+(i%2)*190,ty:ys[count===2?i:Math.floor(i/2)]}));renderDrag();
@@ -440,14 +440,31 @@
     const width=rotated?h:w,height=rotated?w:h;
     cancelGesture();app.style.setProperty('--frame-w',`${width}px`);app.style.setProperty('--frame-h',`${height}px`);app.classList.toggle('rotated',rotated);app.classList.toggle('compact',height<530);app.classList.toggle('narrow',width<740);
   }
+  let fullscreenBusy=false;
+  function immersiveMode(active){
+    cancelGesture();app.classList.toggle('immersive',active);
+    const button=$('fullscreen'),label=active?'Exit fullscreen':'Fullscreen';
+    button.setAttribute('aria-label',label);button.setAttribute('aria-pressed',String(active));button.title=label;
+    button.querySelector('use').setAttribute('href',active?'#exit-fullscreen-icon':'#fullscreen-icon');
+    if(!active){try{screen.orientation?.unlock?.();}catch{/* Orientation may be managed by the browser. */}button.focus({preventScroll:true});}
+    fitFrame();
+  }
   $('fullscreen').addEventListener('click',async()=>{
+    if(fullscreenBusy)return;fullscreenBusy=true;
     try{
-      if(document.fullscreenElement){await document.exitFullscreen();return;}
-      if($('viewport').requestFullscreen)await $('viewport').requestFullscreen();
-      try{await screen.orientation?.lock?.('landscape');}catch{/* The landscape frame remains available. */}
-    }catch{hint('Turn your screen sideways. Your little playroom is ready!');}fitFrame();
+      if(app.classList.contains('immersive')){
+        if(document.fullscreenElement){try{await document.exitFullscreen();}catch{return;}}
+        immersiveMode(false);
+      }else{
+        immersiveMode(true);
+        // In-page immersive play also works where native fullscreen is unavailable or denied.
+        try{await $('viewport').requestFullscreen?.();}catch{/* Keep immersive play and its exit control available. */}
+        if(document.fullscreenElement){try{await screen.orientation?.lock?.('landscape');}catch{/* The landscape frame remains available. */}}
+      }
+    }finally{fullscreenBusy=false;fitFrame();}
   });
-  $('fullscreen').hidden=typeof $('viewport').requestFullscreen!=='function';
+  document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&app.classList.contains('immersive'))immersiveMode(false);else fitFrame();});
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&app.classList.contains('immersive')&&!document.fullscreenElement)immersiveMode(false);});
   window.addEventListener('resize',fitFrame);window.visualViewport?.addEventListener('resize',fitFrame);window.addEventListener('orientationchange',fitFrame);
   document.addEventListener('visibilitychange',()=>{if(document.hidden){stopBubbles();cancelGesture();if(audio?.state==='running')audio.suspend().catch(()=>{});}else if(state.activity==='bubbles'&&bubbleFrame===null)bubbleFrame=requestAnimationFrame(bubbleTick);});
   window.addEventListener('pagehide',()=>{stopBubbles();cancelGesture();clearEffects();if(audio?.state==='running')audio.suspend().catch(()=>{});});

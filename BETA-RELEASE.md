@@ -1,6 +1,14 @@
-# SaNa Little Hands Beta v0.9
+# SaNa Little Hands Beta v0.10
 
-The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.8 added independent bubble speed and size settings. Version 0.9 moves guidance and settings above the games, expands the play area and increases text weight, size and color contrast; verify the Pages build commit and run the live checks after publishing each update.
+The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.10 compacts the home introduction, removes the decorative menu picture, gives all games black play backgrounds and expands fullscreen to the playable field with just floating sound and exit controls; verify the Pages build commit and run the live checks after publishing each update.
+
+## Immersive play
+
+The home introduction uses one row at the same size as the hint above it. The decorative picture and eyebrow are removed, leaving the four game cards the remaining space. Every animated game field has a black background; painting retains its light paper.
+
+Fullscreen hides all app chrome, instructions, game settings and the bubble collection strip. The game fills the frame with only two floating controls: sound and Exit fullscreen. Gameplay continues and exiting restores the same round, collected colors, painting and settings. The menu can also enter fullscreen before a game is chosen. Supported browsers use native fullscreen and attempt landscape lock; otherwise in-page immersive play remains available. The exit button, Escape and native browser exit restore the regular layout.
+
+`node check-immersive.mjs` checks five viewport sizes in Chrome and WebKit, real native entry/exit, sound, full-field geometry, touch popping, matching, revealing, painting, preserved progress and fallback when native fullscreen is denied or unavailable. `IMMERSIVE_URL` selects a hosted play page. Beta cache v10 updates existing installations online.
 
 ## Screen layout
 
