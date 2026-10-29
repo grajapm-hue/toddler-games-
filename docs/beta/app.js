@@ -45,6 +45,8 @@
     }catch{/* Unsupported audio never blocks play. */}
   }
   function progress(done,total){
+    $('game-results').hidden=!total||state.activity==='bubbles';
+    $('result-score').textContent=total?`${({drag:'Matched',slide:'Friends',brush:state.paintMode?'Painted':'Cleaned'})[state.activity]||'Done'} ${done} / ${total}`:'';
     $('progress').hidden=!total;
     $('progress').setAttribute('aria-label',`${done} of ${total} complete`);
     $('progress').innerHTML=Array.from({length:total},(_,i)=>`<i class="${i<done?'done':''}"></i>`).join('');
@@ -134,10 +136,10 @@
     if(pointer?.kind==='drag')renderDrag();
     scene.querySelector('#brush-cursor')?.remove();
   }
-  function home(){stopBubbles();cancelGesture();clearEffects();state.activity=null;state.selected=null;app.dataset.view='home';$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
+  function home(){stopBubbles();cancelGesture();clearEffects();state.activity=null;state.selected=null;$('game-back').hidden=true;app.dataset.view='home';$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
   function levelControls(){document.querySelectorAll('[data-level]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.level)===state.level)));}
   function setLevel(level){cancelGesture();if(state.level!==level)state.brushSize=['','large','medium','small'][level];state.level=level;levelControls();save();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');if(state.activity)resetRound();else hint(level===2?'Play level: a lovely place for ages 2–4. Choose a picture!':level===1?'Explore level: fewer, bigger things to try.':'Challenge level: a few more things to discover.');}
-  function startActivity(id){state.activity=id;state.paintMode=false;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
+  function startActivity(id){$('game-back').hidden=false;state.activity=id;state.paintMode=false;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
   function resetRound(){
     stopBubbles();cancelGesture();clearEffects();state.done=false;state.selected=null;state.strokes=[];
     $('bubble-modes').hidden=state.activity!=='bubbles';$('bubble-tracker').hidden=state.activity!=='bubbles';$('step-note').hidden=state.activity==='bubbles';
@@ -238,7 +240,6 @@
     if(state.activity!=='bubbles'||document.hidden){bubbleFrame=null;return;}
     bubbleFrame=requestAnimationFrame(bubbleTick);
     const elapsed=lastBubbleTime?Math.min(.05,(now-lastBubbleTime)/1000):0;lastBubbleTime=now;
-    if(app.querySelector('.play-share-shade:not([hidden])'))return;
     fitBubbleField();
     for(const bubble of state.bubbles){
       if(!bubble.element){bubble.wait-=elapsed;if(bubble.wait<=0)spawnBubble(bubble);continue;}
@@ -449,6 +450,10 @@
     if(!active){try{screen.orientation?.unlock?.();}catch{/* Orientation may be managed by the browser. */}button.focus({preventScroll:true});}
     fitFrame();
   }
+  $('game-back').addEventListener('click',async()=>{
+    if(document.fullscreenElement){try{await document.exitFullscreen();}catch{/* The menu remains reachable in the current browser frame. */}}
+    immersiveMode(false);home();$('home').focus({preventScroll:true});
+  });
   $('fullscreen').addEventListener('click',async()=>{
     if(fullscreenBusy)return;fullscreenBusy=true;
     try{

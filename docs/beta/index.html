@@ -15,8 +15,8 @@ button:focus-visible,a:focus-visible{outline:4px solid #fff;outline-offset:5px}
 [hidden]{display:none!important}
 #frame{--w:100vw;--h:100dvh;position:absolute;left:50%;top:50%;width:var(--w);height:var(--h);transform:translate(-50%,-50%);overflow:hidden;background:radial-gradient(ellipse at 7% 10%,#f459b6 0,transparent 46%),radial-gradient(ellipse at 93% 84%,#28d3e0 0,transparent 47%),linear-gradient(125deg,#bd3fb7,#51409a 58%,#6d87d3);display:grid;grid-template-rows:auto minmax(0,1fr) auto;padding:25px 4.5% 20px;isolation:isolate}
 #frame.rotated{transform:translate(-50%,-50%) rotate(90deg)}
-.topline{display:flex;justify-content:space-between;align-items:center;gap:20px;font-size:14px;font-weight:800;color:#fff5e8}
-.family{display:flex;align-items:center;gap:9px}.family span{font-size:22px}.preview-tag{padding:7px 13px;border:1px solid #ffffff50;border-radius:30px;background:#43307945;font-size:12px}
+.topline{display:flex;justify-content:space-between;align-items:center;gap:20px;font-size:22px;font-weight:900;color:#fff5e8}
+.family{display:flex;align-items:center;gap:9px}.family span{font-size:34px}.preview-tag{padding:7px 13px;border:1px solid #ffffff50;border-radius:30px;background:#43307945;font-size:12px}
 .hero{min-height:0;display:grid;grid-template-columns:43% 57%;align-items:center;gap:0;width:100%;max-width:1360px;margin:auto}
 .mascot-space{position:relative;min-width:0;align-self:stretch;display:grid;place-items:center;padding-right:22px}
 .mascot-art{width:100%;max-width:460px;max-height:100%;overflow:visible;filter:drop-shadow(0 20px 16px #25175138)}
@@ -25,7 +25,7 @@ button:focus-visible,a:focus-visible{outline:4px solid #fff;outline-offset:5px}
 .sana-says{position:absolute;top:6%;left:12%;margin:0;padding:12px 22px;background:#fff8eb;color:#65416a;font-size:18px;font-weight:900;border-radius:24px 24px 24px 4px;box-shadow:0 5px 0 #4a277d25;transform:rotate(-4deg)}
 .copy{min-width:0;padding:12px 0 14px 20px}
 h1{font-size:clamp(40px,5.4vw,78px);letter-spacing:-2.5px;line-height:1.02;margin:0;text-shadow:0 5px 0 #37245e35;font-weight:900}
-h1 span{display:block;font-size:.52em;letter-spacing:-.8px;margin-bottom:8px;color:#ffe59b}
+h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;color:#ffe59b}
 .tagline{font-size:clamp(15px,1.65vw,23px);line-height:1.45;margin:18px 0 23px;color:#fff4e8}
 .actions{display:grid;grid-template-columns:1.38fr 1fr;gap:14px;max-width:600px}
 .play-button,.install-button{min-height:72px;display:flex;justify-content:center;align-items:center;gap:10px;padding:12px 18px;border-radius:40px;font-size:clamp(17px,2vw,27px);font-weight:900;white-space:nowrap}
@@ -36,13 +36,21 @@ h1 span{display:block;font-size:.52em;letter-spacing:-.8px;margin-bottom:8px;col
 .play-button:active,.install-button:active{transform:translateY(4px);box-shadow:0 2px 0 #644275}
 .parent-note{max-width:600px;margin:23px 0 0;padding:14px 18px;border:1px solid #ffffff70;border-radius:18px;background:#33276269;line-height:1.5;font-size:14px}
 .parent-note strong{display:block;font-size:15px;color:#ffe49a;margin-bottom:3px}.parent-note p{margin:0}
-.bottomline{display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:13px;color:#fff6e9;padding-top:10px}
-.bottomline p{margin:0;opacity:.9}.about-button{background:#32236157;color:#fff8eb;border:1px solid #ffffff70;border-radius:28px;padding:11px 22px;font-weight:800;min-height:44px}
+.bottomline{display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:18px;font-weight:900;color:#fff6e9;padding-top:10px}
+.bottomline p{margin:0;opacity:1}.about-button{background:#32236157;color:#fff8eb;border:1px solid #ffffff70;border-radius:28px;padding:11px 22px;font-weight:800;min-height:44px}
 .dialog-shade{position:absolute;inset:0;z-index:4;background:#22204a99;display:grid;place-items:center;padding:22px}
 .dialog-panel{color:#3c3452;background:#fff8e9;border:3px solid #ffe18c;border-radius:27px;width:min(560px,86%);max-height:100%;overflow:auto;padding:26px 30px;box-shadow:0 20px 70px #17143355}
 .dialog-panel:focus{outline:none}.dialog-panel h2{margin:0 0 13px;font-size:27px;letter-spacing:-.6px}.dialog-panel p{font-size:17px;line-height:1.55;margin:10px 0}.dialog-panel button{display:block;margin:20px 0 0 auto;background:#563f8c;color:white;min-height:46px;border:0;border-radius:24px;padding:10px 26px;font-weight:800}
-#frame.compact{padding:15px 4% 12px}.compact .topline{font-size:11px}.compact .family span{font-size:17px}.compact .preview-tag{font-size:10px;padding:5px 10px}.compact .hero{grid-template-columns:40% 60%}.compact .mascot-space{padding-right:12px}.compact .sana-says{font-size:13px;padding:8px 15px;top:3%;left:9%}.compact .copy{padding:6px 0 6px 13px}.compact h1{font-size:44px;letter-spacing:-1.5px}.compact h1 span{font-size:22px;margin-bottom:5px;letter-spacing:-.5px}.compact .tagline{font-size:14px;margin:9px 0 14px}.compact .actions{gap:10px}.compact .play-button,.compact .install-button{min-height:52px;padding:8px 12px;font-size:18px;gap:7px}.compact .play-button svg,.compact .install-button svg{width:20px;height:20px}.compact .parent-note{margin-top:16px;padding:9px 13px;font-size:11px;line-height:1.4;border-radius:14px}.compact .parent-note strong{font-size:12px;margin-bottom:2px}.compact .bottomline{font-size:10px;padding-top:3px}.compact .about-button{padding:8px 18px;font-size:11px;min-height:40px}.compact .dialog-panel{padding:20px 25px;max-width:510px}.compact .dialog-panel h2{font-size:23px}.compact .dialog-panel p{font-size:15px;margin:7px 0}.compact .dialog-panel button{margin-top:13px}
-#frame.small{padding:10px 3% 8px}.small .hero{grid-template-columns:36% 64%}.small .copy{padding-left:10px}.small h1{font-size:36px}.small h1 span{font-size:19px}.small .tagline{font-size:12px;margin:7px 0 10px}.small .sana-says{font-size:11px;left:3%;padding:7px 12px}.small .actions{gap:8px}.small .play-button,.small .install-button{font-size:15px;min-height:46px;padding:7px 10px}.small .parent-note{margin-top:12px;font-size:10px;padding:8px 11px}.small .parent-note strong{font-size:11px}.small .bottomline p{font-size:9px}.small .about-button{font-size:10px;padding:7px 12px}
+#frame.compact{padding:15px 4% 12px}.compact .topline{font-size:16px}.compact .family span{font-size:26px}.compact .preview-tag{font-size:10px;padding:5px 10px}.compact .hero{grid-template-columns:40% 60%}.compact .mascot-space{padding-right:12px}.compact .sana-says{font-size:13px;padding:8px 15px;top:3%;left:9%}.compact .copy{padding:6px 0 6px 13px}.compact h1{font-size:44px;letter-spacing:-1.5px}.compact h1 span{font-size:28px;margin-bottom:5px;letter-spacing:-.5px}.compact .tagline{font-size:14px;margin:9px 0 14px}.compact .actions{gap:10px}.compact .play-button,.compact .install-button{min-height:52px;padding:8px 12px;font-size:18px;gap:7px}.compact .play-button svg,.compact .install-button svg{width:20px;height:20px}.compact .parent-note{margin-top:16px;padding:9px 13px;font-size:11px;line-height:1.4;border-radius:14px}.compact .parent-note strong{font-size:12px;margin-bottom:2px}.compact .bottomline{font-size:14px;padding-top:3px}.compact .about-button{padding:8px 18px;font-size:11px;min-height:40px}.compact .dialog-panel{padding:20px 25px;max-width:510px}.compact .dialog-panel h2{font-size:23px}.compact .dialog-panel p{font-size:15px;margin:7px 0}.compact .dialog-panel button{margin-top:13px}
+#frame.small{padding:10px 3% 8px}.small .hero{grid-template-columns:36% 64%}.small .copy{padding-left:10px}.small h1{font-size:36px}.small h1 span{font-size:28px}.small .tagline{font-size:12px;margin:7px 0 10px}.small .sana-says{font-size:11px;left:3%;padding:7px 12px}.small .actions{gap:8px}.small .play-button,.small .install-button{font-size:15px;min-height:46px;padding:7px 10px}.small .parent-note{margin-top:12px;font-size:10px;padding:8px 11px}.small .parent-note strong{font-size:11px}.small .bottomline p{font-size:14px}.small .about-button{font-size:10px;padding:7px 12px}
+.dialog-shade:has(.about-dialog){align-items:end;padding:14px}
+.dialog-panel.about-dialog{position:relative;display:flex;flex-direction:column;width:min(900px,98%);max-width:none;max-height:100%;padding:18px 20px;color:#382a1d;background:#f4e5c6;border-color:#f4e5c6;overflow:hidden}
+.about-dialog #dialog-title{font-size:25px;padding-right:60px;flex:0 0 auto;margin-bottom:14px}
+.about-dialog #dialog-copy{min-height:0;overflow:auto;overscroll-behavior:contain;padding:0 2px 4px}
+.about-dialog #close-dialog{position:absolute;right:14px;top:10px;margin:0;width:46px;height:46px;min-height:46px;padding:0;border-radius:14px;background:#8b5b2e;font-size:30px}
+.about-card{background:#fff7e8;border-radius:22px;padding:18px 22px;margin-bottom:14px;text-align:center;box-shadow:0 4px 0 #c7b89b;font-size:17px;font-weight:800;line-height:1.5}
+.about-card h3{font-size:30px;line-height:1.2;margin:0 0 8px;color:#693210}.about-card p{font-size:17px;line-height:1.5;margin:8px 0}.about-card .about-quote{font-size:20px;font-style:italic;color:#a13912;font-weight:900}
+.about-card.safety{border-left:5px solid #a13912;color:#693210;font-weight:900}.about-card a{color:#11608a;text-decoration:underline}.about-version{display:block;font-size:14px;color:#67503a;margin-top:6px}.compact .about-card{padding:14px 18px;font-size:16px}.compact .about-card p{font-size:16px}.compact .about-card h3{font-size:26px}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
@@ -54,7 +62,7 @@ h1 span{display:block;font-size:.52em;letter-spacing:-.8px;margin-bottom:8px;col
 </head>
 <body>
 <main id="frame">
-  <header class="topline"><div class="family"><span aria-hidden="true">🐒</span> A little world with SaNa</div><span class="preview-tag">Beta · v0.10</span></header>
+  <header class="topline"><div class="family"><span aria-hidden="true">🐒</span> A little world with SaNa</div><span class="preview-tag">Beta · v0.11</span></header>
   <section class="hero" aria-labelledby="welcome-title">
     <div class="mascot-space">
       <p class="sana-says">Hello, little explorer!</p>
@@ -105,9 +113,12 @@ h1 span{display:block;font-size:.52em;letter-spacing:-.8px;margin-bottom:8px;col
   fit();window.addEventListener('resize',fit);window.visualViewport?.addEventListener('resize',fit);
   const shade=document.getElementById('dialog-shade'),panel=document.getElementById('dialog-panel');
   let opener;
-  function show(title,copy,source){opener=source;document.getElementById('dialog-title').textContent=title;document.getElementById('dialog-copy').innerHTML=copy;shade.hidden=false;panel.focus();}
+  function show(title,copy,source){const about=source?.id==='about';panel.classList.toggle('about-dialog',about);const closeButton=document.getElementById('close-dialog');closeButton.textContent=about?'×':'Got it';closeButton.setAttribute('aria-label',about?'Close About':'Got it');opener=source;document.getElementById('dialog-title').textContent=title;document.getElementById('dialog-copy').innerHTML=copy;shade.hidden=false;panel.focus();}
   function close(){shade.hidden=true;opener?.focus();}
-  document.getElementById('about').addEventListener('click',event=>show('A little world with SaNa','<p>A gentle place for curious fingers: match shapes, pop bubbles, find hidden friends, and brush or paint.</p><p>Choose Explore, Play or Challenge. Play is designed mainly for ages 2–4, with a grown-up nearby.</p><p>No ads, accounts or trackers. Sound is optional.</p>',event.currentTarget));
+  document.getElementById('about').addEventListener('click',event=>show('📜 About this project',`
+    <section class="about-card"><h3>🐒 SaNa Little Hands</h3><p>Kids Puzzle Library · for ages 2–4</p><p class="about-quote">“Little hands, happy discoveries.”</p><p>Drag and match shapes · Pop plain, 1–20, A–Z and shape bubbles · Slide to find friends · Brush clean and finger paint</p><p>Explore · Play · Challenge</p><p>No ads, accounts or trackers. Optional sound and offline play after the first online load.</p></section>
+    <section class="about-card safety">🛡️ Low brightness · short breaks · play with a parent</section>
+    <section class="about-card">Created by G.RajaPathamuthu · Kids Puzzle Library<br>Guided by : JNT<br>Code Coordinated by : AI-Assistances<br><i>(What we get is all we ask for.)</i><p>Found something odd? Send us your feedback.<br>Mail To : <a href="mailto:grajapm@gmail.com?subject=SaNa%20Little%20Hands%20Feedback%20%26%20Suggestion">✉️ Feedback &amp; Suggestion</a></p><span class="about-version">App <span data-app-version>Beta v0.11</span></span></section>`,event.currentTarget));
   document.getElementById('close-dialog').addEventListener('click',close);
   shade.addEventListener('click',event=>{if(event.target===shade)close();});
   document.addEventListener('keydown',event=>{

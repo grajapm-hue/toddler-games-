@@ -143,36 +143,22 @@ try{
   await expect(page.getByRole('button',{name:'Installed',exact:true})).toBeVisible();checks++;
   await page.getByRole('link',{name:'Tap to play'}).click();
   await expect(page.getByRole('button',{name:'Play level, ages 2 to 4'})).toHaveAttribute('aria-pressed','true');checks++;
-  await expect(page.getByRole('button',{name:'Share app',exact:true})).toBeVisible({timeout:2000});
-  await page.getByRole('button',{name:'Share app',exact:true}).click();
-  await expect(page.getByRole('dialog')).toContainText('Share SaNa Beta');
-  await expect(page.getByRole('textbox',{name:'Beta test link'})).toHaveValue(canonical);
-  await page.getByRole('button',{name:'Got it'}).click();
-  await expect(page.getByRole('button',{name:'Drag shapes',exact:true})).toBeVisible();checks++;
+  await expect(page.locator('#share-app')).toHaveCount(0);checks++;
   await page.getByRole('button',{name:'Drag shapes',exact:true}).click();
   await expect(page.locator('[data-piece]')).toHaveCount(4);
   await page.locator('[data-piece="circle"]').click();await page.locator('[data-target="circle"]').click();
   await expect(page.locator('[data-piece]')).toHaveCount(3);checks++;
-  await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.playCopiedLink=text;}}}));
-  await page.getByRole('button',{name:'Share app',exact:true}).click();
-  await page.getByRole('button',{name:'Copy link',exact:true}).click();
-  assert.equal(await page.evaluate(()=>window.playCopiedLink),canonical);
-  await page.getByRole('button',{name:'Got it'}).focus();await page.keyboard.press('Tab');
-  assert.equal(await page.getByRole('link',{name:'WhatsApp',exact:true}).evaluate(el=>document.activeElement===el),true);
-  await page.keyboard.press('Escape');
-  assert.equal(await page.getByRole('button',{name:'Share app',exact:true}).evaluate(el=>document.activeElement===el),true);
-  await expect(page.locator('[data-piece]')).toHaveCount(3);checks++;
+  await expect(page.locator('#share-app')).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Back',exact:true})).toBeVisible();checks++;
   for(const [label,width,height] of [['phone',844,390],['small-phone',667,375],['portrait',390,844]]){
     await page.setViewportSize({width,height});
-    // visualViewport resize can arrive after setViewportSize resolves.
     await expect.poll(async()=>{
-      const box=await page.getByRole('button',{name:'Share app',exact:true}).boundingBox();
+      const box=await page.getByRole('button',{name:'Back',exact:true}).boundingBox();
       return box&&box.x>=0&&box.y>=0&&box.x+box.width<=width+1&&box.y+box.height<=height+1;
     }).toBe(true);
-    await page.getByRole('button',{name:'Share app',exact:true}).click();
-    await page.screenshot({path:resolve(output,`play-share-${label}.png`)});
-    await page.getByRole('button',{name:'Got it'}).click();
+    await page.screenshot({path:resolve(output,`play-back-${label}.png`)});
   }
+  await page.getByRole('button',{name:'Back',exact:true}).click();await expect(page.locator('#home-view')).toBeVisible();
   await page.setViewportSize({width:844,height:390});checks++;
   await page.screenshot({path:resolve(output,'play.png')});
   await page.getByRole('button',{name:'Home',exact:true}).click();
@@ -190,9 +176,7 @@ try{
     await expect(page.getByRole('textbox',{name:'Beta test link'})).toHaveValue(canonical);
     await page.getByRole('button',{name:'Got it'}).click();checks++;
     await page.getByRole('link',{name:'Tap to play'}).click();
-    await page.getByRole('button',{name:'Share app',exact:true}).click();
-    await expect(page.getByRole('textbox',{name:'Beta test link'})).toHaveValue(canonical);
-    await page.getByRole('button',{name:'Got it'}).click();checks++;
+    await expect(page.locator('#share-app')).toHaveCount(0);checks++;
     await expect(page.getByRole('button',{name:'Challenge level'})).toHaveAttribute('aria-pressed','true');
     await page.reload({waitUntil:'domcontentloaded'});await expect(page.getByRole('button',{name:'Drag shapes',exact:true})).toBeVisible();
     for(const [name,selector,count] of [['Pop bubbles','[data-bubble]',9],['Slide to reveal','[data-slider-handle]',3],['Brush and paint','[data-dirt]',14]]){

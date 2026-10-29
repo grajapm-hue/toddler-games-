@@ -20,17 +20,25 @@ async function fullPlay(page){
   await expect(page.locator('.companion-bar')).toBeHidden();
   await expect(page.locator('.activity-heading')).toBeHidden();
   await expect(page.locator('#bubble-settings')).toBeHidden();
-  await expect(page.locator('#bubble-tracker')).toBeHidden();
+  const bubbles=await page.locator('#app').getAttribute('data-view')==='bubbles';
+  const results=page.locator(bubbles?'#bubble-tracker':'#game-results');await expect(results).toBeVisible();
+  await expect(results).toHaveCSS('background-color','rgb(0, 0, 0)');
   const visible=await page.locator('button:visible').evaluateAll(elements=>elements.map(el=>el.id));
-  assert.deepEqual(visible.sort(),['fullscreen','sound'],'Only sound and exit controls remain above the game');
+  assert.deepEqual(visible.sort(),['fullscreen','game-back','sound'],'Back, sound and exit controls remain above the game');
   const geometry=await page.evaluate(()=>{
     const app=document.getElementById('app'),scene=document.getElementById('scene'),board=scene.parentElement;
-    return {width:app.clientWidth,height:app.clientHeight,sceneWidth:scene.clientWidth,sceneHeight:scene.clientHeight,top:board.offsetTop,left:board.offsetLeft};
+    const tracker=document.getElementById(app.dataset.view==='bubbles'?'bubble-tracker':'game-results');
+    return {width:app.clientWidth,height:app.clientHeight,sceneWidth:scene.clientWidth,sceneHeight:scene.clientHeight+tracker.clientHeight,top:board.offsetTop,left:board.offsetLeft};
   });
   assert(geometry.top<=1&&geometry.left<=1&&geometry.sceneWidth>=geometry.width-2&&geometry.sceneHeight>=geometry.height-2,'The animated game must fill the whole app frame');
   for(const button of await page.locator('button:visible').all()){
     const box=await button.boundingBox(),size=page.viewportSize();
     assert(box&&box.x>=0&&box.y>=0&&box.x+box.width<=size.width+1&&box.y+box.height<=size.height+1,'Floating controls remain on screen');
+  }
+  const back=await page.locator('#game-back').boundingBox(),sound=await page.locator('#sound').boundingBox();
+  for(const item of await results.locator('.bubble-target,.bubble-score,#result-score').all()){
+    const box=await item.boundingBox();
+    for(const control of [back,sound])assert(box.x+box.width<=control.x||box.x>=control.x+control.width||box.y+box.height<=control.y||box.y>=control.y+control.height,'Results must remain clear of floating controls, including rotated screens');
   }
 }
 try{
@@ -72,15 +80,18 @@ try{
       await page.getByRole('button',{name:'Fullscreen',exact:true}).click();await fullPlay(page);
       if(label==='Drag shapes'){
         await page.locator('[data-piece="circle"]').click();await page.locator('[data-target="circle"]').click();await expect(page.locator('[data-placed="circle"]')).toHaveCount(1);
+        await expect(page.locator('#result-score')).toHaveText('Matched 1 / 4');
       }else if(label==='Slide to reveal'){
         await page.getByRole('slider').first().focus();await page.keyboard.press('End');await expect(page.getByRole('slider').first()).toHaveAttribute('aria-valuenow','100');
+        await expect(page.locator('#result-score')).toHaveText('Friends 1 / 2');
       }else{
         await expect(page.locator('#art-tools')).toBeHidden();
         const point=await page.locator('#scene').evaluate(svg=>{const p=new DOMPoint(500,280).matrixTransform(svg.getScreenCTM());return {x:p.x,y:p.y};});
         await page.touchscreen.tap(point.x,point.y);await expect(page.locator('[data-stroke]')).toHaveCount(1);
       }
       await page.screenshot({path:resolve(out,`${name}-${label.split(' ')[0].toLowerCase()}-fullscreen.png`)});
-      await page.getByRole('button',{name:'Exit fullscreen',exact:true}).click();
+      await page.getByRole('button',{name:'Back',exact:true}).click();
+      await expect(page.locator('#home-view')).toBeVisible();await expect(page.getByRole('button',{name:'Fullscreen',exact:true})).toHaveAttribute('aria-pressed','false');
     }checks++;
     await page.getByRole('button',{name:'Home',exact:true}).click();await page.getByRole('button',{name:'Fullscreen',exact:true}).click();
     await expect(page.locator('.welcome')).toBeHidden();await page.getByRole('button',{name:'Pop bubbles',exact:true}).click();await fullPlay(page);await page.getByRole('button',{name:'Exit fullscreen',exact:true}).click();checks++;
