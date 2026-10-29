@@ -1,16 +1,16 @@
-# SaNa Little Hands Beta v0.14
+# SaNa Little Hands Beta v0.15
 
-The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.14 removes abacus row locks, supports responsive grouped slides in both directions and displays each actual count as a numeral and English word; verify the Pages build commit and run the live checks after publishing each update.
+The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.15 shows all ten abacus colour counts from the start, including zero, and keeps every numeral and English word visible as beads move; verify the Pages build commit and run the live checks after publishing each update.
 
 ## Free abacus counting
 
-All ten rows and all 100 beads work in either direction, including rows already coloured. A dragged bead pushes neighbouring beads without passing them. Single beads and groups settle across the centre to the chosen end. The row counter, result box and colour label show the actual count from 0 to 10, including its word: 5 Five Red, 10 Ten Blue, 0 Zero White. Untouched labels start blank; zero remains visible after a row is used and cleared.
+All ten rows and all 100 beads work in either direction, including rows already coloured. A dragged bead pushes neighbouring beads without passing them. Single beads and groups settle across the centre to the chosen end. The row counter, result box and colour label show the actual count from 0 to 10, including its word: 5 Five Red, 10 Ten Blue, 0 Zero White. All ten colour labels are visible from the start at 0 Zero. Each numeral and number word updates as that row moves, and reset returns every label to zero.
 
 Rainbow order and circle regions are unchanged. A positive row count fills its region; zero returns it to black. All ten colours earn SaNa’s congratulations and optional applause, without locking any beads. Again resets the puzzle. Counts survive resize/fullscreen; the game remains the 25th navigation step.
 
-The previous version disabled completed and future rows, rebuilt all bead nodes after a slide, and trusted the last move event rather than the release position. The repair keeps bead nodes stable, caches gesture geometry and element references, updates only the moving row and relevant labels, picks the nearest bead, and handles a final position delivered on pointerup. It does not rebuild the scene for ordinary counting. Count text stays fully visible immediately, using a small pulse instead of fading out after release.
+Before version 0.14 the app disabled completed and future rows, rebuilt all bead nodes after a slide, and trusted the last move event rather than the release position. The repair keeps bead nodes stable, caches gesture geometry and element references, updates only the moving row and relevant labels, picks the nearest bead, and handles a final position delivered on pointerup. It does not rebuild the scene for ordinary counting. Count text stays fully visible immediately, using a small pulse instead of fading out after release.
 
-`node check-abacus.mjs` moves every bead forward and backward in arbitrary row order, verifies 0–10 numerals/words and colour changes, groups moving before release, stable DOM nodes, final-position-only input, short/cancelled slides, keyboard, reward/reset, resize and five screen sizes in normal/fullscreen. `ABACUS_URL` selects a hosted play page. Beta cache v14 updates existing installations online.
+`node check-abacus.mjs` moves every bead forward and backward in arbitrary row order, verifies 0–10 numerals/words and colour changes, groups moving before release, stable DOM nodes, final-position-only input, short/cancelled slides, keyboard, reward/reset, resize and five screen sizes in normal/fullscreen. `ABACUS_URL` selects a hosted play page. Beta cache v15 updates existing installations online.
 
 ## Welcome and About
 
@@ -32,7 +32,7 @@ The home introduction uses one row at the same size as the hint above it. The de
 
 Fullscreen hides the main header, instructions and outer speed/size or art settings. Results and active sub-level choices remain inside the top of the black board. The bottom navigation row keeps Back, Front, Games, sound and Exit fullscreen clear of gameplay. Games leaves fullscreen and returns to the activity menu; Back and Front continue through the game steps. Gameplay continues and exiting restores the same round, collected colors, painting and settings. The menu can also enter fullscreen before a game is chosen. Supported browsers use native fullscreen and attempt landscape lock; otherwise in-page immersive play remains available. The exit button, Escape and native browser exit restore the regular layout.
 
-`node check-immersive.mjs` checks five viewport sizes in Chrome and WebKit, real native entry/exit, sound, full-field geometry, touch popping, matching, revealing, painting, preserved progress and fallback when native fullscreen is denied or unavailable. `IMMERSIVE_URL` selects a hosted play page. Beta cache v14 updates existing installations online.
+`node check-immersive.mjs` checks five viewport sizes in Chrome and WebKit, real native entry/exit, sound, full-field geometry, touch popping, matching, revealing, painting, preserved progress and fallback when native fullscreen is denied or unavailable. `IMMERSIVE_URL` selects a hosted play page. Beta cache v15 updates existing installations online.
 
 ## Screen layout
 

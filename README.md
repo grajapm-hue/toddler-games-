@@ -42,7 +42,7 @@ Above the Bubble Garden table, **Speed: Slow / Medium / Fast** and **Size: Small
 
 All 100 beads are available immediately, in any row and in both directions. Slide a single bead or push neighbouring beads together, like a basic abacus. Each row counts the beads on the right from 0 to 10. Its label shows the numeral, English number word and colour: **5 Five Red**, **10 Ten Blue**, or **0 Zero White**. The small number beside the row also shows its actual count.
 
-The seven rainbow bands retain Red, Orange, Yellow, Green, Blue, Indigo and Violet order. The circle remains pink outside, white in the middle and brown at the centre. A region fills when that row has beads on the right; returning them all left makes it black again. Untouched labels start blank; after use, Zero remains visible to teach zero. Numbers stay below the drawings, not inside them.
+The seven rainbow bands retain Red, Orange, Yellow, Green, Blue, Indigo and Violet order. The circle remains pink outside, white in the middle and brown at the centre. A region fills when that row has beads on the right; returning them all left makes it black again. All ten colour labels are visible from the start at 0 Zero. Each numeral and number word updates as that row moves, and reset returns every label to zero. Numbers stay below the drawings, not inside them.
 
 Counts and words update as a pushed group crosses the centre; release settles it at the corresponding end. A short or cancelled slide restores the prior count. All ten colours trigger SaNa’s congratulations and optional applause, while every bead remains movable. Clearing a row makes that colour available to complete again. Again clears the whole puzzle; rotation and fullscreen keep counts.
 
