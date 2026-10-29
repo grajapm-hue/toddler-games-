@@ -87,5 +87,52 @@ try{
     assert.deepEqual(await pixel(500,280),[101,165,138,255],'Painting must work after rotation');
     await page.screenshot({path:resolve(output,`paint-${name}.png`)});checks++;
   }
+  await page.setViewportSize({width:844,height:390});
+  for(const [level,picture,inside,count,size] of [
+    ['Explore level','fish',[650,200],4,'Large brush'],
+    ['Play level, ages 2 to 4','puppy',[500,280],8,'Medium brush'],
+    ['Challenge level','butterfly',[340,140],14,'Small brush']
+  ]){
+    await page.getByRole('button',{name:level,exact:true}).click();
+    await expect(page.getByRole('button',{name:level,exact:true})).toHaveAttribute('aria-pressed','true');
+    await expect(page.locator('#scene')).toHaveAttribute('aria-label',`Paint the ${picture}`);
+    await expect(page.getByRole('button',{name:size,exact:true})).toHaveAttribute('aria-pressed','true');
+    await page.getByRole('button',{name:'Coral paint',exact:true}).click();
+    await stroke(inside,[inside[0]+3,inside[1]]);
+    assert.deepEqual(await pixel(...inside),[223,127,104,255],`${level} must render and paint its own picture`);
+    await page.getByRole('button',{name:'Large brush',exact:true}).click();
+    await stroke(inside,[750,380]);
+    assert.deepEqual(await pixel(750,380),[255,253,245,255],`${picture} must retain its painting boundary`);
+    await page.screenshot({path:resolve(output,`level-${picture}-paint.png`)});
+    await page.getByRole('button',{name:'Again',exact:true}).click();
+    for(let y=75;y<=365;y+=18)await stroke([500,y],[300,y],[720,y]);
+    await expect(page.locator('#art-reward')).toBeVisible();
+    await expect(page.getByRole('status')).toContainText(picture);
+    await page.getByRole('button',{name:'Brush clean',exact:true}).click();
+    await expect(page.locator('#scene')).toHaveAttribute('aria-label',`Clean the ${picture}`);
+    await expect(page.locator('[data-dirt]')).toHaveCount(count);
+    for(let i=0;i<70&&await page.locator('[data-dirt]').count();i++){
+      const target=page.locator('[data-dirt]').first();
+      const box=await target.boundingBox();
+      await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();
+      await page.mouse.move(box.x+box.width/2+12,box.y+box.height/2,{steps:6});await page.mouse.up();
+    }
+    await expect(page.getByRole('status')).toContainText('All clean');
+    await page.screenshot({path:resolve(output,`level-${picture}-clean.png`)});
+    await page.getByRole('button',{name:'Finger paint',exact:true}).click();checks++;
+  }
+  for(const [name,width,height] of [['small-phone-butterfly',667,375],['portrait-butterfly',390,844]]){
+    await page.setViewportSize({width,height});
+    await expect.poll(async()=>{
+      const heading=await page.locator('#activity-name').boundingBox(),modes=await page.locator('#brush-modes').boundingBox();
+      if(width<height)return heading.y+heading.height<=modes.y+1;
+      return heading.x+heading.width<=modes.x+1;
+    }).toBe(true);
+    await page.screenshot({path:resolve(output,`${name}.png`)});checks++;
+  }
+  await page.reload();
+  await expect(page.getByRole('button',{name:'Challenge level',exact:true})).toHaveAttribute('aria-pressed','true');
+  await page.getByRole('button',{name:'Brush and paint',exact:true}).click();
+  await expect(page.locator('#scene')).toHaveAttribute('aria-label','Clean the butterfly');checks++;
   assert.deepEqual(errors,[]);await context.close();console.log(`PASS: ${checks} art checks (${engine})`);
 }finally{await browser.close();await new Promise(done=>server.close(done));}
