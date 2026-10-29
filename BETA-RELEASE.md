@@ -1,6 +1,14 @@
-# SaNa Little Hands Beta v0.22
+# SaNa Little Hands Beta v0.23
 
-The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.22 keeps Explore, Play and Challenge inside the game rooms and removes them from the game-selection header; verify the Pages build commit and run the live checks after publishing each update.
+The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.23 adds an upright responsive welcome and a sliding game menu with unchanged card sizes; verify the Pages build commit and run the live checks after publishing each update.
+
+## Portrait welcome and sliding game cards
+
+The opening page uses the device viewport without rotating it. Portrait screens stack the welcome artwork, title, actions and grown-up controls vertically, respect safe-area insets, and allow vertical scrolling on shorter screens. Landscape tablets and computers retain the wide welcome. Tap to play opens the existing landscape game frame; returning through the SaNa brand opens the upright welcome again. The Beta manifest uses orientation `any`, preserving its identity, start URL and scope. No native fullscreen or orientation-lock requests are introduced.
+
+The game menu shows five cards at their previous width and height. Extra cards extend the same row instead of squeezing its columns. A clearly labelled More games / Coming soon space follows the five playable games. Swipe or drag the row in either direction, or use Previous games and Next games in the menu header. Keyboard Home, End and arrow keys also browse the focused row. Gestures follow the rotated frame on upright phones and do not accidentally open a game. The navigation hides inside game rooms. Adding future game entries automatically extends the row; the placeholder has no game action.
+
+`node check-welcome-carousel.mjs` checks eight viewport sizes, natural portrait welcome and its dialogs, entry/return to landscape play, unchanged card dimensions, actual swipes and mouse drags, arrow/keyboard navigation, eight fixture-only future cards, orientation changes retaining game progress, and manifest identity. `FLOW_URL` selects a hosted Beta root. Local measurements recorded before this change also verify the existing card width and height stay within one pixel.
 
 ## Quiet expanded play and touch protection
 
@@ -34,7 +42,7 @@ Rainbow order and circle regions are unchanged. A positive row count fills its r
 
 Before version 0.14 the app disabled completed and future rows, rebuilt all bead nodes after a slide, and trusted the last move event rather than the release position. The repair keeps bead nodes stable, caches gesture geometry and element references, updates only the moving row and relevant labels, picks the nearest bead, and handles a final position delivered on pointerup. It does not rebuild the scene for ordinary counting. Count text stays fully visible immediately, using a small pulse instead of fading out after release.
 
-`node check-abacus.mjs` moves every bead forward and backward in arbitrary row order, verifies 0–10 numerals/words and colour changes, groups moving before release, stable DOM nodes, final-position-only input, short/cancelled slides, keyboard, reward/reset, resize and five screen sizes in normal/fullscreen. `ABACUS_URL` selects a hosted play page. Beta cache v22 updates existing installations online.
+`node check-abacus.mjs` moves every bead forward and backward in arbitrary row order, verifies 0–10 numerals/words and colour changes, groups moving before release, stable DOM nodes, final-position-only input, short/cancelled slides, keyboard, reward/reset, resize and five screen sizes in normal/fullscreen. `ABACUS_URL` selects a hosted play page. Beta cache v23 updates existing installations online.
 
 ## Welcome and About
 
@@ -52,11 +60,11 @@ Back is at the board’s bottom left, Front at its bottom right. They visit the 
 
 ## Immersive play
 
-The home introduction uses one row at the same size as the hint above it. The decorative picture and eyebrow are removed, leaving the four game cards the remaining space. Every animated game field has a black background; painting retains its light paper.
+The home introduction uses one row at the same size as the hint above it. The decorative picture and eyebrow are removed, leaving the game cards the remaining space. Every animated game field has a black background; painting retains its light paper.
 
 Fullscreen hides the main header, instructions and outer speed/size or art settings. Results and active sub-level choices remain inside the top of the black board. The bottom navigation row keeps Back, Front, Games, sound and Exit fullscreen clear of gameplay. Games leaves fullscreen and returns to the activity menu; Back and Front continue through the game steps. Gameplay continues and exiting restores the same round, collected colors, painting and settings. The menu can also enter fullscreen before a game is chosen. Expansion stays within the page on all browsers, without native fullscreen or orientation-lock requests. The exit button, Escape and Games restore the regular layout. Browser chrome is controlled by the browser and may remain visible.
 
-`node check-immersive.mjs` checks five viewport sizes in Chrome and WebKit, in-page entry/exit, sound, full-field geometry, touch popping, matching, revealing, painting, preserved progress and operation when native fullscreen is denied or unavailable. `IMMERSIVE_URL` selects a hosted play page. Beta cache v22 updates existing installations online.
+`node check-immersive.mjs` checks five viewport sizes in Chrome and WebKit, in-page entry/exit, sound, full-field geometry, touch popping, matching, revealing, painting, preserved progress and operation when native fullscreen is denied or unavailable. `IMMERSIVE_URL` selects a hosted play page. Beta cache v23 updates existing installations online.
 
 ## Screen layout
 

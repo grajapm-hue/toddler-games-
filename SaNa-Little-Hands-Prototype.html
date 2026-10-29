@@ -70,6 +70,11 @@
 #art-reward,.compact #art-reward,.immersive #art-reward{position:relative;order:-1;align-self:center;flex:0 0 auto;left:auto;top:auto;display:flex;align-items:center;justify-content:center;gap:6px;max-width:calc(100% - 12px);margin:4px auto;padding:4px 10px;font-size:14px;line-height:1.15;border-radius:10px;box-shadow:none}
 #art-reward svg,.compact #art-reward svg{width:28px;height:28px;flex:none}#art-reward b{display:inline}.compact #art-reward{font-size:13px}
 .activity-card b,.activity-card small{max-width:100%;text-align:center}.activity-card:nth-child(5){--card:#dbc9f4;--edge:#a18abd}#abacus-stage{font-size:15px;font-weight:900;padding:6px 10px;border-radius:6px;background:#dbc9f4;color:var(--ink)}.compact #abacus-stage{font-size:13px}#app[data-view="abacus"] #scene [data-bead-row][aria-disabled="false"]{cursor:grab}#app[data-view="abacus"] #scene [data-bead-row][aria-disabled="false"]:active{cursor:grabbing}.abacus-pop{animation:abacusPop .22s ease-out;transform-box:fill-box;transform-origin:center}@keyframes abacusPop{0%,100%{opacity:1;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
+.activity-grid{--card-gap:12px;grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:calc((100% - 4 * var(--card-gap)) / 5);gap:var(--card-gap);overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;overscroll-behavior:contain;scrollbar-width:none;touch-action:none;padding-bottom:6px;margin-bottom:-6px}
+.activity-grid::-webkit-scrollbar{display:none}.activity-grid .activity-card{scroll-snap-align:start}.activity-grid[data-dragging="true"]{scroll-snap-type:none}
+.compact .activity-grid{--card-gap:10px}.upcoming-card{--card:#e4ddf0;--edge:#aa9aba}.upcoming-card .card-art{color:#735b99}.upcoming-card small{color:var(--ink)}
+.game-pages{display:flex;align-items:center;gap:6px}.game-pages button{background:#ffe17a}.game-pages button:disabled{opacity:.45;cursor:default}.game-pages .icon-button{min-width:40px;width:40px}.compact .game-pages{gap:4px}.compact .game-pages .icon-button{width:34px;min-width:34px;height:36px}.compact .game-pages svg{width:20px;height:20px}
+#app:not([data-view="home"]) .game-pages{display:none}.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
@@ -90,6 +95,7 @@
   <button class="icon-button" id="home" type="button" aria-label="Home"><svg aria-hidden="true"><use href="#home-icon"/></svg></button>
   <div class="brand"><svg class="brand-mark" aria-hidden="true"><use href="#monkey"/></svg><div class="brand-copy"><div class="wordmark">SaNa</div><small>little hands</small></div></div>
 
+  <nav class="game-pages" id="game-pages" aria-label="Browse game cards"><button class="icon-button" id="previous-games" type="button" aria-label="Previous games" aria-controls="activity-grid" disabled><svg aria-hidden="true"><use href="#back-icon"/></svg></button><span class="visually-hidden" id="card-page" aria-live="polite"></span><button class="icon-button" id="next-games" type="button" aria-label="Next games" aria-controls="activity-grid"><svg viewBox="0 0 32 32" aria-hidden="true"><use href="#back-icon" transform="translate(32 0) scale(-1 1)"/></svg></button></nav>
   <button class="icon-button" id="sound" type="button" aria-label="Sound off" aria-pressed="false"><svg aria-hidden="true"><use href="#sound-icon"/></svg></button>
   <button class="icon-button" id="fullscreen" type="button" aria-label="Fullscreen" aria-pressed="false" title="Fullscreen"><svg aria-hidden="true"><use href="#fullscreen-icon"/></svg></button>
 </header>
@@ -102,7 +108,7 @@
 </aside>
 <main id="home-view">
   <div class="welcome"><h1>Come, let’s play.</h1><p>Curious fingers. Wonderful little discoveries.</p></div>
-  <div class="activity-grid" id="activity-grid"></div>
+  <div class="activity-grid" id="activity-grid" role="region" aria-label="Game cards, swipe for more" tabindex="0"></div>
 </main>
 <main id="activity-view" hidden>
   <span id="step-note" hidden></span>
@@ -251,6 +257,46 @@
     return `<g transform="translate(-90 -19) scale(.42)">${pictureArt()}</g><g transform="translate(145 82) rotate(24)"><rect x="-10" y="-65" width="20" height="78" rx="10" fill="#74a390"/><rect x="-24" y="3" width="48" height="39" rx="9" fill="#f7e1b1" stroke="#d7bb8d" stroke-width="3"/><path d="M-12 27V40M0 27V41M12 27V40" stroke="#c8a87d" stroke-width="3"/></g>`;
   }
   $('activity-grid').innerHTML=Object.entries(activities).map(([id,a])=>`<button class="activity-card" type="button" data-activity="${id}" aria-label="${a.label}"><span class="card-arrow" aria-hidden="true">↗</span><svg class="card-art" viewBox="0 0 220 180" aria-hidden="true">${preview(id)}</svg><b>${a.word}</b><small>${a.caption}</small></button>`).join('');
+  const cardGrid=$('activity-grid');
+  cardGrid.insertAdjacentHTML('beforeend','<div class="activity-card upcoming-card" role="group" aria-label="More games coming"><svg class="card-art" viewBox="0 0 220 180" aria-hidden="true"><circle cx="110" cy="85" r="52" fill="#fff6d6" stroke="currentColor" stroke-width="4"/><path d="M110 60V110M85 85H135" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round"/><path d="M40 42L44 52L54 56L44 60L40 70L36 60L26 56L36 52ZM177 115L180 122L188 125L180 128L177 136L174 128L166 125L174 122Z" fill="#e0b83b"/></svg><b>More games</b><small>Coming soon</small></div>');
+  let cardSwipe=null,ignoreCardClick=false;
+  const cardStep=()=>Math.max(1,(cardGrid.firstElementChild?.offsetWidth||0)+(parseFloat(getComputedStyle(cardGrid).columnGap)||0));
+  function updateCardNavigation(){
+    const max=Math.max(0,cardGrid.scrollWidth-cardGrid.clientWidth);
+    $('previous-games').disabled=cardGrid.scrollLeft<2;$('next-games').disabled=cardGrid.scrollLeft>=max-2;
+    const first=Math.round(cardGrid.scrollLeft/cardStep())+1,total=cardGrid.children.length;
+    $('card-page').textContent=`Games ${first} to ${Math.min(total,first+4)} of ${total}`;
+  }
+  function scrollCards(left){cardGrid.scrollTo({left:Math.max(0,Math.min(left,cardGrid.scrollWidth-cardGrid.clientWidth)),behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});}
+  $('previous-games').addEventListener('click',()=>scrollCards(cardGrid.scrollLeft-cardGrid.clientWidth));
+  $('next-games').addEventListener('click',()=>scrollCards(cardGrid.scrollLeft+cardGrid.clientWidth));
+  cardGrid.addEventListener('scroll',updateCardNavigation,{passive:true});
+  new ResizeObserver(updateCardNavigation).observe(cardGrid);
+  new MutationObserver(updateCardNavigation).observe(cardGrid,{childList:true});
+  // Map the swipe into the play frame, including its portrait-device rotation.
+  cardGrid.addEventListener('pointerdown',event=>{
+    if(!event.isPrimary||event.button!==0)return;
+    ignoreCardClick=false;cardSwipe={id:event.pointerId,start:app.classList.contains('rotated')?event.clientY:event.clientX,left:cardGrid.scrollLeft,dragging:false};
+  });
+  cardGrid.addEventListener('pointermove',event=>{
+    if(cardSwipe?.id!==event.pointerId)return;
+    const distance=(app.classList.contains('rotated')?event.clientY:event.clientX)-cardSwipe.start;
+    if(!cardSwipe.dragging&&Math.abs(distance)>8){cardSwipe.dragging=true;cardGrid.dataset.dragging='true';cardGrid.setPointerCapture(event.pointerId);}
+    if(cardSwipe.dragging){event.preventDefault();cardGrid.scrollLeft=cardSwipe.left-distance;}
+  });
+  function finishCardSwipe(event){
+    if(cardSwipe?.id!==event.pointerId)return;
+    const dragged=cardSwipe.dragging;cardSwipe=null;delete cardGrid.dataset.dragging;
+    if(cardGrid.hasPointerCapture(event.pointerId))cardGrid.releasePointerCapture(event.pointerId);
+    if(dragged){ignoreCardClick=true;scrollCards(Math.round(cardGrid.scrollLeft/cardStep())*cardStep());}
+  }
+  cardGrid.addEventListener('pointerup',finishCardSwipe);cardGrid.addEventListener('pointercancel',finishCardSwipe);
+  cardGrid.addEventListener('lostpointercapture',event=>{if(event.target===cardGrid)finishCardSwipe(event);});
+  cardGrid.addEventListener('click',event=>{if(ignoreCardClick&&event.detail!==0){ignoreCardClick=false;event.preventDefault();event.stopImmediatePropagation();}},{capture:true});
+  cardGrid.addEventListener('keydown',event=>{
+    if(event.target!==cardGrid||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+    event.preventDefault();scrollCards(event.key==='Home'?0:event.key==='End'?cardGrid.scrollWidth:cardGrid.scrollLeft+(event.key==='ArrowRight'?cardStep():-cardStep()));
+  });
   $('paint-tools').insertAdjacentHTML('beforeend',colors.map((color,i)=>`<button class="paint-color" type="button" data-paint="${color}" style="--paint:${color}" aria-label="${colorNames[i]} paint" aria-pressed="${i===0}"></button>`).join(''));
   function clearEffects(){clearTimeout(rewardTimer);clearTimeout(guideTimer);$('celebrate').hidden=true;$('art-reward').hidden=true;scene.querySelector('[data-guide]')?.remove();}
   function cancelGesture(){

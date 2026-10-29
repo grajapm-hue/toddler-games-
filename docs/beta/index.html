@@ -15,7 +15,6 @@ button:focus-visible,a:focus-visible{outline:4px solid #fff;outline-offset:5px}
 [hidden]{display:none!important}
 #frame,#frame *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
 #frame{--w:100vw;--h:100dvh;position:absolute;left:50%;top:50%;width:var(--w);height:var(--h);transform:translate(-50%,-50%);overflow:hidden;background:radial-gradient(ellipse at 7% 10%,#f459b6 0,transparent 46%),radial-gradient(ellipse at 93% 84%,#28d3e0 0,transparent 47%),linear-gradient(125deg,#bd3fb7,#51409a 58%,#6d87d3);display:grid;grid-template-rows:auto minmax(0,1fr) auto;padding:25px 4.5% 20px;isolation:isolate}
-#frame.rotated{transform:translate(-50%,-50%) rotate(90deg)}
 .topline{display:flex;justify-content:space-between;align-items:center;gap:20px;font-size:22px;font-weight:900;color:#fff5e8}
 .family{display:flex;align-items:center;gap:9px}.family span{font-size:34px}.preview-tag{padding:7px 13px;border:1px solid #ffffff50;border-radius:30px;background:#43307945;font-size:12px}
 .release-tools{display:flex;align-items:center;gap:8px;flex-shrink:0}.update-button{display:flex;align-items:center;justify-content:center;gap:7px;min-height:44px;min-width:128px;padding:8px 13px;border:2px solid #fff4ca;border-radius:14px;background:#ffe17a;color:#422b17;font-size:16px;font-weight:900}.update-button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}.update-button:disabled{opacity:.8;cursor:progress}.compact .update-button{font-size:14px;min-width:116px;padding:7px 10px}.small .update-button{font-size:13px;min-width:110px}.small .release-tools{gap:5px}
@@ -53,6 +52,24 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
 .about-card{background:#fff7e8;border-radius:22px;padding:18px 22px;margin-bottom:14px;text-align:center;box-shadow:0 4px 0 #c7b89b;font-size:17px;font-weight:800;line-height:1.5}
 .about-card h3{font-size:30px;line-height:1.2;margin:0 0 8px;color:#693210}.about-card p{font-size:17px;line-height:1.5;margin:8px 0}.about-card .about-quote{font-size:20px;font-style:italic;color:#a13912;font-weight:900}
 .about-card.safety{border-left:5px solid #a13912;color:#693210;font-weight:900}.about-card a{color:#11608a;text-decoration:underline}.about-version{display:block;font-size:14px;color:#67503a;margin-top:6px}.compact .about-card{padding:14px 18px;font-size:16px}.compact .about-card p{font-size:16px}.compact .about-card h3{font-size:26px}
+/* The welcome follows the device; only the playroom uses a landscape frame. */
+@media(orientation:portrait){
+  #frame,#frame.small,#frame.compact{padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));gap:12px;overflow-y:auto;overscroll-behavior:contain;grid-template-rows:auto minmax(min-content,1fr) auto}
+  #frame .topline{flex-direction:column;gap:8px;font-size:18px;align-items:stretch}#frame .family{justify-content:center}#frame .family span{font-size:30px}
+  #frame .release-tools{justify-content:center;gap:12px}#frame .preview-tag{font-size:11px}#frame .update-button{min-height:42px;min-width:124px;font-size:15px}
+  #frame .hero{display:flex;flex-direction:column;justify-content:center;gap:4px;min-height:min-content}
+  #frame .mascot-space{flex:1;align-self:center;width:min(78vw,290px);height:180px;min-height:100px;max-height:220px;padding:0}
+  #frame .mascot-art{width:100%;height:100%;max-height:220px}#frame .sana-says{font-size:13px;padding:7px 12px;top:0;left:0}
+  #frame .copy{width:100%;padding:0;text-align:center}#frame h1{font-size:clamp(36px,10vw,54px);letter-spacing:-1.5px}#frame h1 span{font-size:28px;margin-bottom:3px}
+  #frame .tagline{font-size:16px;line-height:1.35;margin:9px 0 15px}#frame .actions{gap:9px;max-width:500px;margin:auto;grid-template-columns:1.2fr 1fr}
+  #frame .play-button,#frame .install-button{min-height:52px;font-size:17px;padding:8px 10px;gap:6px}#frame .play-button svg,#frame .install-button svg{width:21px;height:21px}
+  #frame .parent-note{text-align:left;margin:18px auto 0;padding:10px 12px;font-size:12px;line-height:1.4}#frame .parent-note strong{font-size:13px}
+  #frame .bottomline{flex-direction:column;gap:10px;text-align:center;padding-top:0;font-size:14px}#frame .bottomline p{font-size:14px;line-height:1.4}
+  #frame .footer-actions{width:100%;justify-content:center;gap:8px}#frame .about-button{min-height:44px;font-size:13px;padding:8px 12px}
+  #frame .dialog-shade{position:fixed;padding:12px}#frame .dialog-panel{width:100%;max-width:560px;padding:20px;max-height:100%}#frame .dialog-panel h2{font-size:24px}#frame .dialog-panel p{font-size:16px}
+  #frame .about-dialog{max-height:100%}#frame .about-dialog #dialog-title{font-size:22px;padding-right:46px}#frame .about-card{padding:14px;font-size:16px}#frame .about-card h3{font-size:25px}
+}
+@media(orientation:portrait) and (max-height:700px){#frame .mascot-space{height:100px;max-height:100px;width:180px}#frame .sana-says{font-size:11px;left:-20px}#frame .tagline{font-size:14px;margin:7px 0 11px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
@@ -62,11 +79,11 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
 <link rel="stylesheet" href="share.css">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="SaNa Beta">
-<meta name="sana-release" content="sana-little-hands-beta-v22">
+<meta name="sana-release" content="sana-little-hands-beta-v23">
 </head>
 <body>
 <main id="frame">
-  <header class="topline"><div class="family"><span aria-hidden="true">🐒</span> A little world with SaNa</div><div class="release-tools"><span class="preview-tag">Beta · v0.22</span><button class="update-button" id="update-app" type="button" aria-label="Update app" aria-busy="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7V3M20 7H16M20 7A8 8 0 1 0 21 14"/></svg><span data-update-label>Update app</span></button></div></header>
+  <header class="topline"><div class="family"><span aria-hidden="true">🐒</span> A little world with SaNa</div><div class="release-tools"><span class="preview-tag">Beta · v0.23</span><button class="update-button" id="update-app" type="button" aria-label="Update app" aria-busy="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7V3M20 7H16M20 7A8 8 0 1 0 21 14"/></svg><span data-update-label>Update app</span></button></div></header>
   <section class="hero" aria-labelledby="welcome-title">
     <div class="mascot-space">
       <p class="sana-says">Hello, little explorer!</p>
@@ -110,10 +127,11 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
   function fit(){
     const viewport=window.visualViewport;
     const width=viewport?.width||window.innerWidth,height=viewport?.height||window.innerHeight;
-    const portrait=height>width,w=portrait?height:width,h=portrait?width:height;
+    const w=width,h=height;
     frame.style.setProperty('--w',w+'px');frame.style.setProperty('--h',h+'px');
     frame.style.paddingLeft='';frame.style.paddingRight='';
-    frame.classList.toggle('rotated',portrait);frame.classList.toggle('compact',h<580);frame.classList.toggle('small',w<730||h<350);
+    frame.style.left=((viewport?.offsetLeft||0)+width/2)+'px';frame.style.top=((viewport?.offsetTop||0)+height/2)+'px';
+    frame.classList.toggle('compact',h<580);frame.classList.toggle('small',w<730||h<350);
   }
   fit();window.addEventListener('resize',fit);window.visualViewport?.addEventListener('resize',fit);
   const shade=document.getElementById('dialog-shade'),panel=document.getElementById('dialog-panel');
@@ -123,7 +141,7 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
   document.getElementById('about').addEventListener('click',event=>show('📜 About this project',`
     <section class="about-card"><h3>🐒 SaNa Little Hands</h3><p>Kids Puzzle Library · for ages 2–4</p><p class="about-quote">“Little hands, happy discoveries.”</p><p>Drag and match shapes · Pop plain, 1–20, A–Z and shape bubbles · Slide to find friends · Brush clean and finger paint · Count abacus beads to colour a rainbow and circle</p><p>Explore · Play · Challenge</p><p>No ads, accounts or trackers. Optional sound and offline play after the first online load.</p></section>
     <section class="about-card safety">🛡️ Low brightness · short breaks · play with a parent</section>
-    <section class="about-card">Created by G.RajaPathamuthu · Kids Puzzle Library<br>Guided by : JNT<br>Code Coordinated by : AI-Assistances<br><i>(What we get is all we ask for.)</i><p>Found something odd? Send us your feedback.<br>Mail To : <a href="mailto:grajapm@gmail.com?subject=SaNa%20Little%20Hands%20Feedback%20%26%20Suggestion">✉️ Feedback &amp; Suggestion</a></p><span class="about-version">App <span data-app-version>Beta v0.22</span></span></section>`,event.currentTarget));
+    <section class="about-card">Created by G.RajaPathamuthu · Kids Puzzle Library<br>Guided by : JNT<br>Code Coordinated by : AI-Assistances<br><i>(What we get is all we ask for.)</i><p>Found something odd? Send us your feedback.<br>Mail To : <a href="mailto:grajapm@gmail.com?subject=SaNa%20Little%20Hands%20Feedback%20%26%20Suggestion">✉️ Feedback &amp; Suggestion</a></p><span class="about-version">App <span data-app-version>Beta v0.23</span></span></section>`,event.currentTarget));
   document.getElementById('close-dialog').addEventListener('click',close);
   shade.addEventListener('click',event=>{if(event.target===shade)close();});
   document.addEventListener('keydown',event=>{
