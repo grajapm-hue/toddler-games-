@@ -24,7 +24,7 @@ try{
       const box=await control.boundingBox();assert(box.x>=0&&box.y>=0&&box.x+box.width<=width+1&&box.y+box.height<=height+1,'Welcome controls fit');
     }
     await page.screenshot({path:resolve(out,`${name}-welcome.png`)});checks++;
-    const about=page.getByRole('button',{name:'About this little world',exact:true});await about.click();const dialog=page.getByRole('dialog');
+    const about=page.getByRole('button',{name:'About this project',exact:true});await about.click();const dialog=page.getByRole('dialog');
     await expect(dialog).toContainText('About this project');await expect(dialog).toContainText('SaNa Little Hands');await expect(dialog).toContainText('G.RajaPathamuthu');await expect(dialog).toContainText('Guided by : JNT');await expect(dialog).toContainText('AI-Assistances');
     await expect(dialog).toContainText('short breaks');await expect(dialog).toContainText('play with a parent');
     const feedback=dialog.getByRole('link',{name:/Feedback & Suggestion/}),mail=new URL(await feedback.getAttribute('href'));assert.equal(mail.pathname,'grajapm@gmail.com');assert(mail.searchParams.get('subject').includes('SaNa'));

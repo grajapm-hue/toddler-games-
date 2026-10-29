@@ -14,7 +14,7 @@ button{cursor:pointer}a{color:inherit;text-decoration:none}
 button:focus-visible,a:focus-visible{outline:4px solid #fff;outline-offset:5px}
 [hidden]{display:none!important}
 #frame,#frame *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
-#frame{--w:100vw;--h:100dvh;position:absolute;left:50%;top:50%;width:var(--w);height:var(--h);transform:translate(-50%,-50%);overflow:hidden;background:radial-gradient(ellipse at 7% 10%,#f459b6 0,transparent 46%),radial-gradient(ellipse at 93% 84%,#28d3e0 0,transparent 47%),linear-gradient(125deg,#bd3fb7,#51409a 58%,#6d87d3);display:grid;grid-template-rows:auto minmax(0,1fr) auto;padding:25px 4.5% 20px;isolation:isolate}
+#frame{--w:100vw;--h:100dvh;position:absolute;left:50%;top:50%;width:var(--w);height:var(--h);transform:translate(-50%,-50%);overflow:hidden;background:radial-gradient(58% 42% at 18% 16%,#ff5fa8 0,transparent 70%),radial-gradient(64% 46% at 84% 24%,#35d9f0 0,transparent 72%),radial-gradient(70% 50% at 26% 88%,#48e0f2 0,transparent 70%),radial-gradient(66% 48% at 88% 84%,#ff3d86 0,transparent 72%),linear-gradient(160deg,#c13fb0,#7e4bd4);display:grid;grid-template-rows:auto minmax(0,1fr) auto;padding:25px 4.5% 20px;isolation:isolate}
 .topline{display:flex;justify-content:space-between;align-items:center;gap:20px;font-size:22px;font-weight:900;color:#fff5e8}
 .family{display:flex;align-items:center;gap:9px}.family span{font-size:34px}.preview-tag{padding:7px 13px;border:1px solid #ffffff50;border-radius:30px;background:#43307945;font-size:12px}
 .release-tools{display:flex;align-items:center;gap:8px;flex-shrink:0}.update-button{display:flex;align-items:center;justify-content:center;gap:7px;min-height:44px;min-width:128px;padding:8px 13px;border:2px solid #fff4ca;border-radius:14px;background:#ffe17a;color:#422b17;font-size:16px;font-weight:900}.update-button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}.update-button:disabled{opacity:.8;cursor:progress}.compact .update-button{font-size:14px;min-width:116px;padding:7px 10px}.small .update-button{font-size:13px;min-width:110px}.small .release-tools{gap:5px}
@@ -71,6 +71,26 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
   #frame.portrait-welcome .dialog-shade{position:fixed;padding:12px}#frame.portrait-welcome .dialog-panel{width:100%;max-width:560px;padding:20px;max-height:100%}#frame.portrait-welcome .dialog-panel h2{font-size:24px}#frame.portrait-welcome .dialog-panel p{font-size:16px}
   #frame.portrait-welcome .about-dialog{max-height:100%}#frame.portrait-welcome .about-dialog #dialog-title{font-size:22px;padding-right:46px}#frame.portrait-welcome .about-card{padding:14px;font-size:16px}#frame.portrait-welcome .about-card h3{font-size:25px}
 #frame.portrait-welcome.short-welcome .mascot-space{height:100px;max-height:100px;width:180px}#frame.portrait-welcome.short-welcome .sana-says{font-size:11px;left:-20px}#frame.portrait-welcome.short-welcome .tagline{font-size:14px;margin:7px 0 11px}
+/* The opening follows the existing Kids Puzzle splash composition. */
+#frame:not(.portrait-welcome){overflow-y:auto;grid-template-rows:auto minmax(min-content,1fr) auto}#frame:not(.portrait-welcome) .dialog-shade{position:fixed}
+.parent-note{border:1.5px solid #ffd16699;background:#261632ad;box-shadow:inset 0 0 0 1px #ffffff18;color:#fff;font-weight:800}
+.parent-note strong{color:#ffd166;text-align:center;font-size:16px;margin-bottom:10px}.parent-note ol{margin:0;padding-left:20px;line-height:1.55}.parent-note li{padding-left:1px}.parent-note b{color:#ffd166}
+.copy .parent-note{margin-top:15px;margin-bottom:20px}.tagline{color:#5aefa2;font-weight:900;text-shadow:0 2px 6px #182134,0 0 3px #182134}
+.bottomline{gap:12px}.bottomline .about-button{display:flex;align-items:center;justify-content:center;gap:7px;font-size:16px;min-height:48px;font-weight:900;background:#33215f8c;border:1.5px solid #ffffff80}
+.bottomline .share-button{background:#fff7e9;border-color:#fff7e9;color:#483575}
+.compact .parent-note{font-size:12px;padding:10px 13px}.compact .parent-note strong{font-size:14px;margin-bottom:6px}.compact .copy .parent-note{margin-top:10px;margin-bottom:14px}
+#frame.portrait-welcome{gap:10px;grid-template-rows:auto minmax(min-content,1fr) auto}
+#frame.portrait-welcome .topline{gap:6px;font-size:16px}#frame.portrait-welcome .family span{font-size:26px}#frame.portrait-welcome .release-tools{gap:10px}#frame.portrait-welcome .update-button{min-height:40px;font-size:14px}
+#frame.portrait-welcome .hero{gap:8px;max-width:600px}#frame.portrait-welcome .mascot-space{flex:none;width:min(92%,350px);height:clamp(150px,calc(var(--h) * .26),240px);max-height:240px;min-height:0}
+#frame.portrait-welcome .mascot-space{grid-template-rows:minmax(0,1fr)}#frame.portrait-welcome .mascot-art{height:100%;max-height:100%;min-height:0;min-width:0;filter:drop-shadow(0 12px 12px #28133a44)}#frame.portrait-welcome .sana-says{display:none}
+#frame.portrait-welcome h1{font-size:clamp(28px,calc(var(--w) * .085),38px);line-height:1.12;letter-spacing:-1px;color:#fff;text-shadow:0 3px 8px #2d174e99;white-space:nowrap}
+#frame.portrait-welcome h1 span{display:inline;font-size:inherit;color:inherit;letter-spacing:inherit;margin:0}
+#frame.portrait-welcome .tagline{font-size:15px;line-height:1.4;margin:10px 0 16px;color:#5aefa2}
+#frame.portrait-welcome .parent-note{text-align:left;margin:0 auto 20px;padding:12px 15px;font-size:14px;border-radius:15px;line-height:1.5}#frame.portrait-welcome .parent-note strong{font-size:15px;margin-bottom:8px}#frame.portrait-welcome .parent-note ol{padding-left:18px;line-height:1.5}
+#frame.portrait-welcome .actions{gap:9px;max-width:600px;grid-template-columns:1.1fr 1fr}#frame.portrait-welcome .play-button,#frame.portrait-welcome .install-button{min-height:54px;font-size:18px;border-radius:40px}
+#frame.portrait-welcome .bottomline{gap:10px;flex-direction:column-reverse}#frame.portrait-welcome .footer-actions{gap:9px;width:100%;max-width:600px}#frame.portrait-welcome .footer-actions #about{flex:1;background:#33215f8c;color:#fff}#frame.portrait-welcome .footer-actions #share-app{font-size:13px;background:#fff7e9;color:#483575;border-color:#fff7e9}
+#frame.portrait-welcome .bottomline p{font-size:14px;line-height:1.4}#frame.portrait-welcome .about-button{min-height:46px;font-size:16px;padding:8px 14px}
+#frame.portrait-welcome.short-welcome .mascot-space{height:115px;max-height:115px;width:210px}#frame.portrait-welcome.short-welcome .tagline{font-size:14px;margin:7px 0 12px}#frame.portrait-welcome.short-welcome .parent-note{font-size:13px;padding:10px 12px;margin-bottom:14px}#frame.portrait-welcome.short-welcome .parent-note strong{font-size:14px;margin-bottom:6px}#frame.portrait-welcome.short-welcome .play-button,#frame.portrait-welcome.short-welcome .install-button{min-height:50px;font-size:16px}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
@@ -80,11 +100,11 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
 <link rel="stylesheet" href="share.css">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="SaNa Beta">
-<meta name="sana-release" content="sana-little-hands-beta-v24">
+<meta name="sana-release" content="sana-little-hands-beta-v25">
 </head>
 <body>
 <main id="frame">
-  <header class="topline"><div class="family"><span aria-hidden="true">🐒</span> A little world with SaNa</div><div class="release-tools"><span class="preview-tag">Beta · v0.24</span><button class="update-button" id="update-app" type="button" aria-label="Update app" aria-busy="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7V3M20 7H16M20 7A8 8 0 1 0 21 14"/></svg><span data-update-label>Update app</span></button></div></header>
+  <header class="topline"><div class="family"><span aria-hidden="true">🐒</span> A little world with SaNa</div><div class="release-tools"><span class="preview-tag">Beta · v0.25</span><button class="update-button" id="update-app" type="button" aria-label="Update app" aria-busy="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7V3M20 7H16M20 7A8 8 0 1 0 21 14"/></svg><span data-update-label>Update app</span></button></div></header>
   <section class="hero" aria-labelledby="welcome-title">
     <div class="mascot-space">
       <p class="sana-says">Hello, little explorer!</p>
@@ -94,7 +114,13 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
         <g class="mascot-float">
           <circle cx="231" cy="207" r="136" fill="#50306e" opacity=".65"/>
           <circle cx="231" cy="194" r="136" fill="url(#sun)" stroke="#ffe79a" stroke-width="3"/>
-          <text x="232" y="259" text-anchor="middle" font-size="180" font-family="Segoe UI Emoji,Apple Color Emoji,Noto Color Emoji,sans-serif">🐒</text>
+          <g aria-hidden="true">
+            <path d="M263 281C347 310 356 203 332 138C315 92 335 78 348 101" fill="none" stroke="#96634f" stroke-width="23" stroke-linecap="round"/>
+            <ellipse cx="231" cy="250" rx="44" ry="59" fill="#96634f"/><ellipse cx="222" cy="248" rx="28" ry="43" fill="#f7d2b3"/>
+            <path d="M211 226Q193 247 211 279M247 224Q270 243 259 275" fill="none" stroke="#96634f" stroke-width="18" stroke-linecap="round"/>
+            <ellipse cx="211" cy="295" rx="27" ry="11" fill="#96634f"/><ellipse cx="262" cy="292" rx="27" ry="12" fill="#96634f"/>
+            <g transform="translate(156 99) scale(1.45)"><circle cx="21" cy="49" r="16" fill="#96634f"/><circle cx="79" cy="49" r="16" fill="#96634f"/><circle cx="21" cy="49" r="9" fill="#f2b5a0"/><circle cx="79" cy="49" r="9" fill="#f2b5a0"/><path d="M20 48Q20 13 50 17Q82 13 81 49L75 71Q50 88 25 71Z" fill="#96634f"/><path d="M28 42Q29 25 48 37Q67 23 74 43L73 67Q50 84 28 66Z" fill="#f7d2b3"/><ellipse cx="38" cy="47" rx="4" ry="5" fill="#173e35"/><ellipse cx="63" cy="47" rx="4" ry="5" fill="#173e35"/><circle cx="37" cy="45" r="1.3" fill="white"/><circle cx="62" cy="45" r="1.3" fill="white"/><ellipse cx="50" cy="58" rx="5" ry="3.5" fill="#b87d64"/><path d="M38 65Q50 77 63 65" stroke="#775044" fill="none" stroke-width="3.5" stroke-linecap="round"/><path d="M45 18Q35 3 52 8Q61 5 60 17" fill="#96634f"/></g>
+          </g>
           <g transform="translate(58 205) rotate(-19 44 44)"><rect x="0" y="7" width="88" height="88" rx="22" fill="#50306e" opacity=".6"/><rect width="88" height="88" rx="22" fill="#fff9e6" stroke="#fff" stroke-width="3"/><circle cx="44" cy="44" r="11" fill="#f05c7c"/></g>
           <path d="M357 267L385 321H328Z" fill="#4bdef0" stroke="#b0f8ff" stroke-width="4" stroke-linejoin="round"/>
           <circle cx="357" cy="102" r="23" fill="#fd8dbd" stroke="#ffd5e7" stroke-width="4"/>
@@ -105,16 +131,16 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
       </svg>
     </div>
     <div class="copy">
-      <h1 id="welcome-title"><span>SaNa</span>Little Hands</h1>
+      <h1 id="welcome-title"><span>SaNa</span> Little Hands</h1>
       <p class="tagline">Count, tap, drag, slide and paint.<br>Little fingers, happy discoveries.</p>
+      <aside class="parent-note" aria-label="Before you play, health first"><strong>🛡️ Before you play — health first</strong><ol><li>Keep <b>brightness low</b>. Use Night Mode after dark.</li><li><b>Take short breaks</b> often.</li><li><b>Play with a parent or guardian</b> nearby.</li></ol></aside>
       <div class="actions">
         <a class="play-button" id="play" href="play.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3L21 12L5 21Z"/></svg>Tap to play</a>
         <button class="install-button" id="install" type="button"><svg viewBox="0 0 28 28" aria-hidden="true"><path d="M14 3V18M8 12L14 18L20 12M4 19V24H24V19"/></svg><span data-install-label>Install app</span></button>
       </div>
-      <aside class="parent-note"><strong>For little ones, with a grown-up nearby</strong><p>Find a comfy screen brightness. Play a little, then take a break together.</p></aside>
     </div>
   </section>
-  <footer class="bottomline"><p>Made for ages 2–4 · Three playful levels<br><span id="offline-status" role="status">Preparing offline play…</span></p><div class="footer-actions"><button class="about-button share-button" type="button" id="share-app"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="4" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="20" r="3"/><path d="M9 10L15 6M9 14L15 18"/></svg>Share app</button><button class="about-button" type="button" id="about">About this little world</button></div></footer>
+  <footer class="bottomline"><p>Made for ages 2–4 · Three playful levels<br><span id="offline-status" role="status">Preparing offline play…</span></p><div class="footer-actions"><button class="about-button" type="button" id="about">About this project</button><button class="about-button share-button" type="button" id="share-app"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="4" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="20" r="3"/><path d="M9 10L15 6M9 14L15 18"/></svg>Share app</button></div></footer>
   <div class="dialog-shade" id="dialog-shade" hidden>
     <section class="dialog-panel" id="dialog-panel" role="dialog" aria-modal="true" aria-labelledby="dialog-title" tabindex="-1">
       <h2 id="dialog-title"></h2><div id="dialog-copy"></div><button id="close-dialog" type="button">Got it</button>
@@ -150,7 +176,7 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
   document.getElementById('about').addEventListener('click',event=>show('📜 About this project',`
     <section class="about-card"><h3>🐒 SaNa Little Hands</h3><p>Kids Puzzle Library · for ages 2–4</p><p class="about-quote">“Little hands, happy discoveries.”</p><p>Drag and match shapes · Pop plain, 1–20, A–Z and shape bubbles · Slide to find friends · Brush clean and finger paint · Count abacus beads to colour a rainbow and circle</p><p>Explore · Play · Challenge</p><p>No ads, accounts or trackers. Optional sound and offline play after the first online load.</p></section>
     <section class="about-card safety">🛡️ Low brightness · short breaks · play with a parent</section>
-    <section class="about-card">Created by G.RajaPathamuthu · Kids Puzzle Library<br>Guided by : JNT<br>Code Coordinated by : AI-Assistances<br><i>(What we get is all we ask for.)</i><p>Found something odd? Send us your feedback.<br>Mail To : <a href="mailto:grajapm@gmail.com?subject=SaNa%20Little%20Hands%20Feedback%20%26%20Suggestion">✉️ Feedback &amp; Suggestion</a></p><span class="about-version">App <span data-app-version>Beta v0.24</span></span></section>`,event.currentTarget));
+    <section class="about-card">Created by G.RajaPathamuthu · Kids Puzzle Library<br>Guided by : JNT<br>Code Coordinated by : AI-Assistances<br><i>(What we get is all we ask for.)</i><p>Found something odd? Send us your feedback.<br>Mail To : <a href="mailto:grajapm@gmail.com?subject=SaNa%20Little%20Hands%20Feedback%20%26%20Suggestion">✉️ Feedback &amp; Suggestion</a></p><span class="about-version">App <span data-app-version>Beta v0.25</span></span></section>`,event.currentTarget));
   document.getElementById('close-dialog').addEventListener('click',close);
   shade.addEventListener('click',event=>{if(event.target===shade)close();});
   document.addEventListener('keydown',event=>{

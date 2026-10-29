@@ -41,7 +41,7 @@ try{
         for(const selector of ['#play','#install','#update-app','#share-app','#about']){const item=page.locator(selector);await item.scrollIntoViewIfNeeded();const box=await item.boundingBox();assert(box.x>=-1&&box.x+box.width<=width+1,'Welcome controls do not overflow sideways');await expect(item).toBeInViewport();}
         await page.locator('#frame').evaluate(el=>{el.scrollTop=0;});await page.screenshot({path:resolve(out,`${name}-welcome.png`)});
         await page.getByRole('button',{name:'Share app',exact:true}).click();await expect(page.getByRole('dialog')).toBeInViewport();await page.getByRole('button',{name:'Got it',exact:true}).click();
-        await page.getByRole('button',{name:'About this little world',exact:true}).click();await expect(page.getByRole('button',{name:'Close About',exact:true})).toBeInViewport();await page.keyboard.press('Escape');
+        await page.getByRole('button',{name:'About this project',exact:true}).click();await expect(page.getByRole('button',{name:'Close About',exact:true})).toBeInViewport();await page.keyboard.press('Escape');
         await page.getByRole('link',{name:'Tap to play',exact:true}).click();checks++;
       }
       await expect(page.locator('[data-activity]')).toHaveCount(5);
