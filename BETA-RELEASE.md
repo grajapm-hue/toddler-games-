@@ -1,14 +1,14 @@
-# SaNa Little Hands Beta v0.20
+# SaNa Little Hands Beta v0.21
 
-The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.20 keeps browser fullscreen notices and long-press menus out of play; verify the Pages build commit and run the live checks after publishing each update.
+The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.21 starts the touch guards before the first visible game text, including while the game script is still downloading; verify the Pages build commit and run the live checks after publishing each update.
 
 ## Quiet expanded play and touch protection
 
 The expand/exit control now uses in-page immersive play on all devices. It no longer requests the browser Fullscreen API or orientation lock, so that action does not trigger the browser-owned fullscreen notice containing the site address. The same board still fills the available camera-safe app frame, keeps its results, choices and bottom controls, and exits with the toggle, Escape or Games. Browser/status bars may remain visible when running in a browser. The app does not add a replacement popup.
 
-Welcome, app home, game text, labels and app dialogs disable user selection, touch callouts and native dragging. Document-level contextmenu, selectstart and dragstart guards stop accidental native actions while leaving game pointer input and dialog scrolling intact. The displayed sharing URL does not accept touch/pointer input. Explicit parent controls remain available, including Update, About, Share, and Copy link. Compatibility copying selects the readonly link only temporarily and clears selection afterward; failed copying points to the explicit WhatsApp sharing option rather than telling users to hold text.
+Welcome, app home, game text, labels and app dialogs disable user selection, touch callouts and native dragging. An inline head bootstrap starts the contextmenu, selectstart and dragstart guards before visible content. Idempotent script fallbacks also cover an older cached page shell loading the new game script. The guards stop accidental native actions while leaving game pointer input and dialog scrolling intact. The displayed sharing URL does not accept touch/pointer input. Explicit parent controls remain available, including Update, About, Share, and Copy link. Compatibility copying selects the readonly link only temporarily and clears selection afterward; failed copying points to the explicit WhatsApp sharing option rather than telling users to hold text.
 
-`node check-quiet-play.mjs` verifies non-selectable text, cancelled native actions and real right-clicks, text-drag selection, all five games in normal/expanded layouts, no native fullscreen, a held-pointer abacus slide, Escape, and both prototype builds. It checks the iOS-only callout property when the test platform exposes it; desktop WebKit is not an iPhone device test. `QUIET_URL` selects a hosted Beta root. `node check-share-browser.mjs` verifies the actual clipboard and compatibility copying in both engines without navigator mocks.
+`node check-quiet-play.mjs` verifies non-selectable text, cancelled native actions and real right-clicks, text-drag selection, all five games in normal/expanded layouts, no native fullscreen, a held-pointer abacus slide, Escape, and both prototype builds. A held network request also proves the text guards work before game initialization; game controls must be ready before subsequent navigation checks. It checks the iOS-only callout property when the test platform exposes it; desktop WebKit is not an iPhone device test. `QUIET_URL` selects a hosted Beta root. `node check-share-browser.mjs` verifies the actual clipboard and compatibility copying in both engines without navigator mocks.
 
 ## Manual and automatic app updates
 
@@ -34,7 +34,7 @@ Rainbow order and circle regions are unchanged. A positive row count fills its r
 
 Before version 0.14 the app disabled completed and future rows, rebuilt all bead nodes after a slide, and trusted the last move event rather than the release position. The repair keeps bead nodes stable, caches gesture geometry and element references, updates only the moving row and relevant labels, picks the nearest bead, and handles a final position delivered on pointerup. It does not rebuild the scene for ordinary counting. Count text stays fully visible immediately, using a small pulse instead of fading out after release.
 
-`node check-abacus.mjs` moves every bead forward and backward in arbitrary row order, verifies 0–10 numerals/words and colour changes, groups moving before release, stable DOM nodes, final-position-only input, short/cancelled slides, keyboard, reward/reset, resize and five screen sizes in normal/fullscreen. `ABACUS_URL` selects a hosted play page. Beta cache v20 updates existing installations online.
+`node check-abacus.mjs` moves every bead forward and backward in arbitrary row order, verifies 0–10 numerals/words and colour changes, groups moving before release, stable DOM nodes, final-position-only input, short/cancelled slides, keyboard, reward/reset, resize and five screen sizes in normal/fullscreen. `ABACUS_URL` selects a hosted play page. Beta cache v21 updates existing installations online.
 
 ## Welcome and About
 
@@ -56,7 +56,7 @@ The home introduction uses one row at the same size as the hint above it. The de
 
 Fullscreen hides the main header, instructions and outer speed/size or art settings. Results and active sub-level choices remain inside the top of the black board. The bottom navigation row keeps Back, Front, Games, sound and Exit fullscreen clear of gameplay. Games leaves fullscreen and returns to the activity menu; Back and Front continue through the game steps. Gameplay continues and exiting restores the same round, collected colors, painting and settings. The menu can also enter fullscreen before a game is chosen. Expansion stays within the page on all browsers, without native fullscreen or orientation-lock requests. The exit button, Escape and Games restore the regular layout. Browser chrome is controlled by the browser and may remain visible.
 
-`node check-immersive.mjs` checks five viewport sizes in Chrome and WebKit, in-page entry/exit, sound, full-field geometry, touch popping, matching, revealing, painting, preserved progress and operation when native fullscreen is denied or unavailable. `IMMERSIVE_URL` selects a hosted play page. Beta cache v20 updates existing installations online.
+`node check-immersive.mjs` checks five viewport sizes in Chrome and WebKit, in-page entry/exit, sound, full-field geometry, touch popping, matching, revealing, painting, preserved progress and operation when native fullscreen is denied or unavailable. `IMMERSIVE_URL` selects a hosted play page. Beta cache v21 updates existing installations online.
 
 ## Screen layout
 

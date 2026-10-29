@@ -2,7 +2,7 @@
   'use strict';
   const $=id=>document.getElementById(id);
   const app=$('app'),scene=$('scene');
-  for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});
+  if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}
   const colors=['#df7f68','#edbf42','#629fca','#8d83c2','#65a58a','#405f76'];
   const colorNames=['Coral','Yellow','Blue','Purple','Green','Ink'];
   const puppyTail='M650 253Q744 198 705 173L723 159Q779 204 660 273Z';

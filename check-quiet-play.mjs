@@ -24,12 +24,18 @@ async function protectedText(page,selector){
   const box=await node.boundingBox();await page.mouse.move(box.x+3,box.y+box.height/2);await page.mouse.down();await page.mouse.move(box.x+Math.min(box.width-2,90),box.y+box.height/2,{steps:8});await page.mouse.up();assert.equal(await page.evaluate(()=>getSelection()?.toString()||''),'','Dragging app text does not create a selection');checks++;
 }
 try{
+  const early=await browser.newContext({viewport:{width:844,height:390},serviceWorkers:'block'}),loading=await early.newPage();let releaseGameScript;
+  const held=new Promise(done=>{releaseGameScript=done;});
+  await loading.route('**/app.js',async route=>{await held;try{await route.continue();}catch{/* The page may close after a failed assertion. */}});
+  await loading.goto(new URL('play.html',base).href,{waitUntil:'commit'});
+  try{await protectedText(loading,'#hint');assert.equal(await loading.locator('[data-activity]').count(),0,'Touch protection works before the held game script initializes');}finally{releaseGameScript();}
+  await expect(loading.getByRole('button',{name:'Abacus colors',exact:true})).toBeVisible();await early.close();
   const context=await browser.newContext({viewport:{width:844,height:390},hasTouch:true,serviceWorkers:'block'}),page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.goto(new URL('index.html',base).href);await protectedText(page,'.family');await protectedText(page,'.tagline');
   await page.getByRole('button',{name:'About this little world',exact:true}).click();await protectedText(page,'.about-card h3');await page.getByRole('button',{name:'Close About',exact:true}).click();
   await page.getByRole('button',{name:'Share app',exact:true}).click();
   await expect(page.getByRole('textbox',{name:'Beta test link'})).toHaveCSS('pointer-events','none');await page.getByRole('button',{name:'Got it',exact:true}).click();checks++;
-  await page.getByRole('link',{name:'Tap to play',exact:true}).click();await protectedText(page,'#hint');await protectedText(page,'.welcome h1');
+  await page.getByRole('link',{name:'Tap to play',exact:true}).click();await expect(page.getByRole('button',{name:'Abacus colors',exact:true})).toBeVisible();await protectedText(page,'#hint');await protectedText(page,'.welcome h1');
   for(const label of ['Drag shapes','Pop bubbles','Slide to reveal','Brush and paint','Abacus colors']){
     await page.getByRole('button',{name:label,exact:true}).click();await protectedText(page,'#activity-name');await page.getByRole('button',{name:'Fullscreen',exact:true}).click();
     await expect(page.locator('#app')).toHaveClass(/immersive/);assert.equal(await page.evaluate(()=>document.fullscreenElement),null,'No native fullscreen means no browser fullscreen URL notice');await expect(page.getByRole('dialog')).toBeHidden();await protectedText(page,'#activity-name');
