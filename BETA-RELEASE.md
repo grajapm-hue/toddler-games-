@@ -1,20 +1,30 @@
-# SaNa Little Hands Beta v0.12
+# SaNa Little Hands Beta v0.13
 
-The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.12 moves game navigation and sub-level choices inside the black play rectangle and makes Back/Front navigate both sub-levels and games; verify the Pages build commit and run the live checks after publishing each update.
+The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.13 adds the Count abacus puzzle, pairing bead-counting with a rainbow and concentric colour circle; verify the Pages build commit and run the live checks after publishing each update.
+
+## Count abacus
+
+The fifth menu card, Count, opens ten abacus rows of ten beads each. Rows follow Red, Orange, Yellow, Green, Blue, Indigo, Violet, Pink, Brown, White. Their goals are 1 through 10 respectively. Children slide beads to the other side; partial drags, cancelled gestures, completed rows and future rows do not award a colour.
+
+The right half contains both drawings: seven rainbow bands and a concentric circle, initially black with grey boundaries. Reaching a row goal fills its distinct colour and reveals the matching numbered colour name below, one at a time. Pink is the outer circle, white the middle and brown the centre. No numbers appear inside either drawing. All ten goals trigger SaNa’s congratulations and optional generated applause. Again resets everything; resizing and fullscreen keep progress.
+
+Count uses one fixed basic counting sequence rather than the other games’ difficulty variants. Its next bead also works with ArrowRight, End, Enter or Space. It is the 25th navigation step after the existing games, and is available offline. The welcome tagline and About activities include counting.
+
+`node check-abacus.mjs` checks counting goals, exact region/label colours and circle order, touch, keyboard, incorrect/cancelled slides, reset, completion and five responsive sizes in normal/fullscreen modes. `ABACUS_URL` selects a hosted play page. Beta cache v13 updates existing installations online.
 
 ## Welcome and About
 
 The opening-screen family label, small SaNa/monkey, title’s SaNa label and age/offline notes use larger bold type. About uses scrollable cream cards with current activities, parent guidance, G.RajaPathamuthu / Kids Puzzle Library, JNT and AI-Assistances credits, the supplied motto, current version and the existing feedback address. It does not claim a separate Feedback tab. Its close button stays visible while the contents scroll.
 
-`node check-parents.mjs` checks five screen sizes, About scrolling/focus/contact, welcome-only sharing and Back in all four games. `PARENTS_URL` selects a hosted welcome page.
+`node check-parents.mjs` checks five screen sizes, About scrolling/focus/contact, welcome-only sharing and Back in all five games. `PARENTS_URL` selects a hosted welcome page.
 
 ## Board navigation and results
 
 Every game has a rectangular result box at the top left and its active sub-level choices at the top right of the black board. Explore/Play/Challenge move into that box of choices during play and return to the header on the menu. Bubble contents and brush modes are shown only in their relevant game, including fullscreen. Bubble collections remain below the top row.
 
-Back is at the board’s bottom left, Front at its bottom right. They visit the levels and available modes within each game, continuing to the neighboring game at the ends: three Drag steps, twelve Bubble steps, three Slide steps and six Brush/Paint steps. Passing either end of the full sequence returns to the menu. Games returns there directly. Sound and fullscreen controls sit alongside Games. The toolbar, animation and navigation occupy separate rows to prevent overlap.
+Back is at the board’s bottom left, Front at its bottom right. They visit the levels and available modes within each game, continuing to the neighboring game at the ends: three Drag steps, twelve Bubble steps, three Slide steps and six Brush/Paint steps, followed by one Count puzzle. Passing either end of the full sequence returns to the menu. Games returns there directly. Sound and fullscreen controls sit alongside Games. The toolbar, animation and navigation occupy separate rows to prevent overlap.
 
-`node check-board.mjs` checks all four games at five sizes in normal and fullscreen modes, control bounds, non-overlap, appropriate modes, room to play, and both directions through all 24 steps. `BOARD_URL` selects a hosted play page.
+`node check-board.mjs` checks all five games at five sizes in normal and fullscreen modes, control bounds, non-overlap, appropriate modes, room to play, and both directions through all 25 steps. `BOARD_URL` selects a hosted play page.
 
 ## Immersive play
 
@@ -22,7 +32,7 @@ The home introduction uses one row at the same size as the hint above it. The de
 
 Fullscreen hides the main header, instructions and outer speed/size or art settings. Results and active sub-level choices remain inside the top of the black board. The bottom navigation row keeps Back, Front, Games, sound and Exit fullscreen clear of gameplay. Games leaves fullscreen and returns to the activity menu; Back and Front continue through the game steps. Gameplay continues and exiting restores the same round, collected colors, painting and settings. The menu can also enter fullscreen before a game is chosen. Supported browsers use native fullscreen and attempt landscape lock; otherwise in-page immersive play remains available. The exit button, Escape and native browser exit restore the regular layout.
 
-`node check-immersive.mjs` checks five viewport sizes in Chrome and WebKit, real native entry/exit, sound, full-field geometry, touch popping, matching, revealing, painting, preserved progress and fallback when native fullscreen is denied or unavailable. `IMMERSIVE_URL` selects a hosted play page. Beta cache v12 updates existing installations online.
+`node check-immersive.mjs` checks five viewport sizes in Chrome and WebKit, real native entry/exit, sound, full-field geometry, touch popping, matching, revealing, painting, preserved progress and fallback when native fullscreen is denied or unavailable. `IMMERSIVE_URL` selects a hosted play page. Beta cache v13 updates existing installations online.
 
 ## Screen layout
 
@@ -79,8 +89,8 @@ Clearing browser/site data can remove the offline cache. Reopen online once to p
 
 `node check-beta.mjs` uses Playwright. Set `MM_PLAYWRIGHT` to the installed Playwright test module if needed; `MM_CHROME` selects a Chrome executable. Set `PLAYROOM_BROWSER=webkit` for WebKit. `BETA_URL` can select the published URL for live verification.
 
-- Chromium: 31 passing Beta checks, including zero manifest/installability errors in a fresh normal Chrome profile, all icons available, native-prompt event wiring, manual install guidance, welcome-to-game navigation, matching, level persistence, and all activities available offline.
-- Playwright WebKit: 30 passing checks, including offline welcome/game navigation with the actual local origin server stopped.
+- Chromium: 32 passing Beta checks, including zero manifest/installability errors in a fresh normal Chrome profile, all icons available, native-prompt event wiring, manual install guidance, welcome-to-game navigation, matching, level persistence, and all activities available offline.
+- Playwright WebKit: 31 passing checks, including offline welcome/game navigation with the actual local origin server stopped.
 - `node check-share-browser.mjs`: four checks using the real browser clipboard APIs in Chrome and WebKit, with normal and denied-policy documents. Chrome's denied-policy case uses the actual selection-copy fallback and confirms the public Beta link in the system clipboard. Native share choosers are not opened or messages sent by these tests.
 - Sharing: WhatsApp draft URL/message, copied canonical link, native share data and cancellation, clipboard-denied manual selection, dialog keyboard focus/return, phone/tablet/rotated-portrait layouts, sharing absent from the play page, Back navigation, and availability of welcome-screen Share while the app is offline. Sending to others requires network access in the chosen sharing app.
 - The native install event tests simulate the app's event contract without installing an application on the development machine.

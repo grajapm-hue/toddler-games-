@@ -62,7 +62,7 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
 </head>
 <body>
 <main id="frame">
-  <header class="topline"><div class="family"><span aria-hidden="true">🐒</span> A little world with SaNa</div><span class="preview-tag">Beta · v0.12</span></header>
+  <header class="topline"><div class="family"><span aria-hidden="true">🐒</span> A little world with SaNa</div><span class="preview-tag">Beta · v0.13</span></header>
   <section class="hero" aria-labelledby="welcome-title">
     <div class="mascot-space">
       <p class="sana-says">Hello, little explorer!</p>
@@ -84,7 +84,7 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
     </div>
     <div class="copy">
       <h1 id="welcome-title"><span>SaNa</span>Little Hands</h1>
-      <p class="tagline">Tap, drag, slide and paint.<br>Little fingers, happy discoveries.</p>
+      <p class="tagline">Count, tap, drag, slide and paint.<br>Little fingers, happy discoveries.</p>
       <div class="actions">
         <a class="play-button" id="play" href="play.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3L21 12L5 21Z"/></svg>Tap to play</a>
         <button class="install-button" id="install" type="button"><svg viewBox="0 0 28 28" aria-hidden="true"><path d="M14 3V18M8 12L14 18L20 12M4 19V24H24V19"/></svg><span data-install-label>Install app</span></button>
@@ -116,9 +116,9 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
   function show(title,copy,source){const about=source?.id==='about';panel.classList.toggle('about-dialog',about);const closeButton=document.getElementById('close-dialog');closeButton.textContent=about?'×':'Got it';closeButton.setAttribute('aria-label',about?'Close About':'Got it');opener=source;document.getElementById('dialog-title').textContent=title;document.getElementById('dialog-copy').innerHTML=copy;shade.hidden=false;panel.focus();}
   function close(){shade.hidden=true;opener?.focus();}
   document.getElementById('about').addEventListener('click',event=>show('📜 About this project',`
-    <section class="about-card"><h3>🐒 SaNa Little Hands</h3><p>Kids Puzzle Library · for ages 2–4</p><p class="about-quote">“Little hands, happy discoveries.”</p><p>Drag and match shapes · Pop plain, 1–20, A–Z and shape bubbles · Slide to find friends · Brush clean and finger paint</p><p>Explore · Play · Challenge</p><p>No ads, accounts or trackers. Optional sound and offline play after the first online load.</p></section>
+    <section class="about-card"><h3>🐒 SaNa Little Hands</h3><p>Kids Puzzle Library · for ages 2–4</p><p class="about-quote">“Little hands, happy discoveries.”</p><p>Drag and match shapes · Pop plain, 1–20, A–Z and shape bubbles · Slide to find friends · Brush clean and finger paint · Count abacus beads to colour a rainbow and circle</p><p>Explore · Play · Challenge</p><p>No ads, accounts or trackers. Optional sound and offline play after the first online load.</p></section>
     <section class="about-card safety">🛡️ Low brightness · short breaks · play with a parent</section>
-    <section class="about-card">Created by G.RajaPathamuthu · Kids Puzzle Library<br>Guided by : JNT<br>Code Coordinated by : AI-Assistances<br><i>(What we get is all we ask for.)</i><p>Found something odd? Send us your feedback.<br>Mail To : <a href="mailto:grajapm@gmail.com?subject=SaNa%20Little%20Hands%20Feedback%20%26%20Suggestion">✉️ Feedback &amp; Suggestion</a></p><span class="about-version">App <span data-app-version>Beta v0.12</span></span></section>`,event.currentTarget));
+    <section class="about-card">Created by G.RajaPathamuthu · Kids Puzzle Library<br>Guided by : JNT<br>Code Coordinated by : AI-Assistances<br><i>(What we get is all we ask for.)</i><p>Found something odd? Send us your feedback.<br>Mail To : <a href="mailto:grajapm@gmail.com?subject=SaNa%20Little%20Hands%20Feedback%20%26%20Suggestion">✉️ Feedback &amp; Suggestion</a></p><span class="about-version">App <span data-app-version>Beta v0.13</span></span></section>`,event.currentTarget));
   document.getElementById('close-dialog').addEventListener('click',close);
   shade.addEventListener('click',event=>{if(event.target===shade)close();});
   document.addEventListener('keydown',event=>{

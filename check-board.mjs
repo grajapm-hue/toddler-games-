@@ -38,7 +38,7 @@ async function boardLayout(page){
 try{
   for(const [name,width,height] of [['small-phone',667,375],['phone',844,390],['portrait',390,844],['tablet',1024,768],['wide',1600,720]]){
     const context=await browser.newContext({viewport:{width,height},hasTouch:true,serviceWorkers:'block'}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(base);
-    for(const label of ['Drag shapes','Pop bubbles','Slide to reveal','Brush and paint']){
+    for(const label of ['Drag shapes','Pop bubbles','Slide to reveal','Brush and paint','Abacus colors']){
       await page.getByRole('button',{name:label,exact:true}).click();if(label==='Pop bubbles'){
         const before=await page.locator('#scene').boundingBox(),bubble=page.locator('[data-bubble][data-onstage="true"]').first(),point=await bubble.boundingBox();
         await page.touchscreen.tap(point.x+point.width/2,point.y+point.height/2);
@@ -47,9 +47,9 @@ try{
       }
       await boardLayout(page);await page.screenshot({path:resolve(out,`${name}-${label.split(' ')[0]}-normal.png`)});
       await page.getByRole('button',{name:'Fullscreen',exact:true}).click();await boardLayout(page);
-      const selected=()=>page.locator('#play-options [aria-pressed="true"]').evaluateAll(els=>els.map(el=>el.getAttribute('aria-label')));
-      const original=await selected();await page.getByRole('button',{name:'Front',exact:true}).click();await expect(page.locator('#app')).toHaveClass(/immersive/);
-      await page.getByRole('button',{name:'Back',exact:true}).click();assert.deepEqual(await selected(),original,'Front and Back work inside fullscreen and restore the selected step');await boardLayout(page);
+      const selected=()=>page.locator('#play-options [aria-pressed="true"]:visible').evaluateAll(els=>els.map(el=>el.getAttribute('aria-label')));
+      const original=await selected();await page.getByRole('button',{name:label==='Abacus colors'?'Back':'Front',exact:true}).click();await expect(page.locator('#app')).toHaveClass(/immersive/);
+      await page.getByRole('button',{name:label==='Abacus colors'?'Front':'Back',exact:true}).click();assert.deepEqual(await selected(),original,'Front and Back work inside fullscreen and restore the selected step');await boardLayout(page);
       await expect(page.locator('#play-options [data-level]')).toHaveCount(3);await page.screenshot({path:resolve(out,`${name}-${label.split(' ')[0]}-fullscreen.png`)});
       await page.getByRole('button',{name:'Games',exact:true}).click();await expect(page.locator('#home-view')).toBeVisible();checks++;
     }
@@ -58,10 +58,11 @@ try{
   const context=await browser.newContext({viewport:{width:844,height:390},serviceWorkers:'block'}),page=await context.newPage();await page.goto(base);await page.getByRole('button',{name:'Explore level',exact:true}).click();await page.getByRole('button',{name:'Drag shapes',exact:true}).click();
   const sequence=[];
   for(const activity of ['drag','bubbles','slide','brush'])for(const level of [1,2,3])for(const mode of activity==='bubbles'?['plain','numbers','letters','shapes']:activity==='brush'?['clean','paint']:[''])sequence.push({activity,level,mode});
+  sequence.push({activity:'abacus',level:1,mode:''});
   async function current(){return page.evaluate(()=>({activity:document.getElementById('app').dataset.view,level:Number(document.querySelector('[data-level][aria-pressed="true"]').dataset.level),mode:document.getElementById('app').dataset.view==='bubbles'?document.querySelector('[data-bubble-mode][aria-pressed="true"]').dataset.bubbleMode:document.getElementById('app').dataset.view==='brush'?(document.getElementById('paint-mode').getAttribute('aria-pressed')==='true'?'paint':'clean'):''}));}
   for(const stage of sequence){assert.deepEqual(await current(),stage,'Front visits every sub-level and game in order');await page.getByRole('button',{name:'Front',exact:true}).click();}
   await expect(page.locator('#home-view')).toBeVisible();checks++;
-  await page.getByRole('button',{name:'Challenge level',exact:true}).click();await page.getByRole('button',{name:'Brush and paint',exact:true}).click();await page.getByRole('button',{name:'Finger paint',exact:true}).click();
+  await page.getByRole('button',{name:'Explore level',exact:true}).click();await page.getByRole('button',{name:'Abacus colors',exact:true}).click();
   for(const stage of sequence.toReversed()){assert.deepEqual(await current(),stage,'Back reverses every sub-level and game');await page.getByRole('button',{name:'Back',exact:true}).click();}
   await expect(page.locator('#home-view')).toBeVisible();checks++;await context.close();
   console.log(`PASS: ${checks} in-board layout and navigation checks (${engine})`);
