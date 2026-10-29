@@ -14,7 +14,8 @@
     drag:{title:'Shape picnic',label:'Drag shapes',word:'Drag',caption:'match a little shape',note:'A place for every little shape',hint:'Drag a shape to its shadow. Or tap a shape, then its shadow.'},
     bubbles:{title:'Bubble garden',label:'Pop bubbles',word:'Tap',caption:'pop a happy bubble',note:'A pop of color. A little smile.',hint:'Tap a bubble. Pop, pop, pop! You can brush across them too.'},
     slide:{title:'Peek-a-boo friends',label:'Slide to reveal',word:'Slide',caption:'find a little friend',note:'Who is hiding behind the curtains?',hint:'Slide the sunny handles along the paths. Who will you find?'},
-    brush:{title:'Little art studio',label:'Brush and paint',word:'Brush & paint',caption:'wash and make colors',note:'',hint:'Brush the muddy puppy. Give him a gentle wash.'}
+    brush:{title:'Little art studio',label:'Brush and paint',word:'Brush & paint',caption:'wash and make colors',note:'',hint:'Brush the muddy puppy. Give him a gentle wash.'},
+    abacus:{title:'Rainbow abacus',label:'Abacus colors',word:'Count',caption:'make a rainbow',note:'',hint:'Slide 1 red bead across, then 2 orange beads. Make the rainbow and circle!'}
   };
   let saved={};try{const stored=JSON.parse(localStorage.getItem('sanaLittleHandsV1')||'{}');saved=stored&&typeof stored==='object'?stored:{};}catch{/* Settings are optional. */}
   const state={level:[1,2,3].includes(saved.level)?saved.level:2,activity:null,done:false,pointer:null,selected:null,paintMode:false,paintColor:colors[0],strokes:[],shapes:[],bubbles:[],sliders:[],dirt:[],sound:saved.sound===true};
@@ -123,6 +124,7 @@
     return `<g stroke="#5c6555" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><g fill="${outline?'none':picture.color}">${picture.region}</g><g fill="${outline?'none':'#f6d789'}">${picture.details}</g></g>`;
   }
   function preview(id){
+    if(id==='abacus')return `<g stroke="#9b7e60" stroke-width="5"><path d="M15 22V152M113 22V152M15 30H113M15 76H113M15 122H113"/>${[0,1,2].map((row)=>[0,1,2].map(i=>`<circle cx="${31+i*23}" cy="${30+row*46}" r="10" fill="${['#ff3b30','#ff9500','#ffe500'][row]}" stroke-width="1"/>`).join('')).join('')}</g><path d="M132 110A36 36 0 0 1 204 110M143 110A25 25 0 0 1 193 110M154 110A14 14 0 0 1 182 110" fill="none" stroke="#ff3b30" stroke-width="10"/><circle cx="168" cy="140" r="17" fill="#ff8fc7"/><circle cx="168" cy="140" r="11" fill="white"/><circle cx="168" cy="140" r="6" fill="#b5794a"/>`;
     if(id==='drag')return `<g transform="translate(63 76) scale(.67)">${primitive('triangle','#ebc34e')}${face(0,12)}</g><g transform="translate(150 90) scale(.67) rotate(12)">${primitive('square','#71abc6')}${face()}</g><path d="M110 27L114 17M184 49L195 43" stroke="#76a181" stroke-width="5" stroke-linecap="round"/>`;
     if(id==='bubbles')return `<circle cx="69" cy="84" r="38" fill="#e59b9d"/><circle cx="145" cy="65" r="45" fill="#8fc7d5"/><circle cx="144" cy="65" r="36" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="3"/><path d="M121 46Q125 35 140 34M49 66Q56 56 67 56" stroke="white" stroke-width="7" stroke-linecap="round" opacity=".7"/><g transform="translate(145 65) scale(.6)">${face()}</g><path d="M56 25L53 15M188 111L197 116" stroke="#cfa834" stroke-width="5" stroke-linecap="round"/>`;
     if(id==='slide')return `<rect x="35" y="13" width="145" height="119" rx="20" fill="#fffaf0" stroke="#9cbfc9" stroke-width="4"/>${friend('fox',107,79,.56)}<path d="M38 109H177V130H38Z" fill="#bbd6d9"/><path d="M49 152H166" stroke="#9bbec9" stroke-width="11" stroke-linecap="round"/><circle cx="119" cy="152" r="17" fill="#f2cf65" stroke="#bc9d45" stroke-width="3"/>`;
@@ -135,14 +137,16 @@
     const pointer=state.pointer;state.pointer=null;
     if(pointer&&scene.hasPointerCapture?.(pointer.id)){try{scene.releasePointerCapture(pointer.id);}catch{/* Gesture may already have ended. */}}
     if(pointer?.kind==='drag')renderDrag();
+    if(pointer?.kind==='abacus'&&state.activity==='abacus')renderAbacus();
     scene.querySelector('#brush-cursor')?.remove();
   }
-  function home(){stopBubbles();cancelGesture();clearEffects();state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('play-levels'),$('sound'),$('fullscreen'));app.dataset.view='home';$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
+  function home(){stopBubbles();cancelGesture();clearEffects();state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('play-levels'),$('sound'),$('fullscreen'));$('play-levels').hidden=false;app.dataset.view='home';$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
   function levelControls(){document.querySelectorAll('[data-level]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.level)===state.level)));}
   function setLevel(level,reset=true){cancelGesture();if(state.level!==level)state.brushSize=['','large','medium','small'][level];state.level=level;levelControls();save();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');if(reset&&state.activity)resetRound();else if(reset)hint(level===2?'Play level: a lovely place for ages 2–4. Choose a picture!':level===1?'Explore level: fewer, bigger things to try.':'Challenge level: a few more things to discover.');}
   function startActivity(id,paintMode=false){$('play-options').prepend($('play-levels'));$('game-mid-controls').append($('sound'),$('fullscreen'));state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
   function resetRound(){
     stopBubbles();cancelGesture();clearEffects();state.done=false;state.selected=null;state.strokes=[];
+    $('play-levels').hidden=state.activity==='abacus';$('abacus-stage').hidden=state.activity!=='abacus';
     $('bubble-score').hidden=state.activity!=='bubbles';
     $('bubble-modes').hidden=state.activity!=='bubbles';$('bubble-tracker').hidden=state.activity!=='bubbles';$('step-note').hidden=true;
     $('bubble-settings').hidden=state.activity!=='bubbles';updateBubbleSettings();
@@ -154,7 +158,8 @@
     if(state.activity==='brush')$('activity-name').textContent=`Little art studio · ${artPicture().name[0].toUpperCase()+artPicture().name.slice(1)}`;
     $('clean-mode').setAttribute('aria-pressed',String(!state.paintMode));$('paint-mode').setAttribute('aria-pressed',String(state.paintMode));
     scene.style.background='#000';
-    if(state.activity==='drag'){
+    if(state.activity==='abacus'){state.abacusRows=abacusColors.map(()=>Array(10).fill(false));renderAbacus();}
+    else if(state.activity==='drag'){
       const count=[0,2,4,6][state.level],ys=count===2?[140,310]:count===4?[120,310]:[85,220,355];
       state.shapes=shapes.slice(0,count).map((shape,i)=>({...shape,placed:false,x:count===2?250:150+(i%2)*190,y:ys[count===2?i:Math.floor(i/2)],tx:count===2?750:660+(i%2)*190,ty:ys[count===2?i:Math.floor(i/2)]}));renderDrag();
     }else if(state.activity==='bubbles'){
@@ -168,8 +173,35 @@
     }
     hint(state.activity==='brush'?(state.paintMode?`Pick a color and paint inside the ${artPicture().name}. SaNa will cheer you on!`:`Brush the muddy ${artPicture().name}. Give it a gentle wash.`):activities[state.activity].hint);
     updateGameNavigation();
+    if(state.activity==='abacus')abacusHint();
     if(state.activity==='bubbles')hint(state.bubbleMode==='plain'?'Tap the rising bubbles. Splash, pop! They keep coming.':'Pop a bubble to color its matching item above. Find them all!');
   }
+  const abacusColors=[['Red','#ff3b30'],['Orange','#ff9500'],['Yellow','#ffe500'],['Green','#35d44b'],['Blue','#2395ff'],['Indigo','#6454d9'],['Violet','#bb52ed'],['Pink','#ff8fc7'],['Brown','#b5794a'],['White','#ffffff']];
+  const abacusCount=row=>state.abacusRows[row].filter(Boolean).length;
+  const activeAbacusRow=()=>state.abacusRows.findIndex((row,i)=>row.filter(Boolean).length<i+1);
+  function abacusHint(){const row=activeAbacusRow();if(row>=0)hint(`Slide ${row+1} ${abacusColors[row][0].toLowerCase()} ${row?'beads':'bead'} to the right. ${abacusCount(row)} across so far!`);}
+  function abacusGeometry(){const width=Math.max(1000,600*scene.clientWidth/Math.max(1,scene.clientHeight)),left=width*.5,start=54,end=left-35,pitch=(end-start)*.043;return {width,left,start,end,pitch,r:Math.min(21,pitch*.44)};}
+  // Each bead keeps its identity; only a completed slide moves it into the right-hand stack.
+  function abacusBeadPoint(row,index){const g=abacusGeometry(),moved=state.abacusRows[row][index],before=state.abacusRows[row].slice(0,index).filter(value=>value===moved).length;return {x:moved?g.end-(abacusCount(row)-1-before)*g.pitch:g.start+before*g.pitch,y:34+row*56};}
+  /** Fit the ten-row abacus and both vector drawings to the current play field without resetting counts. */
+  function renderAbacus(reveal=-1){
+    if(state.activity!=='abacus'||!state.abacusRows)return;
+    const g=abacusGeometry(),active=activeAbacusRow(),scale=600/Math.max(1,scene.clientHeight),font=Math.min(42,Math.max(20,14*scale));
+    state.abacusSize=`${scene.clientWidth}/${scene.clientHeight}`;scene.setAttribute('viewBox',`0 0 ${g.width} 600`);scene.setAttribute('aria-label','Abacus, rainbow and circle');
+    const right=g.left+16,rw=g.width-right-12,radius=Math.min(260,rw*.32),cx=right+radius+6,base=286,circleR=Math.min(130,rw*.16),circleX=g.width-circleR-18,circleY=150;
+    const band=radius/10;
+    const rainbow=abacusColors.slice(0,7).map(([name,color],i)=>{const outer=radius-i*band,inner=outer-band;return `<path data-rainbow-band="${i}" data-color-region="${i}" d="M${cx-outer} ${base}A${outer} ${outer} 0 0 1 ${cx+outer} ${base}L${cx+inner} ${base}A${inner} ${inner} 0 0 0 ${cx-inner} ${base}Z" fill="${abacusCount(i)>=i+1?color:'#000'}" stroke="#90969e" stroke-width="3"/>`;}).join('');
+    const circles=[[7,'outer',circleR],[9,'middle',circleR*.68],[8,'inner',circleR*.35]].map(([row,region,r])=>`<circle data-circle-region="${region}" data-color-region="${row}" cx="${circleX}" cy="${circleY}" r="${r}" fill="${abacusCount(row)>=row+1?abacusColors[row][1]:'#000'}" stroke="#90969e" stroke-width="3"/>`).join('');
+    scene.innerHTML=`<g id="abacus-frame"><rect x="10" y="5" width="${g.left-24}" height="586" rx="18" fill="#101010" stroke="#9b7e60" stroke-width="7"/>${abacusColors.map(([name,color],row)=>{const y=34+row*56,count=abacusCount(row),destination=g.end-count*g.pitch;return `<g data-abacus-row="${row}">${row===active?`<rect x="20" y="${y-25}" width="${g.left-44}" height="50" rx="12" fill="none" stroke="#ffe17a" stroke-width="3"/>`:''}<text x="28" y="${y+8}" text-anchor="middle" font-size="23" fill="#fff" font-weight="900">${row+1}</text><path d="M${g.start-g.r} ${y}H${g.end+g.r}" stroke="#90969e" stroke-width="4"/><circle data-abacus-destination="${row}" cx="${destination}" cy="${y}" r="${g.r+2}" fill="none" stroke="${row===active?'#ffe17a':'#555'}" stroke-width="3" stroke-dasharray="5 5"/>${state.abacusRows[row].map((moved,index)=>{const p=abacusBeadPoint(row,index),enabled=row===active&&!moved;return `<g data-bead-row="${row}" data-bead-index="${index}" data-moved="${moved}" transform="translate(${p.x} ${p.y})" role="button" aria-label="${name} bead ${index+1}" aria-disabled="${!enabled}" tabindex="${enabled&&index===9-count?'0':'-1'}"><circle r="${Math.max(g.r,24)}" fill="transparent"/><circle r="${g.r}" fill="${color}" stroke="#ffffffb0" stroke-width="1.5"/><path d="M${-g.r*.45} ${-g.r*.48}L${g.r*.05} ${-g.r*.7}" stroke="white" stroke-opacity=".65" stroke-width="3" stroke-linecap="round"/></g>`;}).join('')}</g>`;}).join('')}</g><path d="M${g.left} 12V588" stroke="#555" stroke-width="2"/><g id="rainbow-picture" role="img" aria-label="Seven blank rainbow bands that fill with their colors">${rainbow}</g><g id="circle-picture" role="img" aria-label="Pink outer circle, white middle circle, brown center">${circles}</g><g id="abacus-labels">${abacusColors.map(([name,color],i)=>`<text data-color-label="${i}" x="${right+16+(i<5?0:rw*.52)}" y="${348+(i%5)*51}" fill="${color}" font-size="${font}" font-weight="900" font-family="inherit" visibility="${abacusCount(i)>=i+1?'visible':'hidden'}" class="${i===reveal?'abacus-pop':''}">${i+1} ${name}</text>`).join('')}</g>`;
+    progress(active<0?10:active,10);$('result-score').textContent=active<0?'10 colours!':`${abacusColors[active][0]} ${abacusCount(active)}/${active+1}`;
+  }
+  function finishAbacusBead(row,index){
+    if(row!==activeAbacusRow()||state.abacusRows[row][index])return;
+    state.abacusRows[row][index]=true;const reached=abacusCount(row)===row+1;renderAbacus(reached?row:-1);tone(reached?740:520,reached);
+    if(activeAbacusRow()<0){celebrate('Wonderful counting! SaNa loves your rainbow and circle!');$('art-reward').hidden=false;applause();}
+    else abacusHint();
+  }
+  new ResizeObserver(()=>{if(state.activity==='abacus'&&state.abacusSize!==`${scene.clientWidth}/${scene.clientHeight}`){cancelGesture();renderAbacus();}}).observe(scene);
   function renderDrag(){
     const done=state.shapes.filter(shape=>shape.placed).length;
     scene.innerHTML=`<path d="M500 36V404" stroke="#d3dfcd" stroke-width="3" stroke-dasharray="8 13"/><path d="M465 216H531M517 204L531 216L517 228" stroke="#bdcdb7" stroke-width="5" fill="none" stroke-linecap="round"/>`+state.shapes.map(shape=>`<g class="target" data-target="${shape.id}" transform="translate(${shape.tx} ${shape.ty})" role="button" tabindex="0" aria-label="${shape.id} shadow"><g opacity="${shape.placed?'.15':'.6'}">${primitive(shape.id,'#fbfcf2','#b3c6ae')}</g>${!shape.placed?`<text y="83" text-anchor="middle" fill="#7f9279" font-size="16" font-family="inherit">${shape.id}</text>`:''}</g>`).join('')+state.shapes.map(shape=>`<g ${shape.placed?`data-placed="${shape.id}"`:`data-piece="${shape.id}" role="button" tabindex="0" aria-label="${shape.id} shape"`} class="piece ${state.selected===shape.id?'selected':''}" transform="translate(${shape.placed?shape.tx:shape.x} ${shape.placed?shape.ty:shape.y})">${primitive(shape.id,shape.color)}${face(0,shape.id==='triangle'?12:0)}${shape.placed?'<path d="M35-53L44-43L62-64" fill="none" stroke="#2b7b59" stroke-width="6" stroke-linecap="round"/>':''}</g>`).join('');
@@ -363,7 +395,11 @@
     if(state.pointer||event.button>0||!state.activity)return;
     const point=localPoint(event);if(!point)return;
     scene.querySelector('[data-guide]')?.remove();
-    if(state.activity==='drag'){
+    if(state.activity==='abacus'){
+      const bead=event.target.closest('[data-bead-row]');if(!bead)return;const row=Number(bead.dataset.beadRow),index=Number(bead.dataset.beadIndex);
+      if(row!==activeAbacusRow()||state.abacusRows[row][index]){abacusHint();return;}
+      const start=abacusBeadPoint(row,index),g=abacusGeometry();state.pointer={id:event.pointerId,kind:'abacus',row,index,x:start.x,y:start.y,dx:point.x-start.x,target:g.end-abacusCount(row)*g.pitch};
+    }else if(state.activity==='drag'){
       if(state.done)return;
       const target=event.target.closest('[data-target]');
       if(target&&state.selected===target.dataset.target){matchShape(state.selected);event.preventDefault();return;}
@@ -386,7 +422,8 @@
   function pointerMove(event){
     const pointer=state.pointer;if(!pointer||event.pointerId!==pointer.id)return;
     const point=localPoint(event);if(!point)return;event.preventDefault();
-    if(pointer.kind==='drag'){
+    if(pointer.kind==='abacus'){const g=abacusGeometry();pointer.x=Math.max(g.start,Math.min(g.end,point.x-pointer.dx));scene.querySelector(`[data-bead-row="${pointer.row}"][data-bead-index="${pointer.index}"]`)?.setAttribute('transform',`translate(${pointer.x} ${pointer.y})`);}
+    else if(pointer.kind==='drag'){
       pointer.x=Math.max(60,Math.min(940,point.x-pointer.dx));pointer.y=Math.max(60,Math.min(380,point.y-pointer.dy));
       scene.querySelector(`[data-piece="${pointer.shape.id}"]`)?.setAttribute('transform',`translate(${pointer.x} ${pointer.y})`);
     }else if(pointer.kind==='bubble')hitBubble(point);
@@ -401,7 +438,8 @@
     const pointer=state.pointer;if(!pointer||pointer.id!==event.pointerId)return;
     state.pointer=null;
     try{if(scene.hasPointerCapture(event.pointerId))scene.releasePointerCapture(event.pointerId);}catch{/* Already released. */}
-    if(pointer.kind==='drag'){
+    if(pointer.kind==='abacus'){if(pointer.x>=pointer.target-abacusGeometry().r)finishAbacusBead(pointer.row,pointer.index);else{renderAbacus();abacusHint();}}
+    else if(pointer.kind==='drag'){
       const distance=Math.hypot(pointer.x-pointer.shape.tx,pointer.y-pointer.shape.ty);
       if(distance<[0,128,96,73][state.level])matchShape(pointer.shape.id);
       else{renderDrag();hint('This shape has a little home. Try its matching shadow.');}
@@ -411,7 +449,9 @@
   scene.addEventListener('pointerdown',pointerDown);scene.addEventListener('pointermove',pointerMove);scene.addEventListener('pointerup',pointerUp);scene.addEventListener('pointercancel',cancelGesture);scene.addEventListener('lostpointercapture',()=>{if(state.pointer)cancelGesture();});scene.addEventListener('contextmenu',e=>e.preventDefault());
   scene.addEventListener('keydown',event=>{
     const piece=event.target.closest('[data-piece]'),target=event.target.closest('[data-target]'),bubble=event.target.closest('[data-bubble]'),handle=event.target.closest('[data-slider-handle]');
-    if(handle&&['ArrowRight','ArrowLeft','Home','End'].includes(event.key)){
+    const bead=event.target.closest('[data-bead-row]');
+    if(bead&&['ArrowRight','End','Enter',' '].includes(event.key)){event.preventDefault();finishAbacusBead(Number(bead.dataset.beadRow),Number(bead.dataset.beadIndex));const row=activeAbacusRow();if(row>=0)scene.querySelector(`[data-bead-row="${row}"][tabindex="0"]`)?.focus();}
+    else if(handle&&['ArrowRight','ArrowLeft','Home','End'].includes(event.key)){
       event.preventDefault();const slider=state.sliders[Number(handle.dataset.sliderHandle)];const value=event.key==='End'?1:event.key==='Home'?0:slider.value+(event.key==='ArrowRight' ? .15 : -.15);slideTo(slider,slider.x+25+value*(slider.w-50));
     }else if(event.key==='Enter'||event.key===' '){
       event.preventDefault();if(piece){state.selected=piece.dataset.piece;renderDrag();hint('Now choose the matching shadow.');scene.querySelector(`[data-target="${state.selected}"]`)?.focus();}
@@ -421,7 +461,8 @@
   });
   function showMe(){
     clearTimeout(guideTimer);scene.querySelector('[data-guide]')?.remove();let x=460,y=190;
-    if(state.activity==='drag'){const shape=state.shapes.find(s=>!s.placed);if(shape){x=shape.x+10;y=shape.y+20;}hint('Touch a shape, hold it, and move it to the same shadow.');}
+    if(state.activity==='abacus'){const row=activeAbacusRow();if(row>=0){const p=abacusBeadPoint(row,9-abacusCount(row));x=p.x;y=p.y;}abacusHint();}
+    else if(state.activity==='drag'){const shape=state.shapes.find(s=>!s.placed);if(shape){x=shape.x+10;y=shape.y+20;}hint('Touch a shape, hold it, and move it to the same shadow.');}
     else if(state.activity==='bubbles'){const bubble=activeBubble();if(bubble){x=bubble.x+5;y=bubble.y+10;}hint(state.bubbleMode==='plain'?'Touch a rising bubble with one finger. Splash, pop!':'Touch a rising bubble. Its matching item above will turn the same color!');}
     else if(state.activity==='slide'){const s=state.sliders.find(s=>s.value<1)||state.sliders[0];x=s.x+30+s.value*(s.w-50);y=s.y+s.h+45;hint('Hold a sunny handle. Slide it along its path.');}
     else hint(state.paintMode?`Hold one finger inside the ${artPicture().name} and move it. Choose a size or erase to tidy up!`:`Rub a muddy spot back and forth. Watch the ${artPicture().name} get clean!`);
@@ -453,8 +494,8 @@
     if(!active){try{screen.orientation?.unlock?.();}catch{/* Orientation may be managed by the browser. */}button.focus({preventScroll:true});}
     fitFrame();
   }
-  const gameSteps=Object.keys(activities).flatMap(activity=>[1,2,3].flatMap(level=>(activity==='bubbles'?['plain','numbers','letters','shapes']:activity==='brush'?['clean','paint']:['']).map(mode=>({activity,level,mode}))));
-  function currentStep(){return gameSteps.findIndex(step=>step.activity===state.activity&&step.level===state.level&&step.mode===(state.activity==='bubbles'?state.bubbleMode:state.activity==='brush'?(state.paintMode?'paint':'clean'):''));}
+  const gameSteps=Object.keys(activities).filter(activity=>activity!=='abacus').flatMap(activity=>[1,2,3].flatMap(level=>(activity==='bubbles'?['plain','numbers','letters','shapes']:activity==='brush'?['clean','paint']:['']).map(mode=>({activity,level,mode})))).concat({activity:'abacus',level:1,mode:''});
+  function currentStep(){return gameSteps.findIndex(step=>step.activity===state.activity&&(state.activity==='abacus'||step.level===state.level)&&step.mode===(state.activity==='bubbles'?state.bubbleMode:state.activity==='brush'?(state.paintMode?'paint':'clean'):''));}
   function stepLabel(step){return step?`${activities[step.activity].title} · ${['','Explore','Play','Challenge'][step.level]}${step.mode?' · '+(bubbleModes[step.mode]?.label||step.mode):''}`:'Games';}
   function updateGameNavigation(){const index=currentStep();for(const [id,direction] of [['game-back',-1],['game-front',1]]){$(id).title=stepLabel(gameSteps[index+direction]);$(id).setAttribute('aria-description',$(id).title);}}
   async function gameMenu(){

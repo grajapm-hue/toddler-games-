@@ -73,7 +73,7 @@ try{
     await page.getByRole('button',{name:'Fullscreen',exact:true}).click();
     if(await page.evaluate(()=>Boolean(document.fullscreenElement)))await page.evaluate(()=>document.exitFullscreen());else await page.keyboard.press('Escape');
     await expect(page.locator('#bubble-settings')).toBeVisible();await expect(page.getByRole('button',{name:'Fullscreen',exact:true})).toHaveAttribute('aria-pressed','false');checks++;
-    for(const label of ['Drag shapes','Slide to reveal','Brush and paint']){
+    for(const label of ['Drag shapes','Slide to reveal','Brush and paint','Abacus colors']){
       await page.getByRole('button',{name:'Home',exact:true}).click();await page.getByRole('button',{name:label,exact:true}).click();await expect(page.locator('#scene')).toHaveCSS('background-color','rgb(0, 0, 0)');
       if(label==='Brush and paint')await page.getByRole('button',{name:'Finger paint',exact:true}).click();
       await page.getByRole('button',{name:'Fullscreen',exact:true}).click();await fullPlay(page);
@@ -83,6 +83,8 @@ try{
       }else if(label==='Slide to reveal'){
         await page.getByRole('slider').first().focus();await page.keyboard.press('End');await expect(page.getByRole('slider').first()).toHaveAttribute('aria-valuenow','100');
         await expect(page.locator('#result-score')).toHaveText('Friends 1 / 2');
+      }else if(label==='Abacus colors'){
+        await page.locator('[data-bead-row="0"][tabindex="0"]').focus();await page.keyboard.press('ArrowRight');await expect(page.locator('[data-color-label="0"]')).toBeVisible();
       }else{
         await expect(page.locator('#art-tools')).toBeHidden();
         const point=await page.locator('#scene').evaluate(svg=>{const p=new DOMPoint(500,280).matrixTransform(svg.getScreenCTM());return {x:p.x,y:p.y};});

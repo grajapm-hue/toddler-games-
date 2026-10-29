@@ -179,7 +179,7 @@ try{
     await expect(page.locator('#share-app')).toHaveCount(0);checks++;
     await expect(page.getByRole('button',{name:'Challenge level'})).toHaveAttribute('aria-pressed','true');
     await page.reload({waitUntil:'domcontentloaded'});await expect(page.getByRole('button',{name:'Drag shapes',exact:true})).toBeVisible();
-    for(const [name,selector,count] of [['Pop bubbles','[data-bubble]',9],['Slide to reveal','[data-slider-handle]',3],['Brush and paint','[data-dirt]',14]]){
+    for(const [name,selector,count] of [['Pop bubbles','[data-bubble]',9],['Slide to reveal','[data-slider-handle]',3],['Brush and paint','[data-dirt]',14],['Abacus colors','[data-bead-row]',100]]){
       await page.getByRole('button',{name,exact:true}).click();await expect(page.locator(selector)).toHaveCount(count);
       await page.getByRole('button',{name:'Home',exact:true}).click();checks++;
     }
