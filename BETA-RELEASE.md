@@ -1,6 +1,14 @@
-# SaNa Little Hands Beta v0.17
+# SaNa Little Hands Beta v0.18
 
-The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.17 uses a fixed 64px left play margin on every device and retains centered SaNa appreciation; verify the Pages build commit and run the live checks after publishing each update.
+The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.18 adds a manual Update app control to the opening page alongside automatic update checks; verify the Pages build commit and run the live checks after publishing each update.
+
+## Manual and automatic app updates
+
+The opening page has Update app beside its version badge. It explicitly checks the service worker online, waits for the complete app cache and activation, then reloads only that opening page when its release has changed. It reports App is up to date when already current and App updated after applying a newer release. A disabled busy button prevents duplicate clicks during checking/download. Offline or failed downloads show Update unavailable and allow retry; the previous downloaded games and saved settings remain available.
+
+Automatic checks run on opening the app and when the device comes online. They can download and activate newer cached assets without reloading an ongoing game or another tab. A manual check can also refresh an old opening page after an automatic download has already activated. The Update app control is absent from children's gameplay. Manifest identity, installation scope and saved settings are preserved.
+
+`node check-updates.mjs` uses real service workers and four staged releases in Chrome and WebKit: already-current, download/busy/reload, incomplete asset failure and retry, automatic activation, manual application of an already-active newer release, origin outage/offline play, recovery, saved settings and an uninterrupted game tab. It also checks five welcome screen sizes. `UPDATE_URL` runs current-version and layout checks against a hosted opening page.
 
 ## Camera clearance and appreciation
 
@@ -18,7 +26,7 @@ Rainbow order and circle regions are unchanged. A positive row count fills its r
 
 Before version 0.14 the app disabled completed and future rows, rebuilt all bead nodes after a slide, and trusted the last move event rather than the release position. The repair keeps bead nodes stable, caches gesture geometry and element references, updates only the moving row and relevant labels, picks the nearest bead, and handles a final position delivered on pointerup. It does not rebuild the scene for ordinary counting. Count text stays fully visible immediately, using a small pulse instead of fading out after release.
 
-`node check-abacus.mjs` moves every bead forward and backward in arbitrary row order, verifies 0–10 numerals/words and colour changes, groups moving before release, stable DOM nodes, final-position-only input, short/cancelled slides, keyboard, reward/reset, resize and five screen sizes in normal/fullscreen. `ABACUS_URL` selects a hosted play page. Beta cache v17 updates existing installations online.
+`node check-abacus.mjs` moves every bead forward and backward in arbitrary row order, verifies 0–10 numerals/words and colour changes, groups moving before release, stable DOM nodes, final-position-only input, short/cancelled slides, keyboard, reward/reset, resize and five screen sizes in normal/fullscreen. `ABACUS_URL` selects a hosted play page. Beta cache v18 updates existing installations online.
 
 ## Welcome and About
 
@@ -40,7 +48,7 @@ The home introduction uses one row at the same size as the hint above it. The de
 
 Fullscreen hides the main header, instructions and outer speed/size or art settings. Results and active sub-level choices remain inside the top of the black board. The bottom navigation row keeps Back, Front, Games, sound and Exit fullscreen clear of gameplay. Games leaves fullscreen and returns to the activity menu; Back and Front continue through the game steps. Gameplay continues and exiting restores the same round, collected colors, painting and settings. The menu can also enter fullscreen before a game is chosen. Supported browsers use native fullscreen and attempt landscape lock; otherwise in-page immersive play remains available. The exit button, Escape and native browser exit restore the regular layout.
 
-`node check-immersive.mjs` checks five viewport sizes in Chrome and WebKit, real native entry/exit, sound, full-field geometry, touch popping, matching, revealing, painting, preserved progress and fallback when native fullscreen is denied or unavailable. `IMMERSIVE_URL` selects a hosted play page. Beta cache v17 updates existing installations online.
+`node check-immersive.mjs` checks five viewport sizes in Chrome and WebKit, real native entry/exit, sound, full-field geometry, touch popping, matching, revealing, painting, preserved progress and fallback when native fullscreen is denied or unavailable. `IMMERSIVE_URL` selects a hosted play page. Beta cache v18 updates existing installations online.
 
 ## Screen layout
 

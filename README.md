@@ -81,3 +81,6 @@ The installed-cache check uses network-offline emulation in Chromium. Playwright
 
 
 The play frame reserves a fixed 64px margin before the left play border on every device, including rotated portrait and fullscreen. It also honors larger reported device safe-area insets, without trying to detect camera positions. SaNa appreciation is centered in its own top row above the results and controls. `node check-camera.mjs` verifies both layouts across five sizes and simulated cutouts.
+
+
+The Beta opening page offers **Update app** beside the version badge. It checks online, waits until the new release is fully downloaded, then refreshes the opening page. Automatic checks remain enabled; open games keep their progress. Offline or failed checks keep the previous playable release and allow retry. `node check-updates.mjs` verifies real service-worker updates, failures, offline use, saved settings and responsive layout in Chrome/WebKit.
