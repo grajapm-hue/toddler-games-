@@ -15,7 +15,7 @@
     bubbles:{title:'Bubble garden',label:'Pop bubbles',word:'Tap',caption:'pop a happy bubble',note:'A pop of color. A little smile.',hint:'Tap a bubble. Pop, pop, pop! You can brush across them too.'},
     slide:{title:'Peek-a-boo friends',label:'Slide to reveal',word:'Slide',caption:'find a little friend',note:'Who is hiding behind the curtains?',hint:'Slide the sunny handles along the paths. Who will you find?'},
     brush:{title:'Little art studio',label:'Brush and paint',word:'Brush & paint',caption:'wash and make colors',note:'',hint:'Brush the muddy puppy. Give him a gentle wash.'},
-    abacus:{title:'Rainbow abacus',label:'Abacus colors',word:'Count',caption:'make a rainbow',note:'',hint:'Slide 1 red bead across, then 2 orange beads. Make the rainbow and circle!'}
+    abacus:{title:'Rainbow abacus',label:'Abacus colors',word:'Count',caption:'make a rainbow',note:'',hint:'Slide beads in any row, either way. See the number and its word change!' }
   };
   let saved={};try{const stored=JSON.parse(localStorage.getItem('sanaLittleHandsV1')||'{}');saved=stored&&typeof stored==='object'?stored:{};}catch{/* Settings are optional. */}
   const state={level:[1,2,3].includes(saved.level)?saved.level:2,activity:null,done:false,pointer:null,selected:null,paintMode:false,paintColor:colors[0],strokes:[],shapes:[],bubbles:[],sliders:[],dirt:[],sound:saved.sound===true};
@@ -137,7 +137,7 @@
     const pointer=state.pointer;state.pointer=null;
     if(pointer&&scene.hasPointerCapture?.(pointer.id)){try{scene.releasePointerCapture(pointer.id);}catch{/* Gesture may already have ended. */}}
     if(pointer?.kind==='drag')renderDrag();
-    if(pointer?.kind==='abacus'&&state.activity==='abacus')renderAbacus();
+    if(pointer?.kind==='abacus'&&state.activity==='abacus'){restoreAbacusRow(pointer.row);updateAbacusFeedback(pointer.row);}
     scene.querySelector('#brush-cursor')?.remove();
   }
   function home(){stopBubbles();cancelGesture();clearEffects();state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('play-levels'),$('sound'),$('fullscreen'));$('play-levels').hidden=false;app.dataset.view='home';$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
@@ -158,7 +158,7 @@
     if(state.activity==='brush')$('activity-name').textContent=`Little art studio · ${artPicture().name[0].toUpperCase()+artPicture().name.slice(1)}`;
     $('clean-mode').setAttribute('aria-pressed',String(!state.paintMode));$('paint-mode').setAttribute('aria-pressed',String(state.paintMode));
     scene.style.background='#000';
-    if(state.activity==='abacus'){state.abacusRows=abacusColors.map(()=>Array(10).fill(false));renderAbacus();}
+    if(state.activity==='abacus'){state.abacusRows=abacusColors.map(()=>Array(10).fill(false));state.abacusTouched=new Set();state.abacusSelectedRow=0;renderAbacus();}
     else if(state.activity==='drag'){
       const count=[0,2,4,6][state.level],ys=count===2?[140,310]:count===4?[120,310]:[85,220,355];
       state.shapes=shapes.slice(0,count).map((shape,i)=>({...shape,placed:false,x:count===2?250:150+(i%2)*190,y:ys[count===2?i:Math.floor(i/2)],tx:count===2?750:660+(i%2)*190,ty:ys[count===2?i:Math.floor(i/2)]}));renderDrag();
@@ -177,29 +177,60 @@
     if(state.activity==='bubbles')hint(state.bubbleMode==='plain'?'Tap the rising bubbles. Splash, pop! They keep coming.':'Pop a bubble to color its matching item above. Find them all!');
   }
   const abacusColors=[['Red','#ff3b30'],['Orange','#ff9500'],['Yellow','#ffe500'],['Green','#35d44b'],['Blue','#2395ff'],['Indigo','#6454d9'],['Violet','#bb52ed'],['Pink','#ff8fc7'],['Brown','#b5794a'],['White','#ffffff']];
+  const abacusWords=['Zero','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten'];
   const abacusCount=row=>state.abacusRows[row].filter(Boolean).length;
-  const activeAbacusRow=()=>state.abacusRows.findIndex((row,i)=>row.filter(Boolean).length<i+1);
-  function abacusHint(){const row=activeAbacusRow();if(row>=0)hint(`Slide ${row+1} ${abacusColors[row][0].toLowerCase()} ${row?'beads':'bead'} to the right. ${abacusCount(row)} across so far!`);}
+  const activeAbacusRow=()=>state.abacusSelectedRow??0;
+  function abacusHint(){const row=activeAbacusRow(),count=abacusCount(row);hint(`${abacusColors[row][0]}: ${count} ${abacusWords[count]} on the right. Slide beads in any row, either way!`);}
   function abacusGeometry(){const width=Math.max(1000,600*scene.clientWidth/Math.max(1,scene.clientHeight)),left=width*.5,start=54,end=left-35,pitch=(end-start)*.043;return {width,left,start,end,pitch,r:Math.min(21,pitch*.44)};}
-  // Each bead keeps its identity; only a completed slide moves it into the right-hand stack.
-  function abacusBeadPoint(row,index){const g=abacusGeometry(),moved=state.abacusRows[row][index],before=state.abacusRows[row].slice(0,index).filter(value=>value===moved).length;return {x:moved?g.end-(abacusCount(row)-1-before)*g.pitch:g.start+before*g.pitch,y:34+row*56};}
-  /** Fit the ten-row abacus and both vector drawings to the current play field without resetting counts. */
-  function renderAbacus(reveal=-1){
+  function abacusBeadPoint(row,index,g=abacusGeometry()){const count=abacusCount(row);return {x:index>=10-count?g.end-(9-index)*g.pitch:g.start+index*g.pitch,y:34+row*56};}
+  function abacusLabel(row,count){return `${count} ${abacusWords[count]} ${abacusColors[row][0]}`;}
+  /** Build the scene only on entry, reset or resize. Ordinary slides retain every bead node. */
+  function renderAbacus(){
     if(state.activity!=='abacus'||!state.abacusRows)return;
     const g=abacusGeometry(),active=activeAbacusRow(),scale=600/Math.max(1,scene.clientHeight),font=Math.min(42,Math.max(20,14*scale));
-    state.abacusSize=`${scene.clientWidth}/${scene.clientHeight}`;scene.setAttribute('viewBox',`0 0 ${g.width} 600`);scene.setAttribute('aria-label','Abacus, rainbow and circle');
-    const right=g.left+16,rw=g.width-right-12,radius=Math.min(260,rw*.32),cx=right+radius+6,base=286,circleR=Math.min(130,rw*.16),circleX=g.width-circleR-18,circleY=150;
-    const band=radius/10;
-    const rainbow=abacusColors.slice(0,7).map(([name,color],i)=>{const outer=radius-i*band,inner=outer-band;return `<path data-rainbow-band="${i}" data-color-region="${i}" d="M${cx-outer} ${base}A${outer} ${outer} 0 0 1 ${cx+outer} ${base}L${cx+inner} ${base}A${inner} ${inner} 0 0 0 ${cx-inner} ${base}Z" fill="${abacusCount(i)>=i+1?color:'#000'}" stroke="#90969e" stroke-width="3"/>`;}).join('');
-    const circles=[[7,'outer',circleR],[9,'middle',circleR*.68],[8,'inner',circleR*.35]].map(([row,region,r])=>`<circle data-circle-region="${region}" data-color-region="${row}" cx="${circleX}" cy="${circleY}" r="${r}" fill="${abacusCount(row)>=row+1?abacusColors[row][1]:'#000'}" stroke="#90969e" stroke-width="3"/>`).join('');
-    scene.innerHTML=`<g id="abacus-frame"><rect x="10" y="5" width="${g.left-24}" height="586" rx="18" fill="#101010" stroke="#9b7e60" stroke-width="7"/>${abacusColors.map(([name,color],row)=>{const y=34+row*56,count=abacusCount(row),destination=g.end-count*g.pitch;return `<g data-abacus-row="${row}">${row===active?`<rect x="20" y="${y-25}" width="${g.left-44}" height="50" rx="12" fill="none" stroke="#ffe17a" stroke-width="3"/>`:''}<text x="28" y="${y+8}" text-anchor="middle" font-size="23" fill="#fff" font-weight="900">${row+1}</text><path d="M${g.start-g.r} ${y}H${g.end+g.r}" stroke="#90969e" stroke-width="4"/><circle data-abacus-destination="${row}" cx="${destination}" cy="${y}" r="${g.r+2}" fill="none" stroke="${row===active?'#ffe17a':'#555'}" stroke-width="3" stroke-dasharray="5 5"/>${state.abacusRows[row].map((moved,index)=>{const p=abacusBeadPoint(row,index),enabled=row===active&&!moved;return `<g data-bead-row="${row}" data-bead-index="${index}" data-moved="${moved}" transform="translate(${p.x} ${p.y})" role="button" aria-label="${name} bead ${index+1}" aria-disabled="${!enabled}" tabindex="${enabled&&index===9-count?'0':'-1'}"><circle r="${Math.max(g.r,24)}" fill="transparent"/><circle r="${g.r}" fill="${color}" stroke="#ffffffb0" stroke-width="1.5"/><path d="M${-g.r*.45} ${-g.r*.48}L${g.r*.05} ${-g.r*.7}" stroke="white" stroke-opacity=".65" stroke-width="3" stroke-linecap="round"/></g>`;}).join('')}</g>`;}).join('')}</g><path d="M${g.left} 12V588" stroke="#555" stroke-width="2"/><g id="rainbow-picture" role="img" aria-label="Seven blank rainbow bands that fill with their colors">${rainbow}</g><g id="circle-picture" role="img" aria-label="Pink outer circle, white middle circle, brown center">${circles}</g><g id="abacus-labels">${abacusColors.map(([name,color],i)=>`<text data-color-label="${i}" x="${right+16+(i<5?0:rw*.52)}" y="${348+(i%5)*51}" fill="${color}" font-size="${font}" font-weight="900" font-family="inherit" visibility="${abacusCount(i)>=i+1?'visible':'hidden'}" class="${i===reveal?'abacus-pop':''}">${i+1} ${name}</text>`).join('')}</g>`;
-    progress(active<0?10:active,10);$('result-score').textContent=active<0?'10 colours!':`${abacusColors[active][0]} ${abacusCount(active)}/${active+1}`;
+    state.abacusSize=`${scene.clientWidth}/${scene.clientHeight}`;scene.setAttribute('viewBox',`0 0 ${g.width} 600`);scene.setAttribute('aria-label','Freely count abacus beads, rainbow and circle');
+    const right=g.left+16,rw=g.width-right-12,radius=Math.min(260,rw*.32),cx=right+radius+6,base=286,circleR=Math.min(130,rw*.16),circleX=g.width-circleR-18,circleY=150,band=radius/10;
+    const rainbow=abacusColors.slice(0,7).map(([name,color],i)=>{const outer=radius-i*band,inner=outer-band;return `<path data-rainbow-band="${i}" data-color-region="${i}" d="M${cx-outer} ${base}A${outer} ${outer} 0 0 1 ${cx+outer} ${base}L${cx+inner} ${base}A${inner} ${inner} 0 0 0 ${cx-inner} ${base}Z" fill="${abacusCount(i)?color:'#000'}" stroke="#90969e" stroke-width="3"/>`;}).join('');
+    const circles=[[7,'outer',circleR],[9,'middle',circleR*.68],[8,'inner',circleR*.35]].map(([row,region,r])=>`<circle data-circle-region="${region}" data-color-region="${row}" cx="${circleX}" cy="${circleY}" r="${r}" fill="${abacusCount(row)?abacusColors[row][1]:'#000'}" stroke="#90969e" stroke-width="3"/>`).join('');
+    scene.innerHTML=`<g id="abacus-frame"><rect x="10" y="5" width="${g.left-24}" height="586" rx="18" fill="#101010" stroke="#9b7e60" stroke-width="7"/>${abacusColors.map(([name,color],row)=>{const y=34+row*56,count=abacusCount(row);return `<g data-abacus-row="${row}"><rect data-row-highlight="${row}" x="20" y="${y-25}" width="${g.left-44}" height="50" rx="12" fill="none" stroke="${row===active?'#ffe17a':'transparent'}" stroke-width="3"/><text data-row-count="${row}" x="28" y="${y+8}" text-anchor="middle" font-size="23" fill="#fff" font-weight="900">${count}</text><path d="M${g.start-g.r} ${y}H${g.end+g.r}" stroke="#90969e" stroke-width="4"/><circle data-abacus-start="${row}" cx="${g.start}" cy="${y}" r="${g.r+2}" fill="none" stroke="#555" stroke-width="3" stroke-dasharray="5 5"/><circle data-abacus-destination="${row}" cx="${g.end}" cy="${y}" r="${g.r+2}" fill="none" stroke="#777" stroke-width="3" stroke-dasharray="5 5"/>${state.abacusRows[row].map((moved,index)=>{const p=abacusBeadPoint(row,index,g);return `<g data-bead-row="${row}" data-bead-index="${index}" data-moved="${moved}" transform="translate(${p.x} ${p.y})" role="button" aria-label="${name} bead ${index+1}" aria-disabled="false" tabindex="${index===9-count||index===10-count?'0':'-1'}"><circle r="${g.r}" fill="${color}" stroke="#ffffffb0" stroke-width="1.5"/><path d="M${-g.r*.45} ${-g.r*.48}L${g.r*.05} ${-g.r*.7}" stroke="white" stroke-opacity=".65" stroke-width="3" stroke-linecap="round"/></g>`;}).join('')}</g>`;}).join('')}</g><path d="M${g.left} 12V588" stroke="#555" stroke-width="2"/><g id="rainbow-picture" role="img" aria-label="Rainbow bands fill with the colors counted">${rainbow}</g><g id="circle-picture" role="img" aria-label="Pink outer circle, white middle circle, brown center">${circles}</g><g id="abacus-labels">${abacusColors.map(([name,color],row)=>`<text data-color-label="${row}" x="${right+16+(row<5?0:rw*.52)}" y="${348+(row%5)*51}" fill="${color}" font-size="${font}" font-weight="900" font-family="inherit" visibility="${state.abacusTouched.has(row)?'visible':'hidden'}">${abacusLabel(row,abacusCount(row))}</text>`).join('')}</g>`;
+    state.abacusElements=abacusColors.map((_,row)=>({beads:[...scene.querySelectorAll(`[data-bead-row="${row}"]`)],region:scene.querySelector(`[data-color-region="${row}"]`),label:scene.querySelector(`[data-color-label="${row}"]`),count:scene.querySelector(`[data-row-count="${row}"]`),highlight:scene.querySelector(`[data-row-highlight="${row}"]`)}));
+    updateAbacusProgress();updateAbacusFeedback(active);
   }
-  function finishAbacusBead(row,index){
-    if(row!==activeAbacusRow()||state.abacusRows[row][index])return;
-    state.abacusRows[row][index]=true;const reached=abacusCount(row)===row+1;renderAbacus(reached?row:-1);tone(reached?740:520,reached);
-    if(activeAbacusRow()<0){celebrate('Wonderful counting! SaNa loves your rainbow and circle!');$('art-reward').hidden=false;applause();}
-    else abacusHint();
+  function updateAbacusFeedback(row,count=abacusCount(row),reveal=false){
+    const nodes=state.abacusElements[row];if(!nodes)return;
+    nodes.region.setAttribute('fill',count?abacusColors[row][1]:'#000');nodes.count.textContent=String(count);nodes.label.textContent=abacusLabel(row,count);
+    nodes.label.setAttribute('visibility',state.abacusTouched.has(row)||count!==abacusCount(row)?'visible':'hidden');nodes.label.classList.toggle('abacus-pop',reveal);
+    $('result-score').textContent=`${abacusColors[row][0]}: ${count} ${abacusWords[count]}`;
+    state.abacusElements.forEach((item,i)=>item.highlight.setAttribute('stroke',i===row?'#ffe17a':'transparent'));
+  }
+  function restoreAbacusRow(row){const g=abacusGeometry(),count=abacusCount(row);state.abacusElements[row].beads.forEach((node,index)=>{const p=abacusBeadPoint(row,index,g);node.setAttribute('transform',`translate(${p.x} ${p.y})`);node.dataset.moved=String(index>=10-count);node.setAttribute('tabindex',index===9-count||index===10-count?'0':'-1');});}
+  function updateAbacusProgress(){progress(state.abacusRows.filter((_,row)=>abacusCount(row)>0).length,10);}
+  function setAbacusCount(row,count){
+    const previous=abacusCount(row);state.abacusSelectedRow=row;
+    if(previous===count){restoreAbacusRow(row);updateAbacusFeedback(row);return;}
+    state.abacusRows[row]=Array.from({length:10},(_,index)=>index>=10-count);state.abacusTouched.add(row);
+    restoreAbacusRow(row);updateAbacusProgress();updateAbacusFeedback(row,count,!previous&&!!count);tone(520+count*20);
+    const complete=state.abacusRows.every((_,index)=>abacusCount(index)>0);
+    if(complete&&!state.done){celebrate('Wonderful counting! SaNa loves your rainbow and circle!');$('art-reward').hidden=false;applause();}
+    else{if(!complete&&state.done){state.done=false;clearEffects();}abacusHint();}
+  }
+  function finishAbacusBead(row,index,toRight=true){const count=abacusCount(row);setAbacusCount(row,toRight?Math.max(count,10-index):Math.min(count,9-index));}
+  function beginAbacusSlide(point,id){
+    const g=abacusGeometry(),row=Math.round((point.y-34)/56);if(row<0||row>9||Math.abs(point.y-(34+row*56))>27)return null;
+    const positions=Array.from({length:10},(_,index)=>abacusBeadPoint(row,index,g).x);
+    let index=0;for(let i=1;i<10;i++)if(Math.abs(positions[i]-point.x)<Math.abs(positions[index]-point.x))index=i;
+    if(Math.abs(positions[index]-point.x)>Math.max(24,g.pitch*.8))return null;
+    state.abacusSelectedRow=row;updateAbacusFeedback(row);
+    return {id,kind:'abacus',row,index,g,matrix:scene.getScreenCTM().inverse(),x:positions[index],y:34+row*56,dx:point.x-positions[index],positions,drawn:[...positions],original:abacusCount(row),preview:abacusCount(row),right:!state.abacusRows[row][index],elements:state.abacusElements[row].beads};
+  }
+  /** Push neighbouring beads without passing them; cache geometry and nodes for the whole gesture. */
+  function moveAbacusSlide(pointer,point){
+    const {g,index}=pointer,left=g.start+index*g.pitch,right=g.end-(9-index)*g.pitch;
+    pointer.x=Math.max(left,Math.min(right,point.x-pointer.dx));
+    pointer.elements.forEach((node,i)=>{const x=i>index?Math.max(pointer.positions[i],pointer.x+(i-index)*g.pitch):i<index?Math.min(pointer.positions[i],pointer.x-(index-i)*g.pitch):pointer.x;if(x!==pointer.drawn[i]){node.setAttribute('transform',`translate(${x} ${pointer.y})`);pointer.drawn[i]=x;}});
+    const across=pointer.right?pointer.x>=(left+right)/2:pointer.x<=(left+right)/2;
+    const count=across?(pointer.right?10-index:9-index):pointer.original;
+    if(count!==pointer.preview){pointer.preview=count;updateAbacusFeedback(pointer.row,count);}
   }
   new ResizeObserver(()=>{if(state.activity==='abacus'&&state.abacusSize!==`${scene.clientWidth}/${scene.clientHeight}`){cancelGesture();renderAbacus();}}).observe(scene);
   function renderDrag(){
@@ -396,9 +427,7 @@
     const point=localPoint(event);if(!point)return;
     scene.querySelector('[data-guide]')?.remove();
     if(state.activity==='abacus'){
-      const bead=event.target.closest('[data-bead-row]');if(!bead)return;const row=Number(bead.dataset.beadRow),index=Number(bead.dataset.beadIndex);
-      if(row!==activeAbacusRow()||state.abacusRows[row][index]){abacusHint();return;}
-      const start=abacusBeadPoint(row,index),g=abacusGeometry();state.pointer={id:event.pointerId,kind:'abacus',row,index,x:start.x,y:start.y,dx:point.x-start.x,target:g.end-abacusCount(row)*g.pitch};
+      state.pointer=beginAbacusSlide(point,event.pointerId);if(!state.pointer)return;
     }else if(state.activity==='drag'){
       if(state.done)return;
       const target=event.target.closest('[data-target]');
@@ -421,8 +450,8 @@
   }
   function pointerMove(event){
     const pointer=state.pointer;if(!pointer||event.pointerId!==pointer.id)return;
-    const point=localPoint(event);if(!point)return;event.preventDefault();
-    if(pointer.kind==='abacus'){const g=abacusGeometry();pointer.x=Math.max(g.start,Math.min(g.end,point.x-pointer.dx));scene.querySelector(`[data-bead-row="${pointer.row}"][data-bead-index="${pointer.index}"]`)?.setAttribute('transform',`translate(${pointer.x} ${pointer.y})`);}
+    const point=pointer.kind==='abacus'?new DOMPoint(event.clientX,event.clientY).matrixTransform(pointer.matrix):localPoint(event);if(!point)return;event.preventDefault();
+    if(pointer.kind==='abacus')moveAbacusSlide(pointer,point);
     else if(pointer.kind==='drag'){
       pointer.x=Math.max(60,Math.min(940,point.x-pointer.dx));pointer.y=Math.max(60,Math.min(380,point.y-pointer.dy));
       scene.querySelector(`[data-piece="${pointer.shape.id}"]`)?.setAttribute('transform',`translate(${pointer.x} ${pointer.y})`);
@@ -438,7 +467,7 @@
     const pointer=state.pointer;if(!pointer||pointer.id!==event.pointerId)return;
     state.pointer=null;
     try{if(scene.hasPointerCapture(event.pointerId))scene.releasePointerCapture(event.pointerId);}catch{/* Already released. */}
-    if(pointer.kind==='abacus'){if(pointer.x>=pointer.target-abacusGeometry().r)finishAbacusBead(pointer.row,pointer.index);else{renderAbacus();abacusHint();}}
+    if(pointer.kind==='abacus'){moveAbacusSlide(pointer,new DOMPoint(event.clientX,event.clientY).matrixTransform(pointer.matrix));setAbacusCount(pointer.row,pointer.preview);}
     else if(pointer.kind==='drag'){
       const distance=Math.hypot(pointer.x-pointer.shape.tx,pointer.y-pointer.shape.ty);
       if(distance<[0,128,96,73][state.level])matchShape(pointer.shape.id);
@@ -450,7 +479,10 @@
   scene.addEventListener('keydown',event=>{
     const piece=event.target.closest('[data-piece]'),target=event.target.closest('[data-target]'),bubble=event.target.closest('[data-bubble]'),handle=event.target.closest('[data-slider-handle]');
     const bead=event.target.closest('[data-bead-row]');
-    if(bead&&['ArrowRight','End','Enter',' '].includes(event.key)){event.preventDefault();finishAbacusBead(Number(bead.dataset.beadRow),Number(bead.dataset.beadIndex));const row=activeAbacusRow();if(row>=0)scene.querySelector(`[data-bead-row="${row}"][tabindex="0"]`)?.focus();}
+    if(bead&&['ArrowRight','ArrowLeft','End','Home','Enter',' '].includes(event.key)){
+      event.preventDefault();const row=Number(bead.dataset.beadRow),index=Number(bead.dataset.beadIndex),right=['ArrowRight','End'].includes(event.key)||(['Enter',' '].includes(event.key)&&!state.abacusRows[row][index]);
+      finishAbacusBead(row,index,right);const count=abacusCount(row),focus=right?Math.max(0,9-count):Math.min(9,10-count);state.abacusElements[row].beads[focus]?.focus();
+    }
     else if(handle&&['ArrowRight','ArrowLeft','Home','End'].includes(event.key)){
       event.preventDefault();const slider=state.sliders[Number(handle.dataset.sliderHandle)];const value=event.key==='End'?1:event.key==='Home'?0:slider.value+(event.key==='ArrowRight' ? .15 : -.15);slideTo(slider,slider.x+25+value*(slider.w-50));
     }else if(event.key==='Enter'||event.key===' '){
@@ -461,7 +493,7 @@
   });
   function showMe(){
     clearTimeout(guideTimer);scene.querySelector('[data-guide]')?.remove();let x=460,y=190;
-    if(state.activity==='abacus'){const row=activeAbacusRow();if(row>=0){const p=abacusBeadPoint(row,9-abacusCount(row));x=p.x;y=p.y;}abacusHint();}
+    if(state.activity==='abacus'){const row=activeAbacusRow();if(row>=0){const count=abacusCount(row),p=abacusBeadPoint(row,count===10?0:9-count);x=p.x;y=p.y;}abacusHint();}
     else if(state.activity==='drag'){const shape=state.shapes.find(s=>!s.placed);if(shape){x=shape.x+10;y=shape.y+20;}hint('Touch a shape, hold it, and move it to the same shadow.');}
     else if(state.activity==='bubbles'){const bubble=activeBubble();if(bubble){x=bubble.x+5;y=bubble.y+10;}hint(state.bubbleMode==='plain'?'Touch a rising bubble with one finger. Splash, pop!':'Touch a rising bubble. Its matching item above will turn the same color!');}
     else if(state.activity==='slide'){const s=state.sliders.find(s=>s.value<1)||state.sliders[0];x=s.x+30+s.value*(s.w-50);y=s.y+s.h+45;hint('Hold a sunny handle. Slide it along its path.');}

@@ -40,13 +40,15 @@ Above the Bubble Garden table, **Speed: Slow / Medium / Fast** and **Size: Small
 
 ## Count — Rainbow abacus
 
-The new Count card opens one basic puzzle with ten coloured rows of ten beads on the left. On the right are a black rainbow with seven grey-bordered bands and three black concentric circle regions. Slide 1 red bead across, then 2 orange, 3 yellow, 4 green, 5 blue, 6 indigo, 7 violet, 8 pink, 9 brown and 10 white. Only the current row accepts slides; completed rows stay in place.
+All 100 beads are available immediately, in any row and in both directions. Slide a single bead or push neighbouring beads together, like a basic abacus. Each row counts the beads on the right from 0 to 10. Its label shows the numeral, English number word and colour: **5 Five Red**, **10 Ten Blue**, or **0 Zero White**. The small number beside the row also shows its actual count.
 
-A short or cancelled drag does not count. Reaching the row goal fills exactly its matching region and pops up its numbered colour name below the drawings. Numbers are not printed inside the artwork. Pink fills the outer circle, white the middle and brown the centre. Completing all ten rows brings SaNa’s congratulations and applause when sound is on. Again clears the counts, colours and labels. Both drawings and counted beads survive screen rotation and fullscreen changes.
+The seven rainbow bands retain Red, Orange, Yellow, Green, Blue, Indigo and Violet order. The circle remains pink outside, white in the middle and brown at the centre. A region fills when that row has beads on the right; returning them all left makes it black again. Untouched labels start blank; after use, Zero remains visible to teach zero. Numbers stay below the drawings, not inside them.
 
-The next active bead is keyboard focusable; ArrowRight, End, Enter or Space slides it across. Back returns to the preceding game step; Front continues to the menu after this final puzzle. The Count puzzle has its own fixed 1–10 goals, so the other games’ three difficulty buttons are hidden during it.
+Counts and words update as a pushed group crosses the centre; release settles it at the corresponding end. A short or cancelled slide restores the prior count. All ten colours trigger SaNa’s congratulations and optional applause, while every bead remains movable. Clearing a row makes that colour available to complete again. Again clears the whole puzzle; rotation and fullscreen keep counts.
 
-`node check-abacus.mjs` checks all 100 beads, blank drawings/borders, short and cancelled gestures, wrong rows, exact counting and colours, circle ordering, label sequence, reset, completion, responsive touch and fullscreen/rotation. `ABACUS_URL` selects a hosted play page. Evidence is stored under ignored `artifacts/abacus/`.
+ArrowRight/End and ArrowLeft/Home move the selected bead and its neighbours to the corresponding side; Enter/Space switches sides. Games, Back and Front keep their existing navigation. This is one free-counting puzzle, so the other games’ difficulty buttons are hidden.
+
+`node check-abacus.mjs` checks all 100 beads forwards and backwards with touch/pointer gestures, grouped and single moves, actual 0–10 numerals/words, arbitrary row order, stable bead nodes, immediate movement before release, final-position-only releases, cancellation, colours/zero, keyboard support, completion/reset and five normal/fullscreen screen sizes. `ABACUS_URL` selects a hosted play page; evidence is under ignored `artifacts/abacus/`.
 
 ## Activities
 
@@ -55,7 +57,7 @@ The next active bead is keyboard focusable; ArrowRight, End, Enter or Space slid
 3. **Slide — Peek-a-boo friends:** move the sunny handles along their tracks to reveal the fox, owl and frog.
 4. **Brush & paint — Little art studio:** Explore shows a fish, Play a puppy and Challenge a butterfly in both modes. Choose Small, Medium or Large for cleaning and painting. Finger paint stays inside the selected picture. Use Eraser to remove paint, then choose a color to paint again. SaNa congratulates you when the level's coloring goal is reached, with applause when sound is on. Again starts a fresh picture.
 
-5. **Count — Rainbow abacus:** slide the required beads to reveal seven rainbow colours and the pink, white and brown circle, with numbered colour labels appearing below.
+5. **Count — Rainbow abacus:** freely slide beads in any row to colour the rainbow and circle; each label shows the actual count as a numeral and a word.
 
 **Back** and **Front** sit at the bottom corners of every black game field, including fullscreen. They step through the three levels and each game’s modes, then move to the previous/next game. Beyond the first or last step they return to the activity pictures. **Games** in the bottom center and **Home** return directly to those pictures. **Again** resets the current round or clears the painting. **Show me** gives a visual hand hint. The sound button toggles gentle generated tones; sound starts off. The last level and sound preference are stored only in this browser when storage is available. There are no ads, sign-ins, trackers, external fonts or external media downloads.
 
