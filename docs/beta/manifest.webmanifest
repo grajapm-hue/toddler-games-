@@ -1,0 +1,19 @@
+{
+  "id": "./",
+  "name": "SaNa Little Hands Beta",
+  "short_name": "SaNa Beta",
+  "description": "Tap, drag, slide, brush and paint with SaNa. A landscape playroom with three levels, mainly for ages 2 to 4.",
+  "lang": "en",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#51409a",
+  "theme_color": "#51409a",
+  "categories": ["games", "kids", "education"],
+  "icons": [
+    {"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"},
+    {"src":"icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
+    {"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ]
+}

@@ -1,6 +1,6 @@
 # SaNa Little Hands: welcome preview 01
 
-This is a local design preview, prepared for discussion. Nothing has been pushed or deployed.
+This note records the first local design preview prepared for discussion. The subsequent installable Beta package and its status are described in `BETA-RELEASE.md`.
 
 Repository: https://github.com/grajapm-hue/toddler-games-
 

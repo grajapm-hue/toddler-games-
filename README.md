@@ -2,11 +2,19 @@
 
 A separate landscape HTML playroom, mainly for ages 2–4, with simpler and harder activity levels. This prototype is ready for family feedback; it has not been added to the MathMatrix Main or Beta menus.
 
+## Installable Beta
+
+The Beta site is built into **docs/beta/**. Run `node build-beta.mjs` after editing the prototype or `beta-runtime/` sources. The original standalone game remains available for local testing.
+
+For a local hosted trial, run `node serve.mjs 8778 docs` and open `http://127.0.0.1:8778/beta/`.
+
+Publish GitHub Pages from **main → /docs**. The intended Beta URL is `https://grajapm-hue.github.io/toddler-games-/beta/`. See `BETA-RELEASE.md` for installation, checks and deployment status. Main release is a later step.
+
 ## Welcome screen: preview 01
 
 Start with **welcome-preview.html** for the new MathMatrix-inspired landscape welcome screen. Keep this folder together: Tap to play opens the existing self-contained game file. Install app currently explains the planned Beta installation; About opens the app information.
 
-This is the first screen for discussion. The activities remain unchanged. The new repository is [grajapm-hue/toddler-games-](https://github.com/grajapm-hue/toddler-games-); publishing Beta and later Main is planned only after review. See `PREVIEW-NOTES.md` for the current scope.
+This is the first screen for discussion. The activities remain unchanged. The new repository is [grajapm-hue/toddler-games-](https://github.com/grajapm-hue/toddler-games-). The installable Beta now builds from this preview; see `PREVIEW-NOTES.md` for the earlier design scope.
 
 ## Play
 
