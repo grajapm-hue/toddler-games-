@@ -13,6 +13,7 @@ button,a{font:inherit;touch-action:manipulation;-webkit-user-select:none;user-se
 button{cursor:pointer}a{color:inherit;text-decoration:none}
 button:focus-visible,a:focus-visible{outline:4px solid #fff;outline-offset:5px}
 [hidden]{display:none!important}
+#frame,#frame *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
 #frame{--w:100vw;--h:100dvh;position:absolute;left:50%;top:50%;width:var(--w);height:var(--h);transform:translate(-50%,-50%);overflow:hidden;background:radial-gradient(ellipse at 7% 10%,#f459b6 0,transparent 46%),radial-gradient(ellipse at 93% 84%,#28d3e0 0,transparent 47%),linear-gradient(125deg,#bd3fb7,#51409a 58%,#6d87d3);display:grid;grid-template-rows:auto minmax(0,1fr) auto;padding:25px 4.5% 20px;isolation:isolate}
 #frame.rotated{transform:translate(-50%,-50%) rotate(90deg)}
 .topline{display:flex;justify-content:space-between;align-items:center;gap:20px;font-size:22px;font-weight:900;color:#fff5e8}
@@ -97,6 +98,7 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
 <script>
 (() => {
   const frame=document.getElementById('frame');
+  for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});
   function fit(){
     const viewport=window.visualViewport;
     const width=viewport?.width||window.innerWidth,height=viewport?.height||window.innerHeight;

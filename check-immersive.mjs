@@ -61,7 +61,7 @@ try{
     await page.touchscreen.tap(box.x+box.width/2,box.y+box.height/2);
     const target=page.locator(`[data-bubble-target="${token}"]`),color=await target.evaluate(el=>getComputedStyle(el).backgroundColor);
     await page.getByRole('button',{name:'Fullscreen',exact:true}).click();await fullPlay(page);
-    if(engine==='chromium')assert(await page.evaluate(()=>Boolean(document.fullscreenElement)),'Supported browsers enter native fullscreen');
+    assert.equal(await page.evaluate(()=>document.fullscreenElement),null,'Expanded play must not request browser fullscreen or trigger its URL notice');
     await page.getByRole('button',{name:'Sound off',exact:true}).click();await expect(page.getByRole('button',{name:'Sound on',exact:true})).toHaveAttribute('aria-pressed','true');
     const moving=page.locator('[data-bubble][data-onstage="true"]').last(),id=await moving.getAttribute('data-bubble'),y=await moving.evaluate(el=>el.transform.baseVal.getItem(0).matrix.f);
     await page.clock.runFor(500);assert(await page.locator(`[data-bubble="${id}"]`).evaluate(el=>el.transform.baseVal.getItem(0).matrix.f)<y,'Bubbles keep moving in fullscreen');
@@ -69,9 +69,9 @@ try{
     await expect(page.locator(`[data-bubble="${nextId}"]`)).toHaveCount(0);
     await page.screenshot({path:resolve(out,`${name}-fullscreen.png`)});
     await page.getByRole('button',{name:'Exit fullscreen',exact:true}).click();await expect(page.locator('#bubble-settings')).toBeVisible();await expect(target).toHaveCSS('background-color',color);await expect(target).toHaveAttribute('data-collected','true');checks++;
-    // Native browser exits must restore the settings just like the floating exit button.
+    // Escape restores the normal layout just like the expand/exit button.
     await page.getByRole('button',{name:'Fullscreen',exact:true}).click();
-    if(await page.evaluate(()=>Boolean(document.fullscreenElement)))await page.evaluate(()=>document.exitFullscreen());else await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape');
     await expect(page.locator('#bubble-settings')).toBeVisible();await expect(page.getByRole('button',{name:'Fullscreen',exact:true})).toHaveAttribute('aria-pressed','false');checks++;
     for(const label of ['Drag shapes','Slide to reveal','Brush and paint','Abacus colors']){
       await page.getByRole('button',{name:'Home',exact:true}).click();await page.getByRole('button',{name:label,exact:true}).click();await expect(page.locator('#scene')).toHaveCSS('background-color','rgb(0, 0, 0)');
@@ -98,9 +98,8 @@ try{
     await expect(page.locator('.welcome')).toBeHidden();await page.getByRole('button',{name:'Pop bubbles',exact:true}).click();await fullPlay(page);await page.getByRole('button',{name:'Exit fullscreen',exact:true}).click();checks++;
     assert.deepEqual(errors,[]);await context.close();
   }
-  // Chrome exercises a real policy denial; WebKit ignores that policy, so model Safari without the API.
+  // Expansion works even when the browser forbids its native fullscreen API.
   const context=await browser.newContext({viewport:{width:844,height:390},serviceWorkers:'block'}),page=await context.newPage();
-  if(engine==='webkit')await context.addInitScript(()=>Object.defineProperty(Element.prototype,'requestFullscreen',{value:undefined,configurable:true}));
   await page.goto(`http://127.0.0.1:${server.address().port}/docs/beta/play.html?deny=1`);await page.getByRole('button',{name:'Pop bubbles',exact:true}).click();await page.getByRole('button',{name:'Fullscreen',exact:true}).click();
   await fullPlay(page);assert.equal(await page.evaluate(()=>document.fullscreenElement),null);await page.keyboard.press('Escape');await expect(page.locator('#bubble-settings')).toBeVisible();checks++;
   await context.close();console.log(`PASS: ${checks} compact-home and immersive-play checks (${engine})`);
