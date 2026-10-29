@@ -142,7 +142,7 @@ try{
   await page.evaluate(()=>window.dispatchEvent(new Event('appinstalled')));
   await expect(page.getByRole('button',{name:'Installed',exact:true})).toBeVisible();checks++;
   await page.getByRole('link',{name:'Tap to play'}).click();
-  await expect(page.getByRole('button',{name:'Play level, ages 2 to 4'})).toHaveAttribute('aria-pressed','true');checks++;
+  await expect(page.locator('[data-level="2"]')).toHaveAttribute('aria-pressed','true');checks++;
   await expect(page.locator('#share-app')).toHaveCount(0);checks++;
   await page.getByRole('button',{name:'Drag shapes',exact:true}).click();
   await expect(page.locator('[data-piece]')).toHaveCount(4);
@@ -162,7 +162,9 @@ try{
   await page.setViewportSize({width:844,height:390});checks++;
   await page.screenshot({path:resolve(output,'play.png')});
   await page.getByRole('button',{name:'Home',exact:true}).click();
+  await page.getByRole('button',{name:'Drag shapes',exact:true}).click();
   await page.getByRole('button',{name:'Challenge level'}).click();
+  await page.getByRole('button',{name:'Games',exact:true}).click();
   await page.getByRole('link',{name:'SaNa Beta welcome'}).click();
   await expect(page.getByRole('status')).toHaveText('Ready for offline play');
   if(engine==='webkit'&&!process.env.BETA_URL){
@@ -177,7 +179,7 @@ try{
     await page.getByRole('button',{name:'Got it'}).click();checks++;
     await page.getByRole('link',{name:'Tap to play'}).click();
     await expect(page.locator('#share-app')).toHaveCount(0);checks++;
-    await expect(page.getByRole('button',{name:'Challenge level'})).toHaveAttribute('aria-pressed','true');
+    await expect(page.locator('[data-level="3"]')).toHaveAttribute('aria-pressed','true');
     await page.reload({waitUntil:'domcontentloaded'});await expect(page.getByRole('button',{name:'Drag shapes',exact:true})).toBeVisible();
     for(const [name,selector,count] of [['Pop bubbles','[data-bubble]',9],['Slide to reveal','[data-slider-handle]',3],['Brush and paint','[data-dirt]',14],['Abacus colors','[data-bead-row]',100]]){
       await page.getByRole('button',{name,exact:true}).click();await expect(page.locator(selector)).toHaveCount(count);

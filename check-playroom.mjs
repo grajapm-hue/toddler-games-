@@ -36,7 +36,7 @@ try{
     if(touch&&engine==='chromium')touchSessions.set(page,await context.newCDPSession(page));
     await page.goto(base);
     await expect(page).toHaveTitle(/SaNa.*Little Hands/);
-    await expect(page.getByRole('button',{name:'Play level, ages 2 to 4'})).toHaveAttribute('aria-pressed','true');
+    await expect(page.locator('[data-level="2"]')).toHaveAttribute('aria-pressed','true');
     await page.screenshot({path:resolve(output,`${name}-home.png`)});checks++;
     await page.getByRole('button',{name:'Drag shapes',exact:true}).click();
     const pieces=page.locator('[data-piece]');await expect(pieces).toHaveCount(4);
@@ -130,9 +130,10 @@ try{
   }else await offline.setOffline(true);
   await installed.goto(base+'index.html?offline=1',{waitUntil:'domcontentloaded'});
   await expect(installed.getByRole('button',{name:'Brush and paint',exact:true})).toBeVisible();
+  await installed.getByRole('button',{name:'Drag shapes',exact:true}).click();
   await installed.getByRole('button',{name:'Challenge level'}).click();
   await installed.reload({waitUntil:'domcontentloaded'});
-  await expect(installed.getByRole('button',{name:'Challenge level'})).toHaveAttribute('aria-pressed','true');checks++;
+  await expect(installed.locator('[data-level="3"]')).toHaveAttribute('aria-pressed','true');checks++;
   await offline.close();
   const fileContext=await browser.newContext({reducedMotion:'reduce'}),filePage=await fileContext.newPage();
   if(engine!=='webkit')await fileContext.setOffline(true);
