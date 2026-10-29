@@ -55,6 +55,7 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
 .about-card.safety{border-left:5px solid #a13912;color:#693210;font-weight:900}.about-card a{color:#11608a;text-decoration:underline}.about-version{display:block;font-size:14px;color:#67503a;margin-top:6px}.compact .about-card{padding:14px 18px;font-size:16px}.compact .about-card p{font-size:16px}.compact .about-card h3{font-size:26px}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
+<script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
 </head>
 <body>
 <main id="frame">
@@ -98,7 +99,7 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
 <script>
 (() => {
   const frame=document.getElementById('frame');
-  for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});
+  if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}
   function fit(){
     const viewport=window.visualViewport;
     const width=viewport?.width||window.innerWidth,height=viewport?.height||window.innerHeight;
