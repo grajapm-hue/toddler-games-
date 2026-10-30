@@ -14,7 +14,7 @@ The Beta welcome screen includes **Share app** for parents, teachers and supervi
 
 ## Welcome screen: preview 01
 
-Start with **welcome-preview.html** for the MathMatrix-inspired responsive welcome screen. Its portrait layout follows an upright viewport, and the page stays aligned with the physical screen if native portrait locking is unavailable. Keep this folder together: Tap to play opens the existing self-contained game file. Install app in this preview explains the Beta installation; About opens the app information.
+Start with **welcome-preview.html** for the MathMatrix-inspired responsive welcome screen. Phones use a portrait-shaped frame, rotated inside a landscape viewport when needed; the phone's status bar may remain at the side, as accepted in the supplied reference screenshots. Tap to play opens the existing landscape game file. Keep this folder together. Install app in this preview explains the Beta installation; About opens the app information.
 
 This is the first screen for discussion. The activities remain unchanged. The new repository is [grajapm-hue/toddler-games-](https://github.com/grajapm-hue/toddler-games-). The installable Beta now builds from this preview; see `PREVIEW-NOTES.md` for the earlier design scope.
 
