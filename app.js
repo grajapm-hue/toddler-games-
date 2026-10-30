@@ -196,20 +196,33 @@
     if(pointer?.kind==='abacus'&&state.activity==='abacus'){restoreAbacusRow(pointer.row);updateAbacusFeedback(pointer.row);}
     scene.querySelector('#brush-cursor')?.remove();
   }
-  function parentAgeControls(){$('age-choice').value=state.age??'';app.classList.toggle('age-profile',state.age!==null);const welcome=app.querySelector('a.brand');if(welcome)welcome.href=ageProfiles.navigation('index.html');}
-  $('age-choice').addEventListener('change',()=>{
+  const ageChoice=$('age-choice'),ageMenu=$('age-menu'),ageOptions=[...ageMenu.querySelectorAll('[data-age-option]')];
+  function closeAgeMenu(restoreFocus=false){ageMenu.hidden=true;ageChoice.setAttribute('aria-expanded','false');if(restoreFocus)ageChoice.focus({preventScroll:true});}
+  function openAgeMenu(){if(app.dataset.view!=='home')return;ageMenu.hidden=false;ageChoice.setAttribute('aria-expanded','true');ageOptions.find(option=>option.dataset.ageOption===String(state.age??''))?.focus({preventScroll:true});}
+  function parentAgeControls(){ageChoice.textContent=state.age===null?'Family play':`Age ${state.age}`;ageChoice.value=String(state.age??'');ageOptions.forEach(option=>option.setAttribute('aria-selected',String(option.dataset.ageOption===String(state.age??''))));app.classList.toggle('age-profile',state.age!==null);const welcome=app.querySelector('a.brand');if(welcome)welcome.href=ageProfiles.navigation('index.html');}
+  function chooseParentAge(value){
     if(app.dataset.view!=='home')return;
-    save();ageProfiles.select($('age-choice').value);state.age=ageProfiles.getAge();const selected=preferences();
+    save();ageProfiles.select(value);state.age=ageProfiles.getAge();const selected=preferences();
     state.level=[1,2,3].includes(selected.level)?selected.level:state.age===null?2:1;
     state.bubbleSpeed=Object.hasOwn(bubbleSpeeds,selected.bubbleSpeed)?selected.bubbleSpeed:null;state.bubbleSize=Object.hasOwn(bubbleDiameters,selected.bubbleSize)?selected.bubbleSize:null;
     state.bubbleSet=selected.bubbleSet==='full'||state.age===null?'full':'starter';state.bubbleMode=profile().bubbleMode;state.brushSize=profile().brushSize;
     try{history.replaceState(null,'',ageProfiles.navigation(location.pathname+location.search));}catch{/* The current page choice still works without history access. */}
     save();levelControls();parentAgeControls();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');hint('Choose any picture and play together. Every game is open.');
+  }
+  ageChoice.addEventListener('click',()=>ageMenu.hidden?openAgeMenu():closeAgeMenu(true));
+  ageChoice.addEventListener('keydown',event=>{if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();openAgeMenu();}});
+  ageOptions.forEach(option=>option.addEventListener('click',()=>{chooseParentAge(option.dataset.ageOption);closeAgeMenu(true);}));
+  ageMenu.addEventListener('keydown',event=>{
+    if(event.key==='Tab'){closeAgeMenu(true);return;}
+    if(!['ArrowDown','ArrowUp','Home','End'].includes(event.key))return;
+    event.preventDefault();const current=ageOptions.indexOf(document.activeElement),next=event.key==='Home'?0:event.key==='End'?ageOptions.length-1:(current+(event.key==='ArrowDown'?1:-1)+ageOptions.length)%ageOptions.length;ageOptions[next].focus({preventScroll:true});
   });
+  document.addEventListener('pointerdown',event=>{if(!event.target.closest('.parent-age'))closeAgeMenu();});
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!ageMenu.hidden){event.preventDefault();closeAgeMenu(true);}});
   function home(){stopBubbles();cancelGesture();clearEffects();state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('sound'),$('fullscreen'));app.dataset.view='home';parentAgeControls();$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
   function levelControls(){document.querySelectorAll('[data-level]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.level)===state.level)));}
   function setLevel(level,reset=true){cancelGesture();const changed=state.level!==level;state.level=level;if(changed)state.brushSize=profile().brushSize;levelControls();save();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');if(reset&&state.activity)resetRound();else if(reset)hint(level===2?'Guided play: choose a picture and play together!':level===1?'Explore level: fewer, bigger things to try.':'Challenge level: a few more things to discover.');}
-  function startActivity(id,paintMode=false){$('game-mid-controls').append($('sound'),$('fullscreen'));state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
+  function startActivity(id,paintMode=false){closeAgeMenu();$('game-mid-controls').append($('sound'),$('fullscreen'));state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
   function resetRound(){
     stopBubbles();cancelGesture();clearEffects();state.done=false;state.selected=null;state.strokes=[];
     $('play-levels').hidden=state.activity==='abacus'&&state.age===null;$('abacus-stage').hidden=state.activity!=='abacus';
@@ -584,6 +597,8 @@
   $('sound').addEventListener('click',()=>{state.sound=!state.sound;save();soundButton();if(state.sound)tone(600);else if(audio?.state==='running')audio.suspend().catch(()=>{});});
   function fitFrame(){
     const visual=window.visualViewport,w=visual?.width||innerWidth,h=visual?.height||innerHeight,rotated=w<h;
+    if(visual&&Math.abs(visual.scale-1)>.01)return;
+    closeAgeMenu();
     // Read physical screen insets before rotating the landscape play frame.
     const padding=getComputedStyle($('viewport')),left=parseFloat(padding.paddingLeft)||0,right=parseFloat(padding.paddingRight)||0,top=parseFloat(padding.paddingTop)||0,bottom=parseFloat(padding.paddingBottom)||0;
     const availableW=Math.max(1,w-left-right),availableH=Math.max(1,h-top-bottom),width=rotated?availableH:availableW,height=rotated?availableW:availableH;

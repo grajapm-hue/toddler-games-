@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#51409a">
 <title>SaNa Little Hands · Welcome preview</title>
 <style>
 :root{font-family:"Trebuchet MS","Arial Rounded MT Bold",ui-rounded,system-ui,sans-serif;color:#fff9ed;color-scheme:light}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#343279}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#343279;touch-action:pan-x pan-y;overscroll-behavior:none}
 button,a{font:inherit;touch-action:manipulation;-webkit-user-select:none;user-select:none}
 button{cursor:pointer}a{color:inherit;text-decoration:none}
 button:focus-visible,a:focus-visible{outline:4px solid #fff;outline-offset:5px}
@@ -53,7 +53,7 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
 .about-card h3{font-size:30px;line-height:1.2;margin:0 0 8px;color:#693210}.about-card p{font-size:17px;line-height:1.5;margin:8px 0}.about-card .about-quote{font-size:20px;font-style:italic;color:#a13912;font-weight:900}
 .about-card.safety{border-left:5px solid #a13912;color:#693210;font-weight:900}.about-card a{color:#11608a;text-decoration:underline}.about-version{display:block;font-size:14px;color:#67503a;margin-top:6px}.compact .about-card{padding:14px 18px;font-size:16px}.compact .about-card p{font-size:16px}.compact .about-card h3{font-size:26px}
 #frame{--welcome-safe-top:env(safe-area-inset-top,0px);--welcome-safe-right:env(safe-area-inset-right,0px);--welcome-safe-bottom:env(safe-area-inset-bottom,0px);--welcome-safe-left:env(safe-area-inset-left,0px)}
-#frame.portrait-rotated{transform:translate(-50%,-50%) rotate(var(--welcome-turn,-90deg));--welcome-safe-top:env(safe-area-inset-left,0px);--welcome-safe-right:env(safe-area-inset-top,0px);--welcome-safe-bottom:env(safe-area-inset-right,0px);--welcome-safe-left:env(safe-area-inset-bottom,0px)}
+#frame.portrait-rotated{transform:translate(-50%,-50%) rotate(var(--welcome-turn,-90deg)) scale(var(--welcome-scale,1));--welcome-safe-top:env(safe-area-inset-left,0px);--welcome-safe-right:env(safe-area-inset-top,0px);--welcome-safe-bottom:env(safe-area-inset-right,0px);--welcome-safe-left:env(safe-area-inset-bottom,0px)}
 #frame.portrait-rotated[data-turn="90"]{--welcome-safe-top:env(safe-area-inset-right,0px);--welcome-safe-right:env(safe-area-inset-bottom,0px);--welcome-safe-bottom:env(safe-area-inset-left,0px);--welcome-safe-left:env(safe-area-inset-top,0px)}
 /* Phone welcome stays portrait even with a stale installed landscape setting. */
   #frame.portrait-welcome,#frame.portrait-welcome.small,#frame.portrait-welcome.compact{padding:max(16px,var(--welcome-safe-top)) max(16px,var(--welcome-safe-right)) max(16px,var(--welcome-safe-bottom)) max(16px,var(--welcome-safe-left));gap:12px;overflow-y:auto;overscroll-behavior:contain;grid-template-rows:auto minmax(min-content,1fr) auto}
@@ -101,8 +101,11 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
 #frame.portrait-welcome .footer-actions{justify-content:center}#frame.portrait-welcome .footer-actions #about{flex:0 1 270px;width:100%;min-height:48px}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 .age-picker{max-width:600px;margin:0 0 14px;padding:10px 13px;border:1.5px solid #fff2b6;border-radius:17px;background:#fff7e9;color:#243f36;text-align:center}.age-picker p{margin:0 0 7px;font-size:13px;font-weight:900;line-height:1.3}.age-choices{display:flex;justify-content:center;gap:8px}.age-choices button{flex:1;max-width:100px;min-height:44px;border:2px solid #b9cdbd;border-radius:12px;background:#d9efdb;color:#173e35;font-size:20px;font-weight:900}.age-choices button:nth-child(even){background:#c9e8f3}.age-choices button[aria-pressed="true"]{background:#ffe17a;border-color:#173e35;box-shadow:inset 0 0 0 1px #173e35}.age-choices small{font-size:11px;margin-left:3px}.compact .age-picker{padding:6px 9px;margin-bottom:10px}.compact .age-picker p{font-size:11px;margin-bottom:4px}.compact .age-choices button{min-height:38px;font-size:18px}#frame.portrait-welcome .age-picker{margin:0 auto 12px;padding:8px 10px}#frame.portrait-welcome .mascot-space{height:clamp(115px,calc(var(--h) * .20),175px);max-height:175px}#frame.portrait-welcome.short-welcome .mascot-space{height:100px;max-height:100px}
+/* Fit the whole opening once; touch gestures must not resize or pan it. */
+#frame{transform:translate(-50%,-50%) scale(var(--welcome-scale,1));overflow:hidden!important}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
+<script>for(const type of ['touchstart','touchmove'])document.addEventListener(type,event=>{if(event.touches.length>1)event.preventDefault();},{passive:false,capture:true});for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});</script>
 </head>
 <body>
 <main id="frame">
@@ -168,6 +171,7 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
   }
   function fit(){
     const viewport=window.visualViewport;
+    if(viewport&&Math.abs(viewport.scale-1)>.01)return;
     const width=viewport?.width||window.innerWidth,height=viewport?.height||window.innerHeight;
     const rotate=phone&&width>height,w=rotate?height:width,h=rotate?width:height;
     const angle=screen.orientation?.angle??window.orientation??90,turn=angle===270||angle===-90?90:-90;
@@ -177,6 +181,12 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
     frame.style.paddingLeft='';frame.style.paddingRight='';
     frame.style.left=((viewport?.offsetLeft||0)+width/2)+'px';frame.style.top=((viewport?.offsetTop||0)+height/2)+'px';
     frame.classList.toggle('compact',h<580);frame.classList.toggle('small',w<730||h<350);
+    let scale=1;frame.style.setProperty('--welcome-scale','1');
+    // Short screens use a single fitted composition, without scrolling to Play.
+    for(let pass=0;pass<4;pass++){
+      const overflow=frame.scrollHeight/frame.clientHeight;if(overflow<=1.002)break;
+      scale/=overflow;frame.style.setProperty('--w',w/scale+'px');frame.style.setProperty('--h',h/scale+'px');frame.style.setProperty('--welcome-scale',String(scale));
+    }
   }
   fit();preferPortrait();window.addEventListener('resize',fit);window.visualViewport?.addEventListener('resize',fit);window.addEventListener('pageshow',event=>{if(event.persisted){fit();preferPortrait();}});window.addEventListener('orientationchange',fit);
   const shade=document.getElementById('dialog-shade'),panel=document.getElementById('dialog-panel');
