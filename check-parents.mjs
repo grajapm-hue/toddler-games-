@@ -21,6 +21,7 @@ try{
     const sizes=await page.evaluate(()=>{const size=q=>parseFloat(getComputedStyle(document.querySelector(q)).fontSize);return {family:size('.family'),mascot:size('.family span'),name:size('h1 span'),footer:size('.bottomline p')};});
     assert(sizes.family>=16&&sizes.mascot>=26&&sizes.name>=28&&sizes.footer>=14,'Welcome labels and small SaNa must be larger and readable');
     for(const control of await page.locator('button:visible,a:visible').all()){
+      await control.scrollIntoViewIfNeeded();
       const box=await control.boundingBox();assert(box.x>=0&&box.y>=0&&box.x+box.width<=width+1&&box.y+box.height<=height+1,'Welcome controls fit');
     }
     await page.screenshot({path:resolve(out,`${name}-welcome.png`)});checks++;

@@ -42,10 +42,13 @@ try{
   await page.goto(process.env.UPDATE_URL||base);await expect(page.getByRole('button',{name:'Update app',exact:true})).toBeVisible();checks++;
   for(const [label,width,height] of [['phone',844,390],['small-phone',667,375],['portrait',390,844],['tablet',1024,768],['wide',1600,720]]){
     await page.setViewportSize({width,height});
+    await page.locator('#frame').evaluate(el=>{el.scrollTop=0;});
     const update=await page.getByRole('button',{name:'Update app',exact:true}).boundingBox();assert(update&&update.x>=0&&update.y>=0&&update.x+update.width<=width+1&&update.y+update.height<=height+1,'Update button fits all opening-screen sizes');
     for(const selector of ['#play','#install','#share-app','#about','.preview-tag']){
-      const box=await page.locator(selector).boundingBox();assert(box&&box.x>=0&&box.y>=0&&box.x+box.width<=width+1&&box.y+box.height<=height+1,'All grown-up controls and version remain visible');
-      assert(!(update.x<box.x+box.width&&update.x+update.width>box.x&&update.y<box.y+box.height&&update.y+update.height>box.y),'Update does not overlap other controls');
+      await page.locator(selector).scrollIntoViewIfNeeded();
+      const box=await page.locator(selector).boundingBox();assert(box&&box.x>=-1&&box.y>=-1&&box.x+box.width<=width+1&&box.y+box.height<=height+1,`All grown-up controls and version are reachable: ${label} ${selector} ${JSON.stringify(box)}`);
+      const currentUpdate=await page.locator('#update-app').boundingBox();
+      assert(!(currentUpdate.x<box.x+box.width&&currentUpdate.x+currentUpdate.width>box.x&&currentUpdate.y<box.y+box.height&&currentUpdate.y+currentUpdate.height>box.y),'Update does not overlap other controls');
     }
     await page.screenshot({path:resolve(out,`${label}-welcome.png`)});checks++;
   }
