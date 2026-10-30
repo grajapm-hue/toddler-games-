@@ -76,7 +76,7 @@ try{
     await page.getByRole('button',{name:'Again',exact:true}).click();
     await expect(page.locator('[data-stroke]')).toHaveCount(0);checks++;
     await page.screenshot({path:resolve(output,`${name}-paint.png`)});
-    await page.getByRole('button',{name:'Explore level'}).click();
+    await page.getByRole('button',{name:'Easy level'}).click();
     await page.getByRole('button',{name:'Home',exact:true}).click();
     await page.getByRole('button',{name:'Drag shapes',exact:true}).click();
     await expect(page.locator('[data-piece]')).toHaveCount(2);checks++;
@@ -91,7 +91,7 @@ try{
     await page.getByRole('button',{name:'Home',exact:true}).click();
     await page.getByRole('button',{name:'Slide to reveal',exact:true}).click();
     await expect(page.locator('[data-slider-handle]')).toHaveCount(3);
-    await page.getByRole('button',{name:'Explore level'}).click();
+    await page.getByRole('button',{name:'Easy level'}).click();
     await expect(page.locator('[data-slider-handle]')).toHaveCount(1);checks++;
     await page.getByRole('button',{name:'Home',exact:true}).click();
     await page.getByRole('button',{name:'Brush and paint',exact:true}).click();

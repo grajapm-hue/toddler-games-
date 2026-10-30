@@ -89,8 +89,8 @@ try{
   }
   await page.setViewportSize({width:844,height:390});
   for(const [level,picture,inside,count,size] of [
-    ['Explore level','fish',[650,200],4,'Large brush'],
-    ['Play level','puppy',[500,280],8,'Medium brush'],
+    ['Easy level','fish',[650,200],4,'Large brush'],
+    ['Medium level','puppy',[500,280],8,'Medium brush'],
     ['Challenge level','butterfly',[340,140],14,'Small brush']
   ]){
     await page.getByRole('button',{name:level,exact:true}).click();
