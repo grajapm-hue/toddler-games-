@@ -47,7 +47,10 @@
       worker.addEventListener('statechange',check);check();
     });
   }
-  const canShowUpdate=()=>!app||app.dataset.view==='home';
+  const canShowUpdate=()=>!app||!app.classList.contains('immersive');
+  let pendingUpdate=null;
+  function applyUpdate(version){try{sessionStorage.setItem('sana-update-complete',version);}catch{/* Applying also works without optional session storage. */}location.reload();}
+  if(app)new MutationObserver(()=>{if(pendingUpdate&&app.dataset.view==='home'&&canShowUpdate()){const version=pendingUpdate;pendingUpdate=null;applyUpdate(version);}}).observe(app,{attributes:true,attributeFilter:['data-view','class']});
   function updateDialog(title,copy){
     if(!canShowUpdate())return;
     if(window.sanaAppDialog){window.sanaAppDialog(title,copy,updateButton);return;}
@@ -70,6 +73,7 @@
   }
   updateButton?.addEventListener('click',async()=>{
     if(!canShowUpdate())return;
+    const requestedInGame=app&&app.dataset.view!=='home';
     updateButton.disabled=true;updateButton.setAttribute('aria-busy','true');
     updateLabel.textContent=app?'Wait…':'Checking…';
     try{
@@ -84,12 +88,15 @@
       if(!ready?.ready||!ready.version||!release)throw new Error('Update files are not ready');
       if(ready.version!==release){
         if(!canShowUpdate())return;
-        try{sessionStorage.setItem('sana-update-complete',ready.version);}catch{/* Updating also works without optional session storage. */}
-        location.reload();return;
+        if(app&&app.dataset.view!=='home'){
+          if(requestedInGame){pendingUpdate=ready.version;updateDialog('Update ready','<p>The latest SaNa app has downloaded. Keep playing, then choose <strong>Games</strong> to apply it.</p>');}
+          return;
+        }
+        applyUpdate(ready.version);return;
       }
-      updateDialog('App is up to date','<p>You already have the latest SaNa app. Your downloaded games are ready to play.</p>');
+      if(!app||app.dataset.view==='home'||requestedInGame)updateDialog('App is up to date','<p>You already have the latest SaNa app. Your downloaded games are ready to play.</p>');
     }catch{
-      updateDialog('Update unavailable','<p>Connect to the internet and try again. Your downloaded games and saved settings are still available.</p>');
+      if(!app||app.dataset.view==='home'||requestedInGame)updateDialog('Update unavailable','<p>Connect to the internet and try again. Your downloaded games and saved settings are still available.</p>');
     }finally{
       updateButton.disabled=false;updateButton.setAttribute('aria-busy','false');
       updateLabel.textContent=normalUpdateLabel;

@@ -198,16 +198,18 @@
   }
   const ageChoice=$('age-choice'),ageMenu=$('age-menu'),ageOptions=[...ageMenu.querySelectorAll('[data-age-option]')];
   function closeAgeMenu(restoreFocus=false){ageMenu.hidden=true;ageChoice.setAttribute('aria-expanded','false');if(restoreFocus)ageChoice.focus({preventScroll:true});}
-  function openAgeMenu(){if(app.dataset.view!=='home')return;ageMenu.hidden=false;ageChoice.setAttribute('aria-expanded','true');ageOptions.find(option=>option.dataset.ageOption===String(state.age??''))?.focus({preventScroll:true});}
+  function openAgeMenu(){if(app.classList.contains('immersive'))return;ageMenu.hidden=false;ageChoice.setAttribute('aria-expanded','true');ageOptions.find(option=>option.dataset.ageOption===String(state.age??''))?.focus({preventScroll:true});}
   function parentAgeControls(){ageChoice.textContent=state.age===null?'Family play':`Age ${state.age}`;ageChoice.value=String(state.age??'');ageOptions.forEach(option=>option.setAttribute('aria-selected',String(option.dataset.ageOption===String(state.age??''))));app.classList.toggle('age-profile',state.age!==null);const welcome=app.querySelector('a.brand');if(welcome)welcome.href=ageProfiles.navigation('index.html');}
   function chooseParentAge(value){
-    if(app.dataset.view!=='home')return;
+    if(app.classList.contains('immersive'))return;
+    if(String(state.age??'')===String(value))return;
+    const activity=state.activity,paintMode=state.paintMode;
     save();ageProfiles.select(value);state.age=ageProfiles.getAge();const selected=preferences();
     state.level=[1,2,3].includes(selected.level)?selected.level:state.age===null?2:1;
     state.bubbleSpeed=Object.hasOwn(bubbleSpeeds,selected.bubbleSpeed)?selected.bubbleSpeed:null;state.bubbleSize=Object.hasOwn(bubbleDiameters,selected.bubbleSize)?selected.bubbleSize:null;
     state.bubbleSet=selected.bubbleSet==='full'||state.age===null?'full':'starter';state.bubbleMode=profile().bubbleMode;state.brushSize=profile().brushSize;
     try{history.replaceState(null,'',ageProfiles.navigation(location.pathname+location.search));}catch{/* The current page choice still works without history access. */}
-    save();levelControls();parentAgeControls();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');hint('Choose any picture and play together. Every game is open.');
+    save();levelControls();parentAgeControls();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');if(activity)startActivity(activity,paintMode);else hint('Choose any picture and play together. Every game is open.');
   }
   ageChoice.addEventListener('click',()=>ageMenu.hidden?openAgeMenu():closeAgeMenu(true));
   ageChoice.addEventListener('keydown',event=>{if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();openAgeMenu();}});
