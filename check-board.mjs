@@ -59,7 +59,7 @@ try{
     }
     assert.deepEqual(errors,[]);await context.close();
   }
-  const context=await browser.newContext({viewport:{width:844,height:390},serviceWorkers:'block'}),page=await context.newPage();await page.goto(base);await page.getByRole('button',{name:'Drag shapes',exact:true}).click();await page.getByRole('button',{name:'Explore level',exact:true}).click();
+  const context=await browser.newContext({viewport:{width:844,height:390},serviceWorkers:'block'}),page=await context.newPage();await page.goto(base);await page.getByRole('button',{name:'Drag shapes',exact:true}).click();await page.getByRole('button',{name:'Easy level',exact:true}).click();
   const sequence=[];
   for(const activity of ['drag','bubbles','slide','brush'])for(const level of [1,2,3])for(const mode of activity==='bubbles'?['plain','numbers','letters','shapes']:activity==='brush'?['clean','paint']:[''])sequence.push({activity,level,mode});
   sequence.push({activity:'abacus',level:1,mode:''});

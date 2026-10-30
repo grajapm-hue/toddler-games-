@@ -66,9 +66,9 @@ try{
   await expect(page.locator('[data-bubble-target][data-collected="true"]')).toHaveCount(0);checks++;
   await page.getByRole('button',{name:'Challenge level',exact:true}).click();
   await expect(page.locator('[data-bubble]')).toHaveCount(9);
-  await page.getByRole('button',{name:'Explore level',exact:true}).click();
+  await page.getByRole('button',{name:'Easy level',exact:true}).click();
   await expect(page.locator('[data-bubble]')).toHaveCount(4);
-  await page.getByRole('button',{name:'Play level',exact:true}).click();checks++;
+  await page.getByRole('button',{name:'Medium level',exact:true}).click();checks++;
   await page.getByRole('button',{name:'Letter bubbles',exact:true}).click();
   for(const [label,width,height] of [['small-phone',667,375],['portrait',390,844],['tablet',1024,768]]){
     await page.setViewportSize({width,height});await page.clock.runFor(100);
