@@ -90,7 +90,7 @@ try{
   await page.setViewportSize({width:844,height:390});
   for(const [level,picture,inside,count,size] of [
     ['Explore level','fish',[650,200],4,'Large brush'],
-    ['Play level, ages 2 to 4','puppy',[500,280],8,'Medium brush'],
+    ['Play level','puppy',[500,280],8,'Medium brush'],
     ['Challenge level','butterfly',[340,140],14,'Small brush']
   ]){
     await page.getByRole('button',{name:level,exact:true}).click();
@@ -131,8 +131,8 @@ try{
     await page.screenshot({path:resolve(output,`${name}.png`)});checks++;
   }
   await page.reload();
-  await expect(page.getByRole('button',{name:'Challenge level',exact:true})).toHaveAttribute('aria-pressed','true');
   await page.getByRole('button',{name:'Brush and paint',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Challenge level',exact:true})).toHaveAttribute('aria-pressed','true');
   await expect(page.locator('#scene')).toHaveAttribute('aria-label','Clean the butterfly');checks++;
   assert.deepEqual(errors,[]);await context.close();console.log(`PASS: ${checks} art checks (${engine})`);
 }finally{await browser.close();await new Promise(done=>server.close(done));}

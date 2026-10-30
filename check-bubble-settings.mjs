@@ -39,7 +39,7 @@ try{
   await expect(page.getByRole('button',{name:'Large bubbles',exact:true})).toHaveAttribute('aria-pressed','true');checks++;
   for(const [label,width,height] of [['small-phone',667,375],['portrait',390,844],['tablet',1024,768]]){
     await page.setViewportSize({width,height});await page.clock.runFor(100);
-    for(const control of await page.locator('#bubble-settings button').all()){
+    for(const control of await page.locator('#bubble-settings button:visible').all()){
       const rect=await control.boundingBox();assert(rect&&rect.x>=0&&rect.y>=0&&rect.x+rect.width<=width+1&&rect.y+rect.height<=height+1,'Settings fit the screen');
     }
     assert(await page.locator('#scene').evaluate(svg=>svg.clientHeight)>80,'Settings leave room for moving bubbles');

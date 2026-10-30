@@ -1,5 +1,5 @@
-const CACHE='sana-little-hands-prototype-v20';
-const ASSETS=['./index.html','./app.js','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png'];
+const CACHE='sana-little-hands-prototype-v21';
+const ASSETS=['./index.html','./age-profiles.js','./app.js','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS.map(path=>new Request(path,{cache:'reload'})))));
   self.skipWaiting();

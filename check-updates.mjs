@@ -7,7 +7,7 @@ const require=createRequire(import.meta.url),root=import.meta.dirname;
 const {chromium,webkit,expect}=require(process.env.MM_PLAYWRIGHT||'@playwright/test');
 const engine=process.env.PLAYROOM_BROWSER||'chromium';
 const out=resolve(root,'artifacts','updates',engine);await mkdir(out,{recursive:true});let checks=0,revision=1,failAsset=false,slowAsset=false,assetGate=null,finishAsset=null;
-const names=['index.html','play.html','app.js','pwa.js','sw.js','share.js','share.css','manifest.webmanifest','icon.svg','icon-192.png','icon-512.png'];
+const names=['index.html','play.html','age-profiles.js','app.js','pwa.js','sw.js','share.js','share.css','manifest.webmanifest','icon.svg','icon-192.png','icon-512.png'];
 const assets=new Map(await Promise.all(names.map(async name=>[name,await readFile(resolve(root,'docs','beta',name))])));
 const cacheKey=n=>`sana-little-hands-beta-manual-test-${n}`;
 const server=createServer(async(req,res)=>{try{

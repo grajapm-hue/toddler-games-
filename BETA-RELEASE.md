@@ -1,10 +1,22 @@
-# SaNa Little Hands Beta v0.29
+# SaNa Little Hands Beta v0.30
 
-The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.29 restores the v0.27 visual portrait welcome explicitly requested in the supplied screenshots. The phone's status bar may remain at the side of that portrait content. Verify the Pages build commit and run the live checks after publishing each update.
+The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.30 adds flexible family starting sets for ages 2, 3, 4 and 5 using the existing five games. The accepted portrait welcome and landscape game rooms remain. The phone's status bar may remain at the side of portrait content. Verify the Pages build commit and run the live checks after publishing each update.
+
+## Flexible family starting sets
+
+Four large age buttons on the welcome and a parent selector in the game-menu header choose a starting set. They are optional suggestions, never ability grades or access restrictions. Parents may choose any age; every existing game and Explore / Play / Challenge remains open. New age slots start in Explore and remember their own chosen level, bubble speed/size and starter/full collection. Family play preserves the original common settings, including migration of older saved preferences. Parent controls are absent from game rooms; progress and counting remain educational feedback rather than rankings or required scores.
+
+The shared age-profiles.js registry supplies actual changes to matching counts/tolerance, reveal windows, bubble counts/pace/size, art pictures/brushes/coverage targets and starter token collections. For Explore / Play / Challenge, the numeric starter collections are 3/4/5 at age 2, 5/8/10 at age 3, 5/10/15 at age 4 and 10/15/20 at age 5. Letters and shapes also have smaller starter sets. Full set always exposes all 20 numbers, 26 letters and six shapes. All 100 abacus beads remain freely movable; its three age-slot sub-levels offer optional counting suggestions. Back/Front visits all age-slot sub-levels, including Count. No new game is added.
+
+Selection and preferences stay in browser-local storage. An age query parameter carries the current choice between welcome/play even if storage is unavailable; it is not a date of birth or an account profile. Another tab changing age never resets an ongoing game, and saving a tab merges other age slots' preferences. Invalid saved data falls back to playable defaults. Offline caches include the new shared script, and the self-contained prototype embeds it. The Beta cache is v30; the editable prototype cache is v21.
+
+Future games should be added to the existing activities registry and supplied with appropriate optional preset fields in age-profiles.js. Keep all four age slots able to access the game, preserve fixed card dimensions and horizontal browsing, and include any new runtime assets in both caches and applicable builds. The current More games placeholder is retained.
+
+`node check-age-profiles.mjs` checks every existing game and sub-level at all four ages, full collections, independent and cross-tab preferences, storage failure, reload/return navigation and five responsive sizes. `AGE_URL` selects a hosted Beta root. Existing common-play game and PWA checks remain applicable.
 
 ## Restored visual portrait welcome
 
-The welcome source is restored from v0.27. Phones use a portrait-shaped opening even when the physical viewport remains landscape: the frame swaps its logical dimensions and rotates according to the reported screen angle, with the corresponding safe-area mapping. This is the accepted visual fallback; it does not rotate or imitate the operating system's status bar. Tap to play still opens the landscape game menu and rooms, and returning through SaNa restores the portrait welcome. Existing cards, game logic, native orientation preferences and manifest identity are unchanged. There is no native app packaging or new native fullscreen request. The Beta version and offline cache advance to v0.29 so installed copies can receive the restoration through Update app.
+Version 0.29 restored the v0.27 visual portrait behavior; v0.30 retains it while adding the parent chooser. Phones use a portrait-shaped opening even when the physical viewport remains landscape: the frame swaps its logical dimensions and rotates according to the reported screen angle, with the corresponding safe-area mapping. This is the accepted visual fallback; it does not rotate or imitate the operating system's status bar. Tap to play still opens the landscape game menu and rooms, and returning through SaNa restores the portrait welcome. Existing card dimensions, native orientation preferences and manifest identity are unchanged. There is no native app packaging or new native fullscreen request.
 
 ## Native portrait launch and system status bar
 
