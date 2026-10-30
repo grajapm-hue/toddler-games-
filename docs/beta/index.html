@@ -100,6 +100,7 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
 #frame.portrait-welcome .release-tools{gap:8px}#frame.portrait-welcome .release-tools .welcome-share{width:40px;height:40px;min-height:40px;padding:8px}
 #frame.portrait-welcome .footer-actions{justify-content:center}#frame.portrait-welcome .footer-actions #about{flex:0 1 270px;width:100%;min-height:48px}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+.age-picker{max-width:600px;margin:0 0 14px;padding:10px 13px;border:1.5px solid #fff2b6;border-radius:17px;background:#fff7e9;color:#243f36;text-align:center}.age-picker p{margin:0 0 7px;font-size:13px;font-weight:900;line-height:1.3}.age-choices{display:flex;justify-content:center;gap:8px}.age-choices button{flex:1;max-width:100px;min-height:44px;border:2px solid #b9cdbd;border-radius:12px;background:#d9efdb;color:#173e35;font-size:20px;font-weight:900}.age-choices button:nth-child(even){background:#c9e8f3}.age-choices button[aria-pressed="true"]{background:#ffe17a;border-color:#173e35;box-shadow:inset 0 0 0 1px #173e35}.age-choices small{font-size:11px;margin-left:3px}.compact .age-picker{padding:6px 9px;margin-bottom:10px}.compact .age-picker p{font-size:11px;margin-bottom:4px}.compact .age-choices button{min-height:38px;font-size:18px}#frame.portrait-welcome .age-picker{margin:0 auto 12px;padding:8px 10px}#frame.portrait-welcome .mascot-space{height:clamp(115px,calc(var(--h) * .20),175px);max-height:175px}#frame.portrait-welcome.short-welcome .mascot-space{height:100px;max-height:100px}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
 <link rel="manifest" href="manifest.webmanifest">
@@ -108,11 +109,11 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
 <link rel="stylesheet" href="share.css">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="SaNa Beta">
-<meta name="sana-release" content="sana-little-hands-beta-v29">
+<meta name="sana-release" content="sana-little-hands-beta-v30">
 </head>
 <body>
 <main id="frame">
-  <header class="topline"><div class="family"><span aria-hidden="true">🐒</span> A little world with SaNa</div><div class="release-tools"><span class="preview-tag">Beta · v0.29</span><button class="update-button" id="update-app" type="button" aria-label="Update app" aria-busy="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7V3M20 7H16M20 7A8 8 0 1 0 21 14"/></svg><span data-update-label>Update app</span></button><button class="welcome-share" id="share-app" type="button" aria-label="Share app"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="4" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="20" r="3"/><path d="M9 10L15 6M9 14L15 18"/></svg></button></div></header>
+  <header class="topline"><div class="family"><span aria-hidden="true">🐒</span> A little world with SaNa</div><div class="release-tools"><span class="preview-tag">Beta · v0.30</span><button class="update-button" id="update-app" type="button" aria-label="Update app" aria-busy="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7V3M20 7H16M20 7A8 8 0 1 0 21 14"/></svg><span data-update-label>Update app</span></button><button class="welcome-share" id="share-app" type="button" aria-label="Share app"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="4" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="20" r="3"/><path d="M9 10L15 6M9 14L15 18"/></svg></button></div></header>
   <section class="hero" aria-labelledby="welcome-title">
     <div class="mascot-space">
       <p class="sana-says">Hello, little explorer!</p>
@@ -144,6 +145,7 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
     <div class="copy">
       <h1 id="welcome-title"><span>SaNa</span> Little Hands</h1>
       <p class="tagline">Count, tap, drag, slide and paint.<br>Little fingers, happy discoveries.</p>
+      <section class="age-picker" aria-label="Parent starting age"><p>Grown-ups: choose any starting age.<br>Every game stays open. Play together.</p><div class="age-choices"><button type="button" data-age="2" aria-label="Age 2 starting set" aria-pressed="false">2<small>years</small></button><button type="button" data-age="3" aria-label="Age 3 starting set" aria-pressed="false">3<small>years</small></button><button type="button" data-age="4" aria-label="Age 4 starting set" aria-pressed="false">4<small>years</small></button><button type="button" data-age="5" aria-label="Age 5 starting set" aria-pressed="false">5<small>years</small></button></div></section>
       <aside class="parent-note" aria-label="Before you play, health first"><strong>🛡️ Before you play — health first</strong><ol><li>Keep <b>brightness low</b>. Use Night Mode after dark.</li><li><b>Take short breaks</b> often.</li><li><b>Play with a parent or guardian</b> nearby.</li></ol></aside>
       <div class="actions">
         <a class="play-button" id="play" href="play.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3L21 12L5 21Z"/></svg>Tap to play</a>
@@ -151,16 +153,20 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
       </div>
     </div>
   </section>
-  <footer class="bottomline"><p>Made for ages 2–4 · Three playful levels<br><span id="offline-status" role="status">Preparing offline play…</span></p><div class="footer-actions"><button class="about-button" type="button" id="about">About this project</button></div></footer>
+  <footer class="bottomline"><p>Starting sets for ages 2–5 · Choose freely<br><span id="offline-status" role="status">Preparing offline play…</span></p><div class="footer-actions"><button class="about-button" type="button" id="about">About this project</button></div></footer>
   <div class="dialog-shade" id="dialog-shade" hidden>
     <section class="dialog-panel" id="dialog-panel" role="dialog" aria-modal="true" aria-labelledby="dialog-title" tabindex="-1">
       <h2 id="dialog-title"></h2><div id="dialog-copy"></div><button id="close-dialog" type="button">Got it</button>
     </section>
   </div>
 </main>
+<script src="age-profiles.js"></script>
 <script>
 (() => {
   const frame=document.getElementById('frame');
+  const ageProfiles=window.SaNaProfiles;
+  function ageControls(){document.querySelectorAll('[data-age]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.age)===ageProfiles.getAge())));document.getElementById('play').href=ageProfiles.navigation(document.getElementById('play').getAttribute('href'));}
+  document.querySelectorAll('[data-age]').forEach(button=>button.addEventListener('click',()=>{ageProfiles.select(Number(button.dataset.age));ageControls();try{history.replaceState(null,'',ageProfiles.navigation(location.pathname+location.search));}catch{/* In-memory choice still reaches play through its link. */}}));ageControls();
   if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}
   const phone=navigator.userAgentData?.mobile===true||/iPhone|iPod|Android.*Mobile/i.test(navigator.userAgent)||(matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<600);
   function preferPortrait(){
@@ -185,9 +191,9 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
   function show(title,copy,source){const about=source?.id==='about';panel.classList.toggle('about-dialog',about);const closeButton=document.getElementById('close-dialog');closeButton.textContent=about?'×':'Got it';closeButton.setAttribute('aria-label',about?'Close About':'Got it');opener=source;document.getElementById('dialog-title').textContent=title;document.getElementById('dialog-copy').innerHTML=copy;shade.hidden=false;panel.focus();}
   function close(){shade.hidden=true;opener?.focus();}
   document.getElementById('about').addEventListener('click',event=>show('📜 About this project',`
-    <section class="about-card"><h3>🐒 SaNa Little Hands</h3><p>Kids Puzzle Library · for ages 2–4</p><p class="about-quote">“Little hands, happy discoveries.”</p><p>Drag and match shapes · Pop plain, 1–20, A–Z and shape bubbles · Slide to find friends · Brush clean and finger paint · Count abacus beads to colour a rainbow and circle</p><p>Explore · Play · Challenge</p><p>No ads, accounts or trackers. Optional sound and offline play after the first online load.</p></section>
+    <section class="about-card"><h3>🐒 SaNa Little Hands</h3><p>Kids Puzzle Library · starting sets for ages 2–5</p><p class="about-quote">“Little hands, happy discoveries.”</p><p>Grown-ups can choose any age and any sub-level. These are starting settings, never ability grades. Every game stays open for shared play.</p><p>Drag and match shapes · Pop plain, number, letter and shape bubbles, with full 1–20 and A–Z sets always available · Slide to find friends · Brush clean and finger paint · Count abacus beads to colour a rainbow and circle</p><p>Explore · Play · Challenge</p><p>No ads, accounts or trackers. Optional sound and offline play after the first online load.</p></section>
     <section class="about-card safety">🛡️ Low brightness · short breaks · play with a parent</section>
-    <section class="about-card">Created by G.RajaPathamuthu · Kids Puzzle Library<br>Guided by : JNT<br>Code Coordinated by : AI-Assistances<br><i>(What we get is all we ask for.)</i><p>Found something odd? Send us your feedback.<br>Mail To : <a href="mailto:grajapm@gmail.com?subject=SaNa%20Little%20Hands%20Feedback%20%26%20Suggestion">✉️ Feedback &amp; Suggestion</a></p><span class="about-version">App <span data-app-version>Beta v0.29</span></span></section>`,event.currentTarget));
+    <section class="about-card">Created by G.RajaPathamuthu · Kids Puzzle Library<br>Guided by : JNT<br>Code Coordinated by : AI-Assistances<br><i>(What we get is all we ask for.)</i><p>Found something odd? Send us your feedback.<br>Mail To : <a href="mailto:grajapm@gmail.com?subject=SaNa%20Little%20Hands%20Feedback%20%26%20Suggestion">✉️ Feedback &amp; Suggestion</a></p><span class="about-version">App <span data-app-version>Beta v0.30</span></span></section>`,event.currentTarget));
   document.getElementById('close-dialog').addEventListener('click',close);
   shade.addEventListener('click',event=>{if(event.target===shade)close();});
   document.addEventListener('keydown',event=>{

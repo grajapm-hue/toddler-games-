@@ -3,7 +3,7 @@
   if(!button)return;
   const url='https://grajapm-hue.github.io/toddler-games-/beta/index.html';
   const title='SaNa Little Hands Beta';
-  const text='Please try this play app, mainly for ages 2–4, on your phone or tablet. Check installation, dragging, tapping, sliding, brushing and painting. Please send your feedback to the person who shared this link.';
+  const text='Please try this play app with freely selectable starting sets for ages 2–5. Check installation and play together on your phone or tablet: drag, tap, slide, brush, paint and count. Every game stays open. Please send your feedback to the person who shared this link.';
   const whatsapp=new URL('https://wa.me/');
   whatsapp.searchParams.set('text',`${title}\n\n${text}\n\n${url}`);
   function nativeShareData(){

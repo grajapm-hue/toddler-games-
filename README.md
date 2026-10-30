@@ -1,6 +1,6 @@
 # SaNa Little Hands — playable prototype
 
-A separate landscape HTML playroom, mainly for ages 2–4, with simpler and harder activity levels. This prototype is ready for family feedback; it has not been added to the MathMatrix Main or Beta menus.
+A separate landscape HTML playroom with freely selectable starting sets for ages 2–5. Parents choose any age and any activity level for shared fun; the sets are not ability grades. This prototype is ready for family feedback; it has not been added to the MathMatrix Main or Beta menus.
 
 ## Installable Beta
 
@@ -22,14 +22,18 @@ This is the first screen for discussion. The activities remain unchanged. The ne
 
 Open **SaNa-Little-Hands-Prototype.html** for the self-contained version. Its illustrations, styles and game code are embedded, so it works without an internet connection. Use a finger on a touchscreen or click and drag with a mouse/trackpad.
 
-The editable version is **index.html** plus **app.js** and the local icon/manifest files in this folder. Open index.html directly, or serve the folder over HTTP/HTTPS. No build or account is needed.
+The editable version is **index.html**, **age-profiles.js**, **app.js** and the local icon/manifest files in this folder. Open index.html directly, or serve the folder over HTTP/HTTPS. No build or account is needed.
 
 With Node.js available, run `node serve.mjs` in this folder and open `http://127.0.0.1:8776/`. Run `node build.mjs` after source changes to regenerate the self-contained HTML.
 
 ## Levels
 
+Parents can choose ages **2, 3, 4 or 5** on the portrait welcome or in the landscape game-menu header. Every set contains Drag, Tap, Slide, Brush & paint, and Count, with Explore / Play / Challenge freely available. The age selector is hidden inside game rooms. Each age remembers its own level and explicit bubble settings. If no age is chosen, **Family play** retains the earlier common settings listed below. Age selection can travel through the local page URL when storage is unavailable; no age or birth date is sent to an account service.
+
+The shared **age-profiles.js** registry defines starting object counts, pace, picture/paint targets and optional bubble collections. **Full set** above the bubble board keeps all numbers 1–20, letters A–Z and six shapes available at every age. Count retains all 100 beads and unrestricted movement; its age-slot sub-levels offer optional counting ideas. No rankings, locked levels or failure labels are added. Smaller screens below 350 logical pixels of play height use a slim guidance row and hide the redundant game header so the black board remains playable.
+
 - **Explore:** two large shapes, four large bubbles, one reveal slider, a simple fish with four muddy patches and a large brush. Painting about half the fish earns the reward.
-- **Play — ages 2–4:** four shapes, six bubbles, two sliders, the puppy with eight muddy patches and a medium brush. Painting about two thirds earns the reward. This is the default.
+- **Play — guided play:** four shapes, six bubbles, two sliders, the puppy with eight muddy patches and a medium brush. Painting about two thirds earns the reward. This is the Family play default.
 - **Challenge:** six shapes, nine faster rising bubbles, three sliders, a detailed butterfly with fourteen muddy patches and a small brush. Painting about four fifths earns the reward.
 
 The level labels describe activity difficulty. A grown-up can choose whichever level feels comfortable.
