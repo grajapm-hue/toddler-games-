@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#e9dfcd">
+<meta name="theme-color" content="#d9eff1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>SaNa Little Hands Beta · Play</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -84,46 +84,10 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 .age-profile.compact #game-results{flex-basis:105px;min-width:90px}.bubble-settings>#bubble-full-set{white-space:nowrap;background:#e0c9f0;color:var(--ink)}.bubble-settings>#bubble-full-set[aria-pressed="true"]{background:#ffe17a}.short-play #bubble-settings{gap:3px}.short-play .bubble-setting-group{padding-left:2px;padding-right:2px}.short-play .bubble-settings button{padding-left:5px;padding-right:5px}
 .short-play:not([data-view="home"]):not(.immersive)>.topbar{gap:5px;padding:1px 178px 1px 6px}.short-play:not([data-view="home"]) .app-update-button{min-height:26px;min-width:76px;font-size:12px;padding:2px 6px}.short-play:not([data-view="home"]) #age-choice{min-height:26px;font-size:12px}.short-play:not([data-view="home"]) .topbar .brand-mark{width:24px;height:24px}.short-play:not([data-view="home"]) .topbar .icon-button{width:26px;min-width:26px;height:26px;padding:4px}.short-play:not([data-view="home"]) .parent-age>span{display:none}
 .short-play:not([data-view="home"])>.companion-bar{min-height:0;padding:0;gap:4px}.short-play:not([data-view="home"]) .companion-bar .soft-button{min-height:26px;height:26px;padding:2px 5px;font-size:12px;gap:4px}.short-play:not([data-view="home"]) .companion-bar .soft-button svg{width:16px;height:16px}
-
-/* Native phone portrait playroom: browser chrome and the play area share an axis. */
-#viewport{background:#e9dfcd;--play-edge-x:0px;--play-edge-y:0px}
-@media(orientation:portrait){#viewport{--play-edge-x:0px;--play-edge-y:0px}}
-#app.phone-portrait{border-radius:12px;grid-template-rows:50px minmax(0,1fr)}
-.phone-portrait .topbar{min-width:0;padding:3px 7px;gap:5px}
-.phone-portrait .topbar .brand{gap:4px;min-width:0}
-.phone-portrait .topbar .brand-mark{width:31px;height:31px;flex:none}
-.phone-portrait .topbar .wordmark{font-size:19px}
-.phone-portrait .topbar .brand small{font-size:9px}
-.phone-portrait .topbar .icon-button{width:36px;min-width:36px;height:36px;padding:5px}
-.phone-portrait .topbar .parent-age{max-width:120px}
-.phone-portrait .companion-bar{position:absolute;top:50px;left:0;right:0;z-index:3;min-height:44px;padding:3px 6px;gap:5px}
-.phone-portrait .companion-bar .sana-badge{display:none}
-.phone-portrait .companion-bar #hint{font-size:12px;line-height:1.2;max-height:34px;overflow:hidden}
-.phone-portrait .companion-bar .soft-button{font-size:12px;min-height:32px;padding:3px 5px}
-.phone-portrait #activity-view{padding:49px 4px 5px;min-height:0;grid-template-rows:minmax(0,1fr)!important;grid-template-areas:'board'!important}
-.phone-portrait .activity-heading{display:none}
-.phone-portrait .play-mat{border-radius:12px;min-height:0}
-.phone-portrait .play-toolbar{flex-wrap:wrap;align-content:flex-start;gap:4px;padding:4px}
-.phone-portrait #game-results{flex:1 1 100px;min-width:100px;min-height:42px;padding:3px 5px}
-.phone-portrait #activity-name{font-size:13px}
-.phone-portrait #result-score,.phone-portrait .bubble-score{font-size:12px}
-.phone-portrait #play-options{flex:1 1 140px;justify-content:flex-end;gap:3px;padding:2px}
-.phone-portrait #play-options .level,.phone-portrait #play-options .mode-button{min-height:29px;padding:3px 5px;font-size:11px}
-.phone-portrait #abacus-stage{font-size:11px;padding:4px}
-.phone-portrait .play-navigation{gap:3px;padding:4px}
-.phone-portrait .play-navigation .soft-button{min-height:39px;padding:4px 6px;font-size:13px}
-.phone-portrait #game-mid-controls{gap:3px}
-.phone-portrait .play-navigation .icon-button{width:35px;min-width:35px;height:36px;padding:5px}
-.phone-portrait .bubble-tracker{max-height:48px;overflow:hidden}
-.phone-portrait #scene{min-height:0}
-.phone-portrait.immersive .topbar{height:50px}
-.phone-portrait.immersive .companion-bar{display:flex}
-.phone-portrait.immersive #activity-view{padding-top:49px}
-
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
 <script>for(const type of ['touchstart','touchmove'])document.addEventListener(type,event=>{if(event.touches.length>1)event.preventDefault();},{passive:false,capture:true});for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});</script>
-<meta name="sana-release" content="sana-little-hands-beta-rollback-v43">
+<meta name="sana-release" content="sana-little-hands-beta-v34">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true"><defs>
