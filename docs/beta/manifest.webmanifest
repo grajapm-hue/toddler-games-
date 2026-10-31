@@ -2,7 +2,7 @@
   "id": "./",
   "name": "SaNa Little Hands Beta",
   "short_name": "SaNa Beta",
-  "description": "Portrait welcome, landscape gameplay on phones, responsive tablet and desktop play for ages 2 to 5.",
+  "description": "Adaptive portrait welcome and responsive landscape-preferred gameplay for ages 2 to 5.",
   "lang": "en",
   "start_url": "./index.html",
   "scope": "./",

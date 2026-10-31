@@ -634,40 +634,12 @@
   window.addEventListener('pagehide',()=>{stopBubbles();cancelGesture();clearEffects();if(audio?.state==='running')audio.suspend().catch(()=>{});});
   if(!document.documentElement.hasAttribute('data-self-contained')&&'serviceWorker'in navigator&&location.protocol.startsWith('http'))window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});
   levelControls();soundButton();home();fitFrame();
-  // Only phone-sized touch devices require landscape. Tablets and desktops remain responsive.
-  const mobilePhone=navigator.userAgentData?.mobile===true||/iPhone|iPod|Android.*Mobile/i.test(navigator.userAgent)||(matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<600);
-  const gate=document.getElementById('landscape-gate');
-  function updateLandscapeGate(){
-    const portrait=window.innerHeight>window.innerWidth;
-    // Keep the game upright; never simulate rotation of the document.
-    const blocked=mobilePhone&&portrait;
-    document.body.classList.toggle('landscape-required',blocked);
-    gate.setAttribute('aria-hidden',String(!blocked));
-    if(blocked)cancelGesture();
-    else fitFrame();
-  }
-  async function requestLandscape(){
-    // Screen Orientation lock generally requires fullscreen/installed PWA and a user gesture.
-    try{
-      if(screen.orientation?.lock){
-        try{await screen.orientation.lock('landscape');}catch{
-          if(document.documentElement.requestFullscreen && !document.fullscreenElement){
-            try{await document.documentElement.requestFullscreen();await screen.orientation.lock('landscape');}catch{}
-          }
-        }
-      }
-    }catch{}
-    updateLandscapeGate();
-  }
-  document.getElementById('try-landscape').addEventListener('click',requestLandscape);
-  // On platforms where orientation locking is unsupported, the user must rotate the device.
-  // Recheck after native fullscreen changes and on resume.
-  document.addEventListener('fullscreenchange',updateLandscapeGate);
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateLandscapeGate();});
-  window.addEventListener('resize',updateLandscapeGate);
-  window.visualViewport?.addEventListener('resize',updateLandscapeGate);
-  window.addEventListener('orientationchange',updateLandscapeGate);
-  window.addEventListener('pageshow',updateLandscapeGate);
-  updateLandscapeGate();
+  // Landscape is preferred, never required. WebKit/iOS does not implement
+  // screen.orientation.lock(); always leave the playable responsive viewport visible.
+  // Recalculate the SVG coordinate matrix after physical orientation changes.
+  const refreshPlayLayout=()=>{requestAnimationFrame(()=>{fitFrame();requestAnimationFrame(fitFrame);});};
+  window.addEventListener('pageshow',refreshPlayLayout);
+  screen.orientation?.addEventListener?.('change',refreshPlayLayout);
+  window.addEventListener('orientationchange',refreshPlayLayout);
 
 })();

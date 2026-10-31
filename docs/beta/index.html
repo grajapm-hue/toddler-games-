@@ -194,8 +194,8 @@ h1 span{display:block;font-size:.62em;letter-spacing:-.8px;margin-bottom:8px;col
       scale/=overflow;frame.style.setProperty('--w',w/scale+'px');frame.style.setProperty('--h',h/scale+'px');frame.style.setProperty('--welcome-scale',String(scale));
     }
   }
-  // Landscape is requested when entering Play; unsupported browsers show a rotate-phone prompt.
-  document.getElementById('play').addEventListener('click',()=>{try{const attempt=screen.orientation?.lock?.('landscape');if(attempt?.catch)attempt.catch(()=>{});}catch{}});
+  // Prefer landscape on Play, without blocking browsers that reject orientation locking.
+  document.getElementById('play').addEventListener('click',()=>{try{screen.orientation?.unlock?.();const attempt=screen.orientation?.lock?.('landscape');attempt?.catch?.(()=>{});}catch{/* Responsive portrait play remains available. */}});
   fit();preferPortrait();window.addEventListener('resize',fit);window.visualViewport?.addEventListener('resize',fit);window.addEventListener('pageshow',event=>{if(event.persisted){fit();preferPortrait();}});window.addEventListener('orientationchange',fit);
   const shade=document.getElementById('dialog-shade'),panel=document.getElementById('dialog-panel');
   let opener;
