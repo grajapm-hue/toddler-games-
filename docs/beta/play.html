@@ -84,6 +84,9 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 .age-profile.compact #game-results{flex-basis:105px;min-width:90px}.bubble-settings>#bubble-full-set{white-space:nowrap;background:#e0c9f0;color:var(--ink)}.bubble-settings>#bubble-full-set[aria-pressed="true"]{background:#ffe17a}.short-play #bubble-settings{gap:3px}.short-play .bubble-setting-group{padding-left:2px;padding-right:2px}.short-play .bubble-settings button{padding-left:5px;padding-right:5px}
 .short-play:not([data-view="home"]):not(.immersive)>.topbar{gap:5px;padding:1px 178px 1px 6px}.short-play:not([data-view="home"]) .app-update-button{min-height:26px;min-width:76px;font-size:12px;padding:2px 6px}.short-play:not([data-view="home"]) #age-choice{min-height:26px;font-size:12px}.short-play:not([data-view="home"]) .topbar .brand-mark{width:24px;height:24px}.short-play:not([data-view="home"]) .topbar .icon-button{width:26px;min-width:26px;height:26px;padding:4px}.short-play:not([data-view="home"]) .parent-age>span{display:none}
 .short-play:not([data-view="home"])>.companion-bar{min-height:0;padding:0;gap:4px}.short-play:not([data-view="home"]) .companion-bar .soft-button{min-height:26px;height:26px;padding:2px 5px;font-size:12px;gap:4px}.short-play:not([data-view="home"]) .companion-bar .soft-button svg{width:16px;height:16px}
+
+/* Age selection is the only visible learning level. */
+#play-levels{display:none!important}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
 <script>for(const type of ['touchstart','touchmove'])document.addEventListener(type,event=>{if(event.touches.length>1)event.preventDefault();},{passive:false,capture:true});for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});</script>

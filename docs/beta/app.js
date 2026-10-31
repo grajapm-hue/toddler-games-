@@ -9,10 +9,31 @@
   const colorNames=['Coral','Yellow','Blue','Purple','Green','Ink'];
   const puppyTail='M650 253Q744 198 705 173L723 159Q779 204 660 273Z';
   const shapes=[
-    {id:'circle',color:'#de927b'}, {id:'triangle',color:'#ebc34e'},
-    {id:'square',color:'#71abc6'}, {id:'star',color:'#a295c4'},
-    {id:'heart',color:'#df8fa9'}, {id:'hexagon',color:'#7cab89'}
+    {id:'circle',color:'#fa6b6b'},
+    {id:'square',color:'#72bdf1'},
+    {id:'triangle',color:'#ffca52'},
+    {id:'rectangle',color:'#a5d67b'},
+    {id:'heart',color:'#f28fbc'},
+    {id:'oval',color:'#bd86f3'},
+    {id:'diamond',color:'#f4a35d'},
+    {id:'star',color:'#ffd05d'},
+    {id:'pentagon',color:'#f9ad61'},
+    {id:'hexagon',color:'#b89bea'},
+    {id:'octagon',color:'#69cbd1'},
+    {id:'trapezoid',color:'#f07d85'},
+    {id:'parallelogram',color:'#a0ce77'},
+    {id:'crescent',color:'#71b7f4'},
+    {id:'cross',color:'#ffd04d'},
+    {id:'semicircle',color:'#d18cf3'},
+    {id:'cone',color:'#f48cad'},
+    {id:'cylinder',color:'#ac7be7'},
+    {id:'cube',color:'#72b9f0'},
+    {id:'arrow',color:'#8dd083'}
   ];
+  const shapeLevelLimits={2:4,3:12,4:16,5:20};
+  let shapeRound=0, shapeAge=null, shapeCompleted=0, shapeAdvanceTimer=null;
+  // Age is a parent-selected starting level, never a locked progression.
+  const shapeBatchSize=4;
   const activities={
     drag:{title:'Shape picnic',label:'Drag shapes',word:'Drag',caption:'match a little shape',note:'A place for every little shape',hint:'Drag a shape to its shadow. Or tap a shape, then its shadow.'},
     bubbles:{title:'Bubble garden',label:'Pop bubbles',word:'Tap',caption:'pop a happy bubble',note:'A pop of color. A little smile.',hint:'Tap a bubble. Pop, pop, pop! You can brush across them too.'},
@@ -26,7 +47,7 @@
   if(!hasAgeSettings)ageSettings.common={level:saved.level,bubbleSpeed:saved.bubbleSpeed,bubbleSize:saved.bubbleSize,bubbleSet:'full'};
   const preferences=()=>ageSettings[ageProfiles.getAge()??'common']??{};
   const initial=preferences();
-  const state={age:ageProfiles.getAge(),level:[1,2,3].includes(initial.level)?initial.level:ageProfiles.getAge()===null?2:1,activity:null,done:false,pointer:null,selected:null,paintMode:false,paintColor:colors[0],strokes:[],shapes:[],bubbles:[],sliders:[],dirt:[],sound:saved.sound===true};
+  const state={age:ageProfiles.getAge(),level:1,activity:null,done:false,pointer:null,selected:null,paintMode:false,paintColor:colors[0],strokes:[],shapes:[],bubbles:[],sliders:[],dirt:[],sound:saved.sound===true};
   Object.assign(state,{brushSize:profile().brushSize,erase:false,coverage:[],bubbleMode:profile().bubbleMode,bubbleSet:initial.bubbleSet==='full'||state.age===null?'full':'starter',bubbleHits:new Map(),bubblePops:0,bubbleRecent:[],bubbleEffects:[],bubbleSerial:0,bubbleWidth:1000});
   const bubbleModes={plain:{label:'Plain',items:[]},numbers:{label:'1–20',items:Array.from({length:20},(_,i)=>String(i+1))},letters:{label:'A–Z',items:Array.from({length:26},(_,i)=>String.fromCharCode(65+i))},shapes:{label:'Shapes',items:shapes.map(shape=>shape.id)}};
   const bubbleColors=['#a6d1d3','#e6a6a4','#cfbfdf','#f0d47a','#afd1a2','#f1bd91'];
@@ -88,15 +109,31 @@
   }
   function primitive(id,fill,stroke='#34534a'){
     const common=`fill="${fill}" stroke="${stroke}" stroke-width="4" stroke-linejoin="round"`;
-    if(id==='circle')return `<circle r="55" ${common}/>`;
-    if(id==='square')return `<rect x="-53" y="-53" width="106" height="106" rx="20" ${common}/>`;
-    if(id==='triangle')return `<path d="M0-60L62 46Q64 54 53 54H-53Q-64 54-58 43Z" ${common}/>`;
-    if(id==='heart')return `<path d="M0 54C-15 37-62 9-58-25C-55-62-13-65 0-34C18-66 58-60 59-26C62 11 17 39 0 54Z" ${common}/>`;
-    const points=Array.from({length:id==='star'?10:6},(_,i)=>{
-      const a=(i*(id==='star'?36:60)-90)*Math.PI/180,r=id==='star'&&i%2?28:59;
-      return `${Math.cos(a)*r},${Math.sin(a)*r}`;
-    }).join(' ');
-    return `<polygon points="${points}" ${common}/>`;
+    const polygon=(n,r=58,rotation=-90)=>`<polygon points="${Array.from({length:n},(_,i)=>{const a=(rotation+i*360/n)*Math.PI/180;return `${Math.cos(a)*r},${Math.sin(a)*r}`;}).join(' ')}" ${common}/>`;
+    const path=d=>`<path d="${d}" ${common}/>`;
+    switch(id){
+      case 'circle':return `<circle r="55" ${common}/>`;
+      case 'oval':return `<ellipse rx="60" ry="43" ${common}/>`;
+      case 'square':return `<rect x="-53" y="-53" width="106" height="106" rx="13" ${common}/>`;
+      case 'rectangle':return `<rect x="-61" y="-43" width="122" height="86" rx="9" ${common}/>`;
+      case 'triangle':return polygon(3);
+      case 'diamond':return polygon(4);
+      case 'pentagon':return polygon(5);
+      case 'hexagon':return polygon(6);
+      case 'octagon':return polygon(8);
+      case 'trapezoid':return path('M-35-48H35L63 49H-63Z');
+      case 'parallelogram':return path('M-32-48H61L32 48H-61Z');
+      case 'heart':return path('M0 54C-15 37-62 9-58-25C-55-62-13-65 0-34C18-66 58-60 59-26C62 11 17 39 0 54Z');
+      case 'crescent':return path('M27-59A61 61 0 1 0 27 59A48 48 0 0 1 27-59Z');
+      case 'cross':return path('M-19-59H19V-19H59V19H19V59H-19V19H-59V-19H-19Z');
+      case 'semicircle':return path('M-59 45A59 59 0 0 1 59 45Z');
+      case 'cone':return path('M0-60L56 49Q0 70-56 49Z');
+      case 'cylinder':return `<rect x="-48" y="-45" width="96" height="93" ${common}/><ellipse cy="-45" rx="48" ry="16" ${common}/><path d="M-48 48A48 16 0 0 0 48 48" fill="none" stroke="${stroke}" stroke-width="4"/>`;
+      case 'cube':return `<path d="M0-60L54-33V33L0 61L-54 33V-33Z" ${common}/><path d="M-54-33L0-4L54-33M0-4V61" fill="none" stroke="${stroke}" stroke-width="4"/>`;
+      case 'arrow':return path('M-60-22H8V-55L62 0L8 55V22H-60Z');
+      case 'star':return `<polygon points="${Array.from({length:10},(_,i)=>{const a=(i*36-90)*Math.PI/180,r=i%2?27:59;return `${Math.cos(a)*r},${Math.sin(a)*r}`;}).join(' ')}" ${common}/>`;
+      default:return polygon(6);
+    }
   }
   const face=(x=0,y=0)=>`<g transform="translate(${x} ${y})" fill="#29463e"><ellipse cx="-16" cy="-4" rx="3.5" ry="5"/><ellipse cx="16" cy="-4" rx="3.5" ry="5"/><path d="M-9 12Q0 22 10 12" fill="none" stroke="#29463e" stroke-width="3.5" stroke-linecap="round"/></g>`;
   function friend(kind,x,y,scale=1){
@@ -205,7 +242,7 @@
     if(String(state.age??'')===String(value))return;
     const activity=state.activity,paintMode=state.paintMode;
     save();ageProfiles.select(value);state.age=ageProfiles.getAge();const selected=preferences();
-    state.level=[1,2,3].includes(selected.level)?selected.level:state.age===null?2:1;
+    state.level=1;
     state.bubbleSpeed=Object.hasOwn(bubbleSpeeds,selected.bubbleSpeed)?selected.bubbleSpeed:null;state.bubbleSize=Object.hasOwn(bubbleDiameters,selected.bubbleSize)?selected.bubbleSize:null;
     state.bubbleSet=selected.bubbleSet==='full'||state.age===null?'full':'starter';state.bubbleMode=profile().bubbleMode;state.brushSize=profile().brushSize;
     try{history.replaceState(null,'',ageProfiles.navigation(location.pathname+location.search));}catch{/* The current page choice still works without history access. */}
@@ -227,7 +264,7 @@
   function startActivity(id,paintMode=false){closeAgeMenu();$('game-mid-controls').append($('sound'),$('fullscreen'));state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
   function resetRound(){
     stopBubbles();cancelGesture();clearEffects();state.done=false;state.selected=null;state.strokes=[];
-    $('play-levels').hidden=state.activity==='abacus'&&state.age===null;$('abacus-stage').hidden=state.activity!=='abacus';
+    $('play-levels').hidden=true;$('abacus-stage').hidden=state.activity!=='abacus';
     $('bubble-score').hidden=state.activity!=='bubbles';
     $('bubble-modes').hidden=state.activity!=='bubbles';$('bubble-tracker').hidden=state.activity!=='bubbles';$('step-note').hidden=true;
     $('bubble-settings').hidden=state.activity!=='bubbles';updateBubbleSettings();
@@ -241,8 +278,16 @@
     scene.style.background='#D8B98E';
     if(state.activity==='abacus'){state.abacusRows=abacusColors.map(()=>Array(10).fill(false));state.abacusSelectedRow=0;renderAbacus();}
     else if(state.activity==='drag'){
-      const count=profile().shapeCount,ys=count===2?[140,310]:count===4?[120,310]:[85,220,355];
-      state.shapes=shapes.slice(0,count).map((shape,i)=>({...shape,placed:false,x:count===2?250:150+(i%2)*190,y:ys[count===2?i:Math.floor(i/2)],tx:count===2?750:660+(i%2)*190,ty:ys[count===2?i:Math.floor(i/2)]}));renderDrag();
+      clearTimeout(shapeAdvanceTimer);
+      if(shapeAge!==state.age){shapeAge=state.age;shapeRound=0;shapeCompleted=0;}
+      const pool=shapes.slice(0,shapeLevelLimits[state.age]||4);
+      const batches=Math.ceil(pool.length/shapeBatchSize);
+      const batch=shapeRound%batches;
+      const selected=pool.slice(batch*shapeBatchSize,(batch+1)*shapeBatchSize);
+      state.shapes=selected.map((shape,i)=>({...shape,placed:false,
+        x:195+(i%2)*210,y:186+Math.floor(i/2)*155,
+        tx:655+(i%2)*210,ty:186+Math.floor(i/2)*155}));
+      renderDrag();
     }else if(state.activity==='bubbles'){
       renderBubbles();
     }else if(state.activity==='slide'){
@@ -315,11 +360,49 @@
   }
   new ResizeObserver(()=>{if(state.activity==='abacus'&&state.abacusSize!==`${scene.clientWidth}/${scene.clientHeight}`){cancelGesture();renderAbacus();}}).observe(scene);
   function renderDrag(){
+    const pool=shapes.slice(0,shapeLevelLimits[state.age]||4);
     const done=state.shapes.filter(shape=>shape.placed).length;
-    scene.innerHTML=`<path d="M500 36V404" stroke="#d3dfcd" stroke-width="3" stroke-dasharray="8 13"/><path d="M465 216H531M517 204L531 216L517 228" stroke="#bdcdb7" stroke-width="5" fill="none" stroke-linecap="round"/>`+state.shapes.map(shape=>`<g class="target" data-target="${shape.id}" transform="translate(${shape.tx} ${shape.ty})" role="button" tabindex="0" aria-label="${shape.id} shadow"><g opacity="${shape.placed?'.15':'.6'}">${primitive(shape.id,'#fbfcf2','#b3c6ae')}</g>${!shape.placed?`<text y="83" text-anchor="middle" fill="#7f9279" font-size="16" font-family="inherit">${shape.id}</text>`:''}</g>`).join('')+state.shapes.map(shape=>`<g ${shape.placed?`data-placed="${shape.id}"`:`data-piece="${shape.id}" role="button" tabindex="0" aria-label="${shape.id} shape"`} class="piece ${state.selected===shape.id?'selected':''}" transform="translate(${shape.placed?shape.tx:shape.x} ${shape.placed?shape.ty:shape.y})">${primitive(shape.id,shape.color)}${face(0,shape.id==='triangle'?12:0)}${shape.placed?'<path d="M35-53L44-43L62-64" fill="none" stroke="#2b7b59" stroke-width="6" stroke-linecap="round"/>':''}</g>`).join('');
-    progress(done,state.shapes.length);
+    // The complete twenty-shape learning chart stays visible in every age level.
+    // A dim thumbnail means that shape belongs to a later age level.
+    const thumbnails=shapes.map((shape,i)=>{
+      const x=28+i*49.6,active=i<pool.length;
+      const inBatch=state.shapes.some(item=>item.id===shape.id);
+      return `<g transform="translate(${x} 37)" opacity="${active?1:.34}" aria-label="${shape.id}">
+        ${inBatch?'<rect x="-23" y="-27" width="46" height="51" rx="8" fill="#fff5da" stroke="#93784f" stroke-width="2"/>':''}
+        <g transform="scale(.28)">${primitive(shape.id,shape.color)}</g>
+        <title>${shape.id}</title></g>`;
+    }).join('');
+    const board=`<rect x="4" y="77" width="992" height="360" rx="15" fill="none" stroke="#c4a67d" stroke-width="2"/>
+      <path d="M500 101V424" stroke="#d3dfcd" stroke-width="3" stroke-dasharray="8 13"/>
+      <path d="M466 260H530M516 248L530 260L516 272" stroke="#bdcdb7" stroke-width="5" fill="none" stroke-linecap="round"/>`;
+    scene.innerHTML=`<rect x="0" y="0" width="1000" height="76" fill="#f7e9d2"/>${thumbnails}${board}`+
+      state.shapes.filter(shape=>!shape.placed).map(shape=>`<g class="target" data-target="${shape.id}" transform="translate(${shape.tx} ${shape.ty})" role="button" tabindex="0" aria-label="${shape.id} shadow">
+      <g opacity=".7">${primitive(shape.id,'#fbfcf2','#b3c6ae')}</g>
+      <text y="77" text-anchor="middle" fill="#536d57" font-size="17" font-family="inherit">${shape.id}</text></g>`).join('')+
+      state.shapes.filter(shape=>!shape.placed).map(shape=>`<g data-piece="${shape.id}" role="button" tabindex="0" aria-label="${shape.id} shape" class="piece ${state.selected===shape.id?'selected':''}" transform="translate(${shape.x} ${shape.y})">
+      ${primitive(shape.id,shape.color)}${face(0,shape.id==='triangle'?12:0)}</g>`).join('');
+    progress(shapeCompleted+done,pool.length);
   }
-  function matchShape(id){const shape=state.shapes.find(item=>item.id===id);if(!shape||shape.placed)return;shape.placed=true;state.selected=null;renderDrag();tone(640);if(state.shapes.every(item=>item.placed))celebrate('Lovely matching! Every shape found its little home.');else hint('A perfect fit! Find another little shape.');}
+  function matchShape(id){
+    const shape=state.shapes.find(item=>item.id===id);if(!shape||shape.placed)return;
+    shape.placed=true;state.selected=null;renderDrag();tone(640);
+    if(state.shapes.every(item=>item.placed)){
+      const total=shapeLevelLimits[state.age]||4;
+      shapeCompleted+=state.shapes.length;
+      if(shapeCompleted>=total){
+        celebrate(`Wonderful! You matched all ${total} shapes. Play Again to practice!`);
+        shapeRound=0;shapeCompleted=0;
+      }else{
+        hint('Great matching! Here come four new shapes.');
+        clearTimeout(shapeAdvanceTimer);
+        shapeAdvanceTimer=setTimeout(()=>{
+          if(state.activity!=='drag'||state.done)return;
+          shapeRound++;
+          resetRound();
+        },650);
+      }
+    }else hint('A perfect fit! Find another little shape.');
+  }
   const activeBubble=()=>state.bubbles.find(bubble=>bubble.element?.dataset.onstage==='true');
   function stopBubbles(){if(bubbleFrame!==null)cancelAnimationFrame(bubbleFrame);bubbleFrame=null;lastBubbleTime=0;}
   function bubbleTracker(){
@@ -615,7 +698,7 @@
     if(!active)button.focus({preventScroll:true});
     fitFrame();
   }
-  const gameSteps=()=>Object.keys(activities).flatMap(activity=>(activity==='abacus'&&state.age===null?[1]:[1,2,3]).flatMap(level=>(activity==='bubbles'?['plain','numbers','letters','shapes']:activity==='brush'?['clean','paint']:['']).map(mode=>({activity,level,mode}))));
+  const gameSteps=()=>Object.keys(activities).flatMap(activity=>[1].flatMap(level=>(activity==='bubbles'?['plain','numbers','letters','shapes']:activity==='brush'?['clean','paint']:['']).map(mode=>({activity,level,mode}))));
   function currentStep(){return gameSteps().findIndex(step=>step.activity===state.activity&&((state.activity==='abacus'&&state.age===null)||step.level===state.level)&&step.mode===(state.activity==='bubbles'?state.bubbleMode:state.activity==='brush'?(state.paintMode?'paint':'clean'):''));}
   function stepLabel(step){return step?`${activities[step.activity].title} · ${['','Easy','Medium','Challenge'][step.level]}${step.mode?' · '+(bubbleModes[step.mode]?.label||step.mode):''}`:'Games';}
   function updateGameNavigation(){const index=currentStep(),steps=gameSteps();for(const [id,direction] of [['game-back',-1],['game-front',1]]){$(id).title=stepLabel(steps[index+direction]);$(id).setAttribute('aria-description',$(id).title);}}
