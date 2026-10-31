@@ -518,7 +518,7 @@
       if(target&&state.selected===target.dataset.target){matchShape(state.selected);event.preventDefault();return;}
       const item=event.target.closest('[data-piece]');if(!item)return;
       const shape=state.shapes.find(s=>s.id===item.dataset.piece);state.selected=shape.id;
-      state.pointer={id:event.pointerId,kind:'drag',shape,dx:point.x-shape.x,dy:point.y-shape.y,x:shape.x,y:shape.y};
+      state.pointer={id:event.pointerId,kind:'drag',shape,dx:point.x-shape.x,dy:point.y-shape.y,x:shape.x,y:shape.y,matrix:scene.getScreenCTM()?.inverse()};
       item.classList.add('selected');
     }else if(state.activity==='bubbles'){
       state.pointer={id:event.pointerId,kind:'bubble'};hitBubble(point,event.target.closest('[data-bubble]')?.dataset.bubble);
@@ -534,7 +534,7 @@
   }
   function pointerMove(event){
     const pointer=state.pointer;if(!pointer||event.pointerId!==pointer.id)return;
-    const point=pointer.kind==='abacus'?new DOMPoint(event.clientX,event.clientY).matrixTransform(pointer.matrix):localPoint(event);if(!point)return;event.preventDefault();
+    const point=(pointer.kind==='abacus'||pointer.kind==='drag')&&pointer.matrix?new DOMPoint(event.clientX,event.clientY).matrixTransform(pointer.matrix):localPoint(event);if(!point)return;event.preventDefault();
     if(pointer.kind==='abacus')moveAbacusSlide(pointer,point);
     else if(pointer.kind==='drag'){
       pointer.x=Math.max(60,Math.min(940,point.x-pointer.dx));pointer.y=Math.max(60,Math.min(380,point.y-pointer.dy));
@@ -599,13 +599,14 @@
   $('sound').addEventListener('click',()=>{state.sound=!state.sound;save();soundButton();if(state.sound)tone(600);else if(audio?.state==='running')audio.suspend().catch(()=>{});});
   function fitFrame(){
     const visual=window.visualViewport,w=visual?.width||innerWidth,h=visual?.height||innerHeight;
-    const phonePortrait=w<h&&w<650&&app.dataset.view!=='home';
-    const rotated=w<h&&!phonePortrait;
+    const phonePortrait=w<h&&app.dataset.view!=='home';
+    const rotated=false; // Never rotate the DOM separately from browser/system chrome.
+    const naturalPortrait=w<h;
     if(visual&&Math.abs(visual.scale-1)>.01)return;
     closeAgeMenu();
     // Read physical screen insets before rotating the landscape play frame.
     const padding=getComputedStyle($('viewport')),left=parseFloat(padding.paddingLeft)||0,right=parseFloat(padding.paddingRight)||0,top=parseFloat(padding.paddingTop)||0,bottom=parseFloat(padding.paddingBottom)||0;
-    const availableW=Math.max(1,w-left-right),availableH=Math.max(1,h-top-bottom),width=rotated?availableH:availableW,height=rotated?availableW:availableH;
+    const availableW=Math.max(1,w-left-right),availableH=Math.max(1,h-top-bottom),width=availableW,height=availableH;
     app.style.left=`${(visual?.offsetLeft||0)+left+availableW/2}px`;app.style.top=`${(visual?.offsetTop||0)+top+availableH/2}px`;
     cancelGesture();app.style.setProperty('--frame-w',`${width}px`);app.style.setProperty('--frame-h',`${height}px`);app.classList.toggle('rotated',rotated);app.classList.toggle('phone-portrait',phonePortrait);app.classList.toggle('compact',height<530);app.classList.toggle('narrow',width<740);app.classList.toggle('short-play',height<350);
   }
@@ -633,8 +634,16 @@
   window.addEventListener('pagehide',()=>{stopBubbles();cancelGesture();clearEffects();if(audio?.state==='running')audio.suspend().catch(()=>{});});
   if(!document.documentElement.hasAttribute('data-self-contained')&&'serviceWorker'in navigator&&location.protocol.startsWith('http'))window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});
   levelControls();soundButton();home();fitFrame();
-  // Installed phones may support orientation preferences without native fullscreen.
-  if((navigator.userAgentData?.mobile===true||/iPhone|iPod|Android.*Mobile/i.test(navigator.userAgent)||(matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<600))&&(navigator.standalone||matchMedia('(display-mode:standalone)').matches)){
-    try{Promise.resolve(screen.orientation?.lock?.('portrait')).catch(()=>{});}catch{/* The existing landscape frame is the fallback. */}
+  // Landscape gameplay on mobile phones, when permitted by the OS/browser.
+  // Safari/iOS often rejects orientation.lock: preserve an upright usable fallback.
+  const mobilePhone=navigator.userAgentData?.mobile===true||/iPhone|iPod|Android.*Mobile/i.test(navigator.userAgent)||(matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<600);
+  if(mobilePhone){
+    const requestLandscape=()=>{
+      try{const attempt=screen.orientation?.lock?.('landscape');if(attempt?.catch)attempt.catch(()=>{});}catch{}
+    };
+    requestLandscape();
+    document.addEventListener('pointerdown',requestLandscape,{once:true,passive:true});
+    window.addEventListener('pageshow',requestLandscape);
   }
+
 })();
