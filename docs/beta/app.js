@@ -157,15 +157,15 @@
     const first=Math.round(cardGrid.scrollLeft/cardStep())+1,total=cardGrid.children.length;
     $('card-page').textContent=`Games ${first} to ${Math.min(total,first+4)} of ${total}`;
   }
-  function scrollCards(left){const max=Math.max(0,cardGrid.scrollWidth-cardGrid.clientWidth);cardGrid.scrollTo({left:Math.max(0,Math.min(left,max)),behavior:'auto'});requestAnimationFrame(updateCardNavigation);}
+  function scrollCards(left){cardGrid.scrollTo({left:Math.max(0,Math.min(left,cardGrid.scrollWidth-cardGrid.clientWidth)),behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});}
   $('previous-games').addEventListener('click',()=>scrollCards(cardGrid.scrollLeft-cardGrid.clientWidth));
-  $('next-games').addEventListener('click',()=>scrollCards(cardGrid.scrollWidth-cardGrid.clientWidth));
+  $('next-games').addEventListener('click',()=>scrollCards(cardGrid.scrollLeft+cardGrid.clientWidth));
   cardGrid.addEventListener('scroll',updateCardNavigation,{passive:true});
   new ResizeObserver(updateCardNavigation).observe(cardGrid);
   new MutationObserver(updateCardNavigation).observe(cardGrid,{childList:true});
   // Map the swipe into the play frame, including its portrait-device rotation.
   cardGrid.addEventListener('pointerdown',event=>{
-    if(!event.isPrimary||event.button!==0||event.pointerType==='touch')return;
+    if(!event.isPrimary||event.button!==0)return;
     ignoreCardClick=false;cardSwipe={id:event.pointerId,start:app.classList.contains('rotated')?event.clientY:event.clientX,left:cardGrid.scrollLeft,dragging:false};
   });
   cardGrid.addEventListener('pointermove',event=>{
@@ -518,7 +518,7 @@
       if(target&&state.selected===target.dataset.target){matchShape(state.selected);event.preventDefault();return;}
       const item=event.target.closest('[data-piece]');if(!item)return;
       const shape=state.shapes.find(s=>s.id===item.dataset.piece);state.selected=shape.id;
-      state.pointer={id:event.pointerId,kind:'drag',shape,dx:point.x-shape.x,dy:point.y-shape.y,x:shape.x,y:shape.y,matrix:scene.getScreenCTM()?.inverse()};
+      state.pointer={id:event.pointerId,kind:'drag',shape,dx:point.x-shape.x,dy:point.y-shape.y,x:shape.x,y:shape.y};
       item.classList.add('selected');
     }else if(state.activity==='bubbles'){
       state.pointer={id:event.pointerId,kind:'bubble'};hitBubble(point,event.target.closest('[data-bubble]')?.dataset.bubble);
@@ -534,7 +534,7 @@
   }
   function pointerMove(event){
     const pointer=state.pointer;if(!pointer||event.pointerId!==pointer.id)return;
-    const point=(pointer.kind==='abacus'||pointer.kind==='drag')&&pointer.matrix?new DOMPoint(event.clientX,event.clientY).matrixTransform(pointer.matrix):localPoint(event);if(!point)return;event.preventDefault();
+    const point=pointer.kind==='abacus'?new DOMPoint(event.clientX,event.clientY).matrixTransform(pointer.matrix):localPoint(event);if(!point)return;event.preventDefault();
     if(pointer.kind==='abacus')moveAbacusSlide(pointer,point);
     else if(pointer.kind==='drag'){
       pointer.x=Math.max(60,Math.min(940,point.x-pointer.dx));pointer.y=Math.max(60,Math.min(380,point.y-pointer.dy));
@@ -599,14 +599,13 @@
   $('sound').addEventListener('click',()=>{state.sound=!state.sound;save();soundButton();if(state.sound)tone(600);else if(audio?.state==='running')audio.suspend().catch(()=>{});});
   function fitFrame(){
     const visual=window.visualViewport,w=visual?.width||innerWidth,h=visual?.height||innerHeight;
-    const phonePortrait=w<h&&app.dataset.view!=='home';
-    const rotated=false; // Never rotate the DOM separately from browser/system chrome.
-    const naturalPortrait=w<h;
+    const phonePortrait=w<h&&w<650&&app.dataset.view!=='home';
+    const rotated=w<h&&!phonePortrait;
     if(visual&&Math.abs(visual.scale-1)>.01)return;
     closeAgeMenu();
     // Read physical screen insets before rotating the landscape play frame.
     const padding=getComputedStyle($('viewport')),left=parseFloat(padding.paddingLeft)||0,right=parseFloat(padding.paddingRight)||0,top=parseFloat(padding.paddingTop)||0,bottom=parseFloat(padding.paddingBottom)||0;
-    const availableW=Math.max(1,w-left-right),availableH=Math.max(1,h-top-bottom),width=availableW,height=availableH;
+    const availableW=Math.max(1,w-left-right),availableH=Math.max(1,h-top-bottom),width=rotated?availableH:availableW,height=rotated?availableW:availableH;
     app.style.left=`${(visual?.offsetLeft||0)+left+availableW/2}px`;app.style.top=`${(visual?.offsetTop||0)+top+availableH/2}px`;
     cancelGesture();app.style.setProperty('--frame-w',`${width}px`);app.style.setProperty('--frame-h',`${height}px`);app.classList.toggle('rotated',rotated);app.classList.toggle('phone-portrait',phonePortrait);app.classList.toggle('compact',height<530);app.classList.toggle('narrow',width<740);app.classList.toggle('short-play',height<350);
   }
@@ -634,12 +633,8 @@
   window.addEventListener('pagehide',()=>{stopBubbles();cancelGesture();clearEffects();if(audio?.state==='running')audio.suspend().catch(()=>{});});
   if(!document.documentElement.hasAttribute('data-self-contained')&&'serviceWorker'in navigator&&location.protocol.startsWith('http'))window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});
   levelControls();soundButton();home();fitFrame();
-  // Landscape is preferred, never required. WebKit/iOS does not implement
-  // screen.orientation.lock(); always leave the playable responsive viewport visible.
-  // Recalculate the SVG coordinate matrix after physical orientation changes.
-  const refreshPlayLayout=()=>{requestAnimationFrame(()=>{fitFrame();requestAnimationFrame(fitFrame);});};
-  window.addEventListener('pageshow',refreshPlayLayout);
-  screen.orientation?.addEventListener?.('change',refreshPlayLayout);
-  window.addEventListener('orientationchange',refreshPlayLayout);
-
+  // Installed phones may support orientation preferences without native fullscreen.
+  if((navigator.userAgentData?.mobile===true||/iPhone|iPod|Android.*Mobile/i.test(navigator.userAgent)||(matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<600))&&(navigator.standalone||matchMedia('(display-mode:standalone)').matches)){
+    try{Promise.resolve(screen.orientation?.lock?.('portrait')).catch(()=>{});}catch{/* The existing landscape frame is the fallback. */}
+  }
 })();
