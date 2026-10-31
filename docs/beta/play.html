@@ -87,10 +87,19 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 
 /* Age selection is the only visible learning level. */
 #play-levels{display:none!important}
+/* Consistent accessible sound state colors: red OFF, green ON. */
+#sound[aria-pressed="false"],#music-toggle[aria-pressed="false"]{background:#f6a6a6!important;color:#512424!important;border-color:#a94b4b!important}
+#sound[aria-pressed="true"],#music-toggle[aria-pressed="true"]{background:#a9e4b9!important;color:#173e2b!important;border-color:#3d8d5a!important}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
 <script>for(const type of ['touchstart','touchmove'])document.addEventListener(type,event=>{if(event.touches.length>1)event.preventDefault();},{passive:false,capture:true});for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});</script>
-<meta name="sana-release" content="sana-little-hands-beta-v44">
+<meta name="sana-release" content="sana-little-hands-beta-v45">
+<style>
+#music-toggle{font-size:25px;font-weight:900;color:#183f37;background:#d6c4fa}
+#music-toggle[aria-pressed="true"]{background:#bce8c8}
+.immersive .topbar>:not(#sound):not(#music-toggle):not(#fullscreen):not(#game-back){display:none!important}
+.immersive .topbar #music-toggle{position:absolute;top:max(8px,env(safe-area-inset-top));right:calc(max(8px,env(safe-area-inset-right)) + 108px);z-index:12;width:46px;min-width:46px;height:46px}
+</style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true"><defs>
@@ -111,6 +120,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 
   <nav class="game-pages" id="game-pages" aria-label="Browse game cards"><button class="icon-button" id="previous-games" type="button" aria-label="Previous games" aria-controls="activity-grid" disabled><svg aria-hidden="true"><use href="#back-icon"/></svg></button><span class="visually-hidden" id="card-page" aria-live="polite"></span><button class="icon-button" id="next-games" type="button" aria-label="Next games" aria-controls="activity-grid"><svg viewBox="0 0 32 32" aria-hidden="true"><use href="#back-icon" transform="translate(32 0) scale(-1 1)"/></svg></button></nav>
   <button class="icon-button" id="sound" type="button" aria-label="Sound off" aria-pressed="false"><svg aria-hidden="true"><use href="#sound-icon"/></svg></button>
+  <button class="icon-button" id="music-toggle" type="button" aria-label="Background music off" aria-pressed="false" title="Background music">🎵</button>
   <button class="icon-button" id="fullscreen" type="button" aria-label="Fullscreen" aria-pressed="false" title="Fullscreen"><svg aria-hidden="true"><use href="#fullscreen-icon"/></svg></button>
 </header>
 <aside class="companion-bar" aria-label="SaNa tips and actions">
@@ -139,5 +149,25 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 <script src="age-profiles.js"></script>
 <script src="app.js"></script>
 <script src="pwa.js"></script>
+<script>
+/* Sound is master; music is a separate preference. Both respect the quiet switch. */
+(()=>{'use strict';
+const button=document.getElementById('music-toggle');
+const player=new Audio('./bgm-monkeys.mp3');
+player.loop=true;player.volume=0.18;player.preload='none';
+let enabled=false;
+try{enabled=localStorage.getItem('sanaMusicV1')==='on';}catch(e){}
+let master=document.getElementById('sound').getAttribute('aria-pressed')==='true';
+function sync(){button.setAttribute('aria-pressed',String(enabled));button.setAttribute('aria-label',enabled?'Background music on':'Background music off');button.title=enabled?'Turn background music off':'Turn background music on';button.style.opacity='1';}
+function play(){if(master&&enabled&&!document.hidden)player.play().catch(()=>{});else player.pause();}
+button.addEventListener('click',()=>{enabled=!enabled;try{localStorage.setItem('sanaMusicV1',enabled?'on':'off');}catch(e){}sync();play();});
+window.addEventListener('sana-sound-change',event=>{master=Boolean(event.detail?.enabled);sync();play();});
+document.addEventListener('visibilitychange',play);
+window.addEventListener('pagehide',()=>player.pause());
+// Audio playback requires an initial user gesture on mobile.
+document.addEventListener('pointerdown',()=>{if(enabled)play();},{once:true});
+sync();
+})();
+</script>
 </body>
 </html>
