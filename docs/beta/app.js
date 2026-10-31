@@ -157,9 +157,9 @@
     const first=Math.round(cardGrid.scrollLeft/cardStep())+1,total=cardGrid.children.length;
     $('card-page').textContent=`Games ${first} to ${Math.min(total,first+4)} of ${total}`;
   }
-  function scrollCards(left){cardGrid.scrollTo({left:Math.max(0,Math.min(left,cardGrid.scrollWidth-cardGrid.clientWidth)),behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});}
+  function scrollCards(left){const max=Math.max(0,cardGrid.scrollWidth-cardGrid.clientWidth);cardGrid.scrollTo({left:Math.max(0,Math.min(left,max)),behavior:'auto'});requestAnimationFrame(updateCardNavigation);}
   $('previous-games').addEventListener('click',()=>scrollCards(cardGrid.scrollLeft-cardGrid.clientWidth));
-  $('next-games').addEventListener('click',()=>scrollCards(cardGrid.scrollLeft+cardGrid.clientWidth));
+  $('next-games').addEventListener('click',()=>scrollCards(cardGrid.scrollWidth-cardGrid.clientWidth));
   cardGrid.addEventListener('scroll',updateCardNavigation,{passive:true});
   new ResizeObserver(updateCardNavigation).observe(cardGrid);
   new MutationObserver(updateCardNavigation).observe(cardGrid,{childList:true});
