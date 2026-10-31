@@ -120,6 +120,12 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 .phone-portrait.immersive .companion-bar{display:flex}
 .phone-portrait.immersive #activity-view{padding-top:49px}
 
+
+/* Mobile landscape gate: never rotate DOM separately from system chrome. */
+#landscape-gate{display:none;position:fixed;inset:0;z-index:1000;background:#e9dfcd;color:#173e35;padding:calc(24px + env(safe-area-inset-top)) 22px calc(24px + env(safe-area-inset-bottom));align-items:center;justify-content:center;text-align:center;overflow:auto}
+#landscape-gate .gate-card{max-width:420px;border:3px solid #a68b62;border-radius:25px;background:#fffaf0;padding:24px 18px;box-shadow:0 8px 0 #c9b58e}
+#landscape-gate .gate-icon{font-size:55px;line-height:1.3}#landscape-gate h2{font-size:27px;margin:10px 0}#landscape-gate p{font-size:17px;line-height:1.4;font-weight:700}#landscape-gate button{min-height:52px;background:#ffe17a;border:2px solid #997b42;border-radius:15px;font-size:17px;font-weight:900;padding:10px 20px}
+body.landscape-required #landscape-gate{display:flex}body.landscape-required #viewport{visibility:hidden;pointer-events:none}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
 <script>for(const type of ['touchstart','touchmove'])document.addEventListener(type,event=>{if(event.touches.length>1)event.preventDefault();},{passive:false,capture:true});for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});</script>
@@ -136,7 +142,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 <symbol id="again-icon" viewBox="0 0 32 32"><path d="M8 10A11 11 0 1 1 5 20M8 3V11H16" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 <symbol id="hand-icon" viewBox="0 0 32 32"><path d="M11 17V7Q11 3 15 4Q17 4 17 7V16L20 13L26 16Q29 18 27 24L23 29H14L6 20Q4 16 7 15Z" fill="currentColor" opacity=".85"/></symbol>
 </defs></svg>
-<div id="viewport"><div id="app" data-view="home">
+<div id="landscape-gate" role="dialog" aria-modal="true" aria-labelledby="gate-title" aria-hidden="true"><div class="gate-card"><div class="gate-icon" aria-hidden="true">↻</div><h2 id="gate-title">Turn your phone sideways</h2><p>Games are played in landscape. Turn off Portrait Orientation Lock if needed.</p><button id="try-landscape" type="button">Try landscape</button><p><small>If your phone stays portrait, turn off rotation lock in device settings, then turn it sideways. iPhone Safari cannot force rotation.</small></p><a href="index.html">Back to welcome</a></div></div><div id="viewport"><div id="app" data-view="home">
 <header class="topbar has-app-update">
   <button class="icon-button" id="home" type="button" aria-label="Home"><svg aria-hidden="true"><use href="#home-icon"/></svg></button>
   <a class="brand" href="index.html" aria-label="SaNa Beta welcome" style="color:inherit;text-decoration:none"><svg class="brand-mark" aria-hidden="true"><use href="#monkey"/></svg><div class="brand-copy"><div class="wordmark">SaNa</div><small>little hands · beta</small></div></a><button class="app-update-button" id="update-app" type="button" aria-label="Update app" aria-busy="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7V3M20 7H16M20 7A8 8 0 1 0 21 14"/></svg><span data-update-label>Update</span></button>
