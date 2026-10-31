@@ -165,7 +165,7 @@
   new MutationObserver(updateCardNavigation).observe(cardGrid,{childList:true});
   // Map the swipe into the play frame, including its portrait-device rotation.
   cardGrid.addEventListener('pointerdown',event=>{
-    if(!event.isPrimary||event.button!==0)return;
+    if(!event.isPrimary||event.button!==0||event.pointerType==='touch')return;
     ignoreCardClick=false;cardSwipe={id:event.pointerId,start:app.classList.contains('rotated')?event.clientY:event.clientX,left:cardGrid.scrollLeft,dragging:false};
   });
   cardGrid.addEventListener('pointermove',event=>{

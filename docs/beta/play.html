@@ -123,10 +123,39 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 
 /* Mobile landscape gate: never rotate DOM separately from system chrome. */
 
+
+/* v0.41 responsive layout: controls and board always occupy the same column. */
+#app:not([data-view="home"]) #activity-view,
+#app.phone-portrait:not([data-view="home"]) #activity-view{
+ display:grid;grid-template-columns:minmax(0,1fr)!important;
+ grid-template-rows:auto minmax(0,1fr)!important;
+ grid-template-areas:"controls" "board"!important;min-width:0;min-height:0}
+#app.phone-portrait:not([data-view="home"]) #activity-view{padding:49px 4px 5px}
+#activity-view > .bubble-settings,#activity-view > .art-tools{
+ grid-area:controls;min-width:0;max-width:100%;flex-wrap:wrap;gap:4px;padding:3px}
+.bubble-setting-group,.brush-sizes{flex-wrap:wrap;justify-content:center;gap:3px}
+#app.phone-portrait .bubble-settings button,#app.phone-portrait .art-tool{min-height:34px;padding:3px 6px;font-size:12px}
+#app.phone-portrait .bubble-setting-group>span{font-size:12px}
+#app.phone-portrait .play-mat{width:100%;min-width:0;max-width:100%;height:100%;min-height:0}
+#app.phone-portrait #scene{width:100%;min-width:0;min-height:0}
+#app.phone-portrait .play-toolbar,#app.phone-portrait .play-navigation{min-width:0;max-width:100%}
+#app.phone-portrait .bubble-tracker{max-height:none}
+.activity-grid{touch-action:pan-x;overscroll-behavior-x:contain}
+@media(max-width:700px) and (orientation:portrait){
+ .activity-grid{grid-auto-columns:calc((100% - var(--card-gap))/2)}
+ .activity-card b{font-size:clamp(18px,4vw,25px)}
+ .activity-card small{font-size:clamp(12px,3vw,15px)}
+}
+@media(min-width:701px) and (orientation:portrait){
+ .activity-grid{grid-auto-columns:calc((100% - 2 * var(--card-gap))/3)}
+}
+@media(min-width:1400px){
+ .activity-grid{grid-auto-columns:calc((100% - 5 * var(--card-gap))/6)}
+}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
 <script>for(const type of ['touchstart','touchmove'])document.addEventListener(type,event=>{if(event.touches.length>1)event.preventDefault();},{passive:false,capture:true});for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});</script>
-<meta name="sana-release" content="sana-little-hands-beta-v40">
+<meta name="sana-release" content="sana-little-hands-beta-v41">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true"><defs>
