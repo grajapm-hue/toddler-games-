@@ -51,7 +51,7 @@
   Object.assign(state,{brushSize:profile().brushSize,erase:false,coverage:[],bubbleMode:profile().bubbleMode,bubbleSet:initial.bubbleSet==='full'||state.age===null?'full':'starter',bubbleHits:new Map(),bubblePops:0,bubbleRecent:[],bubbleEffects:[],bubbleSerial:0,bubbleWidth:1000});
   const bubbleModes={plain:{label:'Plain',items:[]},numbers:{label:'1–20',items:Array.from({length:20},(_,i)=>String(i+1))},letters:{label:'A–Z',items:Array.from({length:26},(_,i)=>String.fromCharCode(65+i))},shapes:{label:'Shapes',items:shapes.map(shape=>shape.id)}};
   const bubbleColors=['#a6d1d3','#e6a6a4','#cfbfdf','#f0d47a','#afd1a2','#f1bd91'];
-  const bubbleSpeeds={slow:36,medium:68,fast:232},bubbleDiameters={small:88,medium:120,large:640};
+  const bubbleSpeeds={slow:72,medium:136,fast:464},bubbleDiameters={small:88,medium:120,large:384};
   state.bubbleSpeed=Object.hasOwn(bubbleSpeeds,initial.bubbleSpeed)?initial.bubbleSpeed:null;
   state.bubbleSize=Object.hasOwn(bubbleDiameters,initial.bubbleSize)?initial.bubbleSize:null;
   const selectedBubbleSpeed=()=>state.bubbleSpeed??profile().bubbleSpeed;
@@ -478,7 +478,7 @@
     document.querySelectorAll('[data-bubble-size]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.bubbleSize===selectedBubbleSize())));
   }
   // Keep touch sizes useful across phone/tablet layouts and fit short play fields.
-  function bubbleRadius(){return Math.max(14,Math.min(392,bubbleDiameters[selectedBubbleSize()]*220/Math.max(1,scene.clientHeight)));}
+  function bubbleRadius(){const desired=bubbleDiameters[selectedBubbleSize()]*220/Math.max(1,scene.clientHeight);return Math.max(14,Math.min(392,desired,selectedBubbleSize()==='large'?state.bubbleWidth*.44:392));}
   // Large bubbles need fewer simultaneous lanes on narrow screens. Keep a full bubble diameter plus a touch-safe gap between lanes.
   function bubbleCapacity(){const diameter=bubbleRadius()*2,gap=Math.max(18,diameter*.12);return Math.max(1,Math.min(profile().bubbleCount,Math.floor((state.bubbleWidth-8+gap)/(diameter+gap))));}
   function syncBubbleSlots(){
@@ -505,7 +505,7 @@
     bubble.token=pool.length?pool[Math.floor(Math.random()*pool.length)]:'';
     bubble.id=++state.bubbleSerial;bubble.color=bubbleColors[Math.floor(Math.random()*bubbleColors.length)];bubble.r=bubbleRadius();
     const lane=state.bubbleWidth/state.bubbles.length;
-    bubble.x=Math.max(bubble.r+4,Math.min(state.bubbleWidth-bubble.r-4,(bubble.slot+.5+(Math.random()-.5)*.3)*lane));
+    bubble.x=Math.max(bubble.r+4,Math.min(state.bubbleWidth-bubble.r-4,(bubble.slot+.5+(Math.random()-.5)*.06)*lane));
     bubble.y=initial?Math.max(bubble.r+5,Math.min(435-bubble.r,135+(bubble.slot%3)*100+Math.random()*12)):440+bubble.r+8;bubble.wait=0;
     const element=document.createElementNS('http://www.w3.org/2000/svg','g');bubble.element=element;
     element.classList.add('bubble');element.dataset.bubble=String(bubble.id);element.dataset.token=bubble.token;element.dataset.color=bubble.color;
