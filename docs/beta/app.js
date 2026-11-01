@@ -51,7 +51,7 @@
   Object.assign(state,{brushSize:profile().brushSize,erase:false,coverage:[],bubbleMode:profile().bubbleMode,bubbleSet:initial.bubbleSet==='full'||state.age===null?'full':'starter',bubbleHits:new Map(),bubblePops:0,bubbleRecent:[],bubbleEffects:[],bubbleSerial:0,bubbleWidth:1000});
   const bubbleModes={plain:{label:'Plain',items:[]},numbers:{label:'1–20',items:Array.from({length:20},(_,i)=>String(i+1))},letters:{label:'A–Z',items:Array.from({length:26},(_,i)=>String.fromCharCode(65+i))},shapes:{label:'Shapes',items:shapes.map(shape=>shape.id)}};
   const bubbleColors=['#a6d1d3','#e6a6a4','#cfbfdf','#f0d47a','#afd1a2','#f1bd91'];
-  const bubbleSpeeds={slow:18,medium:34,fast:58},bubbleDiameters={small:44,medium:60,large:80};
+  const bubbleSpeeds={slow:36,medium:68,fast:232},bubbleDiameters={small:88,medium:120,large:640};
   state.bubbleSpeed=Object.hasOwn(bubbleSpeeds,initial.bubbleSpeed)?initial.bubbleSpeed:null;
   state.bubbleSize=Object.hasOwn(bubbleDiameters,initial.bubbleSize)?initial.bubbleSize:null;
   const selectedBubbleSpeed=()=>state.bubbleSpeed??profile().bubbleSpeed;
@@ -206,10 +206,11 @@
     strip.hidden=state.activity!=='brush';
     if(strip.hidden)return;
     strip.innerHTML=brushPictures.slice(0,brushCount()).map(([name,region],i)=>
-      `<div class="brush-thumb ${i===brushIndex?'current':i<brushIndex?'past':''}" role="listitem" ${i===brushIndex?'aria-current="step"':''} title="${name}"><svg viewBox="250 55 500 345" aria-hidden="true"><g fill="#e8b768" stroke="#45675d" stroke-width="10" stroke-linejoin="round">${region}</g></svg><span>${name[0].toUpperCase()+name.slice(1)}</span></div>`).join('');
+      `<button type="button" class="brush-thumb ${i===brushIndex?'current':i<brushIndex?'past':''}" role="listitem" data-brush-index="${i}" aria-label="Select ${name}" aria-pressed="${i===brushIndex}" ${i===brushIndex?'aria-current="step"':''} title="Select ${name}"><svg viewBox="250 55 500 345" aria-hidden="true"><g fill="#e8b768" stroke="#45675d" stroke-width="10" stroke-linejoin="round">${region}</g></svg><span>${name[0].toUpperCase()+name.slice(1)}</span></button>`).join('');
     const current=strip.querySelector('.current');
     if(current){const x=current.offsetLeft-strip.offsetLeft; if(x<strip.scrollLeft||x+current.offsetWidth>strip.scrollLeft+strip.clientWidth)strip.scrollLeft=Math.max(0,x-strip.clientWidth/3);}
   }
+  $('brush-thumbnails').addEventListener('click',event=>{const button=event.target.closest('[data-brush-index]');if(!button||state.activity!=='brush')return;const index=Number(button.dataset.brushIndex);if(!Number.isInteger(index)||index<0||index>=brushCount())return;clearTimeout(brushTimer);brushIndex=index;resetRound();});
   function brushComplete(message){if(state.done)return;celebrate(message);applause();clearTimeout(brushTimer);brushTimer=setTimeout(()=>{if(state.activity==='brush'){brushIndex=(brushIndex+1)%brushCount();resetRound();}},2100);}
   const artPicture=()=>state.activity==='brush'?brushPicture():({...artPictures[profile().picture],target:profile().paintTarget});
   function pictureArt(outline=false){
@@ -463,20 +464,30 @@
     $('bubble-full-set').hidden=state.age===null;$('bubble-full-set').setAttribute('aria-pressed',String(state.bubbleSet==='full'));
   }
   function fitBubbleField(){
-    const width=Math.max(600,440*scene.clientWidth/Math.max(1,scene.clientHeight));
+    const width=Math.max(320,440*scene.clientWidth/Math.max(1,scene.clientHeight));
     if(Math.abs(width-state.bubbleWidth)>.5){
       const ratio=width/state.bubbleWidth;state.bubbles.forEach(bubble=>{bubble.x*=ratio;});state.bubbleWidth=width;
     }
     if(Math.abs(scene.viewBox.baseVal.width-width)>.5)scene.setAttribute('viewBox',`0 0 ${width.toFixed(1)} 440`);
     const radius=bubbleRadius();
     state.bubbles.forEach(bubble=>{if(bubble.element&&Math.abs(bubble.r-radius)>.1){bubble.r=radius;drawBubble(bubble);positionBubble(bubble);}});
+    syncBubbleSlots();
   }
   function updateBubbleSettings(){
     document.querySelectorAll('[data-bubble-speed]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.bubbleSpeed===selectedBubbleSpeed())));
     document.querySelectorAll('[data-bubble-size]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.bubbleSize===selectedBubbleSize())));
   }
   // Keep touch sizes useful across phone/tablet layouts and fit short play fields.
-  function bubbleRadius(){return Math.max(14,Math.min(196,bubbleDiameters[selectedBubbleSize()]*220/Math.max(1,scene.clientHeight)));}
+  function bubbleRadius(){return Math.max(14,Math.min(392,bubbleDiameters[selectedBubbleSize()]*220/Math.max(1,scene.clientHeight)));}
+  // Large bubbles need fewer simultaneous lanes on narrow screens. Keep a full bubble diameter plus a touch-safe gap between lanes.
+  function bubbleCapacity(){const diameter=bubbleRadius()*2,gap=Math.max(18,diameter*.12);return Math.max(1,Math.min(profile().bubbleCount,Math.floor((state.bubbleWidth-8+gap)/(diameter+gap))));}
+  function syncBubbleSlots(){
+    const layer=$('bubble-layer');if(!layer||!state.bubbles)return;
+    const count=bubbleCapacity();
+    while(state.bubbles.length>count){const bubble=state.bubbles.pop();bubble.element?.remove();}
+    while(state.bubbles.length<count){const bubble={slot:state.bubbles.length,element:null};state.bubbles.push(bubble);spawnBubble(bubble);}
+    state.bubbles.forEach((bubble,index)=>{bubble.slot=index;});
+  }
   function positionBubble(bubble){
     if(!bubble.element)return;
     bubble.x=Math.max(bubble.r+4,Math.min(state.bubbleWidth-bubble.r-4,bubble.x));
@@ -510,7 +521,7 @@
     state.bubbleHits=new Map();state.bubblePops=0;state.bubbleRecent=[];state.bubbleEffects=[];
     state.bubbles=[];bubbleTracker();fitBubbleField();
     scene.innerHTML='<g id="bubble-layer"></g><g id="splash-layer" pointer-events="none"></g>';scene.setAttribute('aria-label','Rising bubbles');
-    state.bubbles=Array.from({length:profile().bubbleCount},(_,slot)=>({slot,element:null}));
+    state.bubbles=Array.from({length:bubbleCapacity()},(_,slot)=>({slot,element:null}));
     state.bubbles.forEach(bubble=>spawnBubble(bubble,true));progress(0,0);bubbleFrame=requestAnimationFrame(bubbleTick);
   }
   function bubbleTick(now){

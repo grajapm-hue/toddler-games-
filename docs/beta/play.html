@@ -97,14 +97,14 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 /* Compact drawing previews, displayed only for Brush & Paint. */
 .brush-thumbnails:not([hidden]){display:flex;align-items:center;gap:5px;flex:0 0 auto;min-height:42px;max-height:50px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;touch-action:pan-x;background:#fff2d9;border-bottom:2px solid #b8976b;padding:3px 7px}
 .brush-thumbnails[hidden]{display:none!important}
-.brush-thumb{display:flex;flex:0 0 auto;align-items:center;justify-content:center;gap:4px;padding:2px 5px;border:1.5px solid #bea67d;border-radius:8px;background:#fffaf0;color:#254c40;font-weight:800;font-size:11px;min-width:58px;max-height:40px;white-space:nowrap}
+.brush-thumb{appearance:none;-webkit-appearance:none;font-family:inherit;cursor:pointer;display:flex;flex:0 0 auto;align-items:center;justify-content:center;gap:4px;padding:2px 5px;border:1.5px solid #bea67d;border-radius:8px;background:#fffaf0;color:#254c40;font-weight:800;font-size:11px;min-width:58px;max-height:40px;white-space:nowrap}
 .brush-thumb svg{width:30px;height:30px;flex:0 0 auto;overflow:visible}
 .brush-thumb.current{border:3px solid #2d725c;background:#d5f2e3}
 .brush-thumb.past{background:#e5e4df;color:#617269}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
 <script>for(const type of ['touchstart','touchmove'])document.addEventListener(type,event=>{if(event.touches.length>1)event.preventDefault();},{passive:false,capture:true});for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});</script>
-<meta name="sana-release" content="sana-little-hands-beta-v60">
+<meta name="sana-release" content="sana-little-hands-beta-v65">
 <style>
 #music-toggle{font-size:25px;font-weight:900;color:#183f37;background:#d6c4fa}
 #music-toggle[aria-pressed="true"]{background:#bce8c8}
@@ -117,7 +117,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 /* Compact drawing previews, displayed only for Brush & Paint. */
 .brush-thumbnails:not([hidden]){display:flex;align-items:center;gap:5px;flex:0 0 auto;min-height:42px;max-height:50px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;touch-action:pan-x;background:#fff2d9;border-bottom:2px solid #b8976b;padding:3px 7px}
 .brush-thumbnails[hidden]{display:none!important}
-.brush-thumb{display:flex;flex:0 0 auto;align-items:center;justify-content:center;gap:4px;padding:2px 5px;border:1.5px solid #bea67d;border-radius:8px;background:#fffaf0;color:#254c40;font-weight:800;font-size:11px;min-width:58px;max-height:40px;white-space:nowrap}
+.brush-thumb{appearance:none;-webkit-appearance:none;font-family:inherit;cursor:pointer;display:flex;flex:0 0 auto;align-items:center;justify-content:center;gap:4px;padding:2px 5px;border:1.5px solid #bea67d;border-radius:8px;background:#fffaf0;color:#254c40;font-weight:800;font-size:11px;min-width:58px;max-height:40px;white-space:nowrap}
 .brush-thumb svg{width:30px;height:30px;flex:0 0 auto;overflow:visible}
 .brush-thumb.current{border:3px solid #2d725c;background:#d5f2e3}
 .brush-thumb.past{background:#e5e4df;color:#617269}
@@ -158,7 +158,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 </main>
 <main id="activity-view" hidden>
   <span id="step-note" hidden></span>
-  <div class="bubble-settings" id="bubble-settings" hidden><div class="bubble-setting-group" role="group" aria-label="Bubble speed"><span>Speed</span><button type="button" data-bubble-speed="slow" aria-label="Slow bubble speed" aria-pressed="false">Slow</button><button type="button" data-bubble-speed="medium" aria-label="Medium bubble speed" aria-pressed="true">Medium</button><button type="button" data-bubble-speed="fast" aria-label="Fast bubble speed" aria-pressed="false">Fast</button></div><div class="bubble-setting-group" role="group" aria-label="Bubble size"><span>Size</span><button type="button" data-bubble-size="small" aria-label="Small bubbles" aria-pressed="false">Small</button><button type="button" data-bubble-size="medium" aria-label="Medium bubbles" aria-pressed="true">Medium</button><button type="button" data-bubble-size="large" aria-label="Large bubbles" aria-pressed="false">Large</button></div><button type="button" class="mode-button" id="bubble-full-set" aria-label="Full bubble collection" aria-pressed="false" hidden>Full set</button></div>
+  <div class="bubble-settings" id="bubble-settings" hidden><div class="bubble-setting-group" role="group" aria-label="Bubble speed"><span>Speed</span><button type="button" data-bubble-speed="slow" aria-label="Slow bubble speed" aria-pressed="false">Slow</button><button type="button" data-bubble-speed="medium" aria-label="Medium bubble speed" aria-pressed="true">Medium</button><button type="button" data-bubble-speed="fast" aria-label="High bubble speed" aria-pressed="false">High</button></div><div class="bubble-setting-group" role="group" aria-label="Bubble size"><span>Size</span><button type="button" data-bubble-size="small" aria-label="Small bubbles" aria-pressed="false">Small</button><button type="button" data-bubble-size="medium" aria-label="Medium bubbles" aria-pressed="true">Medium</button><button type="button" data-bubble-size="large" aria-label="Large bubbles" aria-pressed="false">Large</button></div><button type="button" class="mode-button" id="bubble-full-set" aria-label="Full bubble collection" aria-pressed="false" hidden>Full set</button></div>
   <div class="art-tools" id="art-tools" hidden><div class="brush-sizes" role="group" aria-label="Brush size"><span class="paint-label">Brush</span><button class="art-tool" type="button" data-brush-size="small" aria-label="Small brush" aria-pressed="false">Small</button><button class="art-tool" type="button" data-brush-size="medium" aria-label="Medium brush" aria-pressed="true">Medium</button><button class="art-tool" type="button" data-brush-size="large" aria-label="Large brush" aria-pressed="false">Large</button></div><div class="paint-tools" id="paint-tools" hidden><span class="paint-label">Color</span><button class="art-tool" type="button" id="erase-paint" aria-label="Erase paint" aria-pressed="false">Eraser</button></div></div>
   <div class="play-mat"><div class="play-toolbar"><div id="game-results" aria-label="Game results" aria-live="polite"><h1 id="activity-name">Shape picnic</h1><span id="result-score"></span><span class="bubble-score" id="bubble-score" hidden></span></div><div id="play-options" aria-label="Sub-levels"><div class="levels" id="play-levels" role="group" aria-label="Difficulty level">
     <button class="level" type="button" data-level="1" aria-label="Easy level" aria-pressed="false">Easy<small>little steps</small></button>
