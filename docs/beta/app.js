@@ -47,7 +47,7 @@
   if(!hasAgeSettings)ageSettings.common={level:saved.level,bubbleSpeed:saved.bubbleSpeed,bubbleSize:saved.bubbleSize,bubbleSet:'full'};
   const preferences=()=>ageSettings[ageProfiles.getAge()??'common']??{};
   const initial=preferences();
-  const state={age:ageProfiles.getAge(),level:1,activity:null,done:false,pointer:null,selected:null,paintMode:false,paintColor:colors[0],strokes:[],shapes:[],bubbles:[],sliders:[],dirt:[],sound:saved.sound===true};
+  const state={age:ageProfiles.getAge(),level:1,activity:null,done:false,pointer:null,selected:null,paintMode:false,paintColor:colors[0],strokes:[],shapes:[],bubbles:[],sliders:[],slideIndex:0,slideRevealed:false,dirt:[],sound:saved.sound===true};
   Object.assign(state,{brushSize:profile().brushSize,erase:false,coverage:[],bubbleMode:profile().bubbleMode,bubbleSet:initial.bubbleSet==='full'||state.age===null?'full':'starter',bubbleHits:new Map(),bubblePops:0,bubbleRecent:[],bubbleEffects:[],bubbleSerial:0,bubbleWidth:1000});
   const bubbleModes={plain:{label:'Plain',items:[]},numbers:{label:'1–20',items:Array.from({length:20},(_,i)=>String(i+1))},letters:{label:'A–Z',items:Array.from({length:26},(_,i)=>String.fromCharCode(65+i))},shapes:{label:'Shapes',items:shapes.map(shape=>shape.id)}};
   const bubbleColors=['#a6d1d3','#e6a6a4','#cfbfdf','#f0d47a','#afd1a2','#f1bd91'];
@@ -135,6 +135,11 @@
       default:return polygon(6);
     }
   }
+  // Shared glossy finish: used by every shape illustration (Drag and Bubble Garden).
+  // The geometry stays in primitive(), so hit testing and matching are unchanged.
+  const shapeById=id=>shapes.find(item=>item.id===id);
+  const glossyShape=(id,fill,scale=1)=>`<g transform="scale(${scale})" filter="url(#sanaShapeShadow)">${primitive(id,fill,'#274b44')}<g opacity=".52">${primitive(id,'url(#sanaShapeSheen)','none')}</g></g>`;
+  const shapeEffects=`<defs><linearGradient id="sanaShapeSheen" x1="0" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".67"/><stop offset=".45" stop-color="#fff" stop-opacity=".06"/><stop offset="1" stop-color="#152a24" stop-opacity=".2"/></linearGradient><filter id="sanaShapeShadow" x="-40%" y="-40%" width="180%" height="190%"><feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#38261b" flood-opacity=".3"/></filter></defs>`;
   const face=(x=0,y=0)=>`<g transform="translate(${x} ${y})" fill="#29463e"><ellipse cx="-16" cy="-4" rx="3.5" ry="5"/><ellipse cx="16" cy="-4" rx="3.5" ry="5"/><path d="M-9 12Q0 22 10 12" fill="none" stroke="#29463e" stroke-width="3.5" stroke-linecap="round"/></g>`;
   function friend(kind,x,y,scale=1){
     let art;
@@ -171,9 +176,44 @@
       details:'<path d="M488 98Q455 55 443 79M512 98Q545 55 557 79" fill="none"/><circle cx="375" cy="165" r="30"/><circle cx="625" cy="165" r="30"/><circle cx="400" cy="315" r="23"/><circle cx="600" cy="315" r="23"/><path d="M425 188L452 214M575 188L548 214M435 290L459 269M565 290L541 269" fill="none"/><circle cx="491" cy="112" r="4" fill="#30473b" stroke="none"/><circle cx="509" cy="112" r="4" fill="#30473b" stroke="none"/><path d="M490 125Q500 135 510 125M486 175H514M479 222H521M484 270H516" fill="none"/>',
       dirt:[[355,145],[405,165],[445,205],[645,145],[595,165],[555,205],[380,300],[420,330],[460,285],[620,300],[580,330],[540,285],[500,155],[500,245]]}
   };
-  const artPicture=()=>({...artPictures[profile().picture],target:profile().paintTarget});
+
+  // Cumulative picture rooms for parental age selection.
+  const brushLimits={2:4,3:8,4:12,5:16};
+  const brushPictures=[
+    ['apple','<path d="M500 130C400 60 310 125 340 260C360 360 440 390 500 345C565 390 645 350 660 260C685 125 590 60 500 130Z"/>'],
+    ['sun','<circle cx="500" cy="225" r="125"/>'],
+    ['fish','<path d="M350 220L270 130V310Z"/><ellipse cx="520" cy="220" rx="180" ry="112"/>'],
+    ['heart','<path d="M500 366C420 300 330 245 343 162C357 78 454 82 500 155C548 78 644 83 658 162C672 245 580 307 500 366Z"/>'],
+    ['star','<polygon points="500,70 553,174 671,190 585,276 606,389 500,336 394,389 415,276 329,190 447,174"/>'],
+    ['flower','<circle cx="500" cy="222" r="52"/><circle cx="500" cy="124" r="58"/><circle cx="590" cy="188" r="58"/><circle cx="557" cy="298" r="58"/><circle cx="443" cy="298" r="58"/><circle cx="410" cy="188" r="58"/>'],
+    ['butterfly','<path d="M488 220C401 78 298 92 325 208C340 270 418 260 488 245Z"/><path d="M512 220C599 78 702 92 675 208C660 270 582 260 512 245Z"/><path d="M489 246C401 230 344 286 380 351C424 398 477 335 493 273Z"/><path d="M511 246C599 230 656 286 620 351C576 398 523 335 507 273Z"/><ellipse cx="500" cy="232" rx="21" ry="106"/>'],
+    ['house','<path d="M325 213L500 70L675 213V380H325Z"/><rect x="462" y="265" width="76" height="115"/>'],
+    ['car','<path d="M318 251L375 168H620L681 251V322H318Z"/><circle cx="400" cy="326" r="40"/><circle cx="600" cy="326" r="40"/>'],
+    ['tree','<rect x="471" y="250" width="58" height="140"/><circle cx="436" cy="215" r="82"/><circle cx="562" cy="215" r="82"/><circle cx="500" cy="140" r="85"/>'],
+    ['moon','<path d="M565 78A156 156 0 1 0 565 370A130 130 0 0 1 565 78Z"/>'],
+    ['boat','<path d="M305 282H695L622 369H382Z"/><path d="M491 94V280H365Z"/><path d="M513 110L643 280H513Z"/>'],
+    ['rocket','<path d="M500 70C430 143 432 258 458 332H542C568 258 570 143 500 70Z"/><path d="M458 259L401 339L462 320M542 259L599 339L538 320"/><circle cx="500" cy="198" r="34"/>'],
+    ['balloon','<ellipse cx="500" cy="180" rx="118" ry="125"/><path d="M481 300H519L500 329Z"/><path d="M500 329Q445 359 500 393"/>'],
+    ['cat','<path d="M366 179L378 76L453 132Q500 105 547 132L622 76L634 179Q688 305 598 349Q500 395 402 349Q312 305 366 179Z"/>'],
+    ['crown','<path d="M322 150L397 239L500 98L603 239L678 150L647 350H353Z"/>']
+  ];
+  let brushIndex=0,brushAge=null,brushTimer=null;
+  const brushCount=()=>brushLimits[state.age]||16;
+  const brushPicture=()=>{const [name,region]=brushPictures[brushIndex%brushCount()];return {name,region,target:.97,dirt:[[420,155],[520,155],[600,185],[390,245],[500,240],[600,275],[450,320],[560,330]]};};
+  function updateBrushThumbnails(){
+    const strip=$('brush-thumbnails');
+    if(!strip)return;
+    strip.hidden=state.activity!=='brush';
+    if(strip.hidden)return;
+    strip.innerHTML=brushPictures.slice(0,brushCount()).map(([name,region],i)=>
+      `<div class="brush-thumb ${i===brushIndex?'current':i<brushIndex?'past':''}" role="listitem" ${i===brushIndex?'aria-current="step"':''} title="${name}"><svg viewBox="250 55 500 345" aria-hidden="true"><g fill="#e8b768" stroke="#45675d" stroke-width="10" stroke-linejoin="round">${region}</g></svg><span>${name[0].toUpperCase()+name.slice(1)}</span></div>`).join('');
+    const current=strip.querySelector('.current');
+    if(current){const x=current.offsetLeft-strip.offsetLeft; if(x<strip.scrollLeft||x+current.offsetWidth>strip.scrollLeft+strip.clientWidth)strip.scrollLeft=Math.max(0,x-strip.clientWidth/3);}
+  }
+  function brushComplete(message){if(state.done)return;celebrate(message);applause();clearTimeout(brushTimer);brushTimer=setTimeout(()=>{if(state.activity==='brush'){brushIndex=(brushIndex+1)%brushCount();resetRound();}},2100);}
+  const artPicture=()=>state.activity==='brush'?brushPicture():({...artPictures[profile().picture],target:profile().paintTarget});
   function pictureArt(outline=false){
-    const picture=artPicture();if(picture.name==='puppy')return puppy(outline);
+    const picture=artPicture();if(state.activity==='brush')return `<g stroke="#536b5b" stroke-width="5" stroke-linejoin="round" fill="${outline?'none':'#f6e4bf'}">${picture.region}</g>`;if(picture.name==='puppy')return puppy(outline);
     return `<g stroke="#5c6555" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><g fill="${outline?'none':picture.color}">${picture.region}</g><g fill="${outline?'none':'#f6d789'}">${picture.details}</g></g>`;
   }
   function preview(id){
@@ -263,7 +303,7 @@
   function setLevel(level,reset=true){cancelGesture();const changed=state.level!==level;state.level=level;if(changed)state.brushSize=profile().brushSize;levelControls();save();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');if(reset&&state.activity)resetRound();else if(reset)hint(level===2?'Medium level: choose a picture and play together!':level===1?'Easy level: fewer, bigger things to try.':'Challenge level: a few more things to discover.');}
   function startActivity(id,paintMode=false){closeAgeMenu();$('game-mid-controls').append($('sound'),$('music-toggle'),$('fullscreen'));state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
   function resetRound(){
-    stopBubbles();cancelGesture();clearEffects();state.done=false;state.selected=null;state.strokes=[];
+    clearTimeout(slideAdvanceTimer);clearTimeout(brushTimer);$('art-reward').hidden=true;stopBubbles();cancelGesture();clearEffects();state.done=false;state.selected=null;state.strokes=[];
     $('play-levels').hidden=true;$('abacus-stage').hidden=state.activity!=='abacus';
     $('bubble-score').hidden=state.activity!=='bubbles';
     $('bubble-modes').hidden=state.activity!=='bubbles';$('bubble-tracker').hidden=state.activity!=='bubbles';$('step-note').hidden=true;
@@ -273,7 +313,8 @@
     $('art-tools').hidden=state.activity!=='brush';
     state.erase=false;updateArtTools();
     scene.setAttribute('aria-label','Play area');
-    if(state.activity==='brush')$('activity-name').textContent=`Little art studio · ${artPicture().name[0].toUpperCase()+artPicture().name.slice(1)}`;
+    if(state.activity==='brush'){if(brushAge!==state.age){brushAge=state.age;brushIndex=0;}$('activity-name').textContent=`Little art studio · ${artPicture().name[0].toUpperCase()+artPicture().name.slice(1)} · ${brushIndex+1}/${brushCount()}`;}
+    updateBrushThumbnails();
     $('clean-mode').setAttribute('aria-pressed',String(!state.paintMode));$('paint-mode').setAttribute('aria-pressed',String(state.paintMode));
     scene.style.background='#D8B98E';
     if(state.activity==='abacus'){state.abacusRows=abacusColors.map(()=>Array(10).fill(false));state.abacusSelectedRow=0;renderAbacus();}
@@ -291,8 +332,7 @@
     }else if(state.activity==='bubbles'){
       renderBubbles();
     }else if(state.activity==='slide'){
-      const count=profile().sliderCount,w=count===1?400:count===2?278:232,gap=count===1?0:count===2?55:35,total=count*w+(count-1)*gap,left=(1000-total)/2;
-      state.sliders=Array.from({length:count},(_,i)=>({id:i,x:left+i*(w+gap),y:42,w,h:270,value:0,friend:['fox','owl','frog'][i]}));renderSlide();
+      clearTimeout(slideAdvanceTimer);state.slideIndex=0;state.slideRevealed=false;state.sliders=[];renderSlide();
     }else if(state.paintMode){renderPaint();}else{
       const points=artPicture().dirt;
       state.dirt=points.map(([x,y],i)=>({id:i,x,y,r:state.level===3?22:29,health:profile().dirtHealth,max:profile().dirtHealth}));renderClean();
@@ -369,18 +409,22 @@
       const inBatch=state.shapes.some(item=>item.id===shape.id);
       return `<g transform="translate(${x} 37)" opacity="${active?1:.34}" aria-label="${shape.id}">
         ${inBatch?'<rect x="-23" y="-27" width="46" height="51" rx="8" fill="#fff5da" stroke="#93784f" stroke-width="2"/>':''}
-        <g transform="scale(.28)">${primitive(shape.id,shape.color)}</g>
+        <g transform="scale(.28)">${glossyShape(shape.id,shape.color)}</g>
         <title>${shape.id}</title></g>`;
     }).join('');
-    const board=`<rect x="4" y="77" width="992" height="360" rx="15" fill="none" stroke="#c4a67d" stroke-width="2"/>
-      <path d="M500 101V424" stroke="#d3dfcd" stroke-width="3" stroke-dasharray="8 13"/>
-      <path d="M466 260H530M516 248L530 260L516 272" stroke="#bdcdb7" stroke-width="5" fill="none" stroke-linecap="round"/>`;
-    scene.innerHTML=`<rect x="0" y="0" width="1000" height="76" fill="#f7e9d2"/>${thumbnails}${board}`+
+    const board=`${shapeEffects}
+      <defs><linearGradient id="sanaWood" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#c9863e"/><stop offset=".55" stop-color="#aa642d"/><stop offset="1" stop-color="#8f4d22"/></linearGradient></defs>
+      <rect x="4" y="77" width="992" height="360" rx="18" fill="#6c3c1f" stroke="#f3d49b" stroke-width="5"/>
+      <rect x="12" y="85" width="976" height="344" rx="13" fill="url(#sanaWood)"/>
+      <path d="M12 253H988" stroke="#71401f" stroke-width="7" opacity=".65"/>
+      <path d="M500 105V419" stroke="#ffe2aa" stroke-width="3" stroke-dasharray="8 13" opacity=".75"/>
+      <path d="M466 260H530M516 248L530 260L516 272" stroke="#fff0c8" stroke-width="5" fill="none" stroke-linecap="round"/>`;
+    scene.innerHTML=`<rect x="0" y="0" width="1000" height="76" fill="#f7e9d2"/>${board}${thumbnails}`+
       state.shapes.filter(shape=>!shape.placed).map(shape=>`<g class="target" data-target="${shape.id}" transform="translate(${shape.tx} ${shape.ty})" role="button" tabindex="0" aria-label="${shape.id} shadow">
-      <g opacity=".7">${primitive(shape.id,'#fbfcf2','#b3c6ae')}</g>
-      <text y="77" text-anchor="middle" fill="#536d57" font-size="17" font-family="inherit">${shape.id}</text></g>`).join('')+
+      <g>${primitive(shape.id,'#271d19',shape.color)}</g>
+      <text y="86" text-anchor="middle" fill="#163d33" font-size="28" font-weight="900" paint-order="stroke" stroke="#fff9e8" stroke-width="4" font-family="inherit">${shape.id.toUpperCase()}</text></g>`).join('')+
       state.shapes.filter(shape=>!shape.placed).map(shape=>`<g data-piece="${shape.id}" role="button" tabindex="0" aria-label="${shape.id} shape" class="piece ${state.selected===shape.id?'selected':''}" transform="translate(${shape.x} ${shape.y})">
-      ${primitive(shape.id,shape.color)}${face(0,shape.id==='triangle'?12:0)}</g>`).join('');
+      ${glossyShape(shape.id,shape.color)}</g>`).join('');
     progress(shapeCompleted+done,pool.length);
   }
   function matchShape(id){
@@ -411,7 +455,7 @@
     $('bubble-score').textContent=state.bubbleMode==='plain'?`Popped ${state.bubblePops}`:`${mode.label} · ${state.bubbleHits.size}/${mode.items.length}`;
     $('bubble-targets').innerHTML=mode.items.length?mode.items.map(token=>{
       const color=state.bubbleHits.get(token);
-      const content=state.bubbleMode==='shapes'?`<svg viewBox="-68 -68 136 136" aria-hidden="true">${primitive(token,'none')}</svg>`:token;
+      const content=state.bubbleMode==='shapes'?`<svg viewBox="-68 -68 136 136" aria-hidden="true">${shapeEffects}${glossyShape(token,shapeById(token)?.color||'#ffcf64')}</svg>`:token;
       return `<span class="bubble-target" role="listitem" data-bubble-target="${token}" data-collected="${!!color}" style="${color?`background-color:${color}`:''}" aria-label="${token}${color?' popped':' not popped'}">${content}</span>`;
     }).join(''):state.bubbleRecent.map(color=>`<i class="pop-dot" style="background:${color}" aria-hidden="true"></i>`).join('');
     document.querySelectorAll('[data-bubble-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.bubbleMode===state.bubbleMode)));
@@ -459,8 +503,8 @@
     $('bubble-layer').appendChild(element);positionBubble(bubble);
   }
   function drawBubble(bubble){
-    const content=state.bubbleMode==='plain'?`<g transform="scale(${bubble.r/68})">${face(0,8)}</g>`:state.bubbleMode==='shapes'?`<g transform="scale(${bubble.r/95})">${primitive(bubble.token,'none','#29463e')}</g>`:`<text text-anchor="middle" dominant-baseline="central" font-family="inherit" font-size="${bubble.r*(bubble.token.length===2?.9:1.1)}" font-weight="900" fill="#29463e">${bubble.token}</text>`;
-    bubble.element.innerHTML=`<circle r="${bubble.r}" fill="${bubble.color}" stroke="#fffdf3" stroke-width="${bubble.r*.07}"/><circle r="${bubble.r*.83}" fill="none" stroke="white" stroke-opacity=".35" stroke-width="${bubble.r*.04}"/><path d="M${-bubble.r*.56} ${-bubble.r*.38}Q${-bubble.r*.45} ${-bubble.r*.72} ${-bubble.r*.1} ${-bubble.r*.74}" fill="none" stroke="white" stroke-width="${bubble.r*.1}" stroke-linecap="round" opacity=".8"/>${content}`;
+    const content=state.bubbleMode==='plain'?`<g transform="scale(${bubble.r/68})">${face(0,8)}</g>`:state.bubbleMode==='shapes'?`<g transform="scale(${bubble.r/95})">${shapeEffects}${glossyShape(bubble.token,shapeById(bubble.token)?.color||'#ffcf64')}</g>`:`<text text-anchor="middle" dominant-baseline="central" font-family="inherit" font-size="${bubble.r*(bubble.token.length===2?.9:1.1)}" font-weight="900" fill="#29463e">${bubble.token}</text>`;
+    bubble.element.innerHTML=`<circle r="${bubble.r}" fill="${bubble.color}" stroke="#fffdf3" stroke-width="${bubble.r*.07}"/><circle r="${bubble.r*.83}" fill="none" stroke="white" stroke-opacity=".35" stroke-width="${bubble.r*.04}"/>${content}`;
   }
   function renderBubbles(){
     state.bubbleHits=new Map();state.bubblePops=0;state.bubbleRecent=[];state.bubbleEffects=[];
@@ -504,21 +548,61 @@
     }else if(!state.done)hint(`Splash! ${bubble.token} is now the same color above. Keep looking!`);
   }
 
+  // Slide Cave: one full-size door at a time; the age is a parent-selected level, not a restriction.
+  const slideObjects=[
+    ['Apple','🍎'],['Star','⭐'],['Car','🚙'],['Puppy','🐶'],
+    ['Fox','🦊'],['Sun','☀️'],['Heart','❤️'],['Tree','🌳'],
+    ['Butterfly','🦋'],['Moon','🌙'],['Strawberry','🍓'],['Elephant','🐘'],
+    ['Panda','🐼'],['Pizza','🍕'],['Rocket','🚀'],['Flower','🌸']
+  ];
+  const slideLimits={2:4,3:8,4:12,5:16};
+  let slideAdvanceTimer=0;
+  const slideTotal=()=>slideLimits[state.age]||16;
+  let slideDoorAnimating=false;
   function renderSlide(){
-    scene.innerHTML=`<defs>${state.sliders.map(s=>`<clipPath id="window${s.id}"><rect x="${s.x+6}" y="${s.y+6}" width="${s.w-12}" height="${s.h-12}" rx="20"/></clipPath>`).join('')}</defs>`+state.sliders.map(s=>`<g><rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" rx="25" fill="#fffaf0" stroke="#b5cbb9" stroke-width="5"/><g clip-path="url(#window${s.id})"><rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" fill="${['#f2e7c9','#e0e5ef','#d9ead8'][s.id]}"/>${friend(s.friend,s.x+s.w/2,s.y+s.h*.54,Math.min(1.25,s.w/220))}<rect data-curtain="${s.id}" x="${s.x+s.value*s.w}" y="${s.y}" width="${(1-s.value)*s.w}" height="${s.h}" fill="#8cb8be"/><path data-curtain-pattern="${s.id}" d="M${s.x+s.value*s.w+20} ${s.y+10}V${s.y+s.h-10}" stroke="#b5d2d2" stroke-width="10" opacity=".5"/></g><line data-slider-track="${s.id}" x1="${s.x+25}" y1="${s.y+s.h+53}" x2="${s.x+s.w-25}" y2="${s.y+s.h+53}" stroke="#c6d3c1" stroke-width="14" stroke-linecap="round"/><g class="slider-handle" data-slider-handle="${s.id}" transform="translate(${s.x+25+s.value*(s.w-50)} ${s.y+s.h+53})" role="slider" tabindex="0" aria-label="Reveal ${s.friend}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(s.value*100)}"><circle r="29" fill="#f3ce67" stroke="#bc9d49" stroke-width="3"/>${face(0,-1)}<path d="M-12 17H12" stroke="#bd9d43" stroke-width="2"/></g></g>`).join('');
-    progress(state.sliders.filter(s=>s.value===1).length,state.sliders.length);
+    if(state.activity!=='slide')return;
+    const item=slideObjects[state.slideIndex],opened=state.slideRevealed;
+    scene.setAttribute('aria-label',`Cave door ${state.slideIndex+1} of ${slideTotal()}: ${item[0]}`);
+    scene.innerHTML=`<defs><linearGradient id="caveDoor" x2="1" y2="1"><stop stop-color="#e7a94c"/><stop offset=".5" stop-color="#a85a24"/><stop offset="1" stop-color="#75421f"/></linearGradient><radialGradient id="glassKnob" cx=".25" cy=".2" r=".8"><stop stop-color="#fff"/><stop offset=".3" stop-color="#9de9ff"/><stop offset=".7" stop-color="#478cda"/><stop offset="1" stop-color="#284777"/></radialGradient></defs>
+      <image href="slide-cave.jpg" x="0" y="0" width="1000" height="440" preserveAspectRatio="xMidYMid slice"/>
+      <rect x="10" y="8" width="980" height="425" rx="25" fill="#1d1a27" opacity=".20"/>
+      <rect x="205" y="22" width="590" height="386" rx="165" fill="#35203c" stroke="#f4cf77" stroke-width="14"/>
+      <rect x="232" y="42" width="536" height="344" rx="145" fill="#050505" stroke="#d7a657" stroke-width="7"/>
+      <g aria-label="${item[0]}" role="img"><text x="500" y="238" font-size="145" text-anchor="middle">${item[1]}</text><text x="500" y="330" font-size="46" font-weight="900" text-anchor="middle" fill="#ffffff" stroke="#101010" stroke-width="1">${item[0]}</text></g>
+      <g data-cave-door="1" transform="translate(${opened?720:0} 0) scale(${opened?.34:1} 1)" >
+        <rect x="205" y="22" width="590" height="386" rx="165" fill="url(#caveDoor)" stroke="#f8d38c" stroke-width="13"/>
+        ${Array.from({length:6},(_,i)=>`<path d="M${250+i*90} 75V375" stroke="#7a401d" stroke-width="9" opacity=".55"/>`).join('')}
+        <circle cx="715" cy="345" r="24" fill="url(#glassKnob)" stroke="#f5d992" stroke-width="6"/>
+        <text x="500" y="162" font-size="38" font-weight="900" text-anchor="middle" fill="#fff5d7">SLIDE TO OPEN</text>
+      </g>
+      <rect data-slide-swipe="1" x="150" y="16" width="840" height="395" fill="transparent" role="button" tabindex="0" aria-label="${opened?'Slide door closed to continue':'Slide door open to reveal '+item[0]}"/>
+      <rect x="250" y="365" width="500" height="62" rx="26" fill="#fff6df" stroke="#9c7140" stroke-width="3" pointer-events="none"/>
+      <text x="500" y="407" text-anchor="middle" font-size="27" font-weight="900" fill="#214b3e" pointer-events="none">${opened?'Door OPEN · Slide left to close ←':'Door CLOSED · Slide right to open →'}</text>`;
+    progress(state.slideIndex+(opened?1:0),slideTotal());
+    $('activity-name').textContent=`Cave Maze · Room ${state.slideIndex+1}/${slideTotal()}`;
+    if(opened)hint(`SaNa says: ${item[0].toUpperCase()}! Slide the door closed for the next picture.`);
+    else hint(`Room ${state.slideIndex+1} of ${slideTotal()}. Slide the big door to discover a picture!`);
   }
-  function slideTo(slider,x){
-    const value=Math.max(0,Math.min(1,(x-slider.x-25)/(slider.w-50)));
-    slider.value=value>.92?1:value;
-    const curtain=scene.querySelector(`[data-curtain="${slider.id}"]`),pattern=scene.querySelector(`[data-curtain-pattern="${slider.id}"]`),handle=scene.querySelector(`[data-slider-handle="${slider.id}"]`);
-    curtain.setAttribute('x',slider.x+slider.value*slider.w);curtain.setAttribute('width',(1-slider.value)*slider.w);pattern.style.opacity=slider.value===1?'0':'.5';
-    pattern.setAttribute('d',`M${slider.x+slider.value*slider.w+20} ${slider.y+10}V${slider.y+slider.h-10}`);
-    handle.setAttribute('transform',`translate(${slider.x+25+slider.value*(slider.w-50)} ${slider.y+slider.h+53})`);handle.setAttribute('aria-valuenow',Math.round(slider.value*100));
-    progress(state.sliders.filter(s=>s.value===1).length,state.sliders.length);
-    if(state.sliders.every(s=>s.value===1)&&!state.done)celebrate('You found our friends! Peek-a-boo, little one.');
-    else if(state.sliders.some(s=>s.value<1)&&state.done){state.done=false;hint('Peek-a-boo! Slide the sunny handles to find our friends again.');}
+  function moveCaveDoor(open){
+    if(state.activity!=='slide'||slideDoorAnimating||state.slideRevealed===open)return;
+    const door=scene.querySelector('[data-cave-door]');
+    if(!door)return;
+    slideDoorAnimating=true;
+    // Animate in place; do not rebuild the image or door during the gesture.
+    door.style.transition='transform 360ms ease-in-out';
+    door.setAttribute('transform',open?'translate(720 0) scale(.34 1)':'translate(0 0) scale(1 1)');
+    window.setTimeout(()=>{
+      slideDoorAnimating=false;
+      if(state.activity!=='slide')return;
+      state.slideRevealed=open;
+      if(!open)state.slideIndex=(state.slideIndex+1)%slideTotal();
+      renderSlide();tone(open?660:480,true);
+    },380);
   }
+  function revealSlide(){moveCaveDoor(true);}
+  function closeSlide(){moveCaveDoor(false);}
+  function toggleSlide(){if(state.slideRevealed)closeSlide();else revealSlide();}
+  function slideTo(slider,x){toggleSlide();}
   function renderClean(){
     scene.setAttribute('aria-label',`Clean the ${artPicture().name}`);
     scene.innerHTML=`<ellipse cx="511" cy="395" rx="229" ry="15" fill="#e2d5bc"/>${pictureArt()}<g id="dirt-layer">${state.dirt.filter(d=>d.health>0).map(d=>`<g data-dirt="${d.id}" opacity="${.68*d.health/d.max}"><path d="M${d.x-d.r} ${d.y}q-5 ${-d.r} ${d.r} ${-d.r*.8}q${d.r} ${-d.r*.4} ${d.r} ${d.r*.8}q8 ${d.r} ${-d.r} ${d.r*.8}q${-d.r} ${d.r*.5} ${-d.r} ${-d.r*.8}" fill="#92785d"/><circle cx="${d.x-6}" cy="${d.y-4}" r="4" fill="#77654f"/></g>`).join('')}</g>`;
@@ -526,9 +610,9 @@
   }
   function renderPaint(){
     scene.setAttribute('aria-label',`Paint the ${artPicture().name}`);
-    scene.innerHTML=`<defs><clipPath id="picture-clip">${artPicture().region}</clipPath></defs><rect id="paint-paper" x="126" y="20" width="748" height="400" rx="26" fill="#fffdf5" stroke="#d8c8a6" stroke-width="4"/><g id="strokes" clip-path="url(#picture-clip)"></g><g opacity=".55" pointer-events="none">${pictureArt(true)}</g><path d="M147 46L160 33M837 405L852 391" stroke="#debb7c" stroke-width="5" stroke-linecap="round"/>`;
+    scene.innerHTML=`<defs><clipPath id="picture-clip">${artPicture().region}</clipPath></defs><rect id="paint-paper" x="126" y="20" width="748" height="400" rx="26" fill="#fffdf5" stroke="#d8c8a6" stroke-width="4"/><g id="strokes" clip-path="url(#picture-clip)"></g><g pointer-events="none">${pictureArt(true)}</g><path d="M147 46L160 33M837 405L852 391" stroke="#debb7c" stroke-width="5" stroke-linecap="round"/>`;
     state.coverage=[];
-    for(let y=70;y<390;y+=14)for(let x=260;x<745;x+=14)if(insidePicture({x,y}))state.coverage.push({x,y,painted:false});
+    for(let y=65;y<397;y+=9)for(let x=255;x<750;x+=9)if(insidePicture({x,y}))state.coverage.push({x,y,painted:false});
     progress(0,5);
   }
   function insidePicture(point){return [...scene.querySelectorAll('#picture-clip > *')].some(shape=>shape.isPointInFill(new DOMPoint(point.x,point.y)));}
@@ -567,7 +651,7 @@
     }
     const fraction=state.coverage.filter(sample=>sample.painted).length/state.coverage.length;
     progress(Math.min(5,Math.floor(fraction/artPicture().target*5)),5);
-    if(fraction>=artPicture().target&&!state.done){celebrate(`Congratulations from SaNa! You painted a beautiful ${artPicture().name}!`);$('art-reward').hidden=false;applause();}
+    if(state.coverage.length&&fraction>=artPicture().target&&!state.done)brushComplete(`SaNa says: Wonderful! You finished coloring the ${artPicture().name}!`);
   }
   function brushAt(point,distance){
     if(state.done)return;
@@ -579,7 +663,7 @@
       if(dirt.health<=0)element?.remove();else element?.setAttribute('opacity',.68*dirt.health/dirt.max);
     }
     progress(state.dirt.filter(d=>d.health<=0).length,state.dirt.length);
-    if(state.dirt.every(d=>d.health<=0))celebrate(`All clean! What a happy, shiny ${artPicture().name}.`);
+    if(state.dirt.every(d=>d.health<=0))brushComplete(`SaNa says: All clean! Your ${artPicture().name} looks beautiful!`);
     else if(distance>3)tone(520);
   }
   function brushCursor(point){
@@ -606,8 +690,7 @@
     }else if(state.activity==='bubbles'){
       state.pointer={id:event.pointerId,kind:'bubble'};hitBubble(point,event.target.closest('[data-bubble]')?.dataset.bubble);
     }else if(state.activity==='slide'){
-      const handle=event.target.closest('[data-slider-handle]');if(!handle)return;
-      const slider=state.sliders.find(s=>s.id===Number(handle.dataset.sliderHandle));state.pointer={id:event.pointerId,kind:'slide',slider};slideTo(slider,point.x);
+      const door=event.target.closest('[data-slide-swipe]');if(!door)return;state.pointer={id:event.pointerId,kind:'slide',startX:point.x};
     }else if(state.paintMode){
       state.pointer=beginPaint(point,event.pointerId);if(!state.pointer)return;
     }else{
@@ -623,7 +706,7 @@
       pointer.x=Math.max(60,Math.min(940,point.x-pointer.dx));pointer.y=Math.max(60,Math.min(380,point.y-pointer.dy));
       scene.querySelector(`[data-piece="${pointer.shape.id}"]`)?.setAttribute('transform',`translate(${pointer.x} ${pointer.y})`);
     }else if(pointer.kind==='bubble')hitBubble(point);
-    else if(pointer.kind==='slide')slideTo(pointer.slider,point.x);
+    else if(pointer.kind==='slide'){pointer.lastX=point.x;}
     else if(pointer.kind==='paint'){
       pointer.d+=` L${point.x.toFixed(1)} ${point.y.toFixed(1)}`;pointer.paths.forEach(path=>path.setAttribute('d',pointer.d));paintCoverage(pointer,point);pointer.last=point;
     }else{
@@ -634,6 +717,7 @@
     const pointer=state.pointer;if(!pointer||pointer.id!==event.pointerId)return;
     state.pointer=null;
     try{if(scene.hasPointerCapture(event.pointerId))scene.releasePointerCapture(event.pointerId);}catch{/* Already released. */}
+    if(pointer.kind==='slide'){const pt=localPoint(event);const dx=(pt?pt.x:pointer.lastX??pointer.startX)-pointer.startX;if(!slideDoorAnimating&&((!state.slideRevealed&&dx>55)||(state.slideRevealed&&dx< -55)))toggleSlide();}
     if(pointer.kind==='abacus'){moveAbacusSlide(pointer,new DOMPoint(event.clientX,event.clientY).matrixTransform(pointer.matrix));setAbacusCount(pointer.row,pointer.preview);}
     else if(pointer.kind==='drag'){
       const distance=Math.hypot(pointer.x-pointer.shape.tx,pointer.y-pointer.shape.ty);
@@ -658,6 +742,7 @@
       event.preventDefault();const row=Number(bead.dataset.beadRow),index=Number(bead.dataset.beadIndex),right=['ArrowRight','End'].includes(event.key)||(['Enter',' '].includes(event.key)&&!state.abacusRows[row][index]);
       finishAbacusBead(row,index,right);const count=abacusCount(row),focus=right?Math.max(0,9-count):Math.min(9,10-count);state.abacusElements[row].beads[focus]?.focus();
     }
+    else if(state.activity==='slide'&&event.target.closest('[data-slide-swipe]')&&['Enter',' ','ArrowRight','ArrowLeft'].includes(event.key)){event.preventDefault();toggleSlide();}
     else if(handle&&['ArrowRight','ArrowLeft','Home','End'].includes(event.key)){
       event.preventDefault();const slider=state.sliders[Number(handle.dataset.sliderHandle)];const value=event.key==='End'?1:event.key==='Home'?0:slider.value+(event.key==='ArrowRight' ? .15 : -.15);slideTo(slider,slider.x+25+value*(slider.w-50));
     }else if(event.key==='Enter'||event.key===' '){
@@ -671,7 +756,7 @@
     if(state.activity==='abacus'){const row=activeAbacusRow();if(row>=0){const count=abacusCount(row),p=abacusBeadPoint(row,count===10?0:9-count);x=p.x;y=p.y;}abacusHint();}
     else if(state.activity==='drag'){const shape=state.shapes.find(s=>!s.placed);if(shape){x=shape.x+10;y=shape.y+20;}hint('Touch a shape, hold it, and move it to the same shadow.');}
     else if(state.activity==='bubbles'){const bubble=activeBubble();if(bubble){x=bubble.x+5;y=bubble.y+10;}hint(state.bubbleMode==='plain'?'Touch a rising bubble with one finger. Splash, pop!':'Touch a rising bubble. Its matching item above will turn the same color!');}
-    else if(state.activity==='slide'){const s=state.sliders.find(s=>s.value<1)||state.sliders[0];x=s.x+30+s.value*(s.w-50);y=s.y+s.h+45;hint('Hold a sunny handle. Slide it along its path.');}
+    else if(state.activity==='slide'){x=710;y=245;hint('Slide the big cave door sideways to discover a picture!');}
     else hint(state.paintMode?`Hold one finger inside the ${artPicture().name} and move it. Choose a size or erase to tidy up!`:`Rub a muddy spot back and forth. Watch the ${artPicture().name} get clean!`);
     const hand=document.createElementNS('http://www.w3.org/2000/svg','g');hand.dataset.guide='';hand.setAttribute('transform',`translate(${x} ${y})`);hand.innerHTML='<g class="guide-hand"><circle r="26" fill="white" opacity=".8"/><use href="#hand-icon" x="-13" y="-14" width="49" height="49" fill="#4b7d68"/></g>';hand.style.pointerEvents='none';scene.appendChild(hand);guideTimer=setTimeout(()=>hand.remove(),4200);
   }

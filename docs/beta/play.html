@@ -90,15 +90,37 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 /* Consistent accessible sound state colors: red OFF, green ON. */
 #sound[aria-pressed="false"],#music-toggle[aria-pressed="false"]{background:#f6a6a6!important;color:#512424!important;border-color:#a94b4b!important}
 #sound[aria-pressed="true"],#music-toggle[aria-pressed="true"]{background:#a9e4b9!important;color:#173e2b!important;border-color:#3d8d5a!important}
+
+/* Slide Cave only: extend cave scenery into SVG letterbox areas. All other games retain sandalwood. */
+#app[data-view="slide"] .play-mat{background:#3b261e url("slide-cave.jpg") center center / cover no-repeat;}
+
+/* Compact drawing previews, displayed only for Brush & Paint. */
+.brush-thumbnails:not([hidden]){display:flex;align-items:center;gap:5px;flex:0 0 auto;min-height:42px;max-height:50px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;touch-action:pan-x;background:#fff2d9;border-bottom:2px solid #b8976b;padding:3px 7px}
+.brush-thumbnails[hidden]{display:none!important}
+.brush-thumb{display:flex;flex:0 0 auto;align-items:center;justify-content:center;gap:4px;padding:2px 5px;border:1.5px solid #bea67d;border-radius:8px;background:#fffaf0;color:#254c40;font-weight:800;font-size:11px;min-width:58px;max-height:40px;white-space:nowrap}
+.brush-thumb svg{width:30px;height:30px;flex:0 0 auto;overflow:visible}
+.brush-thumb.current{border:3px solid #2d725c;background:#d5f2e3}
+.brush-thumb.past{background:#e5e4df;color:#617269}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
 <script>for(const type of ['touchstart','touchmove'])document.addEventListener(type,event=>{if(event.touches.length>1)event.preventDefault();},{passive:false,capture:true});for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});</script>
-<meta name="sana-release" content="sana-little-hands-beta-v49">
+<meta name="sana-release" content="sana-little-hands-beta-v56">
 <style>
 #music-toggle{font-size:25px;font-weight:900;color:#183f37;background:#d6c4fa}
 #music-toggle[aria-pressed="true"]{background:#bce8c8}
 .immersive .topbar>:not(#sound):not(#music-toggle):not(#fullscreen):not(#game-back){display:none!important}
 .immersive .topbar #music-toggle{position:absolute;top:max(8px,env(safe-area-inset-top));right:calc(max(8px,env(safe-area-inset-right)) + 108px);z-index:12;width:46px;min-width:46px;height:46px}
+
+/* Slide Cave only: extend cave scenery into SVG letterbox areas. All other games retain sandalwood. */
+#app[data-view="slide"] .play-mat{background:#3b261e url("slide-cave.jpg") center center / cover no-repeat;}
+
+/* Compact drawing previews, displayed only for Brush & Paint. */
+.brush-thumbnails:not([hidden]){display:flex;align-items:center;gap:5px;flex:0 0 auto;min-height:42px;max-height:50px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;touch-action:pan-x;background:#fff2d9;border-bottom:2px solid #b8976b;padding:3px 7px}
+.brush-thumbnails[hidden]{display:none!important}
+.brush-thumb{display:flex;flex:0 0 auto;align-items:center;justify-content:center;gap:4px;padding:2px 5px;border:1.5px solid #bea67d;border-radius:8px;background:#fffaf0;color:#254c40;font-weight:800;font-size:11px;min-width:58px;max-height:40px;white-space:nowrap}
+.brush-thumb svg{width:30px;height:30px;flex:0 0 auto;overflow:visible}
+.brush-thumb.current{border:3px solid #2d725c;background:#d5f2e3}
+.brush-thumb.past{background:#e5e4df;color:#617269}
 </style>
 </head>
 <body>
@@ -142,7 +164,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
     <button class="level" type="button" data-level="1" aria-label="Easy level" aria-pressed="false">Easy<small>little steps</small></button>
     <button class="level" type="button" data-level="2" aria-label="Medium level" aria-pressed="true">Medium<small>guided play</small></button>
     <button class="level" type="button" data-level="3" aria-label="Challenge level" aria-pressed="false">Challenge<small>extra fun</small></button>
-  </div><span id="abacus-stage" hidden>0–10 · Any row</span><div class="mode-switch" id="bubble-modes" role="group" aria-label="Bubble contents" hidden><button type="button" class="mode-button" data-bubble-mode="plain" aria-label="Plain bubbles" aria-pressed="true">Plain</button><button type="button" class="mode-button" data-bubble-mode="numbers" aria-label="Number bubbles" aria-pressed="false">1–20</button><button type="button" class="mode-button" data-bubble-mode="letters" aria-label="Letter bubbles" aria-pressed="false">A–Z</button><button type="button" class="mode-button" data-bubble-mode="shapes" aria-label="Shape bubbles" aria-pressed="false">Shapes</button></div><div class="mode-switch" id="brush-modes" hidden><button type="button" class="mode-button" id="clean-mode" aria-label="Brush clean" aria-pressed="true">💧 Brush clean</button><button type="button" class="mode-button" id="paint-mode" aria-label="Finger paint" aria-pressed="false">🎨 Finger paint</button></div></div></div><div class="bubble-tracker" id="bubble-tracker" hidden><div class="bubble-targets" id="bubble-targets" role="list" aria-label="Bubble collection"></div></div><svg id="scene" viewBox="0 0 1000 440" preserveAspectRatio="xMidYMid meet" role="group" aria-label="Play area"></svg><nav class="play-navigation" aria-label="Game and sub-level navigation"><button class="soft-button" id="game-back" type="button" aria-label="Back"><svg aria-hidden="true"><use href="#back-icon"/></svg><span>Back</span></button><div id="game-mid-controls"><button class="soft-button" id="game-home" type="button" aria-label="Games"><svg aria-hidden="true"><use href="#home-icon"/></svg><span>Games</span></button></div><button class="soft-button" id="game-front" type="button" aria-label="Front"><span>Front</span><svg viewBox="0 0 32 32" aria-hidden="true"><use href="#back-icon" transform="translate(32 0) scale(-1 1)"/></svg></button></nav><div id="celebrate" hidden aria-hidden="true"><span>✦</span><span>✦</span><span>✦</span></div><div id="art-reward" hidden><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#monkey"/></svg> 👏<b>Congratulations!</b>Love from SaNa</div></div>
+  </div><span id="abacus-stage" hidden>0–10 · Any row</span><div class="mode-switch" id="bubble-modes" role="group" aria-label="Bubble contents" hidden><button type="button" class="mode-button" data-bubble-mode="plain" aria-label="Plain bubbles" aria-pressed="true">Plain</button><button type="button" class="mode-button" data-bubble-mode="numbers" aria-label="Number bubbles" aria-pressed="false">1–20</button><button type="button" class="mode-button" data-bubble-mode="letters" aria-label="Letter bubbles" aria-pressed="false">A–Z</button><button type="button" class="mode-button" data-bubble-mode="shapes" aria-label="Shape bubbles" aria-pressed="false">Shapes</button></div><div class="mode-switch" id="brush-modes" hidden><button type="button" class="mode-button" id="clean-mode" aria-label="Brush clean" aria-pressed="true">💧 Brush clean</button><button type="button" class="mode-button" id="paint-mode" aria-label="Finger paint" aria-pressed="false">🎨 Finger paint</button></div></div></div><div class="bubble-tracker" id="bubble-tracker" hidden><div class="bubble-targets" id="bubble-targets" role="list" aria-label="Bubble collection"></div></div><div id="brush-thumbnails" class="brush-thumbnails" role="list" aria-label="Drawing picture sequence" hidden></div><svg id="scene" viewBox="0 0 1000 440" preserveAspectRatio="xMidYMid meet" role="group" aria-label="Play area"></svg><nav class="play-navigation" aria-label="Game and sub-level navigation"><button class="soft-button" id="game-back" type="button" aria-label="Back"><svg aria-hidden="true"><use href="#back-icon"/></svg><span>Back</span></button><div id="game-mid-controls"><button class="soft-button" id="game-home" type="button" aria-label="Games"><svg aria-hidden="true"><use href="#home-icon"/></svg><span>Games</span></button></div><button class="soft-button" id="game-front" type="button" aria-label="Front"><span>Front</span><svg viewBox="0 0 32 32" aria-hidden="true"><use href="#back-icon" transform="translate(32 0) scale(-1 1)"/></svg></button></nav><div id="celebrate" hidden aria-hidden="true"><span>✦</span><span>✦</span><span>✦</span></div><div id="art-reward" hidden><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#monkey"/></svg> 👏<b>Congratulations!</b>Love from SaNa</div></div>
 </main>
 
 </div></div>
