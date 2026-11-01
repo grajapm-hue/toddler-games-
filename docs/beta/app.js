@@ -464,9 +464,9 @@
     $('bubble-full-set').hidden=state.age===null;$('bubble-full-set').setAttribute('aria-pressed',String(state.bubbleSet==='full'));
   }
   function fitBubbleField(){
-    const width=Math.max(320,440*scene.clientWidth/Math.max(1,scene.clientHeight));
+    const width=Math.max(1,440*scene.clientWidth/Math.max(1,scene.clientHeight));
     if(Math.abs(width-state.bubbleWidth)>.5){
-      const ratio=width/state.bubbleWidth;state.bubbles.forEach(bubble=>{bubble.x*=ratio;});state.bubbleWidth=width;
+      state.bubbleWidth=width;
     }
     if(Math.abs(scene.viewBox.baseVal.width-width)>.5)scene.setAttribute('viewBox',`0 0 ${width.toFixed(1)} 440`);
     const radius=bubbleRadius();
@@ -486,7 +486,14 @@
     const count=bubbleCapacity();
     while(state.bubbles.length>count){const bubble=state.bubbles.pop();bubble.element?.remove();}
     while(state.bubbles.length<count){const bubble={slot:state.bubbles.length,element:null};state.bubbles.push(bubble);spawnBubble(bubble);}
-    state.bubbles.forEach((bubble,index)=>{bubble.slot=index;});
+    state.bubbles.forEach((bubble,index)=>{
+      bubble.slot=index;
+      // Re-center every bubble in its own lane after viewport or capacity changes.
+      // This prevents stale x-coordinates from causing bubbles to touch or overlap.
+      const lane=state.bubbleWidth/Math.max(1,state.bubbles.length);
+      bubble.x=(index+.5)*lane;
+      if(bubble.element)positionBubble(bubble);
+    });
   }
   function positionBubble(bubble){
     if(!bubble.element)return;
@@ -504,8 +511,10 @@
     const pool=available.length?available:missing.length?missing:items;
     bubble.token=pool.length?pool[Math.floor(Math.random()*pool.length)]:'';
     bubble.id=++state.bubbleSerial;bubble.color=bubbleColors[Math.floor(Math.random()*bubbleColors.length)];bubble.r=bubbleRadius();
-    const lane=state.bubbleWidth/state.bubbles.length;
-    bubble.x=Math.max(bubble.r+4,Math.min(state.bubbleWidth-bubble.r-4,(bubble.slot+.5+(Math.random()-.5)*.06)*lane));
+    const lane=state.bubbleWidth/Math.max(1,state.bubbles.length);
+    // Fixed lane centers with no random horizontal drift: adjacent centers remain
+    // at least one bubble diameter plus a safety gap apart.
+    bubble.x=(bubble.slot+.5)*lane;
     bubble.y=initial?Math.max(bubble.r+5,Math.min(435-bubble.r,135+(bubble.slot%3)*100+Math.random()*12)):440+bubble.r+8;bubble.wait=0;
     const element=document.createElementNS('http://www.w3.org/2000/svg','g');bubble.element=element;
     element.classList.add('bubble');element.dataset.bubble=String(bubble.id);element.dataset.token=bubble.token;element.dataset.color=bubble.color;
