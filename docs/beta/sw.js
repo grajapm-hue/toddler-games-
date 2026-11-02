@@ -1,6 +1,6 @@
-const CACHE='sana-little-hands-beta-v85';
+const CACHE='sana-little-hands-beta-v92';
 const PREFIX='sana-little-hands-beta-';
-const ASSETS=['./index.html','./play.html','./age-profiles.js','./app.js','./bgm-monkeys.mp3','./slide-cave.jpg','./sana-space-sky-v83.jpg','./pwa.js','./share.js','./share.css','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png'];
+const ASSETS=['./sese-enhanced-v89.png','./index.html','./play.html','./age-profiles.js','./app.js','./bgm-sana-v86.mp3','./slide-cave.jpg','./sana-space-sky-v83.jpg','./pwa.js','./share.js','./share.css','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',event=>{
   event.waitUntil((async()=>{
     const cache=await caches.open(CACHE);
