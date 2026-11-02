@@ -45,6 +45,8 @@
   const hasAgeSettings=saved.ageSettings&&typeof saved.ageSettings==='object'&&!Array.isArray(saved.ageSettings);
   const ageSettings=hasAgeSettings?saved.ageSettings:{};
   if(!hasAgeSettings)ageSettings.common={level:saved.level,bubbleSpeed:saved.bubbleSpeed,bubbleSize:saved.bubbleSize,bubbleSet:'full'};
+  // Four-button age selector: new sessions default to Age 2; retain saved ages.
+  if(ageProfiles.getAge()===null)ageProfiles.select(2);
   const preferences=()=>ageSettings[ageProfiles.getAge()??'common']??{};
   const initial=preferences();
   const state={age:ageProfiles.getAge(),level:1,activity:null,done:false,pointer:null,selected:null,paintMode:false,paintColor:colors[0],strokes:[],shapes:[],bubbles:[],sliders:[],slideIndex:0,slideRevealed:false,dirt:[],sound:saved.sound===true};
@@ -54,11 +56,11 @@
   const bubbleSpeeds={slow:72,medium:136,fast:464},bubbleDiameters={small:88,medium:120,large:384};
   state.bubbleSpeed=Object.hasOwn(bubbleSpeeds,initial.bubbleSpeed)?initial.bubbleSpeed:null;
   state.bubbleSize=Object.hasOwn(bubbleDiameters,initial.bubbleSize)?initial.bubbleSize:null;
-  const selectedBubbleSpeed=()=>state.bubbleSpeed??profile().bubbleSpeed;
-  const selectedBubbleSize=()=>state.bubbleSize??profile().bubbleSize;
+  const selectedBubbleSpeed=()=>state.bubbleSpeed??'medium';
+  const selectedBubbleSize=()=>state.bubbleSize??'medium';
   function bubbleItems(kind=state.bubbleMode){const items=bubbleModes[kind].items;if(state.bubbleSet==='full')return items;return items.slice(0,({numbers:profile().numberCount,letters:profile().letterCount,shapes:profile().shapeTokens})[kind]??0);}
   const brushWidths={small:18,medium:38,large:72};
-  let audio=null,lastTone=0,rewardTimer=null,guideTimer=null,bubbleFrame=null,lastBubbleTime=0;
+  let audio=null,lastTone=0,rewardTimer=null,guideTimer=null,bubbleFrame=null,lastBubbleTime=0,roundSerial=0;
   const save=()=>{
     const key=state.age??'common',current={level:state.level,bubbleSpeed:state.bubbleSpeed,bubbleSize:state.bubbleSize,bubbleSet:state.bubbleSet};ageSettings[key]=current;
     try{
@@ -207,6 +209,7 @@
     if(strip.hidden)return;
     strip.innerHTML=brushPictures.slice(0,brushCount()).map(([name,region],i)=>
       `<button type="button" class="brush-thumb ${i===brushIndex?'current':i<brushIndex?'past':''}" role="listitem" data-brush-index="${i}" aria-label="Select ${name}" aria-pressed="${i===brushIndex}" ${i===brushIndex?'aria-current="step"':''} title="Select ${name}"><svg viewBox="250 55 500 345" aria-hidden="true"><g fill="#e8b768" stroke="#45675d" stroke-width="10" stroke-linejoin="round">${region}</g></svg><span>${name[0].toUpperCase()+name.slice(1)}</span></button>`).join('');
+    updateGameItemStrip();
     const current=strip.querySelector('.current');
     if(current){const x=current.offsetLeft-strip.offsetLeft; if(x<strip.scrollLeft||x+current.offsetWidth>strip.scrollLeft+strip.clientWidth)strip.scrollLeft=Math.max(0,x-strip.clientWidth/3);}
   }
@@ -274,10 +277,13 @@
     if(pointer?.kind==='abacus'&&state.activity==='abacus'){restoreAbacusRow(pointer.row);updateAbacusFeedback(pointer.row);}
     scene.querySelector('#brush-cursor')?.remove();
   }
-  const ageChoice=$('age-choice'),ageMenu=$('age-menu'),ageOptions=[...ageMenu.querySelectorAll('[data-age-option]')];
-  function closeAgeMenu(restoreFocus=false){ageMenu.hidden=true;ageChoice.setAttribute('aria-expanded','false');if(restoreFocus)ageChoice.focus({preventScroll:true});}
-  function openAgeMenu(){if(app.classList.contains('immersive'))return;ageMenu.hidden=false;ageChoice.setAttribute('aria-expanded','true');ageOptions.find(option=>option.dataset.ageOption===String(state.age??''))?.focus({preventScroll:true});}
-  function parentAgeControls(){ageChoice.textContent=state.age===null?'Family play':`Age ${state.age}`;ageChoice.value=String(state.age??'');ageOptions.forEach(option=>option.setAttribute('aria-selected',String(option.dataset.ageOption===String(state.age??''))));app.classList.toggle('age-profile',state.age!==null);const welcome=app.querySelector('a.brand');if(welcome)welcome.href=ageProfiles.navigation('index.html');}
+  const ageOptions=[...document.querySelectorAll('.age-radio')];
+  function closeAgeMenu(){} // Legacy call sites retained without altering game transitions.
+  function parentAgeControls(){
+    ageOptions.forEach(option=>{const active=Number(option.dataset.ageOption)===(state.age??2);option.setAttribute('aria-checked',String(active));option.tabIndex=active?0:-1;});
+    app.classList.toggle('age-profile',state.age!==null);
+    const welcome=app.querySelector('a.brand');if(welcome)welcome.href=ageProfiles.navigation('index.html');
+  }
   function chooseParentAge(value){
     if(app.classList.contains('immersive'))return;
     if(String(state.age??'')===String(value))return;
@@ -289,21 +295,20 @@
     try{history.replaceState(null,'',ageProfiles.navigation(location.pathname+location.search));}catch{/* The current page choice still works without history access. */}
     save();levelControls();parentAgeControls();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');if(activity)startActivity(activity,paintMode);else hint('Choose any picture and play together. Every game is open.');
   }
-  ageChoice.addEventListener('click',()=>ageMenu.hidden?openAgeMenu():closeAgeMenu(true));
-  ageChoice.addEventListener('keydown',event=>{if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();openAgeMenu();}});
-  ageOptions.forEach(option=>option.addEventListener('click',()=>{chooseParentAge(option.dataset.ageOption);closeAgeMenu(true);}));
-  ageMenu.addEventListener('keydown',event=>{
-    if(event.key==='Tab'){closeAgeMenu(true);return;}
-    if(!['ArrowDown','ArrowUp','Home','End'].includes(event.key))return;
-    event.preventDefault();const current=ageOptions.indexOf(document.activeElement),next=event.key==='Home'?0:event.key==='End'?ageOptions.length-1:(current+(event.key==='ArrowDown'?1:-1)+ageOptions.length)%ageOptions.length;ageOptions[next].focus({preventScroll:true});
+  ageOptions.forEach((option,index)=>{
+    option.addEventListener('click',()=>chooseParentAge(option.dataset.ageOption));
+    option.addEventListener('keydown',event=>{
+      if(!['ArrowRight','ArrowLeft','ArrowDown','ArrowUp','Home','End'].includes(event.key))return;
+      event.preventDefault();const next=event.key==='Home'?0:event.key==='End'?ageOptions.length-1:(index+(event.key==='ArrowRight'||event.key==='ArrowDown'?1:-1)+ageOptions.length)%ageOptions.length;
+      chooseParentAge(ageOptions[next].dataset.ageOption);ageOptions[next].focus({preventScroll:true});
+    });
   });
-  document.addEventListener('pointerdown',event=>{if(!event.target.closest('.parent-age'))closeAgeMenu();});
-  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!ageMenu.hidden){event.preventDefault();closeAgeMenu(true);}});
-  function home(){stopBubbles();cancelGesture();clearEffects();state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('sound'),$('music-toggle'),$('fullscreen'));app.dataset.view='home';parentAgeControls();$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
+  function home(){stopBubbles();cancelGesture();clearEffects();state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('sound'),$('music-toggle'),$('fullscreen'));app.dataset.view='home';parentAgeControls();$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;$('item-progress-strip').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
   function levelControls(){document.querySelectorAll('[data-level]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.level)===state.level)));}
   function setLevel(level,reset=true){cancelGesture();const changed=state.level!==level;state.level=level;if(changed)state.brushSize=profile().brushSize;levelControls();save();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');if(reset&&state.activity)resetRound();else if(reset)hint(level===2?'Medium level: choose a picture and play together!':level===1?'Easy level: fewer, bigger things to try.':'Challenge level: a few more things to discover.');}
   function startActivity(id,paintMode=false){closeAgeMenu();$('game-mid-controls').append($('sound'),$('music-toggle'),$('fullscreen'));state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
   function resetRound(){
+    roundSerial++;
     clearTimeout(slideAdvanceTimer);clearTimeout(brushTimer);$('art-reward').hidden=true;stopBubbles();cancelGesture();clearEffects();state.done=false;state.selected=null;state.strokes=[];
     $('play-levels').hidden=true;$('abacus-stage').hidden=state.activity!=='abacus';
     $('bubble-score').hidden=state.activity!=='bubbles';
@@ -375,19 +380,19 @@
   function updateAbacusFeedback(row,count=abacusCount(row),reveal=false){
     const nodes=state.abacusElements[row];if(!nodes)return;
     nodes.region.setAttribute('fill',count?abacusColors[row][1]:'#000');if(nodes.count)nodes.count.textContent=String(count);nodes.label.textContent=abacusLabel(row,count);
-    nodes.label.classList.toggle('abacus-pop',reveal);
+    nodes.label.classList.toggle('abacus-pop',reveal);updateGameItemStrip();
     $('result-score').textContent=`${abacusColors[row][0]}: ${count} ${abacusWords[count]}`;
     state.abacusElements.forEach((item,i)=>item.highlight.setAttribute('stroke',i===row?'#ffe17a':'transparent'));updateAbacusAddition();
   }
   function restoreAbacusRow(row){const g=abacusGeometry(),count=abacusCount(row);state.abacusElements[row].beads.forEach((node,index)=>{const p=abacusBeadPoint(row,index,g);node.setAttribute('transform',`translate(${p.x} ${p.y})`);node.dataset.moved=String(index>=10-count);node.setAttribute('tabindex',index===9-count||index===10-count?'0':'-1');});}
-  function updateAbacusProgress(){progress(state.abacusRows.filter((_,row)=>abacusCount(row)>0).length,10);}
+  function updateAbacusProgress(){progress(state.abacusRows.filter((_,row)=>abacusCount(row)>0).length,10);updateGameItemStrip();}
   function setAbacusCount(row,count){
     const previous=abacusCount(row);state.abacusSelectedRow=row;
     if(previous===count){restoreAbacusRow(row);updateAbacusFeedback(row);return;}
     state.abacusRows[row]=Array.from({length:10},(_,index)=>index>=10-count);
     restoreAbacusRow(row);updateAbacusProgress();updateAbacusFeedback(row,count,!previous&&!!count);tone(520+count*20);
     const complete=state.abacusRows.every((_,index)=>abacusCount(index)>0);
-    if(complete&&!state.done){celebrate('Wonderful counting! SaNa loves your rainbow and circle!');$('art-reward').hidden=false;applause();}
+    if(complete&&!state.done){const roundAtCompletion=roundSerial;celebrate('Wonderful counting! SaNa loves your rainbow and circle!');$('art-reward').hidden=false;applause();setTimeout(()=>{if(state.activity==='abacus'&&state.done&&roundSerial===roundAtCompletion)resetRound();},2100);}
     else{if(!complete&&state.done){state.done=false;clearEffects();}abacusHint();}
   }
   function finishAbacusBead(row,index,toRight=true){const count=abacusCount(row);setAbacusCount(row,toRight?Math.max(count,10-index):Math.min(count,9-index));}
@@ -409,12 +414,37 @@
     if(count!==pointer.preview){pointer.preview=count;updateAbacusFeedback(pointer.row,count);}
   }
   new ResizeObserver(()=>{if(state.activity==='abacus'&&state.abacusSize!==`${scene.clientWidth}/${scene.clientHeight}`){cancelGesture();renderAbacus();}}).observe(scene);
+  // Shared, game-specific progress strip. Never moves to a side in immersive mode.
+  function showItemStrip(items){
+    const strip=$('item-progress-strip');if(!strip)return;
+    strip.hidden=!state.activity||!items.length;
+    if(strip.hidden){strip.innerHTML='';return;}
+
+    strip.innerHTML=items.map(({label,icon='',current=false,done=false,later=false},i)=>
+      `<span class="item-chip ${current?'is-current':''} ${done?'is-done':''} ${later?'is-later':''}" role="listitem" aria-label="${String(label).replace(/&/g,'&amp;').replace(/"/g,'&quot;')} ${done?'completed':current?'current':later?'later level':'available'}" title="${String(label).replace(/"/g,'&quot;')}">${icon||label}</span>`).join('');
+
+  }
+  function updateGameItemStrip(){
+    if(state.activity==='drag'){
+      const limit=shapeLevelLimits[state.age]||4;
+      showItemStrip(shapes.slice(0,limit).map((shape,i)=>({label:shape.id,icon:`<svg viewBox="-68 -68 136 136" aria-hidden="true">${primitive(shape.id,shape.color,'#274b44')}</svg>`,later:i>=limit,done:!!state.shapes?.find(x=>x.id===shape.id&&x.placed),current:state.selected===shape.id})));
+    }else if(state.activity==='bubbles'){
+      const tokens=bubbleItems();showItemStrip(tokens.map(token=>({label:String(token),done:state.bubbleHits.has(token),icon:state.bubbleMode==='shapes'?`<svg viewBox="-68 -68 136 136" aria-hidden="true">${primitive(token,shapeById(token)?.color||'#ffcf64','#274b44')}</svg>`:''})));
+      if(!tokens.length)showItemStrip([{label:`Popped ${state.bubblePops}`}]);
+    }else if(state.activity==='brush'){
+      showItemStrip(brushPictures.slice(0,brushCount()).map(([name,region],i)=>({label:name,icon:`<svg viewBox="250 55 500 345" aria-hidden="true"><g fill="#e8b768" stroke="#45675d" stroke-width="10">${region}</g></svg>${name[0].toUpperCase()+name.slice(1)}`,current:i===brushIndex,done:i<brushIndex})));
+    }else if(state.activity==='slide'){
+      showItemStrip(slideObjects.slice(0,slideTotal()).map(([name,emoji],i)=>({label:`Room ${i+1}: ${name}`,icon:`${emoji} ${i+1}`,current:i===state.slideIndex,done:i<state.slideIndex||(i===state.slideIndex&&state.slideRevealed)})));
+    }else if(state.activity==='abacus'){
+      showItemStrip(abacusColors.map(([name,color],i)=>({label:name,icon:`<span style="color:${color};text-shadow:0 1px #333">●</span> ${name} ${abacusCount(i)}`,current:i===state.abacusSelectedRow,done:abacusCount(i)>0})));
+    }else showItemStrip([]);
+  }
   function renderDrag(){
+    scene.setAttribute('viewBox','0 77 1000 363');
     const pool=shapes.slice(0,shapeLevelLimits[state.age]||4);
     const done=state.shapes.filter(shape=>shape.placed).length;
-    // The complete twenty-shape learning chart stays visible in every age level.
-    // A dim thumbnail means that shape belongs to a later age level.
-    const thumbnails=shapes.map((shape,i)=>{
+    // Show only shapes available for this age. The shared progress strip is the visible chart.
+    const thumbnails=shapes.slice(0,pool.length).map((shape,i)=>{
       const x=28+i*49.6,active=i<pool.length;
       const inBatch=state.shapes.some(item=>item.id===shape.id);
       return `<g transform="translate(${x} 37)" opacity="${active?1:.34}" aria-label="${shape.id}">
@@ -429,13 +459,13 @@
       <path d="M12 253H988" stroke="#71401f" stroke-width="7" opacity=".65"/>
       <path d="M500 105V419" stroke="#ffe2aa" stroke-width="3" stroke-dasharray="8 13" opacity=".75"/>
       <path d="M466 260H530M516 248L530 260L516 272" stroke="#fff0c8" stroke-width="5" fill="none" stroke-linecap="round"/>`;
-    scene.innerHTML=`<rect x="0" y="0" width="1000" height="76" fill="#f7e9d2"/>${board}${thumbnails}`+
+    scene.innerHTML=`<rect x="0" y="0" width="1000" height="76" fill="#f7e9d2"/>${board}`+
       state.shapes.filter(shape=>!shape.placed).map(shape=>`<g class="target" data-target="${shape.id}" transform="translate(${shape.tx} ${shape.ty})" role="button" tabindex="0" aria-label="${shape.id} shadow">
       <g>${primitive(shape.id,'#271d19',shape.color)}</g>
       <text y="86" text-anchor="middle" fill="#163d33" font-size="28" font-weight="900" paint-order="stroke" stroke="#fff9e8" stroke-width="4" font-family="inherit">${shape.id.toUpperCase()}</text></g>`).join('')+
       state.shapes.filter(shape=>!shape.placed).map(shape=>`<g data-piece="${shape.id}" role="button" tabindex="0" aria-label="${shape.id} shape" class="piece ${state.selected===shape.id?'selected':''}" transform="translate(${shape.x} ${shape.y})">
       ${glossyShape(shape.id,shape.color)}</g>`).join('');
-    progress(shapeCompleted+done,pool.length);
+    progress(shapeCompleted+done,pool.length);updateGameItemStrip();
   }
   function matchShape(id){
     const shape=state.shapes.find(item=>item.id===id);if(!shape||shape.placed)return;
@@ -444,7 +474,7 @@
       const total=shapeLevelLimits[state.age]||4;
       shapeCompleted+=state.shapes.length;
       if(shapeCompleted>=total){
-        celebrate(`Wonderful! You matched all ${total} shapes. Play Again to practice!`);
+        const roundAtCompletion=roundSerial;celebrate(`Wonderful! You matched all ${total} shapes. Let's play again!`);shapeAdvanceTimer=setTimeout(()=>{if(state.activity==='drag'&&state.done&&roundSerial===roundAtCompletion)resetRound();},1900);
         shapeRound=0;shapeCompleted=0;
       }else{
         hint('Great matching! Here come four new shapes.');
@@ -465,9 +495,10 @@
     $('bubble-score').textContent=state.bubbleMode==='plain'?`Popped ${state.bubblePops}`:`${mode.label} · ${state.bubbleHits.size}/${mode.items.length}`;
     $('bubble-targets').innerHTML=mode.items.length?mode.items.map(token=>{
       const color=state.bubbleHits.get(token);
-      const content=state.bubbleMode==='shapes'?`<svg viewBox="-68 -68 136 136" aria-hidden="true">${shapeEffects}${glossyShape(token,shapeById(token)?.color||'#ffcf64')}</svg>`:token;
+      const content=state.bubbleMode==='shapes'?`<svg viewBox="-68 -68 136 136" aria-hidden="true">${shapeEffects}${primitive(token,shapeById(token)?.color||'#ffcf64','#274b44')}</svg>`:token;
       return `<span class="bubble-target" role="listitem" data-bubble-target="${token}" data-collected="${!!color}" style="${color?`background-color:${color}`:''}" aria-label="${token}${color?' popped':' not popped'}">${content}</span>`;
     }).join(''):state.bubbleRecent.map(color=>`<i class="pop-dot" style="background:${color}" aria-hidden="true"></i>`).join('');
+    updateGameItemStrip();
     document.querySelectorAll('[data-bubble-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.bubbleMode===state.bubbleMode)));
     const numbers=bubbleItems('numbers'),letters=bubbleItems('letters');document.querySelector('[data-bubble-mode="numbers"]').textContent=`1–${numbers.length}`;document.querySelector('[data-bubble-mode="letters"]').textContent=`A–${letters.at(-1)}`;
     $('bubble-full-set').hidden=state.age===null;$('bubble-full-set').setAttribute('aria-pressed',String(state.bubbleSet==='full'));
@@ -489,7 +520,7 @@
   // Keep touch sizes useful across phone/tablet layouts and fit short play fields.
   function bubbleRadius(){const desired=bubbleDiameters[selectedBubbleSize()]*220/Math.max(1,scene.clientHeight);return Math.max(14,Math.min(392,desired,selectedBubbleSize()==='large'?state.bubbleWidth*.44:392));}
   // Large bubbles need fewer simultaneous lanes on narrow screens. Keep a full bubble diameter plus a touch-safe gap between lanes.
-  function bubbleCapacity(){const diameter=bubbleRadius()*2,gap=Math.max(18,diameter*.12);return Math.max(1,Math.min(profile().bubbleCount,Math.floor((state.bubbleWidth-8+gap)/(diameter+gap))));}
+  function bubbleCapacity(){const diameter=bubbleRadius()*2,gap=Math.max(18,diameter*.12);return Math.max(1,Math.min(8,Math.floor((state.bubbleWidth-8+gap)/(diameter+gap))));}
   function syncBubbleSlots(){
     const layer=$('bubble-layer');if(!layer||!state.bubbles)return;
     const count=bubbleCapacity();
@@ -524,7 +555,7 @@
     // Fixed lane centers with no random horizontal drift: adjacent centers remain
     // at least one bubble diameter plus a safety gap apart.
     bubble.x=(bubble.slot+.5)*lane;
-    bubble.y=initial?Math.max(bubble.r+5,Math.min(435-bubble.r,135+(bubble.slot%3)*100+Math.random()*12)):440+bubble.r+8;bubble.wait=0;
+    bubble.y=initial?Math.max(bubble.r+5,Math.min(435-bubble.r,110+(bubble.slot%3)*100+Math.random()*12)):440+bubble.r+8;bubble.wait=0;
     const element=document.createElementNS('http://www.w3.org/2000/svg','g');bubble.element=element;
     element.classList.add('bubble');element.dataset.bubble=String(bubble.id);element.dataset.token=bubble.token;element.dataset.color=bubble.color;
     element.setAttribute('role','button');element.setAttribute('aria-label',`Pop ${bubble.token||'plain'} bubble`);
@@ -532,7 +563,7 @@
     $('bubble-layer').appendChild(element);positionBubble(bubble);
   }
   function drawBubble(bubble){
-    const content=state.bubbleMode==='plain'?`<g transform="scale(${bubble.r/68})">${face(0,8)}</g>`:state.bubbleMode==='shapes'?`<g transform="scale(${bubble.r/95})">${shapeEffects}${glossyShape(bubble.token,shapeById(bubble.token)?.color||'#ffcf64')}</g>`:`<text text-anchor="middle" dominant-baseline="central" font-family="inherit" font-size="${bubble.r*(bubble.token.length===2?.9:1.1)}" font-weight="900" fill="#29463e">${bubble.token}</text>`;
+    const content=state.bubbleMode==='plain'?`<g transform="scale(${bubble.r/68})">${face(0,8)}</g>`:state.bubbleMode==='shapes'?`<g transform="scale(${bubble.r/95})">${primitive(bubble.token,shapeById(bubble.token)?.color||'#ffcf64','#274b44')}</g>`:`<text text-anchor="middle" dominant-baseline="central" font-family="inherit" font-size="${bubble.r*(bubble.token.length===2?.9:1.1)}" font-weight="900" fill="#29463e">${bubble.token}</text>`;
     bubble.element.innerHTML=`<circle r="${bubble.r}" fill="${bubble.color}" stroke="#fffdf3" stroke-width="${bubble.r*.07}"/><circle r="${bubble.r*.83}" fill="none" stroke="white" stroke-opacity=".35" stroke-width="${bubble.r*.04}"/>${content}`;
   }
   function renderBubbles(){
@@ -566,14 +597,14 @@
     const splash=document.createElementNS('http://www.w3.org/2000/svg','g');splash.dataset.splash='';splash.setAttribute('transform',`translate(${bubble.x} ${bubble.y})`);splash.setAttribute('fill',bubble.color);
     splash.innerHTML=Array.from({length:8},()=>'<circle r="9"/>').join('');$('splash-layer').appendChild(splash);
     state.bubbleEffects.push({element:splash,drops:[...splash.children],age:0,radius:bubble.r*.85});
-    bubble.element.remove();bubble.element=null;bubble.wait=.6;state.bubblePops++;state.bubbleRecent=[...state.bubbleRecent.slice(-7),bubble.color];
+    bubble.element.remove();bubble.element=null;bubble.wait=.15;state.bubblePops++;state.bubbleRecent=[...state.bubbleRecent.slice(-7),bubble.color];
     if(bubble.token)state.bubbleHits.set(bubble.token,bubble.color);bubbleTracker();tone(450+(bubble.id%8)*55);
     if(focused)activeBubble()?.element.focus();
     if(state.bubbleMode==='plain'){
-      if(state.bubblePops%10===0)celebrate('Pop, pop, hooray! SaNa says well done. Keep popping!');
+      if(state.bubblePops%10===0){const roundAtCompletion=roundSerial;celebrate('Pop, pop, hooray! SaNa says well done. Keep popping!');setTimeout(()=>{if(state.activity==='bubbles'&&state.bubbleMode==='plain'&&state.done&&roundSerial===roundAtCompletion)state.done=false;},1600);}
       else hint(`Splash, pop! ${state.bubblePops} ${state.bubblePops===1?'bubble':'bubbles'} popped. Keep going!`);
     }else if(state.bubbleHits.size===bubbleItems().length&&!state.done){
-      celebrate(`SaNa says hooray! You found all the ${state.bubbleMode==='numbers'?'numbers':state.bubbleMode==='letters'?'letters':'shapes'}. Keep popping!`);
+      const roundAtCompletion=roundSerial;celebrate(`SaNa says hooray! You found all the ${state.bubbleMode==='numbers'?'numbers':state.bubbleMode==='letters'?'letters':'shapes'}. Keep popping!`);setTimeout(()=>{if(state.activity==='bubbles'&&state.done&&roundSerial===roundAtCompletion)resetRound();},1800);
     }else if(!state.done)hint(`Splash! ${bubble.token} is now the same color above. Keep looking!`);
   }
 
@@ -607,7 +638,7 @@
       <rect data-slide-swipe="1" x="150" y="16" width="840" height="395" fill="transparent" role="button" tabindex="0" aria-label="${opened?'Slide door closed to continue':'Slide door open to reveal '+item[0]}"/>
       <rect x="250" y="365" width="500" height="62" rx="26" fill="#fff6df" stroke="#9c7140" stroke-width="3" pointer-events="none"/>
       <text x="500" y="407" text-anchor="middle" font-size="27" font-weight="900" fill="#214b3e" pointer-events="none">${opened?'Door OPEN · Slide left to close ←':'Door CLOSED · Slide right to open →'}</text>`;
-    progress(state.slideIndex+(opened?1:0),slideTotal());
+    progress(state.slideIndex+(opened?1:0),slideTotal());updateGameItemStrip();
     $('activity-name').textContent=`Cave Maze · Room ${state.slideIndex+1}/${slideTotal()}`;
     if(opened)hint(`SaNa says: ${item[0].toUpperCase()}! Slide the door closed for the next picture.`);
     else hint(`Room ${state.slideIndex+1} of ${slideTotal()}. Slide the big door to discover a picture!`);
