@@ -77,7 +77,7 @@
       for(let i=0;i<(win?3:1);i++){
         const oscillator=audio.createOscillator(),gain=audio.createGain(),start=audio.currentTime+i*.12;
         oscillator.type='sine';oscillator.frequency.value=frequency*(win?[1,1.25,1.5][i]:1);
-        gain.gain.setValueAtTime(0,start);gain.gain.linearRampToValueAtTime(.045,start+.012);gain.gain.exponentialRampToValueAtTime(.001,start+.18);
+        gain.gain.setValueAtTime(0,start);gain.gain.linearRampToValueAtTime(.20,start+.012);gain.gain.exponentialRampToValueAtTime(.001,start+.18);
         oscillator.connect(gain);gain.connect(audio.destination);oscillator.onended=()=>{oscillator.disconnect();gain.disconnect();};oscillator.start(start);oscillator.stop(start+.2);
       }
     }catch{/* Unsupported audio never blocks play. */}
@@ -102,7 +102,7 @@
       for(let i=0;i<samples.length;i++)samples[i]=(Math.random()*2-1)*(1-i/samples.length);
       for(let i=0;i<8;i++){
         const source=audio.createBufferSource(),gain=audio.createGain(),start=audio.currentTime+i*.16;
-        source.buffer=buffer;gain.gain.setValueAtTime(.08,start);gain.gain.exponentialRampToValueAtTime(.001,start+.12);
+        source.buffer=buffer;gain.gain.setValueAtTime(.18,start);gain.gain.exponentialRampToValueAtTime(.001,start+.12);
         source.connect(gain);gain.connect(audio.destination);source.onended=()=>{source.disconnect();gain.disconnect();};source.start(start);
       }
     }catch{/* Applause is optional when sound is unavailable. */}

@@ -225,12 +225,12 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
   background:#a9e4b9!important;color:#173e2b!important;border-color:#3d8d5a!important;
 }
 
-/* v0.92: music note and speaker use identical icon dimensions */
+/* v0.93: music note and speaker use identical icon dimensions */
 #music-toggle svg,#sound svg{width:24px;height:24px;display:block;flex:none}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
 <script>for(const type of ['touchstart','touchmove'])document.addEventListener(type,event=>{if(event.touches.length>1)event.preventDefault();},{passive:false,capture:true});for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});</script>
-<meta name="sana-release" content="sana-little-hands-beta-v92">
+<meta name="sana-release" content="sana-little-hands-beta-v93">
 <style>
 #music-toggle{font-size:24px;font-weight:900;color:#183f37;background:#d6c4fa}
 #music-toggle[aria-pressed="true"]{background:#bce8c8}
@@ -378,7 +378,7 @@ if('mediaSession' in navigator){
   try{
     navigator.mediaSession.metadata=new MediaMetadata({title:'SaNa Little Hands — Background Music',artist:'SaNa Little Hands'});
     navigator.mediaSession.setActionHandler('pause',()=>{player.pause();navigator.mediaSession.playbackState='paused';});
-    navigator.mediaSession.setActionHandler('play',()=>{if(master&&enabled)player.play().catch(()=>{});});
+    navigator.mediaSession.setActionHandler('play',()=>{if(master&&enabled&&!document.hidden)play();});
   }catch{}
 }
 let enabled=false;
@@ -395,8 +395,11 @@ function play(){
 }
 button.addEventListener('click',()=>{enabled=!enabled;try{localStorage.setItem('sanaMusicV1',enabled?'on':'off');}catch(e){}sync();play();});
 window.addEventListener('sana-sound-change',event=>{master=Boolean(event.detail?.enabled);sync();play();});
-document.addEventListener('visibilitychange',play);
-window.addEventListener('pagehide',()=>{player.pause();if('mediaSession' in navigator)navigator.mediaSession.playbackState='paused';});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseBackgroundMusic();else play();});
+function pauseBackgroundMusic(){player.pause();if('mediaSession' in navigator)navigator.mediaSession.playbackState='paused';}
+window.addEventListener('blur',()=>{if(document.hidden)pauseBackgroundMusic();});
+document.addEventListener('freeze',pauseBackgroundMusic);
+window.addEventListener('pagehide',pauseBackgroundMusic);
 // Audio playback requires an initial user gesture on mobile.
 document.addEventListener('pointerdown',()=>{if(enabled)play();},{once:true});
 sync();
