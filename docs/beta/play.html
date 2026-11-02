@@ -161,7 +161,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 }
 
 
-/* v0.80: game-specific controls only; never reveal hidden controls through display:flex. */
+/* v0.81: game-specific controls only; never reveal hidden controls through display:flex. */
 #app #play-levels, #app #play-levels * {display:none!important}
 #app #play-options [hidden], #app #play-options[hidden],
 #app #bubble-modes[hidden], #app #brush-modes[hidden],
@@ -183,14 +183,14 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 #app:not([data-view="home"]) .play-toolbar #play-options .mode-switch{min-width:max-content}
 #app.immersive .game-status-top{display:none!important}
 
-/* v0.80: activity-scoped controls, preventing unrelated controls in every room. */
+/* v0.81: activity-scoped controls, preventing unrelated controls in every room. */
 #app[data-view="abacus"] #play-levels,#app[data-view="abacus"] #bubble-modes,#app[data-view="abacus"] #bubble-settings,#app[data-view="abacus"] #brush-modes,#app[data-view="abacus"] #art-tools,#app[data-view="abacus"] #paint-tools,
 #app[data-view="drag"] #play-levels,#app[data-view="drag"] #bubble-modes,#app[data-view="drag"] #bubble-settings,#app[data-view="drag"] #brush-modes,#app[data-view="drag"] #art-tools,#app[data-view="drag"] #paint-tools,
 #app[data-view="slide"] #play-levels,#app[data-view="slide"] #bubble-modes,#app[data-view="slide"] #bubble-settings,#app[data-view="slide"] #brush-modes,#app[data-view="slide"] #art-tools,#app[data-view="slide"] #paint-tools,
 #app[data-view="brush"] #play-levels,#app[data-view="brush"] #bubble-modes,#app[data-view="brush"] #bubble-settings,#app[data-view="brush"] #abacus-stage,
 #app[data-view="bubbles"] #play-levels,#app[data-view="bubbles"] #brush-modes,#app[data-view="bubbles"] #art-tools,#app[data-view="bubbles"] #paint-tools,#app[data-view="bubbles"] #abacus-stage {display:none!important}
 
-/* v0.80: Hide the entire empty option toolbar in games without option modes.
+/* v0.81: Hide the entire empty option toolbar in games without option modes.
    Do not hide the shared navigation row or abacus totals. */
 #app[data-view="abacus"] .play-mat>.play-toolbar,
 #app[data-view="drag"] .play-mat>.play-toolbar,
@@ -204,7 +204,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
 <script>for(const type of ['touchstart','touchmove'])document.addEventListener(type,event=>{if(event.touches.length>1)event.preventDefault();},{passive:false,capture:true});for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});</script>
-<meta name="sana-release" content="sana-little-hands-beta-v80">
+<meta name="sana-release" content="sana-little-hands-beta-v81">
 <style>
 #music-toggle{font-size:25px;font-weight:900;color:#183f37;background:#d6c4fa}
 #music-toggle[aria-pressed="true"]{background:#bce8c8}
@@ -253,7 +253,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 #app.immersive #exit-play{display:flex!important;position:absolute;right:10px;top:10px;z-index:99;align-items:center;justify-content:center;width:48px;height:48px;min-width:48px;min-height:48px;border:3px solid #fff;border-radius:12px;background:#ffe17a;color:#173e35;font-size:32px;font-weight:900;line-height:1;pointer-events:auto;touch-action:manipulation;box-shadow:0 2px 8px #0007}
 #exit-play{display:none}
 </style>
-<style id="game-control-isolation-v80">
+<style id="game-control-isolation-v81">
 /* Final cascade guard: never let generic display:flex override HTML hidden. */
 #app [hidden], #app [hidden] * { display:none !important; }
 /* Only the selected game may expose its controls. */

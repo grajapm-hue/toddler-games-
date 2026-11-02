@@ -812,16 +812,32 @@
     app.style.left=`${(visual?.offsetLeft||0)+left+availableW/2}px`;app.style.top=`${(visual?.offsetTop||0)+top+availableH/2}px`;
     cancelGesture();app.style.setProperty('--frame-w',`${width}px`);app.style.setProperty('--frame-h',`${height}px`);app.classList.toggle('rotated',rotated);app.classList.toggle('compact',height<530);app.classList.toggle('narrow',width<740);app.classList.toggle('short-play',height<350);
   }
+  // Use SaNa's in-page immersive layout without requesting browser fullscreen.
+  // Android/Chrome owns the origin-labelled fullscreen security banner; web apps
+  // cannot customize or suppress it. Installed PWAs already hide browser chrome.
+  let immersiveNoticeTimer=null;
+  function immersiveNotice(){
+    let notice=document.getElementById('sana-immersive-notice');
+    if(!notice){
+      notice=document.createElement('div');notice.id='sana-immersive-notice';
+      notice.setAttribute('role','status');notice.setAttribute('aria-live','polite');
+      Object.assign(notice.style,{position:'absolute',bottom:'12px',left:'50%',transform:'translateX(-50%)',padding:'6px 12px',borderRadius:'12px',background:'rgba(255,250,220,.93)',color:'#18453c',font:'600 13px system-ui,sans-serif',zIndex:'30',pointerEvents:'none',whiteSpace:'nowrap',maxWidth:'90%',textAlign:'center'});
+      app.appendChild(notice);
+    }
+    notice.textContent='SaNa play mode · Tap × to exit';notice.hidden=false;
+    clearTimeout(immersiveNoticeTimer);
+    immersiveNoticeTimer=setTimeout(()=>{notice.hidden=true;},2200);
+  }
   async function immersiveMode(active){
     cancelGesture();app.classList.toggle('immersive',active);
     const button=$('fullscreen'),label=active?'Exit fullscreen':'Fullscreen';
     button.setAttribute('aria-label',label);button.setAttribute('aria-pressed',String(active));button.title=label;
     button.querySelector('use').setAttribute('href',active?'#exit-fullscreen-icon':'#fullscreen-icon');
-    if(active){
-      // Browser fullscreen is the only supported way to hide mobile browser chrome.
-      try{if(document.fullscreenEnabled && !document.fullscreenElement)await document.documentElement.requestFullscreen({navigationUI:'hide'});}catch(e){}
-    }else{
-      if(document.fullscreenElement)try{await document.exitFullscreen();}catch(e){}
+    // Do not call requestFullscreen: it exposes the hosting origin in a browser-owned banner.
+    if(active)immersiveNotice();
+    else{
+      clearTimeout(immersiveNoticeTimer);
+      const notice=document.getElementById('sana-immersive-notice');if(notice)notice.hidden=true;
       button.focus({preventScroll:true});
     }
     fitFrame();
