@@ -101,10 +101,110 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 .brush-thumb svg{width:30px;height:30px;flex:0 0 auto;overflow:visible}
 .brush-thumb.current{border:3px solid #2d725c;background:#d5f2e3}
 .brush-thumb.past{background:#e5e4df;color:#617269}
+
+/* v0.72: place game-specific options at the bottom of every play room.
+   The scene takes the newly released upper space without stretching its artwork. */
+#app:not([data-view="home"]) .play-mat{display:flex;flex-direction:column;min-height:0}
+#app:not([data-view="home"]) .play-mat>.play-toolbar{order:20;flex:0 0 auto;max-height:25%;overflow:auto;align-items:center}
+#app:not([data-view="home"]) .play-mat>#scene{order:0;flex:1 1 auto;min-height:0;height:0;width:100%}
+#app:not([data-view="home"]) .play-mat>.bubble-tracker{order:1;flex:0 0 auto}
+#app:not([data-view="home"]) .play-mat>.brush-thumbnails{order:2;flex:0 0 auto}
+#app:not([data-view="home"]) .play-mat>.play-navigation{order:30;flex:0 0 auto}
+#app:not([data-view="home"]) .play-mat>#celebrate,
+#app:not([data-view="home"]) .play-mat>#art-reward{z-index:4}
+/* Keep the bottom bar usable on short screens and in both orientations. */
+#app.short-play:not([data-view="home"]) .play-mat>.play-toolbar{max-height:30%;padding:2px 4px}
+#app:not([data-view="home"]) .play-mat>.play-toolbar #play-options{flex-wrap:wrap}
+
+
+/* v0.72: true compact single-line settings bar in every game room. */
+#app:not([data-view="home"]):not(.immersive) .play-mat>.play-toolbar{
+  flex:0 0 38px!important;height:38px!important;min-height:38px!important;max-height:38px!important;
+  width:100%;padding:2px 5px!important;gap:5px;overflow-x:auto!important;overflow-y:hidden!important;
+  display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;
+  scrollbar-width:thin;
+}
+#app:not([data-view="home"]):not(.immersive) .play-toolbar #game-results{
+  flex:0 0 auto!important;display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;
+  align-items:center!important;gap:4px;max-width:none!important;min-width:max-content!important;
+  height:32px!important;overflow:visible!important;
+}
+#app:not([data-view="home"]):not(.immersive) .play-toolbar #game-results > *{
+  white-space:nowrap!important;word-break:normal!important;overflow-wrap:normal!important;
+  width:auto!important;max-width:none!important;min-width:0!important;
+  margin:0!important;line-height:1.1!important;font-size:12px!important;
+}
+#app:not([data-view="home"]):not(.immersive) .play-toolbar #play-options{
+  display:flex!important;flex:0 0 auto!important;min-width:max-content!important;max-width:none!important;
+  height:32px!important;align-items:center!important;flex-direction:row!important;flex-wrap:nowrap!important;gap:4px!important;
+}
+#app:not([data-view="home"]):not(.immersive) .play-toolbar #play-options .levels,
+#app:not([data-view="home"]):not(.immersive) .play-toolbar #play-options .mode-switch{
+  display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;
+  min-width:max-content!important;height:32px!important;gap:3px!important;
+}
+#app:not([data-view="home"]):not(.immersive) .play-toolbar #play-options button,
+#app:not([data-view="home"]):not(.immersive) .play-toolbar #abacus-stage{
+  flex:0 0 auto!important;min-height:28px!important;max-height:30px!important;height:28px!important;
+  padding:2px 7px!important;font-size:12px!important;line-height:1!important;
+  white-space:nowrap!important;word-break:normal!important;writing-mode:horizontal-tb!important;
+}
+/* Low-obstruction exit: transparent background, no card or shadow. */
+#app.immersive #exit-play{
+  right:max(5px,env(safe-area-inset-right))!important;
+  top:max(5px,env(safe-area-inset-top))!important;
+  width:34px!important;min-width:34px!important;height:34px!important;min-height:34px!important;
+  padding:0!important;border:0!important;border-radius:50%!important;
+  background:transparent!important;box-shadow:none!important;
+  color:#173e35!important;font-size:29px!important;line-height:1!important;
+  text-shadow:0 1px 2px #fff,0 -1px 2px #fff;
+}
+
+
+/* v0.80: game-specific controls only; never reveal hidden controls through display:flex. */
+#app #play-levels, #app #play-levels * {display:none!important}
+#app #play-options [hidden], #app #play-options[hidden],
+#app #bubble-modes[hidden], #app #brush-modes[hidden],
+#app #abacus-stage[hidden], #app #bubble-settings[hidden],
+#app #art-tools[hidden], #app #paint-tools[hidden] {display:none!important}
+#app[data-view="brush"] #bubble-modes,#app[data-view="brush"] #abacus-stage,
+#app[data-view="drag"] #bubble-modes,#app[data-view="drag"] #brush-modes,
+#app[data-view="slide"] #bubble-modes,#app[data-view="slide"] #brush-modes,
+#app[data-view="abacus"] #bubble-modes,#app[data-view="abacus"] #brush-modes,
+#app[data-view="bubbles"] #brush-modes {display:none!important}
+#app:not([data-view="home"]) .play-mat>.game-status-top{order:-10;flex:0 0 auto;display:flex;align-items:center;min-height:30px;max-height:40px;padding:2px 6px;background:#d8b98e;overflow:hidden}
+#app:not([data-view="home"]) .game-status-top #game-results{display:flex;flex:1 1 auto;flex-direction:row;align-items:center;justify-content:flex-start;gap:9px;min-width:0;max-width:none;padding:3px 9px;min-height:27px;overflow:hidden}
+#app:not([data-view="home"]) .game-status-top #activity-name{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+#app:not([data-view="home"]) .game-status-top #result-score,
+#app:not([data-view="home"]) .game-status-top .bubble-score{flex:0 0 auto;font-size:13px;white-space:nowrap}
+#app:not([data-view="home"]) .play-mat>.play-toolbar{order:20;flex:0 0 auto;max-height:43px;min-height:32px;overflow-x:auto;overflow-y:hidden;padding:2px 5px;align-items:center;justify-content:center}
+#app:not([data-view="home"]) .play-toolbar #play-options{flex:0 1 auto;min-width:0;max-width:100%;overflow-x:auto;overflow-y:hidden;justify-content:flex-start;background:transparent;border:0;padding:0;margin:0}
+#app:not([data-view="home"]) .play-toolbar #play-options:empty{display:none}
+#app:not([data-view="home"]) .play-toolbar #play-options .mode-switch{min-width:max-content}
+#app.immersive .game-status-top{display:none!important}
+
+/* v0.80: activity-scoped controls, preventing unrelated controls in every room. */
+#app[data-view="abacus"] #play-levels,#app[data-view="abacus"] #bubble-modes,#app[data-view="abacus"] #bubble-settings,#app[data-view="abacus"] #brush-modes,#app[data-view="abacus"] #art-tools,#app[data-view="abacus"] #paint-tools,
+#app[data-view="drag"] #play-levels,#app[data-view="drag"] #bubble-modes,#app[data-view="drag"] #bubble-settings,#app[data-view="drag"] #brush-modes,#app[data-view="drag"] #art-tools,#app[data-view="drag"] #paint-tools,
+#app[data-view="slide"] #play-levels,#app[data-view="slide"] #bubble-modes,#app[data-view="slide"] #bubble-settings,#app[data-view="slide"] #brush-modes,#app[data-view="slide"] #art-tools,#app[data-view="slide"] #paint-tools,
+#app[data-view="brush"] #play-levels,#app[data-view="brush"] #bubble-modes,#app[data-view="brush"] #bubble-settings,#app[data-view="brush"] #abacus-stage,
+#app[data-view="bubbles"] #play-levels,#app[data-view="bubbles"] #brush-modes,#app[data-view="bubbles"] #art-tools,#app[data-view="bubbles"] #paint-tools,#app[data-view="bubbles"] #abacus-stage {display:none!important}
+
+/* v0.80: Hide the entire empty option toolbar in games without option modes.
+   Do not hide the shared navigation row or abacus totals. */
+#app[data-view="abacus"] .play-mat>.play-toolbar,
+#app[data-view="drag"] .play-mat>.play-toolbar,
+#app[data-view="slide"] .play-mat>.play-toolbar {display:none!important;min-height:0!important;max-height:0!important;padding:0!important;margin:0!important;border:0!important}
+#app[data-view="abacus"] #play-options,
+#app[data-view="abacus"] #play-options > *,
+#app[data-view="drag"] #play-options,
+#app[data-view="slide"] #play-options {display:none!important}
+#app[data-view="bubbles"] #brush-modes,
+#app[data-view="brush"] #bubble-modes {display:none!important}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
 <script>for(const type of ['touchstart','touchmove'])document.addEventListener(type,event=>{if(event.touches.length>1)event.preventDefault();},{passive:false,capture:true});for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});</script>
-<meta name="sana-release" content="sana-little-hands-beta-v69">
+<meta name="sana-release" content="sana-little-hands-beta-v80">
 <style>
 #music-toggle{font-size:25px;font-weight:900;color:#183f37;background:#d6c4fa}
 #music-toggle[aria-pressed="true"]{background:#bce8c8}
@@ -121,6 +221,52 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 .brush-thumb svg{width:30px;height:30px;flex:0 0 auto;overflow:visible}
 .brush-thumb.current{border:3px solid #2d725c;background:#d5f2e3}
 .brush-thumb.past{background:#e5e4df;color:#617269}
+
+/* v0.72: place game-specific options at the bottom of every play room.
+   The scene takes the newly released upper space without stretching its artwork. */
+#app:not([data-view="home"]) .play-mat{display:flex;flex-direction:column;min-height:0}
+#app:not([data-view="home"]) .play-mat>.play-toolbar{order:20;flex:0 0 auto;max-height:25%;overflow:auto;align-items:center}
+#app:not([data-view="home"]) .play-mat>#scene{order:0;flex:1 1 auto;min-height:0;height:0;width:100%}
+#app:not([data-view="home"]) .play-mat>.bubble-tracker{order:1;flex:0 0 auto}
+#app:not([data-view="home"]) .play-mat>.brush-thumbnails{order:2;flex:0 0 auto}
+#app:not([data-view="home"]) .play-mat>.play-navigation{order:30;flex:0 0 auto}
+#app:not([data-view="home"]) .play-mat>#celebrate,
+#app:not([data-view="home"]) .play-mat>#art-reward{z-index:4}
+/* Keep the bottom bar usable on short screens and in both orientations. */
+#app.short-play:not([data-view="home"]) .play-mat>.play-toolbar{max-height:30%;padding:2px 4px}
+#app:not([data-view="home"]) .play-mat>.play-toolbar #play-options{flex-wrap:wrap}
+
+
+/* v0.72: one-row game settings; use full horizontal width, scroll rather than wrap. */
+#app:not([data-view="home"]) .play-mat>.play-toolbar{display:flex;flex-wrap:nowrap;max-height:none;min-height:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;align-items:center;width:100%;gap:5px}
+#app:not([data-view="home"]) .play-toolbar #game-results{flex:0 0 auto;min-width:0;max-width:190px}
+#app:not([data-view="home"]) .play-toolbar #play-options{display:flex;flex:1 0 auto;flex-wrap:nowrap!important;justify-content:space-evenly;min-width:max-content;margin-left:0}
+#app:not([data-view="home"]) .play-toolbar #play-options .levels,
+#app:not([data-view="home"]) .play-toolbar #play-options .mode-switch{display:flex;flex-wrap:nowrap;white-space:nowrap;flex:0 0 auto}
+#app:not([data-view="home"]) .play-toolbar #play-options button{white-space:nowrap}
+/* Child-safe immersive mode: remove every on-page control except exit X. */
+#app.immersive .topbar,#app.immersive .companion-bar,#app.immersive .activity-heading,
+#app.immersive .play-toolbar,#app.immersive .play-navigation,
+#app.immersive .bubble-tracker,#app.immersive .brush-thumbnails{display:none!important}
+#app.immersive .play-mat{position:relative;overflow:hidden}
+#app.immersive .play-mat>#scene{order:0;flex:1 1 auto;min-height:0;height:100%;width:100%}
+#app.immersive #exit-play{display:flex!important;position:absolute;right:10px;top:10px;z-index:99;align-items:center;justify-content:center;width:48px;height:48px;min-width:48px;min-height:48px;border:3px solid #fff;border-radius:12px;background:#ffe17a;color:#173e35;font-size:32px;font-weight:900;line-height:1;pointer-events:auto;touch-action:manipulation;box-shadow:0 2px 8px #0007}
+#exit-play{display:none}
+</style>
+<style id="game-control-isolation-v80">
+/* Final cascade guard: never let generic display:flex override HTML hidden. */
+#app [hidden], #app [hidden] * { display:none !important; }
+/* Only the selected game may expose its controls. */
+#app[data-view="abacus"] .play-toolbar,
+#app[data-view="drag"] .play-toolbar,
+#app[data-view="slide"] .play-toolbar { display:none !important; }
+#app[data-view="brush"] #bubble-modes,
+#app[data-view="brush"] #bubble-settings,
+#app[data-view="brush"] #play-levels,
+#app[data-view="bubbles"] #brush-modes,
+#app[data-view="bubbles"] #art-tools,
+#app[data-view="bubbles"] #play-levels { display:none !important; }
+#app[data-view="home"] .play-toolbar { display:none !important; }
 </style>
 </head>
 <body>
@@ -160,7 +306,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
   <span id="step-note" hidden></span>
   <div class="bubble-settings" id="bubble-settings" hidden><div class="bubble-setting-group" role="group" aria-label="Bubble speed"><span>Speed</span><button type="button" data-bubble-speed="slow" aria-label="Slow bubble speed" aria-pressed="false">Slow</button><button type="button" data-bubble-speed="medium" aria-label="Medium bubble speed" aria-pressed="true">Medium</button><button type="button" data-bubble-speed="fast" aria-label="High bubble speed" aria-pressed="false">High</button></div><div class="bubble-setting-group" role="group" aria-label="Bubble size"><span>Size</span><button type="button" data-bubble-size="small" aria-label="Small bubbles" aria-pressed="false">Small</button><button type="button" data-bubble-size="medium" aria-label="Medium bubbles" aria-pressed="true">Medium</button><button type="button" data-bubble-size="large" aria-label="Large bubbles" aria-pressed="false">Large</button></div><button type="button" class="mode-button" id="bubble-full-set" aria-label="Full bubble collection" aria-pressed="false" hidden>Full set</button></div>
   <div class="art-tools" id="art-tools" hidden><div class="brush-sizes" role="group" aria-label="Brush size"><span class="paint-label">Brush</span><button class="art-tool" type="button" data-brush-size="small" aria-label="Small brush" aria-pressed="false">Small</button><button class="art-tool" type="button" data-brush-size="medium" aria-label="Medium brush" aria-pressed="true">Medium</button><button class="art-tool" type="button" data-brush-size="large" aria-label="Large brush" aria-pressed="false">Large</button></div><div class="paint-tools" id="paint-tools" hidden><span class="paint-label">Color</span><button class="art-tool" type="button" id="erase-paint" aria-label="Erase paint" aria-pressed="false">Eraser</button></div></div>
-  <div class="play-mat"><div class="play-toolbar"><div id="game-results" aria-label="Game results" aria-live="polite"><h1 id="activity-name">Shape picnic</h1><span id="result-score"></span><span class="bubble-score" id="bubble-score" hidden></span></div><div id="play-options" aria-label="Sub-levels"><div class="levels" id="play-levels" role="group" aria-label="Difficulty level">
+  <div class="play-mat"><div id="game-status-top" class="game-status-top" aria-label="Current game status"></div><button id="exit-play" type="button" aria-label="Exit fullscreen play" title="Exit fullscreen">×</button><div class="play-toolbar"><div id="game-results" aria-label="Game results" aria-live="polite"><h1 id="activity-name">Shape picnic</h1><span id="result-score"></span><span class="bubble-score" id="bubble-score" hidden></span></div><div id="play-options" aria-label="Sub-levels"><div class="levels" id="play-levels" role="group" aria-label="Difficulty level">
     <button class="level" type="button" data-level="1" aria-label="Easy level" aria-pressed="false">Easy<small>little steps</small></button>
     <button class="level" type="button" data-level="2" aria-label="Medium level" aria-pressed="true">Medium<small>guided play</small></button>
     <button class="level" type="button" data-level="3" aria-label="Challenge level" aria-pressed="false">Challenge<small>extra fun</small></button>
@@ -168,6 +314,9 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 </main>
 
 </div></div>
+<script>
+(()=>{const status=document.getElementById("game-results"),slot=document.getElementById("game-status-top");if(status&&slot)slot.appendChild(status);})();
+</script>
 <script src="age-profiles.js"></script>
 <script src="app.js"></script>
 <script src="pwa.js"></script>

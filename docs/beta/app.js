@@ -347,8 +347,17 @@
   const abacusWords=['Zero','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten'];
   const abacusCount=row=>state.abacusRows[row].filter(Boolean).length;
   const activeAbacusRow=()=>state.abacusSelectedRow??0;
+  const abacusTotal=()=>state.abacusRows.reduce((sum,_,row)=>sum+abacusCount(row),0);
+  function updateAbacusAddition(){
+    if(state.activity!=='abacus'||!state.abacusRows)return;
+    const total=abacusTotal();
+    scene.querySelectorAll('[data-abacus-left]').forEach(node=>{const row=Number(node.dataset.abacusLeft);node.textContent=String(10-abacusCount(row));});
+    scene.querySelectorAll('[data-abacus-right]').forEach(node=>{const row=Number(node.dataset.abacusRight);node.textContent=String(abacusCount(row));});
+    const box=scene.querySelector('[data-abacus-total]');if(box)box.textContent=String(total);
+    const equation=scene.querySelector('[data-abacus-equation]');if(equation)equation.textContent=state.abacusRows.map((_,row)=>abacusCount(row)).filter(n=>n>0).join(' + ')||'0';
+  }
   function abacusHint(){const row=activeAbacusRow(),count=abacusCount(row),suggestion=state.age===null||state.level===1?'':state.level===2?` Together, try ${profile().abacusGoal} beads in any color.`:` Together, try ${profile().abacusGoal} beads, then another color. All amounts are welcome.`;hint(`${abacusColors[row][0]}: ${count} ${abacusWords[count]} on the right. Slide beads in any row, either way!${suggestion}`);}
-  function abacusGeometry(){const width=Math.max(1000,600*scene.clientWidth/Math.max(1,scene.clientHeight)),left=width*.5,start=54,end=left-35,pitch=(end-start)*.043;return {width,left,start,end,pitch,r:Math.min(21,pitch*.44)};}
+  function abacusGeometry(){const width=Math.max(1000,600*scene.clientWidth/Math.max(1,scene.clientHeight)),left=width*.5,start=54,end=left-78,pitch=(end-start)*.043;return {width,left,start,end,pitch,r:Math.min(21,pitch*.44)};}
   function abacusBeadPoint(row,index,g=abacusGeometry()){const count=abacusCount(row);return {x:index>=10-count?g.end-(9-index)*g.pitch:g.start+index*g.pitch,y:34+row*56};}
   function abacusLabel(row,count){return `${count} ${abacusWords[count]} ${abacusColors[row][0]}`;}
   /** Build the scene only on entry, reset or resize. Ordinary slides retain every bead node. */
@@ -359,16 +368,16 @@
     const right=g.left+16,rw=g.width-right-12,radius=Math.min(260,rw*.32),cx=right+radius+6,base=286,circleR=Math.min(130,rw*.16),circleX=g.width-circleR-18,circleY=150,band=radius/10;
     const rainbow=abacusColors.slice(0,7).map(([name,color],i)=>{const outer=radius-i*band,inner=outer-band;return `<path data-rainbow-band="${i}" data-color-region="${i}" d="M${cx-outer} ${base}A${outer} ${outer} 0 0 1 ${cx+outer} ${base}L${cx+inner} ${base}A${inner} ${inner} 0 0 0 ${cx-inner} ${base}Z" fill="${abacusCount(i)?color:'#000'}" stroke="#90969e" stroke-width="3"/>`;}).join('');
     const circles=[[7,'outer',circleR],[9,'middle',circleR*.68],[8,'inner',circleR*.35]].map(([row,region,r])=>`<circle data-circle-region="${region}" data-color-region="${row}" cx="${circleX}" cy="${circleY}" r="${r}" fill="${abacusCount(row)?abacusColors[row][1]:'#000'}" stroke="#90969e" stroke-width="3"/>`).join('');
-    scene.innerHTML=`<g id="abacus-frame"><rect x="10" y="5" width="${g.left-24}" height="586" rx="18" fill="#101010" stroke="#9b7e60" stroke-width="7"/>${abacusColors.map(([name,color],row)=>{const y=34+row*56,count=abacusCount(row);return `<g data-abacus-row="${row}"><rect data-row-highlight="${row}" x="20" y="${y-25}" width="${g.left-44}" height="50" rx="12" fill="none" stroke="${row===active?'#ffe17a':'transparent'}" stroke-width="3"/><text data-row-count="${row}" x="28" y="${y+8}" text-anchor="middle" font-size="23" fill="#fff" font-weight="900">${count}</text><path d="M${g.start-g.r} ${y}H${g.end+g.r}" stroke="#90969e" stroke-width="4"/><circle data-abacus-start="${row}" cx="${g.start}" cy="${y}" r="${g.r+2}" fill="none" stroke="#555" stroke-width="3" stroke-dasharray="5 5"/><circle data-abacus-destination="${row}" cx="${g.end}" cy="${y}" r="${g.r+2}" fill="none" stroke="#777" stroke-width="3" stroke-dasharray="5 5"/>${state.abacusRows[row].map((moved,index)=>{const p=abacusBeadPoint(row,index,g);return `<g data-bead-row="${row}" data-bead-index="${index}" data-moved="${moved}" transform="translate(${p.x} ${p.y})" role="button" aria-label="${name} bead ${index+1}" aria-disabled="false" tabindex="${index===9-count||index===10-count?'0':'-1'}"><circle r="${g.r}" fill="${color}" stroke="#ffffffb0" stroke-width="1.5"/><path d="M${-g.r*.45} ${-g.r*.48}L${g.r*.05} ${-g.r*.7}" stroke="white" stroke-opacity=".65" stroke-width="3" stroke-linecap="round"/></g>`;}).join('')}</g>`;}).join('')}</g><path d="M${g.left} 12V588" stroke="#555" stroke-width="2"/><g id="rainbow-picture" role="img" aria-label="Rainbow bands fill with the colors counted">${rainbow}</g><g id="circle-picture" role="img" aria-label="Pink outer circle, white middle circle, brown center">${circles}</g><g id="abacus-labels"><rect data-abacus-label-panel x="${right+4}" y="311" width="${rw-8}" height="276" rx="17" fill="#30343b" stroke="#a8adb4" stroke-width="4"/>${abacusColors.map(([name,color],row)=>`<text data-color-label="${row}" x="${right+16+(row<5?0:rw*.52)}" y="${348+(row%5)*51}" fill="${color}" stroke="#111820" stroke-width="${Math.max(1.2,font*.065)}" paint-order="stroke fill" stroke-linejoin="round" font-size="${font}" font-weight="900" font-family="inherit">${abacusLabel(row,abacusCount(row))}</text>`).join('')}</g>`;
+    scene.innerHTML=`<g id="abacus-frame"><rect x="10" y="5" width="${g.left-24}" height="586" rx="18" fill="#101010" stroke="#9b7e60" stroke-width="7"/>${abacusColors.map(([name,color],row)=>{const y=34+row*56,count=abacusCount(row);return `<g data-abacus-row="${row}"><rect data-row-highlight="${row}" x="20" y="${y-25}" width="${g.left-44}" height="50" rx="12" fill="none" stroke="${row===active?'#ffe17a':'transparent'}" stroke-width="3"/><text data-abacus-left="${row}" x="28" y="${y+8}" text-anchor="middle" font-size="23" fill="#fff" font-weight="900">${10-count}</text><text data-abacus-right="${row}" x="${g.left-27}" y="${y+8}" text-anchor="middle" font-size="23" fill="#fff" font-weight="900">${count}</text><path d="M${g.start-g.r} ${y}H${g.end+g.r}" stroke="#90969e" stroke-width="4"/><circle data-abacus-start="${row}" cx="${g.start}" cy="${y}" r="${g.r+2}" fill="none" stroke="#555" stroke-width="3" stroke-dasharray="5 5"/><circle data-abacus-destination="${row}" cx="${g.end}" cy="${y}" r="${g.r+2}" fill="none" stroke="#777" stroke-width="3" stroke-dasharray="5 5"/>${state.abacusRows[row].map((moved,index)=>{const p=abacusBeadPoint(row,index,g);return `<g data-bead-row="${row}" data-bead-index="${index}" data-moved="${moved}" transform="translate(${p.x} ${p.y})" role="button" aria-label="${name} bead ${index+1}" aria-disabled="false" tabindex="${index===9-count||index===10-count?'0':'-1'}"><circle r="${g.r}" fill="${color}" stroke="#ffffffb0" stroke-width="1.5"/><path d="M${-g.r*.45} ${-g.r*.48}L${g.r*.05} ${-g.r*.7}" stroke="white" stroke-opacity=".65" stroke-width="3" stroke-linecap="round"/></g>`;}).join('')}</g>`;}).join('')}</g><path d="M${g.left} 12V588" stroke="#555" stroke-width="2"/><g id="rainbow-picture" role="img" aria-label="Rainbow bands fill with the colors counted">${rainbow}</g><g id="circle-picture" role="img" aria-label="Pink outer circle, white middle circle, brown center">${circles}</g><g id="abacus-addition"><rect x="${right+4}" y="289" width="${rw-8}" height="51" rx="13" fill="#fff4c8" stroke="#a97e37" stroke-width="3"/><text x="${right+20}" y="310" font-size="18" font-weight="800" fill="#213b38">TOTAL BEADS →</text><text data-abacus-total x="${g.width-35}" y="331" text-anchor="end" font-size="49" font-weight="900" fill="#155c4a">${abacusTotal()}</text><text data-abacus-equation x="${right+20}" y="333" font-size="24" font-weight="900" fill="#334d47">0</text></g><g id="abacus-labels"><rect data-abacus-label-panel x="${right+4}" y="346" width="${rw-8}" height="241" rx="17" fill="#30343b" stroke="#a8adb4" stroke-width="4"/>${abacusColors.map(([name,color],row)=>`<text data-color-label="${row}" x="${right+16+(row<5?0:rw*.52)}" y="${376+(row%5)*42}" fill="${color}" stroke="#111820" stroke-width="${Math.max(1.2,font*.065)}" paint-order="stroke fill" stroke-linejoin="round" font-size="${font}" font-weight="900" font-family="inherit">${abacusLabel(row,abacusCount(row))}</text>`).join('')}</g>`;
     state.abacusElements=abacusColors.map((_,row)=>({beads:[...scene.querySelectorAll(`[data-bead-row="${row}"]`)],region:scene.querySelector(`[data-color-region="${row}"]`),label:scene.querySelector(`[data-color-label="${row}"]`),count:scene.querySelector(`[data-row-count="${row}"]`),highlight:scene.querySelector(`[data-row-highlight="${row}"]`)}));
-    updateAbacusProgress();updateAbacusFeedback(active);
+    updateAbacusProgress();updateAbacusFeedback(active);updateAbacusAddition();
   }
   function updateAbacusFeedback(row,count=abacusCount(row),reveal=false){
     const nodes=state.abacusElements[row];if(!nodes)return;
-    nodes.region.setAttribute('fill',count?abacusColors[row][1]:'#000');nodes.count.textContent=String(count);nodes.label.textContent=abacusLabel(row,count);
+    nodes.region.setAttribute('fill',count?abacusColors[row][1]:'#000');if(nodes.count)nodes.count.textContent=String(count);nodes.label.textContent=abacusLabel(row,count);
     nodes.label.classList.toggle('abacus-pop',reveal);
     $('result-score').textContent=`${abacusColors[row][0]}: ${count} ${abacusWords[count]}`;
-    state.abacusElements.forEach((item,i)=>item.highlight.setAttribute('stroke',i===row?'#ffe17a':'transparent'));
+    state.abacusElements.forEach((item,i)=>item.highlight.setAttribute('stroke',i===row?'#ffe17a':'transparent'));updateAbacusAddition();
   }
   function restoreAbacusRow(row){const g=abacusGeometry(),count=abacusCount(row);state.abacusElements[row].beads.forEach((node,index)=>{const p=abacusBeadPoint(row,index,g);node.setAttribute('transform',`translate(${p.x} ${p.y})`);node.dataset.moved=String(index>=10-count);node.setAttribute('tabindex',index===9-count||index===10-count?'0':'-1');});}
   function updateAbacusProgress(){progress(state.abacusRows.filter((_,row)=>abacusCount(row)>0).length,10);}
@@ -803,12 +812,18 @@
     app.style.left=`${(visual?.offsetLeft||0)+left+availableW/2}px`;app.style.top=`${(visual?.offsetTop||0)+top+availableH/2}px`;
     cancelGesture();app.style.setProperty('--frame-w',`${width}px`);app.style.setProperty('--frame-h',`${height}px`);app.classList.toggle('rotated',rotated);app.classList.toggle('compact',height<530);app.classList.toggle('narrow',width<740);app.classList.toggle('short-play',height<350);
   }
-  function immersiveMode(active){
+  async function immersiveMode(active){
     cancelGesture();app.classList.toggle('immersive',active);
     const button=$('fullscreen'),label=active?'Exit fullscreen':'Fullscreen';
     button.setAttribute('aria-label',label);button.setAttribute('aria-pressed',String(active));button.title=label;
     button.querySelector('use').setAttribute('href',active?'#exit-fullscreen-icon':'#fullscreen-icon');
-    if(!active)button.focus({preventScroll:true});
+    if(active){
+      // Browser fullscreen is the only supported way to hide mobile browser chrome.
+      try{if(document.fullscreenEnabled && !document.fullscreenElement)await document.documentElement.requestFullscreen({navigationUI:'hide'});}catch(e){}
+    }else{
+      if(document.fullscreenElement)try{await document.exitFullscreen();}catch(e){}
+      button.focus({preventScroll:true});
+    }
     fitFrame();
   }
   const gameSteps=()=>Object.keys(activities).flatMap(activity=>[1].flatMap(level=>(activity==='bubbles'?['plain','numbers','letters','shapes']:activity==='brush'?['clean','paint']:['']).map(mode=>({activity,level,mode}))));
@@ -819,7 +834,9 @@
   function stepGame(direction){const next=gameSteps()[currentStep()+direction];if(!next){void gameMenu();return;}setLevel(next.level,false);if(next.activity==='bubbles')state.bubbleMode=next.mode;startActivity(next.activity,next.mode==='paint');}
   $('game-back').addEventListener('click',()=>stepGame(-1));$('game-front').addEventListener('click',()=>stepGame(1));$('game-home').addEventListener('click',gameMenu);
   // Expand inside the page to keep browser-owned fullscreen notices out of play.
-  $('fullscreen').addEventListener('click',()=>immersiveMode(!app.classList.contains('immersive')));
+  $('fullscreen').addEventListener('click',()=>{void immersiveMode(!app.classList.contains('immersive'));});
+  $('exit-play').addEventListener('click',()=>{void immersiveMode(false);});
+  document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&app.classList.contains('immersive')){app.classList.remove('immersive');$('fullscreen').setAttribute('aria-pressed','false');fitFrame();}});
   document.addEventListener('fullscreenchange',fitFrame);
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&app.classList.contains('immersive'))immersiveMode(false);});
   window.addEventListener('resize',fitFrame);window.visualViewport?.addEventListener('resize',fitFrame);window.addEventListener('orientationchange',fitFrame);
