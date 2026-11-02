@@ -80,10 +80,14 @@
       if(!navigator.onLine||!('serviceWorker'in navigator)||!window.isSecureContext)throw new Error('An online secure connection is needed');
       const registration=await navigator.serviceWorker.getRegistration()||await navigator.serviceWorker.register('sw.js',{scope:'./',updateViaCache:'none'});
       await registration.update();
-      const worker=registration.installing||registration.waiting||registration.active;
-      if(!worker)throw new Error('No app update available');
-      if(worker.state!=='activated')updateLabel.textContent=app?'Wait…':'Updating…';
-      await activated(worker);
+      // The active worker may still be the previous release while the new one installs.
+      let worker=registration.installing||registration.waiting;
+      if(worker){
+        updateLabel.textContent=app?'Wait…':'Updating…';
+        await activated(worker);
+      }
+      worker=registration.active||navigator.serviceWorker.controller||worker;
+      if(!worker)throw new Error('No active service worker');
       const ready=await workerStatus(worker);
       if(!ready?.ready||!ready.version||!release)throw new Error('Update files are not ready');
       if(ready.version!==release){
@@ -95,8 +99,9 @@
         applyUpdate(ready.version);return;
       }
       if(!app||app.dataset.view==='home'||requestedInGame)updateDialog('App is up to date','<p>You already have the latest SaNa app. Your downloaded games are ready to play.</p>');
-    }catch{
-      if(!app||app.dataset.view==='home'||requestedInGame)updateDialog('Update unavailable','<p>Connect to the internet and try again. Your downloaded games and saved settings are still available.</p>');
+    }catch(error){
+      const reason=String(error?.message||'Unknown update error').replace(/[<>&"']/g,'');
+      if(!app||app.dataset.view==='home'||requestedInGame)updateDialog('Update unavailable','<p>The new version could not be installed. Check that all files are deployed, then retry. Your downloaded games and saved settings are still available.</p><p style="font-size:.8em">Details: '+reason+'</p>');
     }finally{
       updateButton.disabled=false;updateButton.setAttribute('aria-busy','false');
       updateLabel.textContent=normalUpdateLabel;

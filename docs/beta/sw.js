@@ -1,10 +1,15 @@
-const CACHE='sana-little-hands-beta-v84';
+const CACHE='sana-little-hands-beta-v85';
 const PREFIX='sana-little-hands-beta-';
-const ASSETS=['./index.html','./play.html','./age-profiles.js','./app.js','./bgm-monkeys.mp3','./slide-cave.jpg','./sana-space-sky-v84.jpg','./pwa.js','./share.js','./share.css','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png'];
+const ASSETS=['./index.html','./play.html','./age-profiles.js','./app.js','./bgm-monkeys.mp3','./slide-cave.jpg','./sana-space-sky-v83.jpg','./pwa.js','./share.js','./share.css','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',event=>{
   event.waitUntil((async()=>{
     const cache=await caches.open(CACHE);
-    await cache.addAll(ASSETS.map(path=>new Request(path,{cache:'reload'})));
+    try{
+      await cache.addAll(ASSETS.map(path=>new Request(path,{cache:'reload'})));
+    }catch(error){
+      await caches.delete(CACHE);
+      throw error;
+    }
     await self.skipWaiting();
   })());
 });
