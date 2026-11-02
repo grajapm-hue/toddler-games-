@@ -161,7 +161,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 }
 
 
-/* v0.81: game-specific controls only; never reveal hidden controls through display:flex. */
+/* v0.82: game-specific controls only; never reveal hidden controls through display:flex. */
 #app #play-levels, #app #play-levels * {display:none!important}
 #app #play-options [hidden], #app #play-options[hidden],
 #app #bubble-modes[hidden], #app #brush-modes[hidden],
@@ -183,14 +183,14 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 #app:not([data-view="home"]) .play-toolbar #play-options .mode-switch{min-width:max-content}
 #app.immersive .game-status-top{display:none!important}
 
-/* v0.81: activity-scoped controls, preventing unrelated controls in every room. */
+/* v0.82: activity-scoped controls, preventing unrelated controls in every room. */
 #app[data-view="abacus"] #play-levels,#app[data-view="abacus"] #bubble-modes,#app[data-view="abacus"] #bubble-settings,#app[data-view="abacus"] #brush-modes,#app[data-view="abacus"] #art-tools,#app[data-view="abacus"] #paint-tools,
 #app[data-view="drag"] #play-levels,#app[data-view="drag"] #bubble-modes,#app[data-view="drag"] #bubble-settings,#app[data-view="drag"] #brush-modes,#app[data-view="drag"] #art-tools,#app[data-view="drag"] #paint-tools,
 #app[data-view="slide"] #play-levels,#app[data-view="slide"] #bubble-modes,#app[data-view="slide"] #bubble-settings,#app[data-view="slide"] #brush-modes,#app[data-view="slide"] #art-tools,#app[data-view="slide"] #paint-tools,
 #app[data-view="brush"] #play-levels,#app[data-view="brush"] #bubble-modes,#app[data-view="brush"] #bubble-settings,#app[data-view="brush"] #abacus-stage,
 #app[data-view="bubbles"] #play-levels,#app[data-view="bubbles"] #brush-modes,#app[data-view="bubbles"] #art-tools,#app[data-view="bubbles"] #paint-tools,#app[data-view="bubbles"] #abacus-stage {display:none!important}
 
-/* v0.81: Hide the entire empty option toolbar in games without option modes.
+/* v0.82: Hide the entire empty option toolbar in games without option modes.
    Do not hide the shared navigation row or abacus totals. */
 #app[data-view="abacus"] .play-mat>.play-toolbar,
 #app[data-view="drag"] .play-mat>.play-toolbar,
@@ -201,10 +201,15 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 #app[data-view="slide"] #play-options {display:none!important}
 #app[data-view="bubbles"] #brush-modes,
 #app[data-view="brush"] #bubble-modes {display:none!important}
+
+/* v0.82 shared sky backdrop: decorative only; never captures touches. */
+#app:not([data-view="home"]) .play-mat{background:#d8b98e url('./sana-space-sky-v83.jpg?v83') center center/cover no-repeat}
+#app[data-view="bubbles"] .play-mat{background:#d8b98e url('./sana-space-sky-v83.jpg?v83') center center/cover no-repeat}
+#app:not([data-view="home"]) #scene{background:transparent!important}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
 <script>for(const type of ['touchstart','touchmove'])document.addEventListener(type,event=>{if(event.touches.length>1)event.preventDefault();},{passive:false,capture:true});for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});</script>
-<meta name="sana-release" content="sana-little-hands-beta-v81">
+<meta name="sana-release" content="sana-little-hands-beta-v83">
 <style>
 #music-toggle{font-size:25px;font-weight:900;color:#183f37;background:#d6c4fa}
 #music-toggle[aria-pressed="true"]{background:#bce8c8}
@@ -252,8 +257,13 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 #app.immersive .play-mat>#scene{order:0;flex:1 1 auto;min-height:0;height:100%;width:100%}
 #app.immersive #exit-play{display:flex!important;position:absolute;right:10px;top:10px;z-index:99;align-items:center;justify-content:center;width:48px;height:48px;min-width:48px;min-height:48px;border:3px solid #fff;border-radius:12px;background:#ffe17a;color:#173e35;font-size:32px;font-weight:900;line-height:1;pointer-events:auto;touch-action:manipulation;box-shadow:0 2px 8px #0007}
 #exit-play{display:none}
+
+/* v0.82 shared sky backdrop: decorative only; never captures touches. */
+#app:not([data-view="home"]) .play-mat{background:#d8b98e url('./sana-space-sky-v83.jpg?v83') center center/cover no-repeat}
+#app[data-view="bubbles"] .play-mat{background:#d8b98e url('./sana-space-sky-v83.jpg?v83') center center/cover no-repeat}
+#app:not([data-view="home"]) #scene{background:transparent!important}
 </style>
-<style id="game-control-isolation-v81">
+<style id="game-control-isolation-v84">
 /* Final cascade guard: never let generic display:flex override HTML hidden. */
 #app [hidden], #app [hidden] * { display:none !important; }
 /* Only the selected game may expose its controls. */
@@ -267,6 +277,22 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 #app[data-view="bubbles"] #art-tools,
 #app[data-view="bubbles"] #play-levels { display:none !important; }
 #app[data-view="home"] .play-toolbar { display:none !important; }
+
+/* v0.82 shared sky backdrop: decorative only; never captures touches. */
+#app:not([data-view="home"]) .play-mat{background:#d8b98e url('./sana-space-sky-v83.jpg?v83') center center/cover no-repeat}
+#app[data-view="bubbles"] .play-mat{background:#d8b98e url('./sana-space-sky-v83.jpg?v83') center center/cover no-repeat}
+#app:not([data-view="home"]) #scene{background:transparent!important}
+</style>
+<style id="sana-sky-full-board-v84">
+/* The shared sky belongs to the entire play mat, including navigation/control strips.
+   Keep these strips transparent so the same image is visible behind their buttons. */
+#app:not([data-view="home"]) .play-mat {
+  background: #d8b98e url('./sana-space-sky-v83.jpg?v84') center center / cover no-repeat !important;
+}
+#app:not([data-view="home"]) .play-mat > .play-navigation,
+#app:not([data-view="home"]) .play-mat > .play-toolbar {
+  background: transparent !important;
+}
 </style>
 </head>
 <body>

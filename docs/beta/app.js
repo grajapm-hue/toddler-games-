@@ -317,7 +317,7 @@
     if(state.activity==='brush'){if(brushAge!==state.age){brushAge=state.age;brushIndex=0;}$('activity-name').textContent=`Little art studio · ${artPicture().name[0].toUpperCase()+artPicture().name.slice(1)} · ${brushIndex+1}/${brushCount()}`;}
     updateBrushThumbnails();
     $('clean-mode').setAttribute('aria-pressed',String(!state.paintMode));$('paint-mode').setAttribute('aria-pressed',String(state.paintMode));
-    scene.style.background='#D8B98E';
+    scene.style.background='transparent';
     if(state.activity==='abacus'){state.abacusRows=abacusColors.map(()=>Array(10).fill(false));state.abacusSelectedRow=0;renderAbacus();}
     else if(state.activity==='drag'){
       clearTimeout(shapeAdvanceTimer);
