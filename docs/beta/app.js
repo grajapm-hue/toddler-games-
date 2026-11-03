@@ -49,7 +49,7 @@
   if(ageProfiles.getAge()===null)ageProfiles.select(2);
   const preferences=()=>ageSettings[ageProfiles.getAge()??'common']??{};
   const initial=preferences();
-  const state={age:ageProfiles.getAge(),level:1,activity:null,done:false,pointer:null,selected:null,paintMode:false,paintColor:colors[0],strokes:[],shapes:[],bubbles:[],sliders:[],slideIndex:0,slideRevealed:false,dirt:[],sound:saved.sound===true};
+  const state={age:ageProfiles.getAge(),level:1,activity:null,done:false,pointer:null,selected:null,paintMode:false,paintColor:colors[0],strokes:[],shapes:[],bubbles:[],sliders:[],slideIndex:0,slideRevealed:false,dirt:[],sound:saved.sound===true,haptics:saved.haptics!==false};
   Object.assign(state,{brushSize:profile().brushSize,erase:false,coverage:[],bubbleMode:profile().bubbleMode,bubbleSet:initial.bubbleSet==='full'||state.age===null?'full':'starter',bubbleHits:new Map(),bubblePops:0,bubbleRecent:[],bubbleEffects:[],bubbleSerial:0,bubbleWidth:1000});
   const bubbleModes={plain:{label:'Plain',items:[]},numbers:{label:'1–20',items:Array.from({length:20},(_,i)=>String(i+1))},letters:{label:'A–Z',items:Array.from({length:26},(_,i)=>String.fromCharCode(65+i))},shapes:{label:'Shapes',items:shapes.map(shape=>shape.id)}};
   const bubbleColors=['#a6d1d3','#e6a6a4','#cfbfdf','#f0d47a','#afd1a2','#f1bd91'];
@@ -305,10 +305,10 @@
       chooseParentAge(ageOptions[next].dataset.ageOption);ageOptions[next].focus({preventScroll:true});
     });
   });
-  function home(){stopBubbles();cancelGesture();clearEffects();state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('sound'),$('music-toggle'),$('fullscreen'));app.dataset.view='home';parentAgeControls();$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;$('item-progress-strip').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
+  function home(){stopBubbles();cancelGesture();clearEffects();state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('sound'),$('music-toggle'),$('vibration-toggle'),$('fullscreen'));app.dataset.view='home';parentAgeControls();$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;$('item-progress-strip').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
   function levelControls(){document.querySelectorAll('[data-level]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.level)===state.level)));}
   function setLevel(level,reset=true){cancelGesture();const changed=state.level!==level;state.level=level;if(changed)state.brushSize=profile().brushSize;levelControls();save();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');if(reset&&state.activity)resetRound();else if(reset)hint(level===2?'Medium level: choose a picture and play together!':level===1?'Easy level: fewer, bigger things to try.':'Challenge level: a few more things to discover.');}
-  function startActivity(id,paintMode=false){closeAgeMenu();$('game-mid-controls').append($('sound'),$('music-toggle'),$('fullscreen'));state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
+  function startActivity(id,paintMode=false){closeAgeMenu();$('game-mid-controls').append($('sound'),$('music-toggle'),$('vibration-toggle'),$('fullscreen'));state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
   function resetRound(){
     roundSerial++;
     clearTimeout(slideAdvanceTimer);clearTimeout(brushTimer);$('art-reward').hidden=true;stopBubbles();cancelGesture();clearEffects();state.done=false;state.selected=null;state.strokes=[];
@@ -795,14 +795,45 @@
     }else if(pointer.kind==='paint'&&!state.done)hint(pointer.erase?'All tidy! Choose a color to paint again.':`Lovely colors! Keep coloring the ${artPicture().name}. SaNa is watching!`);
     scene.querySelector('#brush-cursor')?.remove();
   }
-  let lastHaptic=0;
+  // v0.99: haptics are independent of sound, bounded, and rate-limited.
+  let lastHaptic=0,lastSlideHaptic=0,lastHapticPoint=null;
+  const hapticAvailable=typeof navigator.vibrate==='function';
+  function haptic(duration=30,spacing=95){
+    if(!state.haptics||!hapticAvailable||document.hidden)return;
+    const now=performance.now();if(now-lastHaptic<spacing)return;
+    lastHaptic=now;
+    try{navigator.vibrate(Math.min(55,Math.max(12,duration)));}catch{/* Device/browser may block haptics. */}
+  }
+  function updateHapticButton(){
+    const button=$('vibration-toggle');
+    button.setAttribute('aria-pressed',String(state.haptics));
+    button.setAttribute('aria-label',state.haptics?'Vibration on. Tap to turn off':'Vibration off. Tap to turn on');
+    button.title=state.haptics?'Vibration ON':'Vibration OFF';
+    button.textContent=state.haptics?'▥':'▤';
+  }
+  $('vibration-toggle').addEventListener('click',()=>{
+    state.haptics=!state.haptics;
+    try{localStorage.setItem('sanaHapticsV1',String(state.haptics));}catch{}
+    updateHapticButton();
+    if(state.haptics)haptic(45,0);else try{navigator.vibrate?.(0);}catch{}
+  });
+  try{const setting=localStorage.getItem('sanaHapticsV1');if(setting!==null)state.haptics=setting==='true';}catch{}
+  updateHapticButton();
   scene.addEventListener('pointerdown',event=>{
-    if(!state.sound||document.hidden||!event.isPrimary)return;
-    const now=performance.now();if(now-lastHaptic<160)return;lastHaptic=now;
-    try{navigator.vibrate?.(12);}catch(e){}
-    // Existing tone() throttles rapid touches; keep it gentle.
-    tone(520);
+    if(!event.isPrimary)return;
+    lastHapticPoint={x:event.clientX,y:event.clientY};
+    haptic(38,90);
+    if(state.sound)tone(520);
   },{passive:true});
+  scene.addEventListener('pointermove',event=>{
+    if(!event.isPrimary||!(event.buttons&1)&&event.pointerType==='mouse'||!state.pointer)return;
+    const pt={x:event.clientX,y:event.clientY};
+    if(!lastHapticPoint){lastHapticPoint=pt;return;}
+    const moved=Math.hypot(pt.x-lastHapticPoint.x,pt.y-lastHapticPoint.y);
+    if(moved>=15){lastHapticPoint=pt;haptic(25,105);}
+  },{passive:true});
+  scene.addEventListener('pointerup',()=>{lastHapticPoint=null;},{passive:true});
+  scene.addEventListener('pointercancel',()=>{lastHapticPoint=null;},{passive:true});
   scene.addEventListener('pointerdown',pointerDown);scene.addEventListener('pointermove',pointerMove);scene.addEventListener('pointerup',pointerUp);scene.addEventListener('pointercancel',cancelGesture);scene.addEventListener('lostpointercapture',()=>{if(state.pointer)cancelGesture();});scene.addEventListener('contextmenu',e=>e.preventDefault());
   scene.addEventListener('keydown',event=>{
     const piece=event.target.closest('[data-piece]'),target=event.target.closest('[data-target]'),bubble=event.target.closest('[data-bubble]'),handle=event.target.closest('[data-slider-handle]');
@@ -870,6 +901,8 @@
   }
   async function immersiveMode(active){
     cancelGesture();app.classList.toggle('immersive',active);
+    if(active)app.querySelector('.play-mat').append($('vibration-toggle'));
+    else if(state.activity)$('game-mid-controls').append($('vibration-toggle'));
     const button=$('fullscreen'),label=active?'Exit fullscreen':'Fullscreen';
     button.setAttribute('aria-label',label);button.setAttribute('aria-pressed',String(active));button.title=label;
     button.querySelector('use').setAttribute('href',active?'#exit-fullscreen-icon':'#fullscreen-icon');
