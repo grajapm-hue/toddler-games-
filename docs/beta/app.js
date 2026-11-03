@@ -1001,6 +1001,24 @@
   // Expand inside the page to keep browser-owned fullscreen notices out of play.
   $('fullscreen').addEventListener('click',()=>{void immersiveMode(!app.classList.contains('immersive'));});
   $('exit-play').addEventListener('click',()=>{void immersiveMode(false);});
+  // v1.12: position exit at the actual progress strip's bottom edge,
+  // including after age/game changes, viewport rotation and layout reflow.
+  const exitPlayMat=app.querySelector('.play-mat');
+  const exitStrip=$('item-progress-strip');
+  function alignExitToThumbnails(){
+    if(!exitPlayMat||!exitStrip)return;
+    const mat=exitPlayMat.getBoundingClientRect();
+    const band=exitStrip.getBoundingClientRect();
+    const visible=!exitStrip.hidden&&band.height>0;
+    const top=visible?Math.max(0,band.bottom-mat.top):0;
+    exitPlayMat.style.setProperty('--sana-exit-top',`${Math.round(top)}px`);
+  }
+  new ResizeObserver(alignExitToThumbnails).observe(exitStrip);
+  new ResizeObserver(alignExitToThumbnails).observe(exitPlayMat);
+  new MutationObserver(alignExitToThumbnails).observe(exitStrip,{attributes:true,attributeFilter:['hidden','class','style']});
+  window.addEventListener('resize',alignExitToThumbnails,{passive:true});
+  requestAnimationFrame(alignExitToThumbnails);
+
   document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&app.classList.contains('immersive')){app.classList.remove('immersive');$('fullscreen').setAttribute('aria-pressed','false');fitFrame();}});
   document.addEventListener('fullscreenchange',fitFrame);
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&app.classList.contains('immersive'))immersiveMode(false);});

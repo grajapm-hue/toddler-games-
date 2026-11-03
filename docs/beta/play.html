@@ -294,7 +294,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 .item-progress-strip .item-chip svg{display:block!important;flex-shrink:1!important;max-width:100%!important;width:min(26px,95%)!important;height:min(27px,95%)!important;overflow:visible!important}
 #app.immersive .item-progress-strip .item-chip{min-width:0!important}
 
-/* v1.08: legible adaptive thumbnail carousel across every game and age. */
+/* v1.12: legible adaptive thumbnail carousel across every game and age. */
 #app:not([data-view="home"]) .play-mat>.item-progress-strip:not([hidden]),
 #app.immersive .play-mat>.item-progress-strip:not([hidden]){
   display:flex!important;flex-wrap:nowrap!important;justify-content:flex-start!important;
@@ -329,7 +329,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
  .item-progress-strip .item-chip svg{width:36px!important;height:35px!important}
 }
 
-/* v1.08: Abacus-only compact readable color thumbnails; preserve all other games. */
+/* v1.12: Abacus-only compact readable color thumbnails; preserve all other games. */
 #app[data-view="abacus"] .play-mat>.item-progress-strip:not([hidden]),
 #app[data-view="abacus"].immersive .play-mat>.item-progress-strip:not([hidden]){
   min-height:43px!important;max-height:46px!important;height:46px!important;
@@ -348,6 +348,25 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
     flex-basis:104px!important;width:104px!important;min-width:104px!important;
     max-width:104px!important;font-size:14px!important;
   }
+}
+
+/* v1.12: Exit button is anchored to the MEASURED bottom edge of the
+   thumbnail band. Do not use a hard-coded top offset. */
+#app.immersive .play-mat #exit-play,
+#app.immersive .play-mat:has(> .item-progress-strip:not([hidden])) #exit-play,
+#app.immersive .play-mat:not(:has(> .item-progress-strip:not([hidden]))) #exit-play {
+  position:absolute!important;
+  top:var(--sana-exit-top, 0px)!important;
+  right:0!important;
+  bottom:auto!important;
+  left:auto!important;
+  width:46px!important;height:46px!important;
+  min-width:46px!important;min-height:46px!important;
+  box-sizing:border-box!important;
+  background:transparent!important;
+  border:2px solid #111!important;
+  border-radius:10px!important;
+  z-index:120!important;
 }
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
@@ -436,6 +455,44 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 #app:not([data-view="home"]) .play-mat > .play-toolbar {
   background: transparent !important;
 }
+
+/* v1.12 — immersive controls: exit below progress thumbnails; vibration at
+   lower-right playroom corner, away from the Abacus bead rows. All games. */
+#app.immersive .play-mat #exit-play {
+  top:8px!important;right:8px!important;left:auto!important;
+  width:40px!important;min-width:40px!important;height:40px!important;
+  min-height:40px!important;z-index:110!important;
+}
+#app.immersive .play-mat:has(> .item-progress-strip:not([hidden])) #exit-play {
+  top:calc(48px + 8px)!important;
+}
+#app.immersive .play-mat #vibration-toggle {
+  top:auto!important;left:auto!important;right:12px!important;
+  bottom:max(12px,env(safe-area-inset-bottom))!important;
+  z-index:105!important;width:46px!important;height:46px!important;
+  min-width:46px!important;min-height:46px!important;
+}
+
+/* v1.12: fullscreen exit icon — transparent square-in-square, black outline.
+   Position within playroom below progress carousel; identical touch target to vibration. */
+#app.immersive .play-mat #exit-play {
+  position:absolute!important;top:3px!important;right:8px!important;left:auto!important;bottom:auto!important;
+  width:46px!important;height:46px!important;min-width:46px!important;min-height:46px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  padding:5px!important;background:transparent!important;border:2px solid #111!important;
+  border-radius:10px!important;box-shadow:none!important;text-shadow:none!important;
+  color:#111!important;z-index:120!important;pointer-events:auto!important;
+}
+#app.immersive .play-mat:has(> .item-progress-strip:not([hidden])) #exit-play {top:3px!important;}
+#app.immersive .play-mat #exit-play svg{width:29px;height:29px;display:block;flex:none;}
+/* v1.12: exit stays BELOW the entire progress thumbnail band, not on top of it.
+   Reserve the row height plus a visible gap on every game and age. */
+#app.immersive .play-mat #exit-play,
+#app.immersive .play-mat:has(> .item-progress-strip:not([hidden])) #exit-play {
+  top:76px!important;right:8px!important;bottom:auto!important;
+}
+#app.immersive .play-mat:not(:has(> .item-progress-strip:not([hidden]))) #exit-play {top:12px!important;}
+
 </style>
 </head>
 <body>
@@ -476,7 +533,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
   <span id="step-note" hidden></span>
   <div class="bubble-settings" id="bubble-settings" hidden><div class="bubble-setting-group" role="group" aria-label="Bubble speed"><span>Speed</span><button type="button" data-bubble-speed="slow" aria-label="Slow bubble speed" aria-pressed="false">Slow</button><button type="button" data-bubble-speed="medium" aria-label="Medium bubble speed" aria-pressed="true">Medium</button><button type="button" data-bubble-speed="fast" aria-label="High bubble speed" aria-pressed="false">High</button></div><div class="bubble-setting-group" role="group" aria-label="Bubble size"><span>Size</span><button type="button" data-bubble-size="small" aria-label="Small bubbles" aria-pressed="false">Small</button><button type="button" data-bubble-size="medium" aria-label="Medium bubbles" aria-pressed="true">Medium</button><button type="button" data-bubble-size="large" aria-label="Large bubbles" aria-pressed="false">Large</button></div><button type="button" class="mode-button" id="bubble-full-set" aria-label="Full bubble collection" aria-pressed="false" hidden>Full set</button></div>
   <div class="art-tools" id="art-tools" hidden><div class="brush-sizes" role="group" aria-label="Brush size"><span class="paint-label">Brush</span><button class="art-tool" type="button" data-brush-size="small" aria-label="Small brush" aria-pressed="false">Small</button><button class="art-tool" type="button" data-brush-size="medium" aria-label="Medium brush" aria-pressed="true">Medium</button><button class="art-tool" type="button" data-brush-size="large" aria-label="Large brush" aria-pressed="false">Large</button></div><div class="paint-tools" id="paint-tools" hidden><span class="paint-label">Color</span><button class="art-tool" type="button" id="erase-paint" aria-label="Erase paint" aria-pressed="false">Eraser</button></div></div>
-  <div class="play-mat"><div id="game-status-top" class="game-status-top" aria-label="Current game status"></div><button id="exit-play" type="button" aria-label="Exit fullscreen play" title="Exit fullscreen">×</button><div class="play-toolbar"><div id="game-results" aria-label="Game results" aria-live="polite"><h1 id="activity-name">Shape picnic</h1><span id="result-score"></span><span class="bubble-score" id="bubble-score" hidden></span></div><div id="play-options" aria-label="Sub-levels"><div class="levels" id="play-levels" role="group" aria-label="Difficulty level">
+  <div class="play-mat"><div id="game-status-top" class="game-status-top" aria-label="Current game status"></div><button id="exit-play" type="button" aria-label="Exit fullscreen play" title="Exit fullscreen"><svg aria-hidden="true" viewBox="0 0 32 32" width="28" height="28"><rect x="4" y="4" width="24" height="24" rx="2" fill="none" stroke="currentColor" stroke-width="2.5"/><rect x="10" y="10" width="12" height="12" rx="1" fill="none" stroke="currentColor" stroke-width="2.5"/></svg></button><div class="play-toolbar"><div id="game-results" aria-label="Game results" aria-live="polite"><h1 id="activity-name">Shape picnic</h1><span id="result-score"></span><span class="bubble-score" id="bubble-score" hidden></span></div><div id="play-options" aria-label="Sub-levels"><div class="levels" id="play-levels" role="group" aria-label="Difficulty level">
     <button class="level" type="button" data-level="1" aria-label="Easy level" aria-pressed="false">Easy<small>little steps</small></button>
     <button class="level" type="button" data-level="2" aria-label="Medium level" aria-pressed="true">Medium<small>guided play</small></button>
     <button class="level" type="button" data-level="3" aria-label="Challenge level" aria-pressed="false">Challenge<small>extra fun</small></button>
@@ -488,7 +545,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 (()=>{const status=document.getElementById("game-results"),slot=document.getElementById("game-status-top");if(status&&slot)slot.appendChild(status);})();
 </script>
 <script src="age-profiles.js"></script>
-<script src="app.js?v108"></script>
+<script src="app.js?v112"></script>
 <script src="pwa.js"></script>
 <script>
 /* v1.04 beta: Web Audio buffer playback avoids HTMLMediaElement media cards.
