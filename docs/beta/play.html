@@ -202,7 +202,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 #app[data-view="bubbles"] #brush-modes,
 #app[data-view="brush"] #bubble-modes {display:none!important}
 
-/* v0.99: independent child-friendly vibration toggle. */
+/* v1.02: independent child-friendly vibration toggle. */
 #vibration-toggle{font-size:23px;font-weight:900;background:#a9e4b9;color:#173e2b;border:2px solid #3d8d5a}
 #vibration-toggle[aria-pressed="false"]{background:#f6a6a6;color:#512424;border-color:#a94b4b}
 #app.immersive #vibration-toggle{position:absolute;top:auto!important;right:auto!important;bottom:max(12px,env(safe-area-inset-bottom))!important;left:max(12px,env(safe-area-inset-left))!important;z-index:100;width:48px;height:48px;min-width:48px;display:flex!important;align-items:center;justify-content:center;border:3px solid #fff;border-radius:12px;pointer-events:auto;touch-action:manipulation;box-shadow:0 2px 8px #0005}
@@ -229,13 +229,13 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
   background:#a9e4b9!important;color:#173e2b!important;border-color:#3d8d5a!important;
 }
 
-/* v0.99: music note and speaker use identical icon dimensions */
+/* v1.02: music note and speaker use identical icon dimensions */
 #music-toggle svg,#sound svg{width:24px;height:24px;display:block;flex:none}
-/* v0.99 fullscreen resilience: retain a sky fallback behind the SVG. */
+/* v1.02 fullscreen resilience: retain a sky fallback behind the SVG. */
 #app[data-view="bubbles"] .play-mat, #app[data-view="bubbles"].immersive .play-mat {background-color:#d8b98e!important;background-image:url('./sana-space-sky-v83.jpg')!important;background-position:center!important;background-size:cover!important;}
 #app[data-view="bubbles"] #scene {background:transparent!important;}
 
-/* v0.99: shared top-of-play-room item/progress strip in every activity. */
+/* v1.02: shared top-of-play-room item/progress strip in every activity. */
 #app:not([data-view="home"]) .play-mat>.item-progress-strip:not([hidden]){
  display:flex!important;order:-5!important;flex:0 0 auto!important;align-items:center;gap:5px;
  min-height:42px;max-height:48px;padding:3px 8px;overflow-x:auto;overflow-y:hidden;
@@ -260,7 +260,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 #app.immersive .game-status-top{display:none!important}
 @media(max-width:700px){.item-chip{min-width:35px;height:32px;font-size:12px;padding:2px 4px}}
 
-/* v0.99 — exclusive age choice, compact header, no dropdown overlay. */
+/* v1.02 — exclusive age choice, compact header, no dropdown overlay. */
 .parent-age{display:flex!important;align-items:center;gap:3px!important;flex:none!important;position:static!important}
 .parent-age>span{display:inline!important;font-size:12px!important}
 .age-radio{min-width:31px;height:34px;padding:2px 5px;border:2px solid #9ab4a6;border-radius:9px;background:#fff8e9;color:#21463a;font-size:16px;font-weight:900;line-height:1;cursor:pointer}
@@ -276,7 +276,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 .item-progress-strip .item-chip.is-done::after{font-size:9px!important;width:12px!important;height:12px!important;line-height:12px!important}
 #app.immersive .play-mat>.item-progress-strip:not([hidden]){overflow:hidden!important}
 
-/* v0.99: readable, fitted top-strip thumbnails in every game and mode. */
+/* v1.02: readable, fitted top-strip thumbnails in every game and mode. */
 #app:not([data-view="home"]) .play-mat>.item-progress-strip:not([hidden]){
   background:#e7f1f3!important;border-bottom:2px solid #7196a1!important;
   gap:3px!important;padding:3px 5px!important;overflow:hidden!important;
@@ -432,7 +432,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 (()=>{const status=document.getElementById("game-results"),slot=document.getElementById("game-status-top");if(status&&slot)slot.appendChild(status);})();
 </script>
 <script src="age-profiles.js"></script>
-<script src="app.js"></script>
+<script src="app.js?v102"></script>
 <script src="pwa.js"></script>
 <script>
 /* Sound is master; music is a separate preference. Both respect the quiet switch. */
