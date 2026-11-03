@@ -471,8 +471,30 @@
     strip.hidden=!state.activity||!items.length;
     if(strip.hidden){strip.innerHTML='';return;}
 
-    strip.innerHTML=items.map(({label,icon='',current=false,done=false,later=false},i)=>
-      `<span class="item-chip ${current?'is-current':''} ${done?'is-done':''} ${later?'is-later':''}" role="listitem" aria-label="${String(label).replace(/&/g,'&amp;').replace(/"/g,'&quot;')} ${done?'completed':current?'current':later?'later level':'available'}" title="${String(label).replace(/"/g,'&quot;')}">${icon||label}</span>`).join('');
+    // Keep manual scroll position during ordinary re-renders; only follow a newly
+    // active item. Completed items remain available by swiping back to the right.
+    const oldKey=strip.dataset.progressKey||'';
+    const oldScroll=strip.scrollLeft;
+    const activeIndex=items.findIndex(item=>item.current&&!item.done);
+    const nextIndex=activeIndex>=0?activeIndex:items.findIndex(item=>!item.done&&!item.later);
+    const key=`${state.activity}:${state.bubbleMode||''}:${state.age}:${nextIndex}`;
+    strip.innerHTML=items.map(({label,icon='',current=false,done=false,later=false},i)=>{
+      const safe=String(label).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+      return `<span class="item-chip ${current?'is-current':''} ${done?'is-done':''} ${later?'is-later':''}" role="listitem" aria-label="${safe} ${done?'completed':current?'current':later?'later level':'available'}" title="${safe}">${icon||safe}</span>`;
+    }).join('');
+    strip.dataset.progressKey=key;
+    if(oldKey===key){strip.scrollLeft=oldScroll;return;}
+    if(nextIndex>=0){
+      const chip=strip.children[nextIndex];
+      // Move the completed sequence left only when the next target is obscured.
+      if(chip){
+        const left=chip.offsetLeft-strip.offsetLeft;
+        const right=left+chip.offsetWidth;
+        if(left<strip.scrollLeft+8||right>strip.scrollLeft+strip.clientWidth-8){
+          strip.scrollTo({left:Math.max(0,left-strip.clientWidth*.35),behavior:'smooth'});
+        }
+      }
+    }else strip.scrollLeft=0;
 
   }
   function updateGameItemStrip(){
@@ -483,12 +505,12 @@
       if(state.bubbleMode==='plain'){
         showItemStrip(Array.from({length:plainGoal()},(_,i)=>({label:`Pop ${i+1}`,icon:String(i+1),done:i<state.bubblePops,current:i===state.bubblePops&&!state.done})));
       }else{
-        const tokens=bubbleItems();showItemStrip(tokens.map(token=>({label:String(token),done:state.bubbleHits.has(token),icon:state.bubbleMode==='shapes'?`<svg viewBox="-68 -68 136 136" aria-hidden="true">${primitive(token,shapeById(token)?.color||'#ffcf64','#274b44')}</svg>`:''})));
+        const tokens=bubbleItems();showItemStrip(tokens.map(token=>({label:String(token),done:state.bubbleHits.has(token),current:!state.bubbleHits.has(token)&&token===tokens.find(t=>!state.bubbleHits.has(t)),icon:state.bubbleMode==='shapes'?`<svg viewBox="-68 -68 136 136" aria-hidden="true">${primitive(token,shapeById(token)?.color||'#ffcf64','#274b44')}</svg>`:''})));
       }
     }else if(state.activity==='brush'){
-      showItemStrip(brushPictures.slice(0,brushCount()).map(([name,region],i)=>({label:name,icon:`<svg viewBox="250 55 500 345" aria-hidden="true"><g fill="#e8b768" stroke="#45675d" stroke-width="10">${region}</g></svg>${name[0].toUpperCase()+name.slice(1)}`,current:i===brushIndex,done:i<brushIndex})));
+      showItemStrip(brushPictures.slice(0,brushCount()).map(([name,region],i)=>({label:name,icon:`<svg viewBox="250 55 500 345" aria-hidden="true"><g fill="#e8b768" stroke="#45675d" stroke-width="10">${region}</g></svg>`,current:i===brushIndex,done:i<brushIndex})));
     }else if(state.activity==='slide'){
-      showItemStrip(slideObjects.slice(0,slideTotal()).map(([name,emoji],i)=>({label:`Room ${i+1}: ${name}`,icon:`${emoji} ${i+1}`,current:i===state.slideIndex,done:i<state.slideIndex||(i===state.slideIndex&&state.slideRevealed)})));
+      showItemStrip(slideObjects.slice(0,slideTotal()).map(([name,emoji],i)=>({label:`Room ${i+1}: ${name}`,icon:`<span class="item-emoji">${emoji}</span><small class="item-index">${i+1}</small>`,current:i===state.slideIndex,done:i<state.slideIndex||(i===state.slideIndex&&state.slideRevealed)})));
     }else if(state.activity==='abacus'&&state.age!==5){
       showItemStrip(Array.from({length:countMax()},(_,i)=>({label:`Count ${i+1}`,icon:String(i+1),done:i<countStage,current:i===countStage})));
     }else if(state.activity==='abacus'){

@@ -293,6 +293,62 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 .item-progress-strip .item-chip.is-done{background:#bfeccc!important;border:2px solid #2d8452!important;color:#173c35!important}
 .item-progress-strip .item-chip svg{display:block!important;flex-shrink:1!important;max-width:100%!important;width:min(26px,95%)!important;height:min(27px,95%)!important;overflow:visible!important}
 #app.immersive .item-progress-strip .item-chip{min-width:0!important}
+
+/* v1.08: legible adaptive thumbnail carousel across every game and age. */
+#app:not([data-view="home"]) .play-mat>.item-progress-strip:not([hidden]),
+#app.immersive .play-mat>.item-progress-strip:not([hidden]){
+  display:flex!important;flex-wrap:nowrap!important;justify-content:flex-start!important;
+  overflow-x:auto!important;overflow-y:hidden!important;touch-action:pan-x!important;
+  overscroll-behavior-x:contain!important;-webkit-overflow-scrolling:touch;
+  gap:6px!important;padding:4px 9px!important;min-height:54px!important;
+  max-height:60px!important;scrollbar-width:thin;scroll-snap-type:x proximity;
+}
+.item-progress-strip .item-chip,
+#app.immersive .item-progress-strip .item-chip{
+  flex:0 0 auto!important;width:58px!important;min-width:58px!important;
+  max-width:58px!important;height:46px!important;padding:2px!important;
+  font-size:clamp(19px,2.8vw,27px)!important;line-height:1!important;
+  border-radius:9px!important;border-width:2px!important;gap:1px!important;
+  white-space:nowrap!important;overflow:hidden!important;scroll-snap-align:start;
+}
+.item-progress-strip .item-chip svg{
+  width:39px!important;height:38px!important;max-width:95%!important;
+  max-height:95%!important;flex:0 0 auto!important;overflow:hidden!important;
+}
+.item-progress-strip .item-chip .item-emoji{font-size:29px!important;line-height:1!important}
+.item-progress-strip .item-chip .item-index{
+  position:absolute;bottom:1px;right:3px;font-size:11px;line-height:1;
+  border-radius:4px;padding:1px 2px;background:rgba(255,255,255,.88);
+}
+.item-progress-strip .item-chip.is-done::after{
+  width:15px!important;height:15px!important;line-height:15px!important;
+  font-size:11px!important;z-index:2;
+}
+@media(max-width:600px){
+ .item-progress-strip .item-chip{width:52px!important;min-width:52px!important;max-width:52px!important;height:44px!important}
+ .item-progress-strip .item-chip svg{width:36px!important;height:35px!important}
+}
+
+/* v1.08: Abacus-only compact readable color thumbnails; preserve all other games. */
+#app[data-view="abacus"] .play-mat>.item-progress-strip:not([hidden]),
+#app[data-view="abacus"].immersive .play-mat>.item-progress-strip:not([hidden]){
+  min-height:43px!important;max-height:46px!important;height:46px!important;
+  padding:3px 7px!important;gap:6px!important;
+}
+#app[data-view="abacus"] .item-progress-strip .item-chip,
+#app[data-view="abacus"].immersive .item-progress-strip .item-chip{
+  flex:0 0 108px!important;width:108px!important;min-width:108px!important;
+  max-width:108px!important;height:37px!important;padding:2px 5px!important;
+  font-size:14px!important;line-height:1.1!important;letter-spacing:0!important;
+  text-align:center!important;white-space:nowrap!important;overflow:hidden!important;
+}
+@media(max-width:600px){
+  #app[data-view="abacus"] .item-progress-strip .item-chip,
+  #app[data-view="abacus"].immersive .item-progress-strip .item-chip{
+    flex-basis:104px!important;width:104px!important;min-width:104px!important;
+    max-width:104px!important;font-size:14px!important;
+  }
+}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
 <script>for(const type of ['touchstart','touchmove'])document.addEventListener(type,event=>{if(event.touches.length>1)event.preventDefault();},{passive:false,capture:true});for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});</script>
@@ -432,7 +488,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 (()=>{const status=document.getElementById("game-results"),slot=document.getElementById("game-status-top");if(status&&slot)slot.appendChild(status);})();
 </script>
 <script src="age-profiles.js"></script>
-<script src="app.js?v104"></script>
+<script src="app.js?v108"></script>
 <script src="pwa.js"></script>
 <script>
 /* v1.04 beta: Web Audio buffer playback avoids HTMLMediaElement media cards.
