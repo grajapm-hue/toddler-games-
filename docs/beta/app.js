@@ -59,6 +59,8 @@
   const selectedBubbleSpeed=()=>state.bubbleSpeed??'medium';
   const selectedBubbleSize=()=>state.bubbleSize??'medium';
   function bubbleItems(kind=state.bubbleMode){const items=bubbleModes[kind].items;if(state.bubbleSet==='full')return items;return items.slice(0,({numbers:profile().numberCount,letters:profile().letterCount,shapes:profile().shapeTokens})[kind]??0);}
+  // Plain bubbles have a finite, age-appropriate collection, just like the other modes.
+  const plainGoal=()=>Math.max(1,Number(profile().bubbleCount)||4);
   const brushWidths={small:18,medium:38,large:72};
   let audio=null,lastTone=0,rewardTimer=null,guideTimer=null,bubbleFrame=null,lastBubbleTime=0,roundSerial=0;
   const save=()=>{
@@ -429,8 +431,11 @@
       const limit=shapeLevelLimits[state.age]||4;
       showItemStrip(shapes.slice(0,limit).map((shape,i)=>({label:shape.id,icon:`<svg viewBox="-68 -68 136 136" aria-hidden="true">${primitive(shape.id,shape.color,'#274b44')}</svg>`,later:i>=limit,done:!!state.shapes?.find(x=>x.id===shape.id&&x.placed),current:state.selected===shape.id})));
     }else if(state.activity==='bubbles'){
-      const tokens=bubbleItems();showItemStrip(tokens.map(token=>({label:String(token),done:state.bubbleHits.has(token),icon:state.bubbleMode==='shapes'?`<svg viewBox="-68 -68 136 136" aria-hidden="true">${primitive(token,shapeById(token)?.color||'#ffcf64','#274b44')}</svg>`:''})));
-      if(!tokens.length)showItemStrip([{label:`Popped ${state.bubblePops}`}]);
+      if(state.bubbleMode==='plain'){
+        showItemStrip(Array.from({length:plainGoal()},(_,i)=>({label:`Pop ${i+1}`,icon:String(i+1),done:i<state.bubblePops,current:i===state.bubblePops&&!state.done})));
+      }else{
+        const tokens=bubbleItems();showItemStrip(tokens.map(token=>({label:String(token),done:state.bubbleHits.has(token),icon:state.bubbleMode==='shapes'?`<svg viewBox="-68 -68 136 136" aria-hidden="true">${primitive(token,shapeById(token)?.color||'#ffcf64','#274b44')}</svg>`:''})));
+      }
     }else if(state.activity==='brush'){
       showItemStrip(brushPictures.slice(0,brushCount()).map(([name,region],i)=>({label:name,icon:`<svg viewBox="250 55 500 345" aria-hidden="true"><g fill="#e8b768" stroke="#45675d" stroke-width="10">${region}</g></svg>${name[0].toUpperCase()+name.slice(1)}`,current:i===brushIndex,done:i<brushIndex})));
     }else if(state.activity==='slide'){
@@ -492,13 +497,14 @@
   function bubbleTracker(){
     const mode={...bubbleModes[state.bubbleMode],items:bubbleItems()};
     if(state.bubbleMode==='numbers')mode.label=`1–${mode.items.length}`;else if(state.bubbleMode==='letters')mode.label=`A–${mode.items.at(-1)}`;
-    $('bubble-score').textContent=state.bubbleMode==='plain'?`Popped ${state.bubblePops}`:`${mode.label} · ${state.bubbleHits.size}/${mode.items.length}`;
+    $('bubble-score').textContent=state.bubbleMode==='plain'?`Popped ${Math.min(state.bubblePops,plainGoal())}/${plainGoal()}`:`${mode.label} · ${state.bubbleHits.size}/${mode.items.length}`;
     $('bubble-targets').innerHTML=mode.items.length?mode.items.map(token=>{
       const color=state.bubbleHits.get(token);
       const content=state.bubbleMode==='shapes'?`<svg viewBox="-68 -68 136 136" aria-hidden="true">${shapeEffects}${primitive(token,shapeById(token)?.color||'#ffcf64','#274b44')}</svg>`:token;
       return `<span class="bubble-target" role="listitem" data-bubble-target="${token}" data-collected="${!!color}" style="${color?`background-color:${color}`:''}" aria-label="${token}${color?' popped':' not popped'}">${content}</span>`;
     }).join(''):state.bubbleRecent.map(color=>`<i class="pop-dot" style="background:${color}" aria-hidden="true"></i>`).join('');
     updateGameItemStrip();
+    if(state.bubbleMode==='plain')progress(Math.min(state.bubblePops,plainGoal()),plainGoal());
     document.querySelectorAll('[data-bubble-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.bubbleMode===state.bubbleMode)));
     const numbers=bubbleItems('numbers'),letters=bubbleItems('letters');document.querySelector('[data-bubble-mode="numbers"]').textContent=`1–${numbers.length}`;document.querySelector('[data-bubble-mode="letters"]').textContent=`A–${letters.at(-1)}`;
     $('bubble-full-set').hidden=state.age===null;$('bubble-full-set').setAttribute('aria-pressed',String(state.bubbleSet==='full'));
@@ -592,7 +598,7 @@
     state.bubbleEffects=state.bubbleEffects.filter(splash=>splash.age<.48);
   }
   function popBubble(bubble){
-    if(!bubble?.element)return;
+    if(!bubble?.element||state.done)return;
     const focused=document.activeElement===bubble.element;
     const splash=document.createElementNS('http://www.w3.org/2000/svg','g');splash.dataset.splash='';splash.setAttribute('transform',`translate(${bubble.x} ${bubble.y})`);splash.setAttribute('fill',bubble.color);
     splash.innerHTML=Array.from({length:8},()=>'<circle r="9"/>').join('');$('splash-layer').appendChild(splash);
@@ -601,8 +607,11 @@
     if(bubble.token)state.bubbleHits.set(bubble.token,bubble.color);bubbleTracker();tone(450+(bubble.id%8)*55);
     if(focused)activeBubble()?.element.focus();
     if(state.bubbleMode==='plain'){
-      if(state.bubblePops%10===0){const roundAtCompletion=roundSerial;celebrate('Pop, pop, hooray! SaNa says well done. Keep popping!');setTimeout(()=>{if(state.activity==='bubbles'&&state.bubbleMode==='plain'&&state.done&&roundSerial===roundAtCompletion)state.done=false;},1600);}
-      else hint(`Splash, pop! ${state.bubblePops} ${state.bubblePops===1?'bubble':'bubbles'} popped. Keep going!`);
+      if(state.bubblePops>=plainGoal()&&!state.done){
+        const roundAtCompletion=roundSerial;
+        celebrate(`SaNa says hooray! You popped all ${plainGoal()} bubbles!`);
+        setTimeout(()=>{if(state.activity==='bubbles'&&state.bubbleMode==='plain'&&state.done&&roundSerial===roundAtCompletion)resetRound();},1900);
+      }else if(!state.done)hint(`Splash, pop! ${state.bubblePops} of ${plainGoal()} bubbles popped. Keep going!`);
     }else if(state.bubbleHits.size===bubbleItems().length&&!state.done){
       const roundAtCompletion=roundSerial;celebrate(`SaNa says hooray! You found all the ${state.bubbleMode==='numbers'?'numbers':state.bubbleMode==='letters'?'letters':'shapes'}. Keep popping!`);setTimeout(()=>{if(state.activity==='bubbles'&&state.done&&roundSerial===roundAtCompletion)resetRound();},1800);
     }else if(!state.done)hint(`Splash! ${bubble.token} is now the same color above. Keep looking!`);
