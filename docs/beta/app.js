@@ -39,7 +39,7 @@
     bubbles:{title:'Bubble garden',label:'Pop bubbles',word:'Tap',caption:'pop a happy bubble',note:'A pop of color. A little smile.',hint:'Tap a bubble. Pop, pop, pop! You can brush across them too.'},
     slide:{title:'Peek-a-boo friends',label:'Slide to reveal',word:'Slide',caption:'find a little friend',note:'Who is hiding behind the curtains?',hint:'Slide the sunny handles along the paths. Who will you find?'},
     brush:{title:'Little art studio',label:'Brush and paint',word:'Brush & paint',caption:'wash and make colors',note:'',hint:'Brush the muddy puppy. Give him a gentle wash.'},
-    abacus:{title:'Rainbow abacus',label:'Abacus colors',word:'Count',caption:'make a rainbow',note:'',hint:'Slide beads in any row, either way. See the number and its word change!' }
+    abacus:{title:'Counting adventures',label:'Counting games',word:'Count',caption:'count and play',note:'',hint:'Slide beads in any row, either way. See the number and its word change!' }
   };
   let saved={};try{const stored=JSON.parse(localStorage.getItem('sanaLittleHandsV1')||'{}');saved=stored&&typeof stored==='object'?stored:{};}catch{/* Settings are optional. */}
   const hasAgeSettings=saved.ageSettings&&typeof saved.ageSettings==='object'&&!Array.isArray(saved.ageSettings);
@@ -311,7 +311,7 @@
   function startActivity(id,paintMode=false){closeAgeMenu();$('game-mid-controls').append($('sound'),$('music-toggle'),$('vibration-toggle'),$('fullscreen'));state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
   function resetRound(){
     roundSerial++;
-    clearTimeout(slideAdvanceTimer);clearTimeout(brushTimer);$('art-reward').hidden=true;stopBubbles();cancelGesture();clearEffects();state.done=false;state.selected=null;state.strokes=[];
+    clearTimeout(slideAdvanceTimer);clearTimeout(brushTimer);clearTimeout(countTimer);$('art-reward').hidden=true;stopBubbles();cancelGesture();clearEffects();state.done=false;state.selected=null;state.strokes=[];
     $('play-levels').hidden=true;$('abacus-stage').hidden=state.activity!=='abacus';
     $('bubble-score').hidden=state.activity!=='bubbles';
     $('bubble-modes').hidden=state.activity!=='bubbles';$('bubble-tracker').hidden=state.activity!=='bubbles';$('step-note').hidden=true;
@@ -325,7 +325,7 @@
     updateBrushThumbnails();
     $('clean-mode').setAttribute('aria-pressed',String(!state.paintMode));$('paint-mode').setAttribute('aria-pressed',String(state.paintMode));
     scene.style.background='transparent';
-    if(state.activity==='abacus'){state.abacusRows=abacusColors.map(()=>Array(10).fill(false));state.abacusSelectedRow=0;renderAbacus();}
+    if(state.activity==='abacus'){if(state.age===5){state.abacusRows=abacusColors.map(()=>Array(10).fill(false));state.abacusSelectedRow=0;renderAbacus();}else resetCountAdventure();}
     else if(state.activity==='drag'){
       clearTimeout(shapeAdvanceTimer);
       if(shapeAge!==state.age){shapeAge=state.age;shapeRound=0;shapeCompleted=0;}
@@ -347,9 +347,58 @@
     }
     hint(state.activity==='brush'?(state.paintMode?`Pick a color and paint inside the ${artPicture().name}. SaNa will cheer you on!`:`Brush the muddy ${artPicture().name}. Give it a gentle wash.`):activities[state.activity].hint);
     updateGameNavigation();
-    if(state.activity==='abacus')abacusHint();
+    if(state.activity==='abacus'&&state.age===5)abacusHint();
     if(state.activity==='bubbles')hint(state.bubbleMode==='plain'?'Tap the rising bubbles. Splash, pop! They keep coming.':'Pop a bubble to color its matching item above. Find them all!');
   }
+  // v1.03: Age 2–4 counting adventures. Age 5 retains the original abacus unchanged.
+  let countStage=0,countPlaced=0,countTimer=null;
+  const countMax=()=>state.age===2?5:state.age===3?10:20;
+  const countTitle=()=>state.age===2?'Little Apple Basket':state.age===3?'Feed the Hungry Monkey':'Number Train Adventure';
+  function resetCountAdventure(){
+    clearTimeout(countTimer);countStage=0;countPlaced=0;renderCountAdventure();
+  }
+  function countIcon(x,y,kind){
+    if(kind==='apple')return `<g transform="translate(${x} ${y})"><circle r="25" fill="#fa5b59" stroke="#9b3e32" stroke-width="4"/><path d="M0 -22Q-2 -38 9 -43M0 -32Q15 -45 26 -31Q12 -26 0 -32" fill="#5caa5b" stroke="#39764a" stroke-width="3"/></g>`;
+    return `<g transform="translate(${x} ${y}) rotate(-24)"><path d="M-18 -26Q40 -20 25 22Q-5 51 -29 13Q-6 23 9 9Q18 -3 -18 -26Z" fill="#ffe16d" stroke="#a36d27" stroke-width="4"/></g>`;
+  }
+  function renderCountAdventure(){
+    if(state.activity!=='abacus'||state.age===5)return;
+    const target=countStage+1,age=state.age;
+    const title=countTitle();$('activity-name').textContent=title;
+    scene.setAttribute('viewBox','0 0 1000 440');
+    const base=`<rect x="10" y="12" width="980" height="415" rx="30" fill="#ffefcc" stroke="#bd9163" stroke-width="8"/><text x="500" y="62" text-anchor="middle" font-size="38" font-weight="900" fill="#30564d">${title}</text><text x="500" y="115" text-anchor="middle" font-size="48" font-weight="900" fill="#3c6351">${age===4?'Find the next number: ':'Count to '}${target}</text>`;
+    let content='';
+    if(age===2){
+      content=`<path d="M325 250Q500 400 675 250L635 380Q500 437 365 380Z" fill="#c98a50" stroke="#78502e" stroke-width="9"/><path d="M320 250Q500 295 680 250" fill="none" stroke="#87582f" stroke-width="13"/>`;
+      for(let i=0;i<countPlaced;i++)content+=countIcon(420+(i%3)*80,305+Math.floor(i/3)*55,'apple');
+      content+=`<g data-count-action="add" role="button" tabindex="0" aria-label="Add apple" style="cursor:pointer"><rect x="50" y="160" width="225" height="230" rx="35" fill="#d7f2df" stroke="#619777" stroke-width="6"/>${countIcon(160,245,'apple')}<text x="160" y="342" text-anchor="middle" font-size="30" font-weight="900" fill="#30564d">Tap apple</text></g>`;
+    }else if(age===3){
+      content=`<g transform="translate(700 270)"><circle r="90" fill="#ad7849" stroke="#69452c" stroke-width="7"/><circle cx="-75" cy="-15" r="40" fill="#ad7849"/><circle cx="75" cy="-15" r="40" fill="#ad7849"/><ellipse cy="25" rx="64" ry="55" fill="#e6bb82"/><circle cx="-28" cy="-10" r="9" fill="#29231d"/><circle cx="28" cy="-10" r="9" fill="#29231d"/><path d="M-25 43Q0 66 25 43" fill="none" stroke="#5b3625" stroke-width="7" stroke-linecap="round"/></g>`;
+      content+=`<g data-count-action="add" role="button" tabindex="0" aria-label="Feed banana" style="cursor:pointer"><rect x="60" y="155" width="260" height="230" rx="35" fill="#d7f2df" stroke="#619777" stroke-width="6"/>${countIcon(175,245,'banana')}<text x="190" y="340" text-anchor="middle" font-size="30" font-weight="900" fill="#30564d">Feed banana</text></g>`;
+      content+=`<text x="490" y="310" text-anchor="middle" font-size="56" fill="#3a6554" font-weight="900">${countPlaced} / ${target}</text>`;
+    }else{
+      content=`<rect x="75" y="162" width="165" height="110" rx="25" fill="#f6aa62" stroke="#985e3b" stroke-width="6"/><circle cx="115" cy="286" r="21" fill="#51443c"/><circle cx="210" cy="286" r="21" fill="#51443c"/><text x="157" y="222" font-size="28" font-weight="900" text-anchor="middle" fill="#fff">TRAIN</text>`;
+      for(let i=0;i<4;i++){const n=Math.min(countMax(),Math.max(1,target-1+i));const x=270+i*170;content+=`<g data-count-choice="${n}" role="button" tabindex="0" aria-label="Choose ${n}" style="cursor:pointer"><rect x="${x}" y="168" width="145" height="103" rx="20" fill="${['#ffd17e','#b5ddf4','#d8c3f2','#bce4bd'][i]}" stroke="#667c67" stroke-width="6"/><text x="${x+72}" y="238" text-anchor="middle" font-size="58" font-weight="900" fill="#304c4c">${n}</text><circle cx="${x+32}" cy="286" r="18" fill="#51443c"/><circle cx="${x+112}" cy="286" r="18" fill="#51443c"/></g>`;}
+      content+=`<text x="500" y="380" text-anchor="middle" font-size="28" font-weight="800" fill="#466a5a">Tap the carriage showing ${target}</text>`;
+    }
+    scene.innerHTML=base+content;progress(countStage,countMax());updateGameItemStrip();
+    hint(age===2?`Put ${target} apple${target>1?'s':''} into the basket. Tap each apple!`:age===3?`Feed SaNa ${target} banana${target>1?'s':''}!`:`Find number ${target} and tap its train carriage!`);
+  }
+  function countTap(event,point){
+    if(state.done||state.activity!=='abacus'||state.age===5)return;
+    const choice=event.target.closest('[data-count-choice]');const add=event.target.closest('[data-count-action]');
+    if(state.age===4){if(!choice)return;if(Number(choice.dataset.countChoice)!==countStage+1){hint(`Try number ${countStage+1}!`);return;}}
+    else {if(!add)return;countPlaced++;haptic(38,0);tone(560);if(countPlaced<countStage+1){renderCountAdventure();return;}}
+    haptic(45,0);tone(700);countStage++;countPlaced=0;
+    if(countStage>=countMax()){
+      progress(countStage,countMax());updateGameItemStrip();celebrate(`Wonderful counting! You completed ${countTitle()}!`);applause();
+      clearTimeout(countTimer);countTimer=setTimeout(()=>{if(state.activity==='abacus'&&state.age!==5)resetCountAdventure();},2000);
+    }else renderCountAdventure();
+  }
+  scene.addEventListener('keydown',event=>{
+    if(state.activity!=='abacus'||state.age===5||!['Enter',' '].includes(event.key))return;
+    if(event.target.closest('[data-count-action],[data-count-choice]')){event.preventDefault();countTap(event,{x:0,y:0});}
+  });
   const abacusColors=[['Red','#ff3b30'],['Orange','#ff9500'],['Yellow','#ffe500'],['Green','#35d44b'],['Blue','#2395ff'],['Indigo','#6454d9'],['Violet','#bb52ed'],['Pink','#ff8fc7'],['Brown','#b5794a'],['White','#ffffff']];
   const abacusWords=['Zero','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten'];
   const abacusCount=row=>state.abacusRows[row].filter(Boolean).length;
@@ -415,7 +464,7 @@
     const count=across?(pointer.right?10-index:9-index):pointer.original;
     if(count!==pointer.preview){pointer.preview=count;updateAbacusFeedback(pointer.row,count);}
   }
-  new ResizeObserver(()=>{if(state.activity==='abacus'&&state.abacusSize!==`${scene.clientWidth}/${scene.clientHeight}`){cancelGesture();renderAbacus();}}).observe(scene);
+  new ResizeObserver(()=>{if(state.activity==='abacus'&&state.age===5&&state.abacusSize!==`${scene.clientWidth}/${scene.clientHeight}`){cancelGesture();renderAbacus();}}).observe(scene);
   // Shared, game-specific progress strip. Never moves to a side in immersive mode.
   function showItemStrip(items){
     const strip=$('item-progress-strip');if(!strip)return;
@@ -440,6 +489,8 @@
       showItemStrip(brushPictures.slice(0,brushCount()).map(([name,region],i)=>({label:name,icon:`<svg viewBox="250 55 500 345" aria-hidden="true"><g fill="#e8b768" stroke="#45675d" stroke-width="10">${region}</g></svg>${name[0].toUpperCase()+name.slice(1)}`,current:i===brushIndex,done:i<brushIndex})));
     }else if(state.activity==='slide'){
       showItemStrip(slideObjects.slice(0,slideTotal()).map(([name,emoji],i)=>({label:`Room ${i+1}: ${name}`,icon:`${emoji} ${i+1}`,current:i===state.slideIndex,done:i<state.slideIndex||(i===state.slideIndex&&state.slideRevealed)})));
+    }else if(state.activity==='abacus'&&state.age!==5){
+      showItemStrip(Array.from({length:countMax()},(_,i)=>({label:`Count ${i+1}`,icon:String(i+1),done:i<countStage,current:i===countStage})));
     }else if(state.activity==='abacus'){
       showItemStrip(abacusColors.map(([name,color],i)=>({label:name,icon:`<span style="color:${color};text-shadow:0 1px #333">●</span> ${name} ${abacusCount(i)}`,current:i===state.abacusSelectedRow,done:abacusCount(i)>0})));
     }else showItemStrip([]);
@@ -746,6 +797,9 @@
     if(state.pointer||event.button>0||!state.activity)return;
     const point=localPoint(event);if(!point)return;
     scene.querySelector('[data-guide]')?.remove();
+    if(state.activity==='abacus'&&state.age!==5){
+      countTap(event,point);event.preventDefault();return;
+    }
     if(state.activity==='abacus'){
       state.pointer=beginAbacusSlide(point,event.pointerId);if(!state.pointer)return;
     }else if(state.activity==='drag'){

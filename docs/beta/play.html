@@ -202,7 +202,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 #app[data-view="bubbles"] #brush-modes,
 #app[data-view="brush"] #bubble-modes {display:none!important}
 
-/* v1.02: independent child-friendly vibration toggle. */
+/* v1.03: independent child-friendly vibration toggle. */
 #vibration-toggle{font-size:23px;font-weight:900;background:#a9e4b9;color:#173e2b;border:2px solid #3d8d5a}
 #vibration-toggle[aria-pressed="false"]{background:#f6a6a6;color:#512424;border-color:#a94b4b}
 #app.immersive #vibration-toggle{position:absolute;top:auto!important;right:auto!important;bottom:max(12px,env(safe-area-inset-bottom))!important;left:max(12px,env(safe-area-inset-left))!important;z-index:100;width:48px;height:48px;min-width:48px;display:flex!important;align-items:center;justify-content:center;border:3px solid #fff;border-radius:12px;pointer-events:auto;touch-action:manipulation;box-shadow:0 2px 8px #0005}
@@ -229,13 +229,13 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
   background:#a9e4b9!important;color:#173e2b!important;border-color:#3d8d5a!important;
 }
 
-/* v1.02: music note and speaker use identical icon dimensions */
+/* v1.03: music note and speaker use identical icon dimensions */
 #music-toggle svg,#sound svg{width:24px;height:24px;display:block;flex:none}
-/* v1.02 fullscreen resilience: retain a sky fallback behind the SVG. */
+/* v1.03 fullscreen resilience: retain a sky fallback behind the SVG. */
 #app[data-view="bubbles"] .play-mat, #app[data-view="bubbles"].immersive .play-mat {background-color:#d8b98e!important;background-image:url('./sana-space-sky-v83.jpg')!important;background-position:center!important;background-size:cover!important;}
 #app[data-view="bubbles"] #scene {background:transparent!important;}
 
-/* v1.02: shared top-of-play-room item/progress strip in every activity. */
+/* v1.03: shared top-of-play-room item/progress strip in every activity. */
 #app:not([data-view="home"]) .play-mat>.item-progress-strip:not([hidden]){
  display:flex!important;order:-5!important;flex:0 0 auto!important;align-items:center;gap:5px;
  min-height:42px;max-height:48px;padding:3px 8px;overflow-x:auto;overflow-y:hidden;
@@ -260,7 +260,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 #app.immersive .game-status-top{display:none!important}
 @media(max-width:700px){.item-chip{min-width:35px;height:32px;font-size:12px;padding:2px 4px}}
 
-/* v1.02 — exclusive age choice, compact header, no dropdown overlay. */
+/* v1.03 — exclusive age choice, compact header, no dropdown overlay. */
 .parent-age{display:flex!important;align-items:center;gap:3px!important;flex:none!important;position:static!important}
 .parent-age>span{display:inline!important;font-size:12px!important}
 .age-radio{min-width:31px;height:34px;padding:2px 5px;border:2px solid #9ab4a6;border-radius:9px;background:#fff8e9;color:#21463a;font-size:16px;font-weight:900;line-height:1;cursor:pointer}
@@ -276,7 +276,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 .item-progress-strip .item-chip.is-done::after{font-size:9px!important;width:12px!important;height:12px!important;line-height:12px!important}
 #app.immersive .play-mat>.item-progress-strip:not([hidden]){overflow:hidden!important}
 
-/* v1.02: readable, fitted top-strip thumbnails in every game and mode. */
+/* v1.03: readable, fitted top-strip thumbnails in every game and mode. */
 #app:not([data-view="home"]) .play-mat>.item-progress-strip:not([hidden]){
   background:#e7f1f3!important;border-bottom:2px solid #7196a1!important;
   gap:3px!important;padding:3px 5px!important;overflow:hidden!important;
@@ -432,35 +432,59 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 (()=>{const status=document.getElementById("game-results"),slot=document.getElementById("game-status-top");if(status&&slot)slot.appendChild(status);})();
 </script>
 <script src="age-profiles.js"></script>
-<script src="app.js?v102"></script>
+<script src="app.js?v104"></script>
 <script src="pwa.js"></script>
 <script>
-/* Sound is master; music is a separate preference. Both respect the quiet switch. */
+/* v1.04 beta: Web Audio buffer playback avoids HTMLMediaElement media cards.
+   Preserve existing sound-master/music preference semantics. */
 (()=>{'use strict';
 const button=document.getElementById('music-toggle');
-const player=new Audio('./bgm-sana-v86.mp3');
-player.loop=true;player.volume=0.72;player.preload='auto';
-// No Media Session metadata or action handlers: avoid creating Android media cards.
+const track='./bgm-sana-v86.mp3';
 let enabled=false;
 try{enabled=localStorage.getItem('sanaMusicV1')==='on';}catch(e){}
 let master=document.getElementById('sound').getAttribute('aria-pressed')==='true';
+let context=null,buffer=null,source=null,gain=null,loading=null,offset=0,startedAt=0;
+let generation=0;
 function sync(){button.setAttribute('aria-pressed',String(enabled));button.setAttribute('aria-label',enabled?'Background music on':'Background music off');button.title=enabled?'Turn background music off':'Turn background music on';button.style.opacity='1';}
-function play(){
-  if(master&&enabled&&!document.hidden){
-    player.play().catch(()=>{});
-  }else{
-    player.pause();
-  }
+function desired(){return master&&enabled&&!document.hidden;}
+function stop(){
+  generation++;
+  if(source){if(context&&buffer)offset=(offset+Math.max(0,context.currentTime-startedAt))%buffer.duration;try{source.stop();}catch(e){}try{source.disconnect();}catch(e){}source=null;}
 }
-button.addEventListener('click',()=>{enabled=!enabled;try{localStorage.setItem('sanaMusicV1',enabled?'on':'off');}catch(e){}sync();play();});
-window.addEventListener('sana-sound-change',event=>{master=Boolean(event.detail?.enabled);sync();play();});
-document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseBackgroundMusic();else play();});
-function pauseBackgroundMusic(){player.pause();}
-window.addEventListener('blur',()=>{if(document.hidden)pauseBackgroundMusic();});
-document.addEventListener('freeze',pauseBackgroundMusic);
-window.addEventListener('pagehide',pauseBackgroundMusic);
-// Audio playback requires an initial user gesture on mobile.
-document.addEventListener('pointerdown',()=>{if(enabled)play();},{once:true});
+async function load(){
+  if(buffer)return buffer;
+  if(!loading)loading=(async()=>{
+    const response=await fetch(track);
+    if(!response.ok)throw new Error('Music unavailable');
+    const bytes=await response.arrayBuffer();
+    if(!context)throw new Error('Audio context unavailable');
+    buffer=await context.decodeAudioData(bytes);
+    return buffer;
+  })().catch(error=>{loading=null;throw error;});
+  return loading;
+}
+async function play(){
+  if(!desired()){stop();return;}
+  if(source)return;
+  const token=++generation;
+  try{
+    const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+    if(!AudioContextClass)return;
+    if(!context){context=new AudioContextClass();gain=context.createGain();gain.gain.value=0.72;gain.connect(context.destination);}
+    await context.resume();
+    await load();
+    if(token!==generation||!desired()||source)return;
+    const node=context.createBufferSource();node.buffer=buffer;node.loop=true;node.connect(gain);
+    startedAt=context.currentTime;node.start(0,offset%buffer.duration);source=node;
+  }catch(error){/* Audio is optional; no HTML audio fallback that would recreate the notification. */}
+}
+function update(){if(desired())void play();else stop();}
+button.addEventListener('click',()=>{enabled=!enabled;try{localStorage.setItem('sanaMusicV1',enabled?'on':'off');}catch(e){}sync();update();});
+window.addEventListener('sana-sound-change',event=>{master=Boolean(event.detail?.enabled);update();});
+document.addEventListener('visibilitychange',update);
+window.addEventListener('pagehide',stop);
+document.addEventListener('freeze',stop);
+document.addEventListener('pointerdown',()=>{if(desired())void play();},{passive:true});
 sync();
 })();
 </script>
