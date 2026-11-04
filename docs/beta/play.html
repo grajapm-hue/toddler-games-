@@ -294,7 +294,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 .item-progress-strip .item-chip svg{display:block!important;flex-shrink:1!important;max-width:100%!important;width:min(26px,95%)!important;height:min(27px,95%)!important;overflow:visible!important}
 #app.immersive .item-progress-strip .item-chip{min-width:0!important}
 
-/* v1.13: legible adaptive thumbnail carousel across every game and age. */
+/* v1.16: legible adaptive thumbnail carousel across every game and age. */
 #app:not([data-view="home"]) .play-mat>.item-progress-strip:not([hidden]),
 #app.immersive .play-mat>.item-progress-strip:not([hidden]){
   display:flex!important;flex-wrap:nowrap!important;justify-content:flex-start!important;
@@ -329,7 +329,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
  .item-progress-strip .item-chip svg{width:36px!important;height:35px!important}
 }
 
-/* v1.13: Abacus-only compact readable color thumbnails; preserve all other games. */
+/* v1.16: Abacus-only compact readable color thumbnails; preserve all other games. */
 #app[data-view="abacus"] .play-mat>.item-progress-strip:not([hidden]),
 #app[data-view="abacus"].immersive .play-mat>.item-progress-strip:not([hidden]){
   min-height:43px!important;max-height:46px!important;height:46px!important;
@@ -350,12 +350,12 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
   }
 }
 
-/* v1.13: Exit button is anchored to the MEASURED bottom edge of the
+/* v1.16: Exit button is anchored to the MEASURED bottom edge of the
    thumbnail band. Do not use a hard-coded top offset. */
 #app.immersive .play-mat #exit-play,
 #app.immersive .play-mat:has(> .item-progress-strip:not([hidden])) #exit-play,
 #app.immersive .play-mat:not(:has(> .item-progress-strip:not([hidden]))) #exit-play {
-  /* v1.13: offset measured in local, unrotated playroom pixels. */
+  /* v1.16: offset measured in local, unrotated playroom pixels. */
   position:absolute!important;
   top:var(--sana-exit-top, 0px)!important;
   right:0!important;
@@ -457,7 +457,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
   background: transparent !important;
 }
 
-/* v1.13 — immersive controls: exit below progress thumbnails; vibration at
+/* v1.16 — immersive controls: exit below progress thumbnails; vibration at
    lower-right playroom corner, away from the Abacus bead rows. All games. */
 #app.immersive .play-mat #exit-play {
   top:8px!important;right:8px!important;left:auto!important;
@@ -474,7 +474,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
   min-width:46px!important;min-height:46px!important;
 }
 
-/* v1.13: fullscreen exit icon — transparent square-in-square, black outline.
+/* v1.16: fullscreen exit icon — transparent square-in-square, black outline.
    Position within playroom below progress carousel; identical touch target to vibration. */
 #app.immersive .play-mat #exit-play {
   position:absolute!important;top:3px!important;right:8px!important;left:auto!important;bottom:auto!important;
@@ -486,7 +486,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 }
 #app.immersive .play-mat:has(> .item-progress-strip:not([hidden])) #exit-play {top:3px!important;}
 #app.immersive .play-mat #exit-play svg{width:29px;height:29px;display:block;flex:none;}
-/* v1.13: exit stays BELOW the entire progress thumbnail band, not on top of it.
+/* v1.16: exit stays BELOW the entire progress thumbnail band, not on top of it.
    Reserve the row height plus a visible gap on every game and age. */
 #app.immersive .play-mat #exit-play,
 #app.immersive .play-mat:has(> .item-progress-strip:not([hidden])) #exit-play {
@@ -523,7 +523,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
   <div class="sana-badge" aria-hidden="true"><svg><use href="#monkey"/></svg><small>SaNa</small></div>
   <div id="hint" role="status" aria-live="polite" aria-atomic="true">Choose a picture. I’ll play with you!</div>
   <div class="progress" id="progress" aria-label="Activity progress" hidden></div>
-  <button class="soft-button secondary" id="show-me" type="button" aria-label="Show me" hidden><svg aria-hidden="true"><use href="#hand-icon"/></svg><span class="button-label">Show me</span></button>
+  <button class="soft-button secondary" id="show-me" type="button" aria-label="Demo" hidden><svg aria-hidden="true"><use href="#hand-icon"/></svg><span class="button-label">Demo</span></button>
   <button class="soft-button" id="again" type="button" aria-label="Again" hidden><svg aria-hidden="true"><use href="#again-icon"/></svg><span class="button-label">Again</span></button>
 </aside>
 <main id="home-view">

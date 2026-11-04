@@ -201,22 +201,24 @@
     ['cat','<path d="M366 179L378 76L453 132Q500 105 547 132L622 76L634 179Q688 305 598 349Q500 395 402 349Q312 305 366 179Z"/>'],
     ['crown','<path d="M322 150L397 239L500 98L603 239L678 150L647 350H353Z"/>']
   ];
-  let brushIndex=0,brushAge=null,brushTimer=null;
+  let brushIndex=0,brushAge=null,brushTimer=null;const brushFinished=new Set();
   const brushCount=()=>brushLimits[state.age]||16;
   const brushPicture=()=>{const [name,region]=brushPictures[brushIndex%brushCount()];return {name,region,target:.97,dirt:[[420,155],[520,155],[600,185],[390,245],[500,240],[600,275],[450,320],[560,330]]};};
+  const brushThumbColors={apple:'#ee5651',flower:'#55bdf4',star:'#ffcd43',car:'#6ad765',butterfly:'#bd83ef',fish:'#ffac54',sun:'#ffc94e',tree:'#60b66c',house:'#f09c6b',heart:'#f06e90',balloon:'#8e9ff2',bird:'#71b9e4',cat:'#d9aa77',dog:'#d8aa79',rainbow:'#e8a2d9',boat:'#75b4ee'};
+  function brushThumbColor(name){return brushThumbColors[name]||'#75b9e7';}
   function updateBrushThumbnails(){
     const strip=$('brush-thumbnails');
     if(!strip)return;
     strip.hidden=state.activity!=='brush';
     if(strip.hidden)return;
     strip.innerHTML=brushPictures.slice(0,brushCount()).map(([name,region],i)=>
-      `<button type="button" class="brush-thumb ${i===brushIndex?'current':i<brushIndex?'past':''}" role="listitem" data-brush-index="${i}" aria-label="Select ${name}" aria-pressed="${i===brushIndex}" ${i===brushIndex?'aria-current="step"':''} title="Select ${name}"><svg viewBox="250 55 500 345" aria-hidden="true"><g fill="#e8b768" stroke="#45675d" stroke-width="10" stroke-linejoin="round">${region}</g></svg><span>${name[0].toUpperCase()+name.slice(1)}</span></button>`).join('');
+      `<button type="button" class="brush-thumb ${i===brushIndex?'current':brushFinished.has(i)?'past':''}" role="listitem" data-brush-index="${i}" aria-label="Select ${name}" aria-pressed="${i===brushIndex}" ${i===brushIndex?'aria-current="step"':''} title="Select ${name}"><svg viewBox="250 55 500 345" aria-hidden="true"><g fill="${brushThumbColor(name)}" stroke="#45675d" stroke-width="10" stroke-linejoin="round">${region}</g></svg><span>${name[0].toUpperCase()+name.slice(1)}</span></button>`).join('');
     updateGameItemStrip();
     const current=strip.querySelector('.current');
     if(current){const x=current.offsetLeft-strip.offsetLeft; if(x<strip.scrollLeft||x+current.offsetWidth>strip.scrollLeft+strip.clientWidth)strip.scrollLeft=Math.max(0,x-strip.clientWidth/3);}
   }
   $('brush-thumbnails').addEventListener('click',event=>{const button=event.target.closest('[data-brush-index]');if(!button||state.activity!=='brush')return;const index=Number(button.dataset.brushIndex);if(!Number.isInteger(index)||index<0||index>=brushCount())return;clearTimeout(brushTimer);brushIndex=index;resetRound();});
-  function brushComplete(message){if(state.done)return;celebrate(message);applause();clearTimeout(brushTimer);brushTimer=setTimeout(()=>{if(state.activity==='brush'){brushIndex=(brushIndex+1)%brushCount();resetRound();}},2100);}
+  function brushComplete(message){if(state.done)return;brushFinished.add(brushIndex);updateBrushThumbnails();celebrate(message);applause();clearTimeout(brushTimer);brushTimer=setTimeout(()=>{if(state.activity==='brush'){brushIndex=(brushIndex+1)%brushCount();resetRound();}},2100);}
   const artPicture=()=>state.activity==='brush'?brushPicture():({...artPictures[profile().picture],target:profile().paintTarget});
   function pictureArt(outline=false){
     const picture=artPicture();if(state.activity==='brush')return `<g stroke="#536b5b" stroke-width="5" stroke-linejoin="round" fill="${outline?'none':'#f6e4bf'}">${picture.region}</g>`;if(picture.name==='puppy')return puppy(outline);
@@ -271,7 +273,7 @@
     event.preventDefault();scrollCards(event.key==='Home'?0:event.key==='End'?cardGrid.scrollWidth:cardGrid.scrollLeft+(event.key==='ArrowRight'?cardStep():-cardStep()));
   });
   $('paint-tools').insertAdjacentHTML('beforeend',colors.map((color,i)=>`<button class="paint-color" type="button" data-paint="${color}" style="--paint:${color}" aria-label="${colorNames[i]} paint" aria-pressed="${i===0}"></button>`).join(''));
-  function clearEffects(){clearTimeout(rewardTimer);clearTimeout(guideTimer);$('celebrate').hidden=true;$('art-reward').hidden=true;scene.querySelector('[data-guide]')?.remove();}
+  function clearEffects(){stopDemo();clearTimeout(rewardTimer);clearTimeout(guideTimer);$('celebrate').hidden=true;$('art-reward').hidden=true;scene.querySelector('[data-guide]')?.remove();}
   function cancelGesture(){
     const pointer=state.pointer;state.pointer=null;
     if(pointer&&scene.hasPointerCapture?.(pointer.id)){try{scene.releasePointerCapture(pointer.id);}catch{/* Gesture may already have ended. */}}
@@ -321,7 +323,7 @@
     $('art-tools').hidden=state.activity!=='brush';
     state.erase=false;updateArtTools();
     scene.setAttribute('aria-label','Play area');
-    if(state.activity==='brush'){if(brushAge!==state.age){brushAge=state.age;brushIndex=0;}$('activity-name').textContent=`Little art studio · ${artPicture().name[0].toUpperCase()+artPicture().name.slice(1)} · ${brushIndex+1}/${brushCount()}`;}
+    if(state.activity==='brush'){if(brushAge!==state.age){brushAge=state.age;brushIndex=0;brushFinished.clear();}$('activity-name').textContent=`Little art studio · ${artPicture().name[0].toUpperCase()+artPicture().name.slice(1)} · ${brushIndex+1}/${brushCount()}`;}
     updateBrushThumbnails();
     $('clean-mode').setAttribute('aria-pressed',String(!state.paintMode));$('paint-mode').setAttribute('aria-pressed',String(state.paintMode));
     scene.style.background='transparent';
@@ -366,29 +368,37 @@
     const target=countStage+1,age=state.age;
     const title=countTitle();$('activity-name').textContent=title;
     scene.setAttribute('viewBox','0 0 1000 440');
-    const base=`<rect x="10" y="12" width="980" height="415" rx="30" fill="#ffefcc" stroke="#bd9163" stroke-width="8"/><text x="500" y="62" text-anchor="middle" font-size="38" font-weight="900" fill="#30564d">${title}</text><text x="500" y="115" text-anchor="middle" font-size="48" font-weight="900" fill="#3c6351">${age===4?'Find the next number: ':'Count to '}${target}</text>`;
+    const base=`<rect x="10" y="12" width="980" height="415" rx="30" fill="#ffefcc" stroke="#bd9163" stroke-width="8"/><text x="500" y="62" text-anchor="middle" font-size="38" font-weight="900" fill="#30564d">${title}</text><text x="500" y="115" text-anchor="middle" font-size="48" font-weight="900" fill="#3c6351">${age===4?'Find number: ':'Count to '}${target}</text>`;
     let content='';
-    if(age===2){
-      content=`<path d="M325 250Q500 400 675 250L635 380Q500 437 365 380Z" fill="#c98a50" stroke="#78502e" stroke-width="9"/><path d="M320 250Q500 295 680 250" fill="none" stroke="#87582f" stroke-width="13"/>`;
-      for(let i=0;i<countPlaced;i++)content+=countIcon(420+(i%3)*80,305+Math.floor(i/3)*55,'apple');
-      content+=`<g data-count-action="add" role="button" tabindex="0" aria-label="Add apple" style="cursor:pointer"><rect x="50" y="160" width="225" height="230" rx="35" fill="#d7f2df" stroke="#619777" stroke-width="6"/>${countIcon(160,245,'apple')}<text x="160" y="342" text-anchor="middle" font-size="30" font-weight="900" fill="#30564d">Tap apple</text></g>`;
-    }else if(age===3){
-      content=`<g transform="translate(700 270)"><circle r="90" fill="#ad7849" stroke="#69452c" stroke-width="7"/><circle cx="-75" cy="-15" r="40" fill="#ad7849"/><circle cx="75" cy="-15" r="40" fill="#ad7849"/><ellipse cy="25" rx="64" ry="55" fill="#e6bb82"/><circle cx="-28" cy="-10" r="9" fill="#29231d"/><circle cx="28" cy="-10" r="9" fill="#29231d"/><path d="M-25 43Q0 66 25 43" fill="none" stroke="#5b3625" stroke-width="7" stroke-linecap="round"/></g>`;
-      content+=`<g data-count-action="add" role="button" tabindex="0" aria-label="Feed banana" style="cursor:pointer"><rect x="60" y="155" width="260" height="230" rx="35" fill="#d7f2df" stroke="#619777" stroke-width="6"/>${countIcon(175,245,'banana')}<text x="190" y="340" text-anchor="middle" font-size="30" font-weight="900" fill="#30564d">Feed banana</text></g>`;
-      content+=`<text x="490" y="310" text-anchor="middle" font-size="56" fill="#3a6554" font-weight="900">${countPlaced} / ${target}</text>`;
+    if(age===2||age===3){
+      const apple=age===2,kind=apple?'apple':'banana';
+      const canopy=apple?'#4eaa53':'#67b84d';
+      content=`<g aria-label="${apple?'Apple tree':'Banana tree'}"><path d="M180 355Q196 258 179 171" fill="none" stroke="#80512c" stroke-width="37" stroke-linecap="round"/><ellipse cx="182" cy="178" rx="146" ry="105" fill="${canopy}" stroke="#397f40" stroke-width="9"/><circle cx="95" cy="150" r="57" fill="#78c86a"/><circle cx="255" cy="139" r="65" fill="#73c65f"/></g>`;
+      for(let i=0;i<(apple?5:Math.max(5,target));i++){
+        const x=90+(i%3)*90,y=148+Math.floor(i/3)*74;
+        content+=`<g data-count-fruit="${i}" role="button" tabindex="0" aria-label="Drag ${kind} ${i+1} to ${apple?'basket':'monkey'}" transform="translate(${x} ${y})" style="cursor:grab;touch-action:none" ${i<countPlaced?'opacity=".2"':''}>${countIcon(0,0,kind)}</g>`;
+      }
+      if(apple){
+        content+=`<g data-count-drop="basket"><path d="M440 258Q575 305 710 258L675 385Q575 422 475 385Z" fill="#c98a50" stroke="#78502e" stroke-width="9"/><path d="M438 258Q575 305 712 258" fill="none" stroke="#87582f" stroke-width="14"/></g>`;
+        for(let i=0;i<countPlaced;i++)content+=countIcon(510+(i%3)*57,315+Math.floor(i/3)*45,'apple');
+      }else{
+        content+=`<g data-count-drop="monkey" transform="translate(690 273)"><circle r="100" fill="#ad7849" stroke="#69452c" stroke-width="7"/><circle cx="-76" cy="-18" r="40" fill="#ad7849"/><circle cx="76" cy="-18" r="40" fill="#ad7849"/><ellipse cy="25" rx="66" ry="57" fill="#e6bb82"/><circle cx="-28" cy="-12" r="9" fill="#29231d"/><circle cx="28" cy="-12" r="9" fill="#29231d"/><ellipse cy="48" rx="24" ry="13" fill="#5b3625"/></g>`;
+        for(let i=0;i<countPlaced;i++)content+=countIcon(810+(i%2)*48,290+Math.floor(i/2)*42,'banana');
+      }
+      content+=`<text x="540" y="195" text-anchor="middle" font-size="43" font-weight="900" fill="#285d4c">${countPlaced} / ${target}</text><text x="500" y="412" text-anchor="middle" font-size="26" font-weight="800" fill="#285d4c">Hold and drag ${apple?'apples into the basket':'bananas to the monkey'}</text>`;
     }else{
       content=`<rect x="75" y="162" width="165" height="110" rx="25" fill="#f6aa62" stroke="#985e3b" stroke-width="6"/><circle cx="115" cy="286" r="21" fill="#51443c"/><circle cx="210" cy="286" r="21" fill="#51443c"/><text x="157" y="222" font-size="28" font-weight="900" text-anchor="middle" fill="#fff">TRAIN</text>`;
-      for(let i=0;i<4;i++){const n=Math.min(countMax(),Math.max(1,target-1+i));const x=270+i*170;content+=`<g data-count-choice="${n}" role="button" tabindex="0" aria-label="Choose ${n}" style="cursor:pointer"><rect x="${x}" y="168" width="145" height="103" rx="20" fill="${['#ffd17e','#b5ddf4','#d8c3f2','#bce4bd'][i]}" stroke="#667c67" stroke-width="6"/><text x="${x+72}" y="238" text-anchor="middle" font-size="58" font-weight="900" fill="#304c4c">${n}</text><circle cx="${x+32}" cy="286" r="18" fill="#51443c"/><circle cx="${x+112}" cy="286" r="18" fill="#51443c"/></g>`;}
+      for(let i=0;i<4;i++){const n=Math.min(countMax(),Math.max(1,target-1)+i);const x=270+i*170;content+=`<g data-count-choice="${n}" role="button" tabindex="0" aria-label="Choose ${n}" style="cursor:pointer"><rect x="${x}" y="168" width="145" height="103" rx="20" fill="${['#ffd17e','#b5ddf4','#d8c3f2','#bce4bd'][i]}" stroke="#667c67" stroke-width="6"/><text x="${x+72}" y="238" text-anchor="middle" font-size="58" font-weight="900" fill="#304c4c">${n}</text><circle cx="${x+32}" cy="286" r="18" fill="#51443c"/><circle cx="${x+112}" cy="286" r="18" fill="#51443c"/></g>`;}
       content+=`<text x="500" y="380" text-anchor="middle" font-size="28" font-weight="800" fill="#466a5a">Tap the carriage showing ${target}</text>`;
     }
     scene.innerHTML=base+content;progress(countStage,countMax());updateGameItemStrip();
-    hint(age===2?`Put ${target} apple${target>1?'s':''} into the basket. Tap each apple!`:age===3?`Feed SaNa ${target} banana${target>1?'s':''}!`:`Find number ${target} and tap its train carriage!`);
+    hint(age===2?`Put ${target} apple${target>1?'s':''} into the basket. Drag each apple!`:age===3?`Feed SaNa ${target} banana${target>1?'s':''}!`:`Find number ${target} and tap its train carriage!`);
   }
   function countTap(event,point){
     if(state.done||state.activity!=='abacus'||state.age===5)return;
     const choice=event.target.closest('[data-count-choice]');const add=event.target.closest('[data-count-action]');
     if(state.age===4){if(!choice)return;if(Number(choice.dataset.countChoice)!==countStage+1){hint(`Try number ${countStage+1}!`);return;}}
-    else {if(!add)return;countPlaced++;haptic(38,0);tone(560);if(countPlaced<countStage+1){renderCountAdventure();return;}}
+    else {if(!add&&!event.countDragSuccess)return;countPlaced++;haptic(38,0);tone(560);if(countPlaced<countStage+1){renderCountAdventure();return;}}
     haptic(45,0);tone(700);countStage++;countPlaced=0;
     if(countStage>=countMax()){
       progress(countStage,countMax());updateGameItemStrip();celebrate(`Wonderful counting! You completed ${countTitle()}!`);applause();
@@ -508,7 +518,7 @@
         const tokens=bubbleItems();showItemStrip(tokens.map(token=>({label:String(token),done:state.bubbleHits.has(token),current:!state.bubbleHits.has(token)&&token===tokens.find(t=>!state.bubbleHits.has(t)),icon:state.bubbleMode==='shapes'?`<svg viewBox="-68 -68 136 136" aria-hidden="true">${primitive(token,shapeById(token)?.color||'#ffcf64','#274b44')}</svg>`:''})));
       }
     }else if(state.activity==='brush'){
-      showItemStrip(brushPictures.slice(0,brushCount()).map(([name,region],i)=>({label:name,icon:`<svg viewBox="250 55 500 345" aria-hidden="true"><g fill="#e8b768" stroke="#45675d" stroke-width="10">${region}</g></svg>`,current:i===brushIndex,done:i<brushIndex})));
+      showItemStrip(brushPictures.slice(0,brushCount()).map(([name,region],i)=>({label:name,icon:`<svg viewBox="250 55 500 345" aria-hidden="true"><g fill="${brushThumbColor(name)}" stroke="#45675d" stroke-width="10">${region}</g></svg>`,current:i===brushIndex,done:brushFinished.has(i)})));
     }else if(state.activity==='slide'){
       showItemStrip(slideObjects.slice(0,slideTotal()).map(([name,emoji],i)=>({label:`Room ${i+1}: ${name}`,icon:`<span class="item-emoji">${emoji}</span><small class="item-index">${i+1}</small>`,current:i===state.slideIndex,done:i<state.slideIndex||(i===state.slideIndex&&state.slideRevealed)})));
     }else if(state.activity==='abacus'&&state.age!==5){
@@ -820,6 +830,12 @@
     const point=localPoint(event);if(!point)return;
     scene.querySelector('[data-guide]')?.remove();
     if(state.activity==='abacus'&&state.age!==5){
+      if(state.age===2||state.age===3){
+        const fruit=event.target.closest('[data-count-fruit]');
+        if(!fruit||Number(fruit.dataset.countFruit)<countPlaced)return;
+        state.pointer={id:event.pointerId,kind:'count-fruit',node:fruit,start:point,origin:fruit.getAttribute('transform')};
+        event.preventDefault();try{scene.setPointerCapture(event.pointerId);}catch{}return;
+      }
       countTap(event,point);event.preventDefault();return;
     }
     if(state.activity==='abacus'){
@@ -846,7 +862,9 @@
   function pointerMove(event){
     const pointer=state.pointer;if(!pointer||event.pointerId!==pointer.id)return;
     const point=pointer.kind==='abacus'?new DOMPoint(event.clientX,event.clientY).matrixTransform(pointer.matrix):localPoint(event);if(!point)return;event.preventDefault();
-    if(pointer.kind==='abacus')moveAbacusSlide(pointer,point);
+    if(pointer.kind==='count-fruit'){
+      pointer.node.setAttribute('transform',`${pointer.origin} translate(${point.x-pointer.start.x} ${point.y-pointer.start.y})`);
+    }else if(pointer.kind==='abacus')moveAbacusSlide(pointer,point);
     else if(pointer.kind==='drag'){
       pointer.x=Math.max(60,Math.min(940,point.x-pointer.dx));pointer.y=Math.max(60,Math.min(380,point.y-pointer.dy));
       scene.querySelector(`[data-piece="${pointer.shape.id}"]`)?.setAttribute('transform',`translate(${pointer.x} ${pointer.y})`);
@@ -862,6 +880,12 @@
     const pointer=state.pointer;if(!pointer||pointer.id!==event.pointerId)return;
     state.pointer=null;
     try{if(scene.hasPointerCapture(event.pointerId))scene.releasePointerCapture(event.pointerId);}catch{/* Already released. */}
+    if(pointer.kind==='count-fruit'){
+      const pt=localPoint(event),dest=state.age===2?{x:575,y:320,r:165}:{x:690,y:273,r:140};
+      if(pt&&Math.hypot(pt.x-dest.x,pt.y-dest.y)<dest.r){countTap({target:pointer.node,countDragSuccess:true},pt);hint('Great! Keep counting!');}
+      else {pointer.node.setAttribute('transform',pointer.origin);hint('Drag the fruit all the way to its destination.');}
+      return;
+    }
     if(pointer.kind==='slide'){const pt=localPoint(event);const dx=(pt?pt.x:pointer.lastX??pointer.startX)-pointer.startX;if(!slideDoorAnimating&&((!state.slideRevealed&&dx>55)||(state.slideRevealed&&dx< -55)))toggleSlide();}
     if(pointer.kind==='abacus'){moveAbacusSlide(pointer,new DOMPoint(event.clientX,event.clientY).matrixTransform(pointer.matrix));setAbacusCount(pointer.row,pointer.preview);}
     else if(pointer.kind==='drag'){
@@ -927,14 +951,161 @@
       else if(bubble)popBubble(state.bubbles.find(item=>item.id===Number(bubble.dataset.bubble)));
     }
   });
-  function showMe(){
-    clearTimeout(guideTimer);scene.querySelector('[data-guide]')?.remove();let x=460,y=190;
-    if(state.activity==='abacus'){const row=activeAbacusRow();if(row>=0){const count=abacusCount(row),p=abacusBeadPoint(row,count===10?0:9-count);x=p.x;y=p.y;}abacusHint();}
-    else if(state.activity==='drag'){const shape=state.shapes.find(s=>!s.placed);if(shape){x=shape.x+10;y=shape.y+20;}hint('Touch a shape, hold it, and move it to the same shadow.');}
-    else if(state.activity==='bubbles'){const bubble=activeBubble();if(bubble){x=bubble.x+5;y=bubble.y+10;}hint(state.bubbleMode==='plain'?'Touch a rising bubble with one finger. Splash, pop!':'Touch a rising bubble. Its matching item above will turn the same color!');}
-    else if(state.activity==='slide'){x=710;y=245;hint('Slide the big cave door sideways to discover a picture!');}
-    else hint(state.paintMode?`Hold one finger inside the ${artPicture().name} and move it. Choose a size or erase to tidy up!`:`Rub a muddy spot back and forth. Watch the ${artPicture().name} get clean!`);
-    const hand=document.createElementNS('http://www.w3.org/2000/svg','g');hand.dataset.guide='';hand.setAttribute('transform',`translate(${x} ${y})`);hand.innerHTML='<g class="guide-hand"><circle r="26" fill="white" opacity=".8"/><use href="#hand-icon" x="-13" y="-14" width="49" height="49" fill="#4b7d68"/></g>';hand.style.pointerEvents='none';scene.appendChild(hand);guideTimer=setTimeout(()=>hand.remove(),4200);
+  // v1.15: isolated visual demo. Gameplay state, scoring and saved progress never change.
+  let demoGeneration=0, demoActive=false;
+  const demoPause=(ms,token)=>new Promise(resolve=>{
+    guideTimer=setTimeout(()=>resolve(token===demoGeneration),ms);
+  });
+  function stopDemo(){
+    demoGeneration++;demoActive=false;clearTimeout(guideTimer);
+    scene.querySelector('[data-demo-layer]')?.remove();
+    $('show-me').setAttribute('aria-pressed','false');
+    try{speechSynthesis.cancel();}catch{}
+  }
+  function sanaSay(words){
+    if(!state.sound || !('speechSynthesis' in window))return;
+    try{
+      speechSynthesis.cancel();
+      const utterance=new SpeechSynthesisUtterance(words);
+      utterance.lang='en-US';utterance.rate=.82;utterance.pitch=1.1;utterance.volume=.85;
+      speechSynthesis.speak(utterance);
+    }catch{}
+  }
+  function demoPoint(node){
+    const box=node.getBBox();const m=node.getCTM();
+    const pt=scene.createSVGPoint();pt.x=box.x+box.width/2;pt.y=box.y+box.height/2;
+    const t=pt.matrixTransform(m);return {x:t.x,y:t.y};
+  }
+  async function showMe(){
+    if(demoActive){stopDemo();return;}
+    stopDemo();demoActive=true;
+    $('show-me').setAttribute('aria-pressed','true');
+    const token=demoGeneration,serial=roundSerial,activity=state.activity,age=state.age;
+    // The overlay is a frozen copy of the current board. Demo changes never enter real game state.
+    const ns='http://www.w3.org/2000/svg';
+    const overlay=document.createElementNS(ns,'g');overlay.dataset.demoLayer='';
+    overlay.setAttribute('style','pointer-events:all');
+    const backing=document.createElementNS(ns,'g');
+    backing.innerHTML=scene.innerHTML;
+    overlay.appendChild(backing);
+    const hand=document.createElementNS(ns,'g');
+    hand.setAttribute('style','pointer-events:none;filter:drop-shadow(0px 3px 3px #203b36)');
+    hand.innerHTML='<circle r="39" fill="#fff9d6" stroke="#28564c" stroke-width="5"/><path d="M-10 16V-25Q-10 -40 1 -40Q12 -40 12 -25V-2Q25 -17 34 -8Q43 0 30 22L14 35H-12L-28 13Q-33 2 -24 -2Q-15 -5 -10 16Z" fill="#ffcd9d" stroke="#2c514b" stroke-width="4"/>';
+    overlay.appendChild(hand);scene.appendChild(overlay);
+    const valid=()=>token===demoGeneration&&serial===roundSerial&&activity===state.activity&&age===state.age&&overlay.isConnected;
+    const move=async(x,y,words,ms=780)=>{
+      if(!valid())return false;
+      if(words){hint(`Demo: ${words}`);sanaSay(words);}
+      hand.style.transition=`transform ${ms}ms ease-in-out`;
+      hand.setAttribute('transform',`translate(${x} ${y})`);
+      return await demoPause(ms+180,token)&&valid();
+    };
+    const action=async(x,y,words)=>move(x,y,words,600);
+    try{
+      if(activity==='drag'){
+        const items=state.shapes.filter(v=>!v.placed);
+        for(const item of items){
+          const piece=backing.querySelector(`[data-piece="${item.id}"]`);
+          const target=backing.querySelector(`[data-target="${item.id}"]`);
+          if(!piece||!target)continue;
+          if(!await action(item.x,item.y,`Touch the ${item.id}.`))break;
+          sanaSay('Slide it here!');
+          piece.style.transition='transform 1000ms ease-in-out';
+          piece.setAttribute('transform',`translate(${item.tx} ${item.ty})`);
+          if(!await move(item.tx,item.ty,null,1000))break;
+          piece.setAttribute('opacity','.15');
+          const match=document.createElementNS(ns,'g');
+          match.setAttribute('transform',`translate(${item.tx} ${item.ty})`);
+          match.innerHTML=glossyShape(item.id,item.color);
+          backing.appendChild(match);
+          sanaSay('Good job!');
+          if(!await demoPause(500,token))break;
+        }
+      }else if(activity==='abacus'&&age<5){
+        const target=countStage+1;
+        if(age===4){
+          const choice=backing.querySelector(`[data-count-choice="${target}"]`);
+          if(choice){const pt=demoPoint(choice);await action(pt.x,pt.y,`Find number ${target}.`);
+            choice.querySelector('rect')?.setAttribute('stroke','#1b9d51');
+            choice.querySelector('rect')?.setAttribute('stroke-width','12');
+            sanaSay(`Yes! Number ${target}.`);await demoPause(900,token);}
+        }else{
+          const source=backing.querySelector('[data-count-fruit]');
+          if(source){
+            const from={x:90,y:148};
+            const dest=age===2?{x:575,y:320}:{x:690,y:273};
+            for(let i=0;i<target&&valid();i++){
+              if(!await action(from.x,from.y,age===2?'Hold the apple!':'Hold the banana!'))break;
+              const moving=document.createElementNS(ns,'g');
+              moving.innerHTML=countIcon(0,0,age===2?'apple':'banana');
+              moving.setAttribute('transform',`translate(${from.x} ${from.y})`);
+              moving.style.transition='transform 850ms ease-in-out';
+              backing.appendChild(moving);
+              moving.setAttribute('transform',`translate(${dest.x+(i%3)*30-30} ${dest.y+Math.floor(i/3)*20})`);
+              if(!await move(dest.x,dest.y,age===2?'Put it in the basket!':'Feed the monkey!',850))break;
+              if(age===3)moving.setAttribute('opacity','.45');
+              const counter=backing.querySelector('[data-demo-counter]');
+              if(counter)counter.textContent=`${i+1} / ${target}`;
+              else{
+                const label=document.createElementNS(ns,'text');label.dataset.demoCounter='';
+                label.setAttribute('x','510');label.setAttribute('y','175');
+                label.setAttribute('text-anchor','middle');label.setAttribute('font-size','38');
+                label.setAttribute('font-weight','900');label.setAttribute('fill','#205c4b');
+                label.textContent=`${i+1} / ${target}`;backing.appendChild(label);
+              }
+              if(!await demoPause(250,token))break;
+            }
+            if(valid())sanaSay(`Good job! ${target} ${age===2?'apples':'bananas'}!`);
+          }
+        }
+      }else if(activity==='slide'){
+        const door=backing.querySelector('[data-cave-door]');
+        if(door){await action(715,345,'Touch the door.');
+          door.style.transition='transform 1100ms ease-in-out';
+          door.setAttribute('transform','translate(720 0) scale(.34 1)');
+          if(await move(850,345,'Slide to open!',1100)){
+            await demoPause(950,token);sanaSay('Slide to close!');
+            door.setAttribute('transform','translate(0 0) scale(1 1)');
+            await move(715,345,null,1100);
+          }
+        }
+      }else if(activity==='bubbles'){
+        const nodes=[...backing.querySelectorAll('[data-bubble]')].filter(n=>n.getAttribute('aria-hidden')!=='true').slice(0,Math.min(4,state.bubbles.length));
+        for(const bubble of nodes){if(!valid())break;
+          const point=demoPoint(bubble);
+          if(!await action(point.x,point.y,'Tap the bubble!'))break;
+          bubble.style.transition='opacity 280ms,transform 280ms';bubble.setAttribute('opacity','0');
+          sanaSay('Pop!');await demoPause(350,token);
+        }
+      }else if(activity==='brush'){
+        const coords=[[330,160],[400,185],[475,210],[550,240],[620,270],[650,315]];
+        const trail=document.createElementNS(ns,'polyline');
+        trail.setAttribute('fill','none');trail.setAttribute('stroke',state.paintMode?'#eea956':'#d2f6f5');
+        trail.setAttribute('stroke-width','55');trail.setAttribute('stroke-linecap','round');
+        trail.setAttribute('stroke-linejoin','round');trail.setAttribute('opacity','.78');
+        backing.appendChild(trail);
+        for(let i=0;i<coords.length&&valid();i++){
+          const [x,y]=coords[i];trail.setAttribute('points',coords.slice(0,i+1).map(p=>p.join(',')).join(' '));
+          if(!await move(x,y,i===0?'Touch and brush slowly!':null,580))break;
+        }
+        if(valid()){
+          // Show a fully colored/clean picture on the isolated demonstration copy.
+          backing.querySelectorAll('[data-dirt]').forEach(node=>node.setAttribute('opacity','0'));
+          const picture=backing.querySelector('g[stroke="#536b5b"]')||backing.querySelector('[data-art-region]');
+          if(picture)picture.setAttribute('fill',brushThumbColor(artPicture().name));
+          sanaSay('Great! You finished the picture!');
+        }
+      }else if(activity==='abacus'){
+        const row=activeAbacusRow(),point=abacusBeadPoint(row,9);
+        if(await action(point.x,point.y,'Touch a bead!')){
+          const bead=backing.querySelector(`[data-bead-row="${row}"][data-bead-index="9"]`);if(bead){bead.style.transition='transform 900ms ease';bead.setAttribute('transform',`translate(${abacusGeometry().end} ${point.y})`);}
+          await move(abacusGeometry().end,point.y,'Slide now!',900);
+          const right=backing.querySelector(`[data-abacus-right="${row}"]`);if(right)right.textContent=String(abacusCount(row)+1);sanaSay('One bead!');
+        }
+      }
+      if(valid()){sanaSay('Now it is your turn!');await demoPause(850,token);}
+    }catch(error){console.warn('Demo preview error',error);}
+    finally{if(valid()){stopDemo();hint('Your turn! Play the game.');}}
   }
   $('home').addEventListener('click',home);$('again').addEventListener('click',resetRound);$('show-me').addEventListener('click',showMe);
   document.querySelectorAll('[data-activity]').forEach(button=>button.addEventListener('click',()=>{tone(500);startActivity(button.dataset.activity);}));
@@ -1001,7 +1172,7 @@
   // Expand inside the page to keep browser-owned fullscreen notices out of play.
   $('fullscreen').addEventListener('click',()=>{void immersiveMode(!app.classList.contains('immersive'));});
   $('exit-play').addEventListener('click',()=>{void immersiveMode(false);});
-  // v1.13: position exit at the actual progress strip's bottom edge,
+  // v1.14: position exit at the actual progress strip's bottom edge,
   // including after age/game changes, viewport rotation and layout reflow.
   const exitPlayMat=app.querySelector('.play-mat');
   const exitStrip=$('item-progress-strip');
