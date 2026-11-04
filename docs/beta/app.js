@@ -221,7 +221,7 @@
   function brushComplete(message){if(state.done)return;brushFinished.add(brushIndex);updateBrushThumbnails();celebrate(message);applause();clearTimeout(brushTimer);brushTimer=setTimeout(()=>{if(state.activity==='brush'){brushIndex=(brushIndex+1)%brushCount();resetRound();}},2100);}
   const artPicture=()=>state.activity==='brush'?brushPicture():({...artPictures[profile().picture],target:profile().paintTarget});
   function pictureArt(outline=false){
-    const picture=artPicture();if(state.activity==='brush')return `<g stroke="#536b5b" stroke-width="5" stroke-linejoin="round" fill="${outline?'none':'#f6e4bf'}">${picture.region}</g>`;if(picture.name==='puppy')return puppy(outline);
+    const picture=artPicture();if(state.activity==='brush')return `<g stroke="#536b5b" stroke-width="5" stroke-linejoin="round" fill="${outline?'none':brushThumbColor(picture.name)}">${picture.region}</g>`;if(picture.name==='puppy')return puppy(outline);
     return `<g stroke="#5c6555" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><g fill="${outline?'none':picture.color}">${picture.region}</g><g fill="${outline?'none':'#f6d789'}">${picture.details}</g></g>`;
   }
   function preview(id){
@@ -307,7 +307,7 @@
       chooseParentAge(ageOptions[next].dataset.ageOption);ageOptions[next].focus({preventScroll:true});
     });
   });
-  function home(){stopBubbles();cancelGesture();clearEffects();state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('sound'),$('music-toggle'),$('vibration-toggle'),$('fullscreen'));app.dataset.view='home';parentAgeControls();$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;$('item-progress-strip').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
+  function home(){stopBubbles();cancelGesture();clearEffects();state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('sound'),$('music-toggle'),$('vibration-toggle'));app.dataset.view='home';parentAgeControls();$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;$('item-progress-strip').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
   function levelControls(){document.querySelectorAll('[data-level]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.level)===state.level)));}
   function setLevel(level,reset=true){cancelGesture();const changed=state.level!==level;state.level=level;if(changed)state.brushSize=profile().brushSize;levelControls();save();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');if(reset&&state.activity)resetRound();else if(reset)hint(level===2?'Medium level: choose a picture and play together!':level===1?'Easy level: fewer, bigger things to try.':'Challenge level: a few more things to discover.');}
   function startActivity(id,paintMode=false){closeAgeMenu();$('game-mid-controls').append($('sound'),$('music-toggle'),$('vibration-toggle'),$('fullscreen'));state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
@@ -355,13 +355,13 @@
   // v1.03: Age 2–4 counting adventures. Age 5 retains the original abacus unchanged.
   let countStage=0,countPlaced=0,countTimer=null;
   const countMax=()=>state.age===2?5:state.age===3?10:20;
-  const countTitle=()=>state.age===2?'Little Apple Basket':state.age===3?'Feed the Hungry Monkey':'Number Train Adventure';
+  const countTitle=()=>state.age===2?'Apple Basket':state.age===3?'Feed the Hungry Rabbit':'Number Train Adventure';
   function resetCountAdventure(){
     clearTimeout(countTimer);countStage=0;countPlaced=0;renderCountAdventure();
   }
   function countIcon(x,y,kind){
     if(kind==='apple')return `<g transform="translate(${x} ${y})"><circle r="25" fill="#fa5b59" stroke="#9b3e32" stroke-width="4"/><path d="M0 -22Q-2 -38 9 -43M0 -32Q15 -45 26 -31Q12 -26 0 -32" fill="#5caa5b" stroke="#39764a" stroke-width="3"/></g>`;
-    return `<g transform="translate(${x} ${y}) rotate(-24)"><path d="M-18 -26Q40 -20 25 22Q-5 51 -29 13Q-6 23 9 9Q18 -3 -18 -26Z" fill="#ffe16d" stroke="#a36d27" stroke-width="4"/></g>`;
+    return `<g transform="translate(${x} ${y})"><path d="M-12 -21L-22 -42M-4 -21L5 -46M5 -20L23 -39" stroke="#338746" stroke-width="9" stroke-linecap="round"/><path d="M-19 -17Q0 -28 19 -17Q14 9 0 37Q-13 12 -19 -17Z" fill="#ff932b" stroke="#ba5619" stroke-width="4"/><path d="M-11 -6H11M-7 7H8" stroke="#e6b05a" stroke-width="3"/></g>`;
   }
   function renderCountAdventure(){
     if(state.activity!=='abacus'||state.age===5)return;
@@ -371,28 +371,34 @@
     const base=`<rect x="10" y="12" width="980" height="415" rx="30" fill="#ffefcc" stroke="#bd9163" stroke-width="8"/><text x="500" y="62" text-anchor="middle" font-size="38" font-weight="900" fill="#30564d">${title}</text><text x="500" y="115" text-anchor="middle" font-size="48" font-weight="900" fill="#3c6351">${age===4?'Find number: ':'Count to '}${target}</text>`;
     let content='';
     if(age===2||age===3){
-      const apple=age===2,kind=apple?'apple':'banana';
-      const canopy=apple?'#4eaa53':'#67b84d';
-      content=`<g aria-label="${apple?'Apple tree':'Banana tree'}"><path d="M180 355Q196 258 179 171" fill="none" stroke="#80512c" stroke-width="37" stroke-linecap="round"/><ellipse cx="182" cy="178" rx="146" ry="105" fill="${canopy}" stroke="#397f40" stroke-width="9"/><circle cx="95" cy="150" r="57" fill="#78c86a"/><circle cx="255" cy="139" r="65" fill="#73c65f"/></g>`;
-      for(let i=0;i<(apple?5:Math.max(5,target));i++){
-        const x=90+(i%3)*90,y=148+Math.floor(i/3)*74;
-        content+=`<g data-count-fruit="${i}" role="button" tabindex="0" aria-label="Drag ${kind} ${i+1} to ${apple?'basket':'monkey'}" transform="translate(${x} ${y})" style="cursor:grab;touch-action:none" ${i<countPlaced?'opacity=".2"':''}>${countIcon(0,0,kind)}</g>`;
+      const apple=age===2,kind=apple?'apple':'carrot';
+      if(apple){
+        content=`<g aria-label="Apple tree"><path d="M165 365Q200 285 185 140" stroke="#87502c" stroke-width="42" fill="none" stroke-linecap="round"/><path d="M47 170Q25 70 116 63Q155 3 225 50Q315 25 330 123Q360 211 263 241Q164 281 85 231Q30 226 47 170Z" fill="#4ca64a" stroke="#286f37" stroke-width="9"/><path d="M65 139Q122 59 200 103Q259 48 304 129" stroke="#8bda68" stroke-width="24" opacity=".55" fill="none" stroke-linecap="round"/></g>`;
+      }else{
+        content=`<g aria-label="Carrot garden"><rect x="18" y="290" width="535" height="110" rx="35" fill="#986139" stroke="#704124" stroke-width="6"/><path d="M24 316Q110 286 196 315T365 313T543 311" stroke="#c9915d" stroke-width="13" fill="none"/></g>`;
+      }
+      for(let i=0;i<(apple?5:10);i++){
+        const x=apple?90+(i%3)*91:75+(i%5)*94;
+        const y=apple?137+Math.floor(i/3)*77:285+Math.floor(i/5)*54;
+        if(!apple)content+=`<path d="M${x-11} ${y-24}Q${x-28} ${y-58} ${x-9} ${y-50}Q${x} ${y-67} ${x+8} ${y-45}Q${x+29} ${y-62} ${x+15} ${y-24}" fill="#50b95a" stroke="#317a3e" stroke-width="4"/>`;
+        if(i<countPlaced)continue;
+        content+=`<g data-count-fruit="${i}" role="button" tabindex="0" aria-label="Drag ${kind} ${i+1} to ${apple?'basket':'rabbit'}" transform="translate(${x} ${y})" style="cursor:grab;touch-action:none">${countIcon(0,0,kind)}</g>`;
       }
       if(apple){
-        content+=`<g data-count-drop="basket"><path d="M440 258Q575 305 710 258L675 385Q575 422 475 385Z" fill="#c98a50" stroke="#78502e" stroke-width="9"/><path d="M438 258Q575 305 712 258" fill="none" stroke="#87582f" stroke-width="14"/></g>`;
-        for(let i=0;i<countPlaced;i++)content+=countIcon(510+(i%3)*57,315+Math.floor(i/3)*45,'apple');
+        content+=`<g data-count-drop="basket"><path d="M416 272Q576 312 747 272L709 393Q575 424 454 393Z" fill="#e5faff" fill-opacity=".26" stroke="#5ca5b0" stroke-width="9"/><ellipse cx="580" cy="273" rx="164" ry="22" fill="none" stroke="#83b7c3" stroke-width="8"/></g>`;
+        for(let i=0;i<countPlaced;i++)content+=countIcon(486+(i%5)*48,350-Math.floor(i/5)*48,'apple');
       }else{
-        content+=`<g data-count-drop="monkey" transform="translate(690 273)"><circle r="100" fill="#ad7849" stroke="#69452c" stroke-width="7"/><circle cx="-76" cy="-18" r="40" fill="#ad7849"/><circle cx="76" cy="-18" r="40" fill="#ad7849"/><ellipse cy="25" rx="66" ry="57" fill="#e6bb82"/><circle cx="-28" cy="-12" r="9" fill="#29231d"/><circle cx="28" cy="-12" r="9" fill="#29231d"/><ellipse cy="48" rx="24" ry="13" fill="#5b3625"/></g>`;
-        for(let i=0;i<countPlaced;i++)content+=countIcon(810+(i%2)*48,290+Math.floor(i/2)*42,'banana');
+        content+=`<g data-count-drop="rabbit" transform="translate(745 295)"><ellipse cx="0" cy="45" rx="96" ry="99" fill="#f5f5f5" stroke="#c9cbd2" stroke-width="6"/><ellipse cx="-39" cy="-101" rx="24" ry="95" transform="rotate(-15 -39 -101)" fill="#fff" stroke="#d3d2d6" stroke-width="5"/><ellipse cx="38" cy="-101" rx="24" ry="95" transform="rotate(15 38 -101)" fill="#fff" stroke="#d3d2d6" stroke-width="5"/><ellipse cx="-39" cy="-101" rx="10" ry="68" transform="rotate(-15 -39 -101)" fill="#ffb8ca"/><ellipse cx="38" cy="-101" rx="10" ry="68" transform="rotate(15 38 -101)" fill="#ffb8ca"/><circle cy="-21" r="75" fill="#fff" stroke="#d4d6d9" stroke-width="5"/><circle cx="-25" cy="-38" r="7" fill="#333"/><circle cx="25" cy="-38" r="7" fill="#333"/><path d="M-10 -8Q0 0 10 -8M0 -8V5M-15 9Q0 25 15 9" fill="none" stroke="#8e646c" stroke-width="5" stroke-linecap="round"/><ellipse cy="-12" rx="12" ry="8" fill="#ff9cb4"/></g>`;
+        for(let i=0;i<countPlaced;i++)content+=countIcon(880+(i%3)*34,340+Math.floor(i/3)*25,'carrot');
       }
-      content+=`<text x="540" y="195" text-anchor="middle" font-size="43" font-weight="900" fill="#285d4c">${countPlaced} / ${target}</text><text x="500" y="412" text-anchor="middle" font-size="26" font-weight="800" fill="#285d4c">Hold and drag ${apple?'apples into the basket':'bananas to the monkey'}</text>`;
+      content+=`<rect x="400" y="130" width="570" height="66" rx="26" fill="#fff9e8" stroke="#d9b17a" stroke-width="3"/><text x="685" y="172" text-anchor="middle" font-size="25" font-weight="900" fill="#285d4c">Pick ${target} ${kind}${target===1?'':'s'} ${apple?'from the tree into the basket':'from the garden to feed the rabbit'}</text><text x="595" y="243" text-anchor="middle" font-size="39" font-weight="900" fill="#285d4c">${countPlaced} / ${target}</text>`;
     }else{
       content=`<rect x="75" y="162" width="165" height="110" rx="25" fill="#f6aa62" stroke="#985e3b" stroke-width="6"/><circle cx="115" cy="286" r="21" fill="#51443c"/><circle cx="210" cy="286" r="21" fill="#51443c"/><text x="157" y="222" font-size="28" font-weight="900" text-anchor="middle" fill="#fff">TRAIN</text>`;
       for(let i=0;i<4;i++){const n=Math.min(countMax(),Math.max(1,target-1)+i);const x=270+i*170;content+=`<g data-count-choice="${n}" role="button" tabindex="0" aria-label="Choose ${n}" style="cursor:pointer"><rect x="${x}" y="168" width="145" height="103" rx="20" fill="${['#ffd17e','#b5ddf4','#d8c3f2','#bce4bd'][i]}" stroke="#667c67" stroke-width="6"/><text x="${x+72}" y="238" text-anchor="middle" font-size="58" font-weight="900" fill="#304c4c">${n}</text><circle cx="${x+32}" cy="286" r="18" fill="#51443c"/><circle cx="${x+112}" cy="286" r="18" fill="#51443c"/></g>`;}
       content+=`<text x="500" y="380" text-anchor="middle" font-size="28" font-weight="800" fill="#466a5a">Tap the carriage showing ${target}</text>`;
     }
     scene.innerHTML=base+content;progress(countStage,countMax());updateGameItemStrip();
-    hint(age===2?`Put ${target} apple${target>1?'s':''} into the basket. Drag each apple!`:age===3?`Feed SaNa ${target} banana${target>1?'s':''}!`:`Find number ${target} and tap its train carriage!`);
+    hint(age===2?`Put ${target} apple${target>1?'s':''} into the basket. Drag each apple!`:age===3?`Feed the rabbit ${target} carrot${target>1?'s':''}!`:`Find number ${target} and tap its train carriage!`);
   }
   function countTap(event,point){
     if(state.done||state.activity!=='abacus'||state.age===5)return;
@@ -490,6 +496,7 @@
     const key=`${state.activity}:${state.bubbleMode||''}:${state.age}:${nextIndex}`;
     strip.innerHTML=items.map(({label,icon='',current=false,done=false,later=false},i)=>{
       const safe=String(label).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+      if(state.activity==='brush')return `<button type="button" class="item-chip brush-choice ${current?'is-current':''} ${done?'is-done':''}" data-brush-choice="${i}" aria-label="Select ${safe} drawing${done?', completed':''}" aria-pressed="${current}" title="Tap to draw ${safe}">${icon||safe}</button>`;
       return `<span class="item-chip ${current?'is-current':''} ${done?'is-done':''} ${later?'is-later':''}" role="listitem" aria-label="${safe} ${done?'completed':current?'current':later?'later level':'available'}" title="${safe}">${icon||safe}</span>`;
     }).join('');
     strip.dataset.progressKey=key;
@@ -507,6 +514,18 @@
     }else strip.scrollLeft=0;
 
   }
+  // The shared visible strip replaces the hidden legacy brush thumbnail row.
+  // Handle manual choice in both Brush Clean and Finger Paint modes.
+  $('item-progress-strip').addEventListener('click',event=>{
+    const button=event.target.closest('[data-brush-choice]');
+    if(!button||state.activity!=='brush')return;
+    const index=Number(button.dataset.brushChoice);
+    if(!Number.isInteger(index)||index<0||index>=brushCount())return;
+    clearTimeout(brushTimer);
+    brushIndex=index;
+    resetRound();
+    hint(`Selected ${artPicture().name}. ${state.paintMode?'Choose a color and paint inside the lines!':'Brush away the dirt to reveal the colors!'}`);
+  });
   function updateGameItemStrip(){
     if(state.activity==='drag'){
       const limit=shapeLevelLimits[state.age]||4;
@@ -881,7 +900,7 @@
     state.pointer=null;
     try{if(scene.hasPointerCapture(event.pointerId))scene.releasePointerCapture(event.pointerId);}catch{/* Already released. */}
     if(pointer.kind==='count-fruit'){
-      const pt=localPoint(event),dest=state.age===2?{x:575,y:320,r:165}:{x:690,y:273,r:140};
+      const pt=localPoint(event),dest=state.age===2?{x:575,y:320,r:165}:{x:745,y:295,r:155};
       if(pt&&Math.hypot(pt.x-dest.x,pt.y-dest.y)<dest.r){countTap({target:pointer.node,countDragSuccess:true},pt);hint('Great! Keep counting!');}
       else {pointer.node.setAttribute('transform',pointer.origin);hint('Drag the fruit all the way to its destination.');}
       return;
@@ -1032,17 +1051,17 @@
         }else{
           const source=backing.querySelector('[data-count-fruit]');
           if(source){
-            const from={x:90,y:148};
-            const dest=age===2?{x:575,y:320}:{x:690,y:273};
+            const from=age===2?{x:90,y:137}:{x:75,y:285};
+            const dest=age===2?{x:575,y:320}:{x:745,y:295};
             for(let i=0;i<target&&valid();i++){
-              if(!await action(from.x,from.y,age===2?'Hold the apple!':'Hold the banana!'))break;
+              if(!await action(from.x,from.y,age===2?'Hold the apple!':'Hold the carrot!'))break;
               const moving=document.createElementNS(ns,'g');
               moving.innerHTML=countIcon(0,0,age===2?'apple':'banana');
               moving.setAttribute('transform',`translate(${from.x} ${from.y})`);
               moving.style.transition='transform 850ms ease-in-out';
               backing.appendChild(moving);
               moving.setAttribute('transform',`translate(${dest.x+(i%3)*30-30} ${dest.y+Math.floor(i/3)*20})`);
-              if(!await move(dest.x,dest.y,age===2?'Put it in the basket!':'Feed the monkey!',850))break;
+              if(!await move(dest.x,dest.y,age===2?'Put it in the basket!':'Feed the rabbit!',850))break;
               if(age===3)moving.setAttribute('opacity','.45');
               const counter=backing.querySelector('[data-demo-counter]');
               if(counter)counter.textContent=`${i+1} / ${target}`;
@@ -1055,7 +1074,7 @@
               }
               if(!await demoPause(250,token))break;
             }
-            if(valid())sanaSay(`Good job! ${target} ${age===2?'apples':'bananas'}!`);
+            if(valid())sanaSay(`Good job! ${target} ${age===2?'apples':'carrots'}!`);
           }
         }
       }else if(activity==='slide'){
@@ -1073,7 +1092,8 @@
         const nodes=[...backing.querySelectorAll('[data-bubble]')].filter(n=>n.getAttribute('aria-hidden')!=='true').slice(0,Math.min(4,state.bubbles.length));
         for(const bubble of nodes){if(!valid())break;
           const point=demoPoint(bubble);
-          if(!await action(point.x,point.y,'Tap the bubble!'))break;
+          const finger=backing.querySelector('[data-demo-hand]');if(finger)finger.setAttribute('transform',`scale(.25)`);
+          if(!await action(point.x,point.y,'Wait for the bubble!'))break;
           bubble.style.transition='opacity 280ms,transform 280ms';bubble.setAttribute('opacity','0');
           sanaSay('Pop!');await demoPause(350,token);
         }

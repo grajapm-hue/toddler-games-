@@ -42,7 +42,7 @@
 .immersive .topbar{position:absolute;inset:0;display:block;padding:0;background:transparent;border:0;pointer-events:none;z-index:10}
 .immersive .topbar>:not(#sound):not(#fullscreen):not(#game-back),.immersive .companion-bar{display:none!important}
 .immersive .topbar #sound,.immersive .topbar #fullscreen,.immersive .topbar #game-back{position:absolute;top:max(8px,env(safe-area-inset-top));width:46px;min-width:46px;height:46px;padding:10px;pointer-events:auto;box-shadow:0 2px 8px #0008;border:2px solid #fff;border-radius:14px}
-.immersive .topbar #fullscreen{right:max(8px,env(safe-area-inset-right))}
+.immersive .topbar #fullscreen{right:max(8px,env(safe-area-inset-right));top:calc(max(8px,env(safe-area-inset-top)) + 58px)}
 .immersive .topbar #sound{right:calc(max(8px,env(safe-area-inset-right)) + 54px)}
 #app.immersive #activity-view{padding:0;gap:0;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"board"}
 .immersive #bubble-settings,.immersive #art-tools{display:none!important}
@@ -294,7 +294,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 .item-progress-strip .item-chip svg{display:block!important;flex-shrink:1!important;max-width:100%!important;width:min(26px,95%)!important;height:min(27px,95%)!important;overflow:visible!important}
 #app.immersive .item-progress-strip .item-chip{min-width:0!important}
 
-/* v1.16: legible adaptive thumbnail carousel across every game and age. */
+/* v1.17: legible adaptive thumbnail carousel across every game and age. */
 #app:not([data-view="home"]) .play-mat>.item-progress-strip:not([hidden]),
 #app.immersive .play-mat>.item-progress-strip:not([hidden]){
   display:flex!important;flex-wrap:nowrap!important;justify-content:flex-start!important;
@@ -329,7 +329,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
  .item-progress-strip .item-chip svg{width:36px!important;height:35px!important}
 }
 
-/* v1.16: Abacus-only compact readable color thumbnails; preserve all other games. */
+/* v1.17: Abacus-only compact readable color thumbnails; preserve all other games. */
 #app[data-view="abacus"] .play-mat>.item-progress-strip:not([hidden]),
 #app[data-view="abacus"].immersive .play-mat>.item-progress-strip:not([hidden]){
   min-height:43px!important;max-height:46px!important;height:46px!important;
@@ -350,12 +350,12 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
   }
 }
 
-/* v1.16: Exit button is anchored to the MEASURED bottom edge of the
+/* v1.17: Exit button is anchored to the MEASURED bottom edge of the
    thumbnail band. Do not use a hard-coded top offset. */
 #app.immersive .play-mat #exit-play,
 #app.immersive .play-mat:has(> .item-progress-strip:not([hidden])) #exit-play,
 #app.immersive .play-mat:not(:has(> .item-progress-strip:not([hidden]))) #exit-play {
-  /* v1.16: offset measured in local, unrotated playroom pixels. */
+  /* v1.17: offset measured in local, unrotated playroom pixels. */
   position:absolute!important;
   top:var(--sana-exit-top, 0px)!important;
   right:0!important;
@@ -412,6 +412,9 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 #app:not([data-view="home"]) .play-toolbar #play-options .levels,
 #app:not([data-view="home"]) .play-toolbar #play-options .mode-switch{display:flex;flex-wrap:nowrap;white-space:nowrap;flex:0 0 auto}
 #app:not([data-view="home"]) .play-toolbar #play-options button{white-space:nowrap}
+/* Drawing choices remain available as touch targets in both art modes. */
+#app[data-view="brush"] .item-progress-strip .brush-choice{cursor:pointer;touch-action:manipulation;min-width:48px;min-height:42px;appearance:none;font-family:inherit}
+#app[data-view="brush"] .item-progress-strip .brush-choice:focus-visible{outline:3px solid #226eec;outline-offset:2px}
 /* Child-safe immersive mode: remove every on-page control except exit X. */
 #app.immersive .topbar,#app.immersive .companion-bar,#app.immersive .activity-heading,
 #app.immersive .play-toolbar,#app.immersive .play-navigation,
@@ -457,7 +460,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
   background: transparent !important;
 }
 
-/* v1.16 — immersive controls: exit below progress thumbnails; vibration at
+/* v1.17 — immersive controls: exit below progress thumbnails; vibration at
    lower-right playroom corner, away from the Abacus bead rows. All games. */
 #app.immersive .play-mat #exit-play {
   top:8px!important;right:8px!important;left:auto!important;
@@ -474,7 +477,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
   min-width:46px!important;min-height:46px!important;
 }
 
-/* v1.16: fullscreen exit icon — transparent square-in-square, black outline.
+/* v1.17: fullscreen exit icon — transparent square-in-square, black outline.
    Position within playroom below progress carousel; identical touch target to vibration. */
 #app.immersive .play-mat #exit-play {
   position:absolute!important;top:3px!important;right:8px!important;left:auto!important;bottom:auto!important;
@@ -486,7 +489,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 }
 #app.immersive .play-mat:has(> .item-progress-strip:not([hidden])) #exit-play {top:3px!important;}
 #app.immersive .play-mat #exit-play svg{width:29px;height:29px;display:block;flex:none;}
-/* v1.16: exit stays BELOW the entire progress thumbnail band, not on top of it.
+/* v1.17: exit stays BELOW the entire progress thumbnail band, not on top of it.
    Reserve the row height plus a visible gap on every game and age. */
 #app.immersive .play-mat #exit-play,
 #app.immersive .play-mat:has(> .item-progress-strip:not([hidden])) #exit-play {
@@ -494,6 +497,35 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 }
 #app.immersive .play-mat:not(:has(> .item-progress-strip:not([hidden]))) #exit-play {top:12px!important;}
 
+#app[data-view="home"] #fullscreen{display:none!important;}
+</style>
+
+<style>/* v1.17: keep the immersive fullscreen toggle below the top-right controls */
+#app.immersive #fullscreen{top:calc(max(8px, env(safe-area-inset-top)) + 58px)!important;z-index:30}
+</style>
+<style>
+/* v1.17 trial: place the return-to-normal square directly ABOVE vibration in immersive mode. */
+#app.immersive .play-mat #exit-play,
+#app.immersive .play-mat:has(> .item-progress-strip:not([hidden])) #exit-play,
+#app.immersive .play-mat:not(:has(> .item-progress-strip:not([hidden]))) #exit-play {
+  position:absolute!important;
+  top:auto!important;
+  bottom:calc(max(12px,env(safe-area-inset-bottom)) + 46px + 12px)!important;
+  right:12px!important;
+  left:auto!important;
+  width:46px!important;height:46px!important;min-width:46px!important;min-height:46px!important;
+  z-index:120!important;
+}
+</style>
+
+<style>/* v1.17 red exit-to-normal icon; preserve game-room position */
+#app.immersive .play-mat #exit-play {
+  color:#ed1c24!important;
+  border:3px solid #ed1c24!important;
+  background:#fff5f5!important;
+  box-shadow:0 2px 6px #0003!important;
+}
+#app.immersive .play-mat #exit-play svg {color:#ed1c24!important;stroke:#ed1c24!important;}
 </style>
 </head>
 <body>
