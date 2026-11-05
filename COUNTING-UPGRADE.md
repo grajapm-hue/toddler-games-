@@ -1,4 +1,4 @@
-# SaNa Little Hands Beta v1.22
+# SaNa Little Hands Beta v1.23
 
 The published Beta is `docs/beta/`. The v1.17 release was uploaded directly there;
 the older root prototype and `beta-runtime/` build inputs have not caught up.
@@ -31,7 +31,7 @@ The Beta worker precaches the six illustrations and the exact versioned game scr
 ## Demo lessons
 
 Every activity demonstrates one successful action in the current room. An adaptive
-finger points at the target centre. Spoken instructions finish before movement;
+finger points at the target as the spoken instruction starts. Demonstrated objects wait;
 SaNa completes the praise and holds it before the preview thumbnail ticks. The real board, progress and saved settings are then
 restored. Count ledgers and abacus labels also update in the virtual copy.
 
@@ -80,3 +80,9 @@ Demo messages appear first. Speech uses rate 0.65, prefers an available Indian E
 Well done finishes and holds for another 2,000 ms before the preview thumbnail ticks. Muted/unavailable speech keeps a readable text pause. Stop, Again, Games and age navigation cancel speech and pending steps; muting immediately stops the voice. A stalled engine has a bounded text fallback. Real counting retains its separate three-second completion hold.
 
 `node check-demo-voice.cjs` controls delayed completion/error events to check no interruption, slow voice selection, deferred object motion, phrase gaps, praise timing, cancellation and fallback. Actual installed voices depend on the device. The full room-by-room Demo suite also checks the longer silent reading/praise timing.
+
+## v1.23 simultaneous finger and voice
+
+The finger points at the item as the instruction starts, with the SaNa message shown at the same time. Dragged objects still wait until the instruction and its short pause finish. The demo speech rate is 0.74, between the original 0.82 and v1.22's 0.65. The extra lead-in before speech is removed. Phrase gaps, readable text fallback, cancellation and the two-second pause after spoken praise remain.
+
+Voice regression checks capture finger visibility and target alignment at the actual speech call, as well as its midpoint rate and uninterrupted completion.

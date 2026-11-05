@@ -1066,7 +1066,7 @@
         const voices=speechSynthesis.getVoices();
         const voice=voices.find(v=>/^en-IN$/i.test(v.lang))||voices.find(v=>/^en[-_]/i.test(v.lang));
         if(voice)utterance.voice=voice;
-        utterance.lang=voice?.lang||'en-US';utterance.rate=.65;utterance.pitch=1.1;utterance.volume=.85;
+        utterance.lang=voice?.lang||'en-US';utterance.rate=.74;utterance.pitch=1.1;utterance.volume=.85;
         utterance.onend=()=>complete(true);utterance.onerror=()=>complete(false);
         // A missing engine completion event must not trap the child in Demo.
         timer=setTimeout(cancel,Math.max(15000,words.trim().split(/\s+/).length*2000));
@@ -1107,7 +1107,6 @@
     const narrate=async(words,pause=1200)=>{
       if(!valid())return false;
       hint('Demo: '+words);overlay.dataset.demoSpeech='reading';
-      if(!await demoPause(350,token)||!valid())return false;
       const phrases=words.match(/[^.!?;,]+[.!?;,]?/g)?.map(p=>p.trim()).filter(Boolean)||[words];
       for(const [index,phrase] of phrases.entries()){
         overlay.dataset.demoSpeech='speaking';
@@ -1124,17 +1123,23 @@
       delete overlay.dataset.demoSpeech;return true;
     };
     let positioned=false;
-    const move=async(x,y,words,ms=450,span=60,node=null,action=null)=>{
-      if(!valid())return false;
-      if(words&&!await narrate(words))return false;
-      action?.();
+    const pointHand=(x,y,span,node,ms=0)=>{
       hand.removeAttribute('visibility');
       backing.querySelectorAll('[data-demo-target]').forEach(el=>el.removeAttribute('data-demo-target'));
       if(node)node.setAttribute('data-demo-target','');
       const fingerHeight=activity==='bubbles'?span/3:activity==='abacus'&&age===4?Math.min(78,Math.max(52,span*1.5)):Math.min(36.4,span*.62);
       shape.setAttribute('transform',`scale(${Math.max(.04,fingerHeight/(activity==='bubbles'?48:56))})`);
-      hand.style.transition=reduced||!positioned?'none':`transform ${ms}ms ease-in-out`;
+      hand.style.transition=reduced||!positioned||!ms?'none':`transform ${ms}ms ease-in-out`;
       hand.setAttribute('transform',`translate(${x} ${y})`);positioned=true;
+    };
+    const move=async(x,y,words,ms=450,span=60,node=null,action=null)=>{
+      if(!valid())return false;
+      // Point as speech starts; keep drag actions at their source until it ends.
+      if(words){
+        if(!positioned||!action)pointHand(x,y,span,node);
+        if(!await narrate(words))return false;
+      }
+      action?.();pointHand(x,y,span,node,ms);
       return await demoPause(ms,token)&&valid();
     };
     const pointAt=async(node,words,ms=400,action=null)=>{const p=demoBounds(node);return move(p.x,p.y,words,ms,Math.min(p.width,p.height),node,action);};

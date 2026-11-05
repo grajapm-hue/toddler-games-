@@ -1,6 +1,6 @@
-const CACHE='sana-little-hands-beta-v122-calm-demo';
+const CACHE='sana-little-hands-beta-v123-finger-voice';
 const PREFIX='sana-little-hands-beta-';
-const ASSETS=['./sese-enhanced-v89.png','./index.html','./play.html','./age-profiles.js','./app.js','./app.js?v122','./bgm-sana-v86.mp3','./slide-cave.jpg','./sana-space-sky-v83.jpg','./pwa.js','./share.js','./share.css','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png','./count-art/apple-tree.png','./count-art/basket.png','./count-art/carrot-garden.png','./count-art/rabbit.png','./count-art/apple.png','./count-art/carrot.png'];
+const ASSETS=['./sese-enhanced-v89.png','./index.html','./play.html','./age-profiles.js','./app.js','./app.js?v123','./bgm-sana-v86.mp3','./slide-cave.jpg','./sana-space-sky-v83.jpg','./pwa.js','./share.js','./share.css','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png','./count-art/apple-tree.png','./count-art/basket.png','./count-art/carrot-garden.png','./count-art/rabbit.png','./count-art/apple.png','./count-art/carrot.png'];
 self.addEventListener('install',event=>{
   event.waitUntil((async()=>{
     const cache=await caches.open(CACHE);
