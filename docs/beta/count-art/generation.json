@@ -1,0 +1,35 @@
+{
+  "method": "Built-in image_gen, transparent background",
+  "assets": [
+    {
+      "name": "apple-tree",
+      "prompt": "Use case: illustration-story. A polished natural-looking 3D storybook illustration sprite for a counting game for ages 2\u20133. Soft tactile textures, natural proportions, warm gentle daylight, clear recognisable silhouette, friendly family game quality rather than a flat geometric icon. Entire subject fully visible, tightly framed with a small safe margin. Isolated on a genuinely transparent background with clean alpha edges. No text, no numerals, no frame, no people, no extra objects. One healthy apple-tree asset with a sturdy warm brown branching trunk and a broad rounded lush leafy green canopy. IMPORTANT: there must be NO apples, no fruit anywhere. The game overlays exactly counted draggable apples later. Front view, canopy broad enough for five large apples to be overlaid in its central area, trunk reaching the bottom, only a tiny tuft of grass at the base. Vertical rectangular composition.",
+      "file": "apple-tree.png"
+    },
+    {
+      "name": "basket",
+      "prompt": "Use case: illustration-story. A polished natural-looking 3D storybook illustration sprite for a counting game for ages 2\u20133. Soft tactile textures, natural proportions, warm gentle daylight, clear recognisable silhouette, friendly family game quality rather than a flat geometric icon. Entire subject fully visible, tightly framed with a small safe margin. Isolated on a genuinely transparent background with clean alpha edges. No text, no numerals, no frame, no people, no extra objects. One empty open low oval wicker harvest basket, front view slightly from above so the empty dark interior is clearly visible, finely woven honey-brown willow, thick rim, broad opening, shallow bowl and flat stable base. NO handle above the opening. Absolutely no fruit, vegetables, cloth, or contents. The game places counted apples inside later. Horizontal rectangular composition.",
+      "file": "basket.png"
+    },
+    {
+      "name": "carrot-garden",
+      "prompt": "Use case: illustration-story. A polished natural-looking 3D storybook illustration sprite for a counting game for ages 2\u20133. Soft tactile textures, natural proportions, warm gentle daylight, clear recognisable silhouette, friendly family game quality rather than a flat geometric icon. Entire subject fully visible, tightly framed with a small safe margin. Isolated on a genuinely transparent background with clean alpha edges. No text, no numerals, no frame, no people, no extra objects. One raised low rectangular vegetable garden patch, rich textured brown soil with a honey-brown wooden border, a few tiny neutral green leaves at the outer edges only. View slightly from above, full wide planting area visible and clear so game code can place ten individual draggable carrots in two rows. Absolutely NO carrots, vegetables, roots, fruit, flowers, animals, or buried items. Horizontal rectangular composition.",
+      "file": "carrot-garden.png"
+    },
+    {
+      "name": "rabbit",
+      "prompt": "Use case: illustration-story. A polished natural-looking 3D storybook illustration sprite for a counting game for ages 2\u20133. Soft tactile textures, natural proportions, warm gentle daylight, clear recognisable silhouette, friendly family game quality rather than a flat geometric icon. Entire subject fully visible, tightly framed with a small safe margin. Isolated on a genuinely transparent background with clean alpha edges. No text, no numerals, no frame, no people, no extra objects. One adorable natural-proportioned white garden rabbit sitting upright, full body including long ears and feet visible, soft realistically textured white fur, gentle black eyes, tiny pink nose, ears with pale pink interiors, front view slightly turned to the viewer's left as if looking at a carrot offered from the left. Forepaws tucked close. NO carrot, food, clothing, accessories or other subjects. Vertical composition.",
+      "file": "rabbit.png"
+    },
+    {
+      "name": "apple",
+      "prompt": "Use case: illustration-story. A polished natural-looking 3D storybook illustration sprite for a counting game for ages 2\u20133. Soft tactile textures, natural proportions, warm gentle daylight, clear recognisable silhouette, friendly family game quality rather than a flat geometric icon. Entire subject fully visible, tightly framed with a small safe margin. Isolated on a genuinely transparent background with clean alpha edges. No text, no numerals, no frame, no people, no extra objects. Exactly ONE ripe shiny red apple with a short brown stem and one fresh green leaf. Natural subtly irregular apple shape, realistic soft skin highlights and texture, upright front view. No face or limbs. Square composition.",
+      "file": "apple.png"
+    },
+    {
+      "name": "carrot",
+      "prompt": "Use case: illustration-story. A polished natural-looking 3D storybook illustration sprite for a counting game for ages 2\u20133. Soft tactile textures, natural proportions, warm gentle daylight, clear recognisable silhouette, friendly family game quality rather than a flat geometric icon. Entire subject fully visible, tightly framed with a small safe margin. Isolated on a genuinely transparent background with clean alpha edges. No text, no numerals, no frame, no people, no extra objects. Exactly ONE natural orange carrot with a leafy green feathery top, gentle organic root ridges, tapered tip pointing down, upright front view, no face or limbs, entire foliage visible. Vertical composition.",
+      "file": "carrot.png"
+    }
+  ]
+}
