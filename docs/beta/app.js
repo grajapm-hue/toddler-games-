@@ -1029,7 +1029,7 @@
     }
   });
   // Demonstrate one success on copies; keep the child's real round untouched.
-  let demoGeneration=0,demoActive=false,demoResume=null,demoSceneNodes=[],demoProgress=null;
+  let demoGeneration=0,demoActive=false,demoResume=null,demoSceneNodes=[],demoProgress=null,demoVoiceCancel=null;
   const demoPause=(ms,token)=>new Promise(resolve=>{
     demoResume=resolve;
     guideTimer=setTimeout(()=>{demoResume=null;resolve(token===demoGeneration);},ms);
@@ -1037,6 +1037,7 @@
   function stopDemo(){
     demoGeneration++;demoActive=false;clearTimeout(guideTimer);
     const resume=demoResume;demoResume=null;resume?.(false);
+    demoVoiceCancel?.();
     scene.querySelector('[data-demo-layer]')?.remove();
     demoSceneNodes.forEach(({node,style})=>{if(style===null)node.removeAttribute('style');else node.setAttribute('style',style);});
     demoSceneNodes=[];
@@ -1047,6 +1048,31 @@
   function sanaSay(words){
     if(!state.sound||!('speechSynthesis' in window))return;
     try{speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(words);utterance.lang='en-US';utterance.rate=.82;utterance.pitch=1.1;utterance.volume=.85;speechSynthesis.speak(utterance);}catch{}
+  }
+  function demoSpeak(words,token){
+    return new Promise(resolve=>{
+      if(!state.sound||!window.speechSynthesis||!window.SpeechSynthesisUtterance){resolve(false);return;}
+      let finished=false,timer,utterance;
+      const complete=spoken=>{
+        if(finished)return;finished=true;clearTimeout(timer);
+        if(utterance)utterance.onend=utterance.onerror=null;
+        if(demoVoiceCancel===cancel)demoVoiceCancel=null;
+        resolve(spoken&&token===demoGeneration);
+      };
+      const cancel=()=>{complete(false);try{speechSynthesis.cancel();}catch{}};
+      demoVoiceCancel=cancel;
+      try{
+        utterance=new SpeechSynthesisUtterance(words);
+        const voices=speechSynthesis.getVoices();
+        const voice=voices.find(v=>/^en-IN$/i.test(v.lang))||voices.find(v=>/^en[-_]/i.test(v.lang));
+        if(voice)utterance.voice=voice;
+        utterance.lang=voice?.lang||'en-US';utterance.rate=.65;utterance.pitch=1.1;utterance.volume=.85;
+        utterance.onend=()=>complete(true);utterance.onerror=()=>complete(false);
+        // A missing engine completion event must not trap the child in Demo.
+        timer=setTimeout(cancel,Math.max(15000,words.trim().split(/\s+/).length*2000));
+        speechSynthesis.speak(utterance);
+      }catch{complete(false);}
+    });
   }
   function demoBounds(node){
     const b=node.getBBox(),inverse=scene.getScreenCTM().inverse(),matrix=node.getScreenCTM();
@@ -1071,17 +1097,38 @@
       copy.querySelectorAll('button').forEach(button=>{button.tabIndex=-1;});strip.after(copy);
       demoProgress={strip,copy,hidden:strip.hidden,scroll};strip.hidden=true;copy.scrollLeft=scroll;
     }
-    const hand=document.createElementNS(ns,'g');hand.dataset.demoHand='';hand.style.pointerEvents='none';
+    const hand=document.createElementNS(ns,'g');hand.dataset.demoHand='';hand.style.pointerEvents='none';hand.setAttribute('visibility','hidden');
     // The fingertip is exactly (0,0); the rest of the hand extends below it.
     const fingerPath='M-5 27V6Q-5 0 0 0Q5 0 5 6V23L9 19Q12 17 16 20L25 27Q29 30 27 36L22 48H5L-10 34Q-14 29-10 25Q-7 23-5 27Z';
     hand.innerHTML=`<g data-demo-hand-shape=""><path d="${fingerPath}" fill="none" stroke="#ffffff" stroke-width="8" stroke-linejoin="round"/><path d="${fingerPath}" fill="${activity==='abacus'&&age===4?'#2563eb':'#ffd0a1'}" stroke="${activity==='abacus'&&age===4?'#17305f':'#514632'}" stroke-width="2.5" stroke-linejoin="round"/></g>`;
     overlay.appendChild(hand);scene.appendChild(overlay);
     const shape=hand.firstElementChild,reduced=matchMedia('(prefers-reduced-motion:reduce)').matches;
     const valid=()=>token===demoGeneration&&serial===roundSerial&&activity===state.activity&&age===state.age&&overlay.isConnected;
-    let positioned=false;
-    const move=async(x,y,words,ms=450,span=60,node=null)=>{
+    const narrate=async(words,pause=1200)=>{
       if(!valid())return false;
-      if(words){hint('Demo: '+words);sanaSay(words);}
+      hint('Demo: '+words);overlay.dataset.demoSpeech='reading';
+      if(!await demoPause(350,token)||!valid())return false;
+      const phrases=words.match(/[^.!?;,]+[.!?;,]?/g)?.map(p=>p.trim()).filter(Boolean)||[words];
+      for(const [index,phrase] of phrases.entries()){
+        overlay.dataset.demoSpeech='speaking';
+        const spoken=await demoSpeak(phrase,token);
+        if(!valid())return false;
+        if(!spoken){
+          overlay.dataset.demoSpeech='reading';
+          if(!await demoPause(Math.max(1500,phrase.split(/\s+/).length*350),token)||!valid())return false;
+        }
+        if(index<phrases.length-1&&(!await demoPause(500,token)||!valid()))return false;
+      }
+      overlay.dataset.demoSpeech='pause';
+      if(!await demoPause(pause,token)||!valid())return false;
+      delete overlay.dataset.demoSpeech;return true;
+    };
+    let positioned=false;
+    const move=async(x,y,words,ms=450,span=60,node=null,action=null)=>{
+      if(!valid())return false;
+      if(words&&!await narrate(words))return false;
+      action?.();
+      hand.removeAttribute('visibility');
       backing.querySelectorAll('[data-demo-target]').forEach(el=>el.removeAttribute('data-demo-target'));
       if(node)node.setAttribute('data-demo-target','');
       const fingerHeight=activity==='bubbles'?span/3:activity==='abacus'&&age===4?Math.min(78,Math.max(52,span*1.5)):Math.min(36.4,span*.62);
@@ -1090,25 +1137,23 @@
       hand.setAttribute('transform',`translate(${x} ${y})`);positioned=true;
       return await demoPause(ms,token)&&valid();
     };
-    const pointAt=async(node,words,ms=400)=>{const p=demoBounds(node);return move(p.x,p.y,words,ms,Math.min(p.width,p.height),node);};
+    const pointAt=async(node,words,ms=400,action=null)=>{const p=demoBounds(node);return move(p.x,p.y,words,ms,Math.min(p.width,p.height),node,action);};
     const touch=async(node,words)=>await pointAt(node,words)&&await demoPause(1000,token)&&valid();
     const success=async index=>{
       if(!valid())return;
       overlay.dataset.demoPhase='hold';
-      hint('Demo: Well done! Watch the thumbnail.');sanaSay('Well done!');
-      if(!await demoPause(1000,token)||!valid())return;
+      if(!await narrate('Well done!',2000))return;
       const copy=demoProgress?.copy,chip=copy?.children[index];
       if(chip){chip.classList.remove('is-current','is-later');chip.classList.add('is-done','is-demo-done');chip.setAttribute('aria-label','Demo completed: '+chip.title);copy.dataset.successIndex=String(index);copy.scrollLeft=Math.max(0,chip.offsetLeft-copy.offsetLeft-copy.clientWidth/3);}
       overlay.dataset.demoPhase='success';hint('Demo: Success! Now it is your turn.');
-      await demoPause(1200,token);
+      await demoPause(2000,token);
     };
     try{
       if(activity==='drag'){
         const item=state.shapes.find(v=>!v.placed);
         if(item){const piece=backing.querySelector(`[data-piece="${item.id}"]`),target=backing.querySelector(`[data-target="${item.id}"] > g`);
           if(await touch(piece,`Touch the ${item.id}.`)){
-            piece.style.transition=reduced?'none':'transform 850ms ease-in-out';piece.setAttribute('transform',`translate(${item.tx} ${item.ty})`);
-            if(await pointAt(target,'Slide it into its shadow.',850)){piece.setAttribute('opacity','1');await success(shapes.findIndex(s=>s.id===item.id));}
+            if(await pointAt(target,'Slide it into its shadow.',850,()=>{piece.style.transition=reduced?'none':'transform 850ms ease-in-out';piece.setAttribute('transform',`translate(${item.tx} ${item.ty})`);})){piece.setAttribute('opacity','1');await success(shapes.findIndex(s=>s.id===item.id));}
           }
         }
       }else if(activity==='abacus'&&age<5){
@@ -1120,10 +1165,10 @@
           const source=backing.querySelector('[data-count-fruit]');
           if(source){const [x,y]=countSourcePoint(Number(source.dataset.countFruit),age),[destX,destY]=countCollectedPoint(countPlaced,age),scale=age===2?1:.78;
             if(await touch(source,age===2?'Pick an apple.':'Pick a carrot.')){
-              source.setAttribute('visibility','hidden');const moving=document.createElementNS(ns,'g');moving.innerHTML=countIcon(0,0,age===2?'apple':'carrot',scale);moving.setAttribute('transform',`translate(${x} ${y})`);backing.appendChild(moving);
-              moving.getBoundingClientRect();moving.style.transition=reduced?'none':'transform 850ms ease-in-out';moving.setAttribute('transform',`translate(${destX} ${destY})`);
+              source.setAttribute('visibility','hidden');const moving=document.createElementNS(ns,'g');moving.dataset.demoMoving='';moving.innerHTML=countIcon(0,0,age===2?'apple':'carrot',scale);moving.setAttribute('transform',`translate(${x} ${y})`);backing.appendChild(moving);
+              moving.getBoundingClientRect();
               const image=moving.querySelector('image');
-              if(await move(destX,destY+(age===2?0:-4*scale),age===2?'Put it in the basket.':'Give it to the rabbit.',850,Math.min(age===2?64:56*scale,age===2?74:88*scale),image)){
+              if(await move(destX,destY+(age===2?0:-4*scale),age===2?'Put it in the basket.':'Give it to the rabbit.',850,Math.min(age===2?64:56*scale,age===2?74:88*scale),image,()=>{moving.style.transition=reduced?'none':'transform 850ms ease-in-out';moving.setAttribute('transform',`translate(${destX} ${destY})`);})){
                 const counter=backing.querySelector('[data-count-counter]');if(counter)counter.textContent=`${countPlaced+1} / ${target}`;
                 const left=backing.querySelector('[data-count-ledger-value="source"]'),right=backing.querySelector('[data-count-ledger-value="collected"]');if(left)left.textContent=String(countMax()-countPlaced-1);if(right)right.textContent=String(countPlaced+1);
                 await success(countStage);
@@ -1135,8 +1180,7 @@
         const door=backing.querySelector('[data-cave-door]');
         if(door){door.setAttribute('transform','translate(0 0) scale(1 1)');const knob=door.querySelector('circle');
           if(await touch(knob,'Touch the door handle.')){
-            door.style.transition=reduced?'none':'transform 850ms ease-in-out';door.setAttribute('transform','translate(720 0) scale(.34 1)');
-            if(await move(720+715*.34,345,'Slide to open.',850,48*.34,knob)){
+            if(await move(720+715*.34,345,'Slide to open.',850,48*.34,knob,()=>{door.style.transition=reduced?'none':'transform 850ms ease-in-out';door.setAttribute('transform','translate(720 0) scale(.34 1)');})){
               const friend=backing.querySelector('g[role="img"] text');
               if(friend)await pointAt(friend,'Look! You found a friend.');
               const caption=backing.querySelector('[data-slide-caption]');if(caption)caption.textContent='Door OPEN · You found '+slideObjects[state.slideIndex][0]+'!';
@@ -1144,8 +1188,7 @@
               if(!await demoPause(1000,token)||!valid())return;
               if(!await pointAt(knob,'Now slide the door closed.',250))return;
               overlay.dataset.demoDoorState='closing';
-              door.setAttribute('transform','translate(0 0) scale(1 1)');
-              if(!await move(715,345,null,850,48,knob))return;
+              if(!await move(715,345,null,850,48,knob,()=>door.setAttribute('transform','translate(0 0) scale(1 1)')))return;
               if(caption)caption.textContent='Door CLOSED · Well done!';
               overlay.dataset.demoDoorState='closed';
               await success(state.slideIndex);
@@ -1173,15 +1216,14 @@
         }else if(picture){
           const b=demoBounds(picture),coords=[];
           for(const fy of [.3,.5,.7])for(const fx of [.3,.5,.7]){const point={x:b.x-b.width/2+b.width*fx,y:b.y-b.height/2+b.height*fy};if(insidePicture(point))coords.push(point);}
-          for(const [i,p] of coords.slice(0,6).entries()){trail.setAttribute('points',coords.slice(0,i+1).map(p=>p.x+','+p.y).join(' '));if(!await move(p.x,p.y,i===0?'Move the finger to paint inside the picture.':null,230,50,picture))break;}
+          for(const [i,p] of coords.slice(0,6).entries()){if(!await move(p.x,p.y,i===0?'Move the finger to paint inside the picture.':null,230,50,picture,()=>trail.setAttribute('points',coords.slice(0,i+1).map(p=>p.x+','+p.y).join(' '))))break;}
         }
         if(valid()&&picture){trail.remove();dirt.forEach(n=>n.setAttribute('opacity','0'));picture.setAttribute('fill',state.paintMode?state.paintColor:brushThumbColor(artPicture().name));await pointAt(picture,'A finished picture!');await success(brushIndex);}
       }else if(activity==='abacus'){
         const row=activeAbacusRow(),count=abacusCount(row),g=abacusGeometry(),right=count<10,index=right?9-count:0,bead=backing.querySelector(`[data-bead-row="${row}"][data-bead-index="${index}"]`);
         if(bead&&await touch(bead,'Touch one bead.')){
           const dest=right?g.end-count*g.pitch:g.start,y=34+row*56,next=count+(right?1:-1);
-          bead.style.transition=reduced?'none':'transform 850ms ease-in-out';bead.setAttribute('transform',`translate(${dest} ${y})`);
-          if(await move(dest,y,'Slide the bead.',850,g.r*2,bead.querySelector('circle'))){
+          if(await move(dest,y,'Slide the bead.',850,g.r*2,bead.querySelector('circle'),()=>{bead.style.transition=reduced?'none':'transform 850ms ease-in-out';bead.setAttribute('transform',`translate(${dest} ${y})`);})){
             const label=backing.querySelector(`[data-color-label="${row}"]`);if(label)label.textContent=abacusLabel(row,next);
             const left=backing.querySelector(`[data-abacus-left="${row}"]`),end=backing.querySelector(`[data-abacus-right="${row}"]`);if(left)left.textContent=String(10-next);if(end)end.textContent=String(next);
             const region=backing.querySelector(`[data-color-region="${row}"]`);if(region)region.setAttribute('fill',next?abacusColors[row][1]:'#000');
@@ -1208,7 +1250,7 @@
   document.querySelectorAll('[data-brush-size]').forEach(button=>button.addEventListener('click',()=>{cancelGesture();state.brushSize=button.dataset.brushSize;updateArtTools();}));
   $('erase-paint').addEventListener('click',()=>{cancelGesture();state.erase=!state.erase;updateArtTools();hint(state.erase?'Rub over the paint to erase. The picture stays safe.':`Choose a color and paint inside the ${artPicture().name}.`);});
   function soundButton(){$('sound').setAttribute('aria-pressed',String(state.sound));$('sound').setAttribute('aria-label',state.sound?'All sound on':'All sound off');$('sound').style.opacity='1';window.dispatchEvent(new CustomEvent('sana-sound-change',{detail:{enabled:state.sound}}));}
-  $('sound').addEventListener('click',()=>{state.sound=!state.sound;save();soundButton();if(state.sound)tone(600);else if(audio?.state==='running')audio.suspend().catch(()=>{});});
+  $('sound').addEventListener('click',()=>{state.sound=!state.sound;save();soundButton();if(state.sound)tone(600);else{demoVoiceCancel?.();if(audio?.state==='running')audio.suspend().catch(()=>{});}});
   function fitFrame(){
     const visual=window.visualViewport,w=visual?.width||innerWidth,h=visual?.height||innerHeight,rotated=w<h;
     if(visual&&Math.abs(visual.scale-1)>.01)return;

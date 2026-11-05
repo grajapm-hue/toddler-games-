@@ -1,4 +1,4 @@
-# SaNa Little Hands Beta v1.21
+# SaNa Little Hands Beta v1.22
 
 The published Beta is `docs/beta/`. The v1.17 release was uploaded directly there;
 the older root prototype and `beta-runtime/` build inputs have not caught up.
@@ -31,8 +31,8 @@ The Beta worker precaches the six illustrations and the exact versioned game scr
 ## Demo lessons
 
 Every activity demonstrates one successful action in the current room. An adaptive
-finger points at the target centre, the finished action holds for one second, and
-its preview thumbnail ticks. The real board, progress and saved settings are then
+finger points at the target centre. Spoken instructions finish before movement;
+SaNa completes the praise and holds it before the preview thumbnail ticks. The real board, progress and saved settings are then
 restored. Count ledgers and abacus labels also update in the virtual copy.
 
 ## Verification
@@ -72,3 +72,11 @@ Run `node check-v120-feedback.cjs` for the feedback-specific stock, placement, r
 The lower row overlapped the orange front boards, so five carrots were hard to distinguish from the farm artwork. The two rows now sit staggered on the dark soil. Carrot touch areas fit between neighbouring roots; apples and all illustration dimensions remain unchanged.
 
 `node check-carrot-visibility.cjs` checks three points on every visible orange root against the farm soil, verifies actual hit targets, and completes all ten counts in both picking orders across six viewport layouts. Chromium uses native touch input at the root rather than the sprite origin; WebKit uses pointer input. Screenshots include ten carrots and the five remaining after count five. This catches the visual failure missed by the previous centre-point tests.
+
+## v1.22 calm spoken Demo lessons
+
+Demo messages appear first. Speech uses rate 0.65, prefers an available Indian English voice, and retains the device's English fallback. Short spoken phrases finish completely, with 500 ms between phrases and 1,200 ms after the instruction. Both the pointer and demonstrated object wait for the instruction and pause before moving. SaNa's complete message remains visible throughout.
+
+Well done finishes and holds for another 2,000 ms before the preview thumbnail ticks. Muted/unavailable speech keeps a readable text pause. Stop, Again, Games and age navigation cancel speech and pending steps; muting immediately stops the voice. A stalled engine has a bounded text fallback. Real counting retains its separate three-second completion hold.
+
+`node check-demo-voice.cjs` controls delayed completion/error events to check no interruption, slow voice selection, deferred object motion, phrase gaps, praise timing, cancellation and fallback. Actual installed voices depend on the device. The full room-by-room Demo suite also checks the longer silent reading/praise timing.
