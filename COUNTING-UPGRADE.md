@@ -1,4 +1,4 @@
-# SaNa Little Hands Beta v1.20
+# SaNa Little Hands Beta v1.21
 
 The published Beta is `docs/beta/`. The v1.17 release was uploaded directly there;
 the older root prototype and `beta-runtime/` build inputs have not caught up.
@@ -66,3 +66,9 @@ three-second play hold, cancellation and offline behaviour.
 - Bubble Demo sizes its pointer to one third of the current bubble. If no whole bubble is onstage, it brings only a preview copy into view; real bubbles remain untouched.
 
 Run `node check-v120-feedback.cjs` for the feedback-specific stock, placement, responsive tabs, door sequence, pointer size and contrast checks. `FEEDBACK_EVIDENCE` selects its evidence directory.
+
+## v1.21 carrot visibility correction
+
+The lower row overlapped the orange front boards, so five carrots were hard to distinguish from the farm artwork. The two rows now sit staggered on the dark soil. Carrot touch areas fit between neighbouring roots; apples and all illustration dimensions remain unchanged.
+
+`node check-carrot-visibility.cjs` checks three points on every visible orange root against the farm soil, verifies actual hit targets, and completes all ten counts in both picking orders across six viewport layouts. Chromium uses native touch input at the root rather than the sprite origin; WebKit uses pointer input. Screenshots include ten carrots and the five remaining after count five. This catches the visual failure missed by the previous centre-point tests.
