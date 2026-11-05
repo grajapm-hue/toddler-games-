@@ -1,4 +1,4 @@
-# SaNa Little Hands Beta v1.18
+# SaNa Little Hands Beta v1.19
 
 The published Beta is `docs/beta/`. The v1.17 release was uploaded directly there;
 the older root prototype and `beta-runtime/` build inputs have not caught up.
@@ -13,6 +13,10 @@ from those older inputs. Running `build-beta.mjs` would replace newer features.
   Further drops and Demo are paused. The current thumbnail stays unticked.
 - After that pause, the thumbnail ticks and the next count begins. The last
   collection stays visible until Again, rather than restarting automatically.
+- The five apples and ten carrots are now one running collection. Items stay
+  collected between consecutive thumbnails; source and receiver tabs show both
+  sides of the count in the unused picture space without resizing the illustrations.
+- Age 4 has a large bold carriage instruction.
 - The selected source item is removed exactly once. Again, Games, age changes,
   and game navigation cancel the pending transition.
 
@@ -23,6 +27,13 @@ generation prompts are in [docs/beta/count-art](docs/beta/count-art/generation.j
 
 The install manifest, other games' artwork, and the Age 5 abacus remain unchanged.
 The Beta worker precaches the six illustrations and the exact versioned game script.
+
+## Demo lessons
+
+Every activity demonstrates one successful action in the current room. A smaller
+finger points at the target centre, the finished action holds for one second, and
+its preview thumbnail ticks. The real board, progress and saved settings are then
+restored. Count ledgers and abacus labels also update in the virtual copy.
 
 ## Verification
 
@@ -38,3 +49,9 @@ rotated touch input, immersive praise, Age 4/5 and Slide/Paint smoke flows, and
 offline images/play. WebKit's local offline check stops the real local origin;
 Chromium uses offline network emulation. Browser checks do not certify a physical
 device installation.
+
+`node check-lessons-demo.cjs` checks every counting stage, carriage, shape, cave
+room, drawing in both art modes, age/bubble mode and abacus colour. It uses the
+browser clock to exercise all those lessons quickly; geometry checks use rendered
+targets, including rotated screens. The separate counting test measures the real
+three-second play hold, cancellation and offline behaviour.

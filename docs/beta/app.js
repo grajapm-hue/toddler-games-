@@ -381,6 +381,12 @@
     const message=final?'Every count is complete!':countHolding?'Wait for the next count.':'Choose Again to play.';
     return `<g data-count-praise="" role="status" aria-live="polite"><rect x="395" y="20" width="575" height="98" rx="26" fill="#fffbed" stroke="#75a460" stroke-width="4"/><circle cx="435" cy="66" r="28" fill="#ffe385"/><text x="435" y="78" text-anchor="middle" font-size="34" aria-hidden="true">🐒</text><text x="476" y="57" font-size="28" font-weight="900" fill="#216144">Well done!</text><text x="476" y="91" font-size="22" font-weight="800" fill="#30564d">${message}</text></g>`;
   }
+  function countLedger(age){
+    const apple=age===2,total=apple?5:10,left=total-countPlaced;
+    const x=apple?405:540,y=apple?165:130,w=apple?215:170,h=apple?64:54,gap=apple?12:10,label=apple?17:14,value=apple?30:27;
+    return `<g data-count-ledger="" role="group" aria-label="${total} total; ${left} left; ${countPlaced} collected">`+
+      [[apple?'Apples in tree':'Carrots in farm',left,'source','#fff0cb'],[apple?'Apples in basket':'Carrots with rabbit',countPlaced,'collected','#dff1d3']].map(([title,n,key,fill],i)=>`<g><rect x="${x}" y="${y+i*(h+gap)}" width="${w}" height="${h}" rx="13" fill="${fill}" stroke="#71935c" stroke-width="2"/><text x="${x+w/2}" y="${y+i*(h+gap)+18}" text-anchor="middle" font-size="${label}" font-weight="800" fill="#33533b">${title}</text><text data-count-ledger-value="${key}" x="${x+w/2}" y="${y+i*(h+gap)+h-9}" text-anchor="middle" font-size="${value}" font-weight="900" fill="#174d36">${n}</text></g>`).join('')+'</g>';
+  }
   function renderHarvestCount(target,age){
     const apple=age===2,kind=apple?'apple':'carrot',max=apple?5:10;
     const done=state.done&&countStage>=max;
@@ -406,6 +412,7 @@
     else html+=`<rect x="395" y="20" width="575" height="98" rx="26" fill="#fffbed" stroke="#b6cea1" stroke-width="3"/><text x="418" y="58" font-size="31" font-weight="900" fill="#285d4c">Count to ${target}</text><text x="418" y="91" font-size="22" font-weight="800" fill="#30564d">${apple?`Put ${target} apple${target===1?'':'s'} in the basket.`:`Bring ${target} carrot${target===1?'':'s'} to the rabbit.`}</text>`;
     // Keep the physical collection and its numeral visible during the praise.
     html+=`<rect x="865" y="29" width="94" height="74" rx="20" fill="#e4f4d7" stroke="#79ab61" stroke-width="3"/><text data-count-counter="" x="912" y="76" text-anchor="middle" font-size="32" font-weight="900" fill="#215a3e">${countPlaced} / ${target}</text>`;
+    html+=countLedger(age);
     return html;
   }
   function renderCountAdventure(){
@@ -419,7 +426,7 @@
       const base=`<rect x="10" y="12" width="980" height="415" rx="30" fill="#ffefcc" stroke="#bd9163" stroke-width="8"/><text x="500" y="62" text-anchor="middle" font-size="38" font-weight="900" fill="#30564d">${countTitle()}</text><text x="500" y="115" text-anchor="middle" font-size="48" font-weight="900" fill="#3c6351">Find number: ${target}</text>`;
       let content=`<rect x="75" y="162" width="165" height="110" rx="25" fill="#f6aa62" stroke="#985e3b" stroke-width="6"/><circle cx="115" cy="286" r="21" fill="#51443c"/><circle cx="210" cy="286" r="21" fill="#51443c"/><text x="157" y="222" font-size="28" font-weight="900" text-anchor="middle" fill="#fff">TRAIN</text>`;
       for(let i=0;i<4;i++){const n=Math.min(countMax(),Math.max(1,target-1)+i);const x=270+i*170;content+=`<g data-count-choice="${n}" role="button" tabindex="0" aria-label="Choose ${n}" style="cursor:pointer"><rect x="${x}" y="168" width="145" height="103" rx="20" fill="${['#ffd17e','#b5ddf4','#d8c3f2','#bce4bd'][i]}" stroke="#667c67" stroke-width="6"/><text x="${x+72}" y="238" text-anchor="middle" font-size="58" font-weight="900" fill="#304c4c">${n}</text><circle cx="${x+32}" cy="286" r="18" fill="#51443c"/><circle cx="${x+112}" cy="286" r="18" fill="#51443c"/></g>`;}
-      scene.innerHTML=base+content+`<text x="500" y="380" text-anchor="middle" font-size="28" font-weight="800" fill="#466a5a">Tap the carriage showing ${target}</text>`;
+      scene.innerHTML=base+content+`<text data-train-instruction="" x="500" y="380" text-anchor="middle" font-size="38" font-weight="900" fill="#30564d">Tap the carriage showing ${target}</text>`;
       hint(`Find number ${target} and tap its train carriage!`);
     }
     progress(countStage,countMax());updateGameItemStrip();
@@ -441,7 +448,7 @@
           countHolding=false;$('show-me').disabled=false;countStage++;
           if(countStage===countMax()){
             state.done=true;renderCountAdventure();tone(700,true);applause();
-          }else{countPlaced=0;countCollected.clear();renderCountAdventure();}
+          }else renderCountAdventure();
         },COUNT_HOLD_MS);
       }else renderCountAdventure();
       return;
@@ -457,6 +464,7 @@
   }
 
   scene.addEventListener('keydown',event=>{
+    if(demoActive){event.preventDefault();return;}
     if(state.activity!=='abacus'||state.age===5||!['Enter',' '].includes(event.key))return;
     if(event.target.closest('[data-count-action],[data-count-choice]')){event.preventDefault();countTap(event,{x:0,y:0});}
   });
@@ -729,6 +737,7 @@
   function bubbleTick(now){
     if(state.activity!=='bubbles'||document.hidden){bubbleFrame=null;return;}
     bubbleFrame=requestAnimationFrame(bubbleTick);
+    if(demoActive){lastBubbleTime=now;return;}
     const elapsed=lastBubbleTime?Math.min(.05,(now-lastBubbleTime)/1000):0;lastBubbleTime=now;
     fitBubbleField();
     for(const bubble of state.bubbles){
@@ -793,7 +802,7 @@
       </g>
       <rect data-slide-swipe="1" x="150" y="16" width="840" height="395" fill="transparent" role="button" tabindex="0" aria-label="${opened?'Slide door closed to continue':'Slide door open to reveal '+item[0]}"/>
       <rect x="250" y="365" width="500" height="62" rx="26" fill="#fff6df" stroke="#9c7140" stroke-width="3" pointer-events="none"/>
-      <text x="500" y="407" text-anchor="middle" font-size="27" font-weight="900" fill="#214b3e" pointer-events="none">${opened?'Door OPEN · Slide left to close ←':'Door CLOSED · Slide right to open →'}</text>`;
+      <text data-slide-caption="" x="500" y="407" text-anchor="middle" font-size="27" font-weight="900" fill="#214b3e" pointer-events="none">${opened?'Door OPEN · Slide left to close ←':'Door CLOSED · Slide right to open →'}</text>`;
     progress(state.slideIndex+(opened?1:0),slideTotal());updateGameItemStrip();
     $('activity-name').textContent=`Cave Maze · Room ${state.slideIndex+1}/${slideTotal()}`;
     if(opened)hint(`SaNa says: ${item[0].toUpperCase()}! Slide the door closed for the next picture.`);
@@ -890,7 +899,7 @@
   function localPoint(event){const matrix=scene.getScreenCTM();if(!matrix)return null;return new DOMPoint(event.clientX,event.clientY).matrixTransform(matrix.inverse());}
   function hitBubble(point,id){const candidates=state.bubbles.filter(b=>b.element&&Math.hypot(point.x-b.x,point.y-b.y)<b.r+8);const bubble=candidates.find(b=>String(b.id)===id)||candidates.toSorted((a,b)=>Math.hypot(point.x-a.x,point.y-a.y)-Math.hypot(point.x-b.x,point.y-b.y))[0];if(bubble)popBubble(bubble);}
   function pointerDown(event){
-    if(state.pointer||event.button>0||!state.activity)return;
+    if(demoActive||state.pointer||event.button>0||!state.activity)return;
     const point=localPoint(event);if(!point)return;
     scene.querySelector('[data-guide]')?.remove();
     if(state.activity==='abacus'&&state.age!==5){
@@ -1000,6 +1009,7 @@
   scene.addEventListener('pointercancel',()=>{lastHapticPoint=null;},{passive:true});
   scene.addEventListener('pointerdown',pointerDown);scene.addEventListener('pointermove',pointerMove);scene.addEventListener('pointerup',pointerUp);scene.addEventListener('pointercancel',cancelGesture);scene.addEventListener('lostpointercapture',()=>{if(state.pointer)cancelGesture();});scene.addEventListener('contextmenu',e=>e.preventDefault());
   scene.addEventListener('keydown',event=>{
+    if(demoActive){event.preventDefault();return;}
     const piece=event.target.closest('[data-piece]'),target=event.target.closest('[data-target]'),bubble=event.target.closest('[data-bubble]'),handle=event.target.closest('[data-slider-handle]');
     const bead=event.target.closest('[data-bead-row]');
     if(bead&&['ArrowRight','ArrowLeft','End','Home','Enter',' '].includes(event.key)){
@@ -1015,156 +1025,158 @@
       else if(bubble)popBubble(state.bubbles.find(item=>item.id===Number(bubble.dataset.bubble)));
     }
   });
-  // v1.15: isolated visual demo. Gameplay state, scoring and saved progress never change.
-  let demoGeneration=0, demoActive=false;
+  // Demonstrate one success on copies; keep the child's real round untouched.
+  let demoGeneration=0,demoActive=false,demoResume=null,demoSceneNodes=[],demoProgress=null;
   const demoPause=(ms,token)=>new Promise(resolve=>{
-    guideTimer=setTimeout(()=>resolve(token===demoGeneration),ms);
+    demoResume=resolve;
+    guideTimer=setTimeout(()=>{demoResume=null;resolve(token===demoGeneration);},ms);
   });
   function stopDemo(){
     demoGeneration++;demoActive=false;clearTimeout(guideTimer);
+    const resume=demoResume;demoResume=null;resume?.(false);
     scene.querySelector('[data-demo-layer]')?.remove();
+    demoSceneNodes.forEach(({node,style})=>{if(style===null)node.removeAttribute('style');else node.setAttribute('style',style);});
+    demoSceneNodes=[];
+    if(demoProgress){const {strip,copy,hidden,scroll}=demoProgress;copy.remove();strip.hidden=hidden;strip.scrollLeft=scroll;demoProgress=null;}
     $('show-me').setAttribute('aria-pressed','false');
     try{speechSynthesis.cancel();}catch{}
   }
   function sanaSay(words){
-    if(!state.sound || !('speechSynthesis' in window))return;
-    try{
-      speechSynthesis.cancel();
-      const utterance=new SpeechSynthesisUtterance(words);
-      utterance.lang='en-US';utterance.rate=.82;utterance.pitch=1.1;utterance.volume=.85;
-      speechSynthesis.speak(utterance);
-    }catch{}
+    if(!state.sound||!('speechSynthesis' in window))return;
+    try{speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(words);utterance.lang='en-US';utterance.rate=.82;utterance.pitch=1.1;utterance.volume=.85;speechSynthesis.speak(utterance);}catch{}
   }
-  function demoPoint(node){
-    const box=node.getBBox();const m=node.getCTM();
-    const pt=scene.createSVGPoint();pt.x=box.x+box.width/2;pt.y=box.y+box.height/2;
-    const t=pt.matrixTransform(m);return {x:t.x,y:t.y};
+  function demoBounds(node){
+    const b=node.getBBox(),inverse=scene.getScreenCTM().inverse(),matrix=node.getScreenCTM();
+    const points=[[b.x,b.y],[b.x+b.width,b.y],[b.x,b.y+b.height],[b.x+b.width,b.y+b.height]].map(([x,y])=>new DOMPoint(x,y).matrixTransform(matrix).matrixTransform(inverse));
+    const xs=points.map(p=>p.x),ys=points.map(p=>p.y),left=Math.min(...xs),top=Math.min(...ys),width=Math.max(...xs)-left,height=Math.max(...ys)-top;
+    return{x:left+width/2,y:top+height/2,width,height};
   }
   async function showMe(){
     if(state.activity==='abacus'&&countHolding)return;
     if(demoActive){stopDemo();return;}
-    stopDemo();demoActive=true;
-    $('show-me').setAttribute('aria-pressed','true');
+    cancelGesture();stopDemo();demoActive=true;$('show-me').setAttribute('aria-pressed','true');
     const token=demoGeneration,serial=roundSerial,activity=state.activity,age=state.age;
-    // The overlay is a frozen copy of the current board. Demo changes never enter real game state.
-    const ns='http://www.w3.org/2000/svg';
-    const overlay=document.createElementNS(ns,'g');overlay.dataset.demoLayer='';
-    overlay.setAttribute('style','pointer-events:all');
-    const backing=document.createElementNS(ns,'g');
-    backing.innerHTML=scene.innerHTML;
-    overlay.appendChild(backing);
-    const hand=document.createElementNS(ns,'g');
-    hand.setAttribute('style','pointer-events:none;filter:drop-shadow(0px 3px 3px #203b36)');
-    hand.innerHTML='<circle r="39" fill="#fff9d6" stroke="#28564c" stroke-width="5"/><path d="M-10 16V-25Q-10 -40 1 -40Q12 -40 12 -25V-2Q25 -17 34 -8Q43 0 30 22L14 35H-12L-28 13Q-33 2 -24 -2Q-15 -5 -10 16Z" fill="#ffcd9d" stroke="#2c514b" stroke-width="4"/>';
+    const ns='http://www.w3.org/2000/svg',overlay=document.createElementNS(ns,'g'),backing=document.createElementNS(ns,'g');
+    overlay.dataset.demoLayer='';overlay.dataset.demoPhase='action';overlay.style.pointerEvents='all';
+    backing.innerHTML=scene.innerHTML;overlay.appendChild(backing);
+    demoSceneNodes=[...scene.children].filter(node=>node.tagName.toLowerCase()!=='defs').map(node=>({node,style:node.getAttribute('style')}));
+    demoSceneNodes.forEach(({node})=>{node.style.visibility='hidden';});
+    const strip=$('item-progress-strip');
+    if(!strip.hidden){
+      const copy=strip.cloneNode(true),scroll=strip.scrollLeft;
+      copy.removeAttribute('id');copy.dataset.demoProgress='';copy.setAttribute('aria-label','Demo progress preview only');copy.style.pointerEvents='none';
+      copy.querySelectorAll('button').forEach(button=>{button.tabIndex=-1;});strip.after(copy);
+      demoProgress={strip,copy,hidden:strip.hidden,scroll};strip.hidden=true;copy.scrollLeft=scroll;
+    }
+    const hand=document.createElementNS(ns,'g');hand.dataset.demoHand='';hand.style.pointerEvents='none';
+    // The fingertip is exactly (0,0); the rest of the hand extends below it.
+    hand.innerHTML='<g data-demo-hand-shape=""><path d="M-5 27V6Q-5 0 0 0Q5 0 5 6V23L9 19Q12 17 16 20L25 27Q29 30 27 36L22 48H5L-10 34Q-14 29-10 25Q-7 23-5 27Z" fill="#ffd0a1" stroke="#514632" stroke-width="2.5" stroke-linejoin="round"/></g>';
     overlay.appendChild(hand);scene.appendChild(overlay);
+    const shape=hand.firstElementChild,reduced=matchMedia('(prefers-reduced-motion:reduce)').matches;
     const valid=()=>token===demoGeneration&&serial===roundSerial&&activity===state.activity&&age===state.age&&overlay.isConnected;
-    const move=async(x,y,words,ms=780)=>{
+    let positioned=false;
+    const move=async(x,y,words,ms=450,span=60,node=null)=>{
       if(!valid())return false;
-      if(words){hint(`Demo: ${words}`);sanaSay(words);}
-      hand.style.transition=`transform ${ms}ms ease-in-out`;
-      hand.setAttribute('transform',`translate(${x} ${y})`);
-      return await demoPause(ms+180,token)&&valid();
+      if(words){hint('Demo: '+words);sanaSay(words);}
+      backing.querySelectorAll('[data-demo-target]').forEach(el=>el.removeAttribute('data-demo-target'));
+      if(node)node.setAttribute('data-demo-target','');
+      shape.setAttribute('transform',`scale(${Math.max(.08,Math.min(.65,span*.62/51))})`);
+      hand.style.transition=reduced||!positioned?'none':`transform ${ms}ms ease-in-out`;
+      hand.setAttribute('transform',`translate(${x} ${y})`);positioned=true;
+      return await demoPause(ms,token)&&valid();
     };
-    const action=async(x,y,words)=>move(x,y,words,600);
+    const pointAt=async(node,words,ms=400)=>{const p=demoBounds(node);return move(p.x,p.y,words,ms,Math.min(p.width,p.height),node);};
+    const touch=async(node,words)=>await pointAt(node,words)&&await demoPause(1000,token)&&valid();
+    const success=async index=>{
+      if(!valid())return;
+      overlay.dataset.demoPhase='hold';
+      hint('Demo: Well done! Watch the thumbnail.');sanaSay('Well done!');
+      if(!await demoPause(1000,token)||!valid())return;
+      const copy=demoProgress?.copy,chip=copy?.children[index];
+      if(chip){chip.classList.remove('is-current','is-later');chip.classList.add('is-done','is-demo-done');chip.setAttribute('aria-label','Demo completed: '+chip.title);copy.dataset.successIndex=String(index);copy.scrollLeft=Math.max(0,chip.offsetLeft-copy.offsetLeft-copy.clientWidth/3);}
+      overlay.dataset.demoPhase='success';hint('Demo: Success! Now it is your turn.');
+      await demoPause(1200,token);
+    };
     try{
       if(activity==='drag'){
-        const items=state.shapes.filter(v=>!v.placed);
-        for(const item of items){
-          const piece=backing.querySelector(`[data-piece="${item.id}"]`);
-          const target=backing.querySelector(`[data-target="${item.id}"]`);
-          if(!piece||!target)continue;
-          if(!await action(item.x,item.y,`Touch the ${item.id}.`))break;
-          sanaSay('Slide it here!');
-          piece.style.transition='transform 1000ms ease-in-out';
-          piece.setAttribute('transform',`translate(${item.tx} ${item.ty})`);
-          if(!await move(item.tx,item.ty,null,1000))break;
-          piece.setAttribute('opacity','.15');
-          const match=document.createElementNS(ns,'g');
-          match.setAttribute('transform',`translate(${item.tx} ${item.ty})`);
-          match.innerHTML=glossyShape(item.id,item.color);
-          backing.appendChild(match);
-          sanaSay('Good job!');
-          if(!await demoPause(500,token))break;
+        const item=state.shapes.find(v=>!v.placed);
+        if(item){const piece=backing.querySelector(`[data-piece="${item.id}"]`),target=backing.querySelector(`[data-target="${item.id}"] > g`);
+          if(await touch(piece,`Touch the ${item.id}.`)){
+            piece.style.transition=reduced?'none':'transform 850ms ease-in-out';piece.setAttribute('transform',`translate(${item.tx} ${item.ty})`);
+            if(await pointAt(target,'Slide it into its shadow.',850)){piece.setAttribute('opacity','1');await success(shapes.findIndex(s=>s.id===item.id));}
+          }
         }
       }else if(activity==='abacus'&&age<5){
-        const target=countStage+1;
+        const target=Math.min(countStage+1,countMax());
         if(age===4){
-          const choice=backing.querySelector(`[data-count-choice="${target}"]`);
-          if(choice){const pt=demoPoint(choice);await action(pt.x,pt.y,`Find number ${target}.`);
-            choice.querySelector('rect')?.setAttribute('stroke','#1b9d51');
-            choice.querySelector('rect')?.setAttribute('stroke-width','12');
-            sanaSay(`Yes! Number ${target}.`);await demoPause(900,token);}
+          const choice=backing.querySelector(`[data-count-choice="${target}"]`),number=choice?.querySelector('text');
+          if(number&&await touch(number,`Tap the carriage showing ${target}.`)){choice.querySelector('rect').setAttribute('stroke','#218844');choice.querySelector('rect').setAttribute('stroke-width','12');await success(countStage);}
         }else{
-          const sources=[...backing.querySelectorAll('[data-count-fruit]')];
-          const already=countPlaced;
-          for(let i=0;i<target-already&&i<sources.length&&valid();i++){
-            const source=sources[i];
-            const [x,y]=countSourcePoint(Number(source.dataset.countFruit),age);
-            const [destX,destY]=countCollectedPoint(already+i,age);
-            if(!await action(x,y,age===2?'Hold the apple!':'Hold the carrot!'))break;
-            source.setAttribute('visibility','hidden');
-            const moving=document.createElementNS(ns,'g');
-            moving.innerHTML=countIcon(0,0,age===2?'apple':'carrot',age===2?1:.78);
-            moving.setAttribute('transform',`translate(${x} ${y})`);
-            moving.style.transition='transform 850ms ease-in-out';backing.appendChild(moving);
-            moving.setAttribute('transform',`translate(${destX} ${destY})`);
-            if(!await move(destX,destY,age===2?'Put it in the basket!':'Bring it to the rabbit!',850))break;
-            const counter=backing.querySelector('[data-count-counter]');
-            if(counter)counter.textContent=`${already+i+1} / ${target}`;
-            if(!await demoPause(250,token))break;
-          }
-          if(valid())sanaSay(`Good job! ${target} ${age===2?'apples':'carrots'}!`);
+          const source=backing.querySelector('[data-count-fruit]');
+          if(source){const [x,y]=countSourcePoint(Number(source.dataset.countFruit),age),[destX,destY]=countCollectedPoint(countPlaced,age),scale=age===2?1:.78;
+            if(await touch(source,age===2?'Pick an apple.':'Pick a carrot.')){
+              source.setAttribute('visibility','hidden');const moving=document.createElementNS(ns,'g');moving.innerHTML=countIcon(0,0,age===2?'apple':'carrot',scale);moving.setAttribute('transform',`translate(${x} ${y})`);backing.appendChild(moving);
+              moving.getBoundingClientRect();moving.style.transition=reduced?'none':'transform 850ms ease-in-out';moving.setAttribute('transform',`translate(${destX} ${destY})`);
+              const image=moving.querySelector('image');
+              if(await move(destX,destY+(age===2?0:-4*scale),age===2?'Put it in the basket.':'Give it to the rabbit.',850,Math.min(age===2?64:56*scale,age===2?74:88*scale),image)){
+                const counter=backing.querySelector('[data-count-counter]');if(counter)counter.textContent=`${countPlaced+1} / ${target}`;
+                const left=backing.querySelector('[data-count-ledger-value="source"]'),right=backing.querySelector('[data-count-ledger-value="collected"]');if(left)left.textContent=String(countMax()-countPlaced-1);if(right)right.textContent=String(countPlaced+1);
+                await success(countStage);
+              }
+            }
+          }else{const last=backing.querySelector('[data-count-collected] image');if(last&&await touch(last,'You completed this collection.'))await success(countMax()-1);}
         }
       }else if(activity==='slide'){
         const door=backing.querySelector('[data-cave-door]');
-        if(door){await action(715,345,'Touch the door.');
-          door.style.transition='transform 1100ms ease-in-out';
-          door.setAttribute('transform','translate(720 0) scale(.34 1)');
-          if(await move(850,345,'Slide to open!',1100)){
-            await demoPause(950,token);sanaSay('Slide to close!');
-            door.setAttribute('transform','translate(0 0) scale(1 1)');
-            await move(715,345,null,1100);
+        if(door){door.setAttribute('transform','translate(0 0) scale(1 1)');const knob=door.querySelector('circle');
+          if(await touch(knob,'Touch the door handle.')){
+            door.style.transition=reduced?'none':'transform 850ms ease-in-out';door.setAttribute('transform','translate(720 0) scale(.34 1)');
+            if(await move(720+715*.34,345,'Slide to open.',850,48*.34,knob)){
+              const friend=backing.querySelector('g[role="img"] text');
+              if(friend)await pointAt(friend,'Look! You found a friend.');
+              const caption=backing.querySelector('[data-slide-caption]');if(caption)caption.textContent='Door OPEN · You found '+slideObjects[state.slideIndex][0]+'!';
+              await success(state.slideIndex);
+            }
           }
         }
       }else if(activity==='bubbles'){
-        const nodes=[...backing.querySelectorAll('[data-bubble]')].filter(n=>n.getAttribute('aria-hidden')!=='true').slice(0,Math.min(4,state.bubbles.length));
-        for(const bubble of nodes){if(!valid())break;
-          const point=demoPoint(bubble);
-          const finger=backing.querySelector('[data-demo-hand]');if(finger)finger.setAttribute('transform',`scale(.25)`);
-          if(!await action(point.x,point.y,'Wait for the bubble!'))break;
-          bubble.style.transition='opacity 280ms,transform 280ms';bubble.setAttribute('opacity','0');
-          sanaSay('Pop!');await demoPause(350,token);
+        const nodes=[...backing.querySelectorAll('[data-bubble]')].filter(n=>n.getAttribute('aria-hidden')!=='true'&&(state.bubbleMode==='plain'||!state.bubbleHits.has(n.dataset.token))),bubble=nodes[0];
+        if(bubble&&await touch(bubble,'Touch the bubble.')){
+          const index=state.bubbleMode==='plain'?state.bubblePops:bubbleItems().indexOf(bubble.dataset.token);
+          // Keep an invisible target for the fingertip while the bubble pops.
+          bubble.setAttribute('opacity','0');await success(Math.max(0,index));
         }
       }else if(activity==='brush'){
-        const coords=[[330,160],[400,185],[475,210],[550,240],[620,270],[650,315]];
-        const trail=document.createElementNS(ns,'polyline');
-        trail.setAttribute('fill','none');trail.setAttribute('stroke',state.paintMode?'#eea956':'#d2f6f5');
-        trail.setAttribute('stroke-width','55');trail.setAttribute('stroke-linecap','round');
-        trail.setAttribute('stroke-linejoin','round');trail.setAttribute('opacity','.78');
-        backing.appendChild(trail);
-        for(let i=0;i<coords.length&&valid();i++){
-          const [x,y]=coords[i];trail.setAttribute('points',coords.slice(0,i+1).map(p=>p.join(',')).join(' '));
-          if(!await move(x,y,i===0?'Touch and brush slowly!':null,580))break;
+        const picture=backing.querySelector('g[stroke="#536b5b"]'),dirt=[...backing.querySelectorAll('[data-dirt]')];
+        const trail=document.createElementNS(ns,'polyline');trail.setAttribute('fill','none');trail.setAttribute('stroke',state.paintMode?state.paintColor:'#c7eeee');trail.setAttribute('stroke-width','30');trail.setAttribute('stroke-linecap','round');trail.setAttribute('stroke-linejoin','round');if(state.paintMode)trail.setAttribute('clip-path','url(#picture-clip)');backing.appendChild(trail);
+        if(!state.paintMode&&dirt.length){
+          if(await touch(dirt[0],'Brush over the muddy marks.'))for(const patch of dirt){if(!valid())break;const p=demoBounds(patch);if(!await move(p.x,p.y,null,230,Math.min(p.width,p.height),patch))break;patch.setAttribute('opacity','0');}
+        }else if(picture){
+          const b=demoBounds(picture),coords=[];
+          for(const fy of [.3,.5,.7])for(const fx of [.3,.5,.7]){const point={x:b.x-b.width/2+b.width*fx,y:b.y-b.height/2+b.height*fy};if(insidePicture(point))coords.push(point);}
+          for(const [i,p] of coords.slice(0,6).entries()){trail.setAttribute('points',coords.slice(0,i+1).map(p=>p.x+','+p.y).join(' '));if(!await move(p.x,p.y,i===0?'Move the finger to paint inside the picture.':null,230,50,picture))break;}
         }
-        if(valid()){
-          // Show a fully colored/clean picture on the isolated demonstration copy.
-          backing.querySelectorAll('[data-dirt]').forEach(node=>node.setAttribute('opacity','0'));
-          const picture=backing.querySelector('g[stroke="#536b5b"]')||backing.querySelector('[data-art-region]');
-          if(picture)picture.setAttribute('fill',brushThumbColor(artPicture().name));
-          sanaSay('Great! You finished the picture!');
-        }
+        if(valid()&&picture){trail.remove();dirt.forEach(n=>n.setAttribute('opacity','0'));picture.setAttribute('fill',state.paintMode?state.paintColor:brushThumbColor(artPicture().name));await pointAt(picture,'A finished picture!');await success(brushIndex);}
       }else if(activity==='abacus'){
-        const row=activeAbacusRow(),point=abacusBeadPoint(row,9);
-        if(await action(point.x,point.y,'Touch a bead!')){
-          const bead=backing.querySelector(`[data-bead-row="${row}"][data-bead-index="9"]`);if(bead){bead.style.transition='transform 900ms ease';bead.setAttribute('transform',`translate(${abacusGeometry().end} ${point.y})`);}
-          await move(abacusGeometry().end,point.y,'Slide now!',900);
-          const right=backing.querySelector(`[data-abacus-right="${row}"]`);if(right)right.textContent=String(abacusCount(row)+1);sanaSay('One bead!');
+        const row=activeAbacusRow(),count=abacusCount(row),g=abacusGeometry(),right=count<10,index=right?9-count:0,bead=backing.querySelector(`[data-bead-row="${row}"][data-bead-index="${index}"]`);
+        if(bead&&await touch(bead,'Touch one bead.')){
+          const dest=right?g.end-count*g.pitch:g.start,y=34+row*56,next=count+(right?1:-1);
+          bead.style.transition=reduced?'none':'transform 850ms ease-in-out';bead.setAttribute('transform',`translate(${dest} ${y})`);
+          if(await move(dest,y,'Slide the bead.',850,g.r*2,bead.querySelector('circle'))){
+            const label=backing.querySelector(`[data-color-label="${row}"]`);if(label)label.textContent=abacusLabel(row,next);
+            const left=backing.querySelector(`[data-abacus-left="${row}"]`),end=backing.querySelector(`[data-abacus-right="${row}"]`);if(left)left.textContent=String(10-next);if(end)end.textContent=String(next);
+            const region=backing.querySelector(`[data-color-region="${row}"]`);if(region)region.setAttribute('fill',next?abacusColors[row][1]:'#000');
+            const total=backing.querySelector('[data-abacus-total]');if(total)total.textContent=String(abacusTotal()+next-count);
+            const equation=backing.querySelector('[data-abacus-equation]');if(equation)equation.textContent=abacusColors.map((_,i)=>i===row?next:abacusCount(i)).filter(Boolean).join(' + ')||'0';
+            const chip=demoProgress?.copy.children[row];if(chip){chip.title=abacusColors[row][0]+' '+next;chip.lastChild.textContent=' '+abacusColors[row][0]+' '+next;}
+            await success(row);
+          }
         }
       }
-      if(valid()){sanaSay('Now it is your turn!');await demoPause(850,token);}
     }catch(error){console.warn('Demo preview error',error);}
     finally{if(valid()){stopDemo();hint('Your turn! Play the game.');}}
   }
+
   $('home').addEventListener('click',home);$('again').addEventListener('click',resetRound);$('show-me').addEventListener('click',showMe);
   document.querySelectorAll('[data-activity]').forEach(button=>button.addEventListener('click',()=>{tone(500);startActivity(button.dataset.activity);}));
   document.querySelectorAll('[data-level]').forEach(button=>button.addEventListener('click',()=>setLevel(Number(button.dataset.level))));

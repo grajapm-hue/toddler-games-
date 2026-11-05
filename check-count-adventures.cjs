@@ -65,10 +65,10 @@ let browser;
     await open(age);
     const max=age===2?5:10;
     for(let target=1;target<=(process.env.COUNT_RED?1:max);target++) {
-      for(let item=0;item<target;item++) {
+      for(let item=0;item<1;item++) {
         const id=await drag(age);
         const s=await state();
-        check(`Age ${age} count ${target} drop ${item+1} removes exactly the picked item`,!s.sources.includes(id)&&s.sources.length===max-item-1&&s.collected===item+1,s);
+        check(`Age ${age} count ${target} drop ${item+1} removes exactly the picked item`,!s.sources.includes(id)&&s.sources.length===max-target&&s.collected===target,s);
       }
       const completedAt=Date.now();
       const before=await state();
@@ -84,7 +84,7 @@ let browser;
       const held=await state();check(`Age ${age} count ${target} remains visible through the three-second hold`,held.praise&&held.text.includes(`${target} / ${target}`)&&held.chips.filter(c=>c.done).length===target-1,held);
       await page.waitForFunction(n=>document.querySelectorAll('#item-progress-strip .is-done').length===n,target,{timeout:1800});
       const next=await state();check(`Age ${age} count ${target} ticks only after three seconds`,Date.now()-completedAt>=2900&&next.chips.filter(c=>c.done).length===target,next);
-      if(target<max)check(`Age ${age} enables only the next count`,next.text.includes(`0 / ${target+1}`)&&next.chips[target].current&&!next.praise,next);
+      if(target<max)check(`Age ${age} enables only the next count`,next.text.includes(`${target} / ${target+1}`)&&next.chips[target].current&&!next.praise,next);
       else {await page.waitForTimeout(2100);const end=await state();check(`Age ${age} final collection remains visible until Again`,end.collected===max&&end.chips.every(c=>c.done)&&!end.text.includes('Count to '+(max+1)),end);}
     }
   }
@@ -117,7 +117,7 @@ let browser;
     await page.locator('#home').click();await page.locator('[data-activity="brush"]').click();check('Paint still opens',await page.locator('#app').getAttribute('data-view')==='brush');
     await page.goto(base+'index.html');await page.waitForFunction(()=>!!navigator.serviceWorker.controller,{timeout:30000});
     await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
-    const cached=await page.evaluate(async()=>{const cache=await caches.open('sana-little-hands-beta-v118-count-praise');return Promise.all(['app.js?v118',...['apple-tree','basket','carrot-garden','rabbit','apple','carrot'].map(name=>'count-art/'+name+'.png')].map(name=>cache.match(new URL(name,location.href)).then(Boolean)));});
+    const cached=await page.evaluate(async()=>{const cache=await caches.open('sana-little-hands-beta-v119-count-ledgers-demo');return Promise.all(['app.js?v119',...['apple-tree','basket','carrot-garden','rabbit','apple','carrot'].map(name=>'count-art/'+name+'.png')].map(name=>cache.match(new URL(name,location.href)).then(Boolean)));});
     check('The worker precaches the exact game script and every illustration',cached.every(Boolean),cached);
     if(engine==='chromium')await context.setOffline(true);else await new Promise(done=>server.close(done));
     await open(2);await drag(2);check('Offline counting retains the completed apple',(await state()).collected===1);
