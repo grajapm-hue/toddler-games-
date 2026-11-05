@@ -24,7 +24,7 @@ let browser;
  }else{
   async function demo(label){
    const before=await snapshot();await page.locator('#show-me').click();
-   for(let i=0;i<50;i++){if(await page.locator('[data-demo-layer][data-demo-phase="hold"]').count())break;await page.clock.runFor(150);}
+   for(let i=0;i<80;i++){if(await page.locator('[data-demo-layer][data-demo-phase="hold"]').count())break;await page.clock.runFor(500);}
    const holding=await page.locator('[data-demo-layer][data-demo-phase="hold"]').count();
    check(label+' reaches a successful virtual action',holding===1);
    if(!holding)throw Error('Demo never held: '+label);
@@ -32,8 +32,8 @@ let browser;
    check(label+' fingertip points to the target centre',geometry.offset<1.5,geometry);
    check(label+' finger is smaller than its touch target',Math.max(...geometry.hand)<Math.min(...geometry.target)+1,geometry);
    await page.clock.runFor(550);check(label+' waits before ticking',await page.locator('[data-demo-layer][data-demo-phase="hold"]').count()===1);
-   await page.clock.runFor(500);if(label.startsWith('Abacus colour')){const chip=await page.locator('[data-demo-progress] .is-demo-done').textContent();check(label+' preview number agrees with its bead',chip.includes('1'),chip);}check(label+' ticks its preview thumbnail',await page.locator('[data-demo-progress][data-success-index] .is-demo-done').count()===1);
-   await page.clock.runFor(1400);const after=await snapshot(),remaining=await page.locator('[data-demo-layer],[data-demo-progress]').count();check(label+' restores the real game',remaining===0&&await page.locator('#scene > [style*="visibility: hidden"]').count()===0&&JSON.stringify(after)===JSON.stringify(before));
+   await page.clock.runFor(3600);if(label.startsWith('Abacus colour')){const chip=await page.locator('[data-demo-progress] .is-demo-done').textContent();check(label+' preview number agrees with its bead',chip.includes('1'),chip);}check(label+' ticks its preview thumbnail',await page.locator('[data-demo-progress][data-success-index] .is-demo-done').count()===1);
+   await page.clock.runFor(2200);const after=await snapshot(),remaining=await page.locator('[data-demo-layer],[data-demo-progress]').count();check(label+' restores the real game',remaining===0&&await page.locator('#scene > [style*="visibility: hidden"]').count()===0&&JSON.stringify(after)===JSON.stringify(before));
   }
   for(const age of (process.env.DEMO_FOCUS?[]:[2,3])){await open(age,'abacus');const total=age===2?5:10;for(let n=0;n<total;n++){await demo(`Age ${age} count ${n+1}`);await harvestDrag();const ledger=await page.locator('[data-count-ledger-value]').evaluateAll(nodes=>nodes.map(n=>Number(n.textContent)));check(`Age ${age} collection ${n+1} balances`,ledger[0]===total-n-1&&ledger[1]===n+1,ledger);await page.clock.runFor(3100);check(`Age ${age} keeps all ${n+1} collected items`,await page.locator('[data-count-collected]').count()===n+1&&await page.locator('[data-count-fruit]').count()===total-n-1);}await page.locator('#again').click();check('Again refills age '+age,await page.locator('[data-count-fruit]').count()===total&&await page.locator('[data-count-collected]').count()===0);}
   await open(4,'abacus');for(let n=1;n<=(process.env.DEMO_FOCUS?0:20);n++){await demo('Train carriage '+n);if(n<20)await page.locator(`[data-count-choice="${n}"]`).press('Enter');}
@@ -55,8 +55,8 @@ let browser;
   await real.locator('[data-demo-layer][data-demo-phase="hold"]').waitFor();
   const aim=await real.evaluate(()=>{const hand=document.querySelector('[data-demo-hand]'),target=document.querySelector('[data-demo-target]'),h=hand.getBoundingClientRect(),t=target.getBoundingClientRect(),p=new DOMPoint(0,0).matrixTransform(hand.getScreenCTM());return{error:Math.hypot(p.x-t.x-t.width/2,p.y-t.y-t.height/2),hand:Math.max(h.width,h.height),target:Math.min(...(()=>{const zone=target.closest('[data-count-choice]')?.querySelector('rect')?.getBoundingClientRect()||t;return[zone.width,zone.height];})())};});
   check('Normal animation points the contrasting finger at the train numeral',aim.error<2&&aim.hand<aim.target,aim);
-  await real.screenshot({path:path.join(out,'train-demo-one-second-hold.png')});
-  await real.locator('[data-demo-progress][data-success-index="0"]').waitFor({timeout:1800});const timing=await real.evaluate(()=>window.__lessonTiming);check('Real-time Demo keeps the thumbnail unticked during the pause',timing.midUnticked,timing);check('Real-time Demo waits one second before the tick',timing.end-timing.start>=990,timing);
+  await real.screenshot({path:path.join(out,'train-demo-calm-praise-hold.png')});
+  await real.locator('[data-demo-progress][data-success-index="0"]').waitFor({timeout:7000});const timing=await real.evaluate(()=>window.__lessonTiming);check('Real-time Demo keeps the thumbnail unticked during the pause',timing.midUnticked,timing);check('Real-time Demo holds praise before the tick',timing.end-timing.start>=3800,timing);
   await real.locator('#show-me').click();check('Stopping the real-time preview restores Count 1',await real.locator('[data-demo-layer],[data-demo-progress]').count()===0&&await real.locator('#item-progress-strip .is-done').count()===0);await native.close();
  }
  check('No uncaught lesson or demo errors',errors.length===0,errors);fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({engine,results,errors},null,2));assert(results.every(r=>r.pass),'Lesson/demo checks failed');
