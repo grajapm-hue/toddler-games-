@@ -284,6 +284,7 @@
   const ageOptions=[...document.querySelectorAll('.age-radio')];
   function closeAgeMenu(){} // Legacy call sites retained without altering game transitions.
   function parentAgeControls(){
+    app.dataset.age=String(state.age??'family');
     ageOptions.forEach(option=>{const active=Number(option.dataset.ageOption)===(state.age??2);option.setAttribute('aria-checked',String(active));option.tabIndex=active?0:-1;});
     app.classList.toggle('age-profile',state.age!==null);
     const welcome=app.querySelector('a.brand');if(welcome)welcome.href=ageProfiles.navigation('index.html');
@@ -356,7 +357,8 @@
   let countStage=0,countPlaced=0,countTimer=null,countHolding=false;
   const countCollected=new Set();
   const COUNT_HOLD_MS=3000;
-  const countMax=()=>state.age===2?5:state.age===3?10:20;
+  const countStockSize=age=>age===2?5:age===3?10:0;
+  const countMax=()=>countStockSize(state.age)||20;
   const countTitle=()=>state.age===2?'Apple Basket':state.age===3?'Feed the Hungry Rabbit':'Number Train Adventure';
   function cancelCountAdvance(){
     clearTimeout(countTimer);countTimer=null;countHolding=false;
@@ -373,30 +375,29 @@
     return `<g transform="translate(${x} ${y}) scale(${scale})">${countImage(carrot?'carrot':'apple',carrot?-28:-32,carrot?-48:-37,carrot?56:64,carrot?88:74,'pointer-events="none"')}</g>`;
   }
   function countSourcePoint(index,age=state.age){
-    return age===2?[[110,127],[225,105],[310,145],[150,215],[260,220]][index]:[105+(index%5)*90,240+Math.floor(index/5)*92];
+    return age===2?[[110,99],[225,77],[310,117],[150,187],[260,192]][index]:[105+(index%5)*90,180+Math.floor(index/5)*92];
   }
-  function countCollectedPoint(index,age=state.age){return age===2?[[715,289],[780,289],[845,289],[747,246],[812,246]][index]:[795-(index%5)*49,290+Math.floor(index/5)*65];}
-  function countDestination(age=state.age){return age===2?{x:800,y:300,rx:175,ry:110}:{x:810,y:270,rx:170,ry:135};}
+  function countCollectedPoint(index,age=state.age){return age===2?[[715,229],[780,229],[845,229],[747,186],[812,186]][index]:[795-(index%5)*49,235+Math.floor(index/5)*65];}
+  function countDestination(age=state.age){return age===2?{x:800,y:240,rx:175,ry:110}:{x:810,y:215,rx:170,ry:135};}
   function countPraise(final=false){
     const message=final?'Every count is complete!':countHolding?'Wait for the next count.':'Choose Again to play.';
-    return `<g data-count-praise="" role="status" aria-live="polite"><rect x="395" y="20" width="575" height="98" rx="26" fill="#fffbed" stroke="#75a460" stroke-width="4"/><circle cx="435" cy="66" r="28" fill="#ffe385"/><text x="435" y="78" text-anchor="middle" font-size="34" aria-hidden="true">🐒</text><text x="476" y="57" font-size="28" font-weight="900" fill="#216144">Well done!</text><text x="476" y="91" font-size="22" font-weight="800" fill="#30564d">${message}</text></g>`;
+    return `<g data-count-praise="" role="status" aria-live="polite"><rect x="395" y="20" width="330" height="98" rx="26" fill="#fffbed" stroke="#75a460" stroke-width="4"/><circle cx="425" cy="56" r="22" fill="#ffe385"/><text x="425" y="66" text-anchor="middle" font-size="28" aria-hidden="true">🐒</text><text x="460" y="57" font-size="28" font-weight="900" fill="#216144">Well done!</text><text x="410" y="94" font-size="21" font-weight="800" fill="#30564d">${message}</text></g>`;
   }
   function countLedger(age){
-    const apple=age===2,total=apple?5:10,left=total-countPlaced;
-    const x=apple?405:540,y=apple?165:130,w=apple?215:170,h=apple?64:54,gap=apple?12:10,label=apple?17:14,value=apple?30:27;
-    return `<g data-count-ledger="" role="group" aria-label="${total} total; ${left} left; ${countPlaced} collected">`+
-      [[apple?'Apples in tree':'Carrots in farm',left,'source','#fff0cb'],[apple?'Apples in basket':'Carrots with rabbit',countPlaced,'collected','#dff1d3']].map(([title,n,key,fill],i)=>`<g><rect x="${x}" y="${y+i*(h+gap)}" width="${w}" height="${h}" rx="13" fill="${fill}" stroke="#71935c" stroke-width="2"/><text x="${x+w/2}" y="${y+i*(h+gap)+18}" text-anchor="middle" font-size="${label}" font-weight="800" fill="#33533b">${title}</text><text data-count-ledger-value="${key}" x="${x+w/2}" y="${y+i*(h+gap)+h-9}" text-anchor="middle" font-size="${value}" font-weight="900" fill="#174d36">${n}</text></g>`).join('')+'</g>';
+    const apple=age===2,total=countStockSize(age),collected=countCollected.size,left=total-collected;
+    return `<g data-count-ledger="" role="group" aria-label="${total} total; ${left} left; ${collected} collected">`+
+      [[apple?'Apples in tree':'Carrots in farm',left,'source',30,apple?330:510,'#fff0cb'],[apple?'Apples in basket':'Carrots with rabbit',collected,'collected',apple?640:600,apple?330:370,'#dff1d3']].map(([title,n,key,x,w,fill])=>`<g data-count-ledger-item="${key}"><rect x="${x}" y="369" width="${w}" height="54" rx="13" fill="${fill}" stroke="#71935c" stroke-width="2"/><text x="${x+14}" y="403" font-size="20" font-weight="800" fill="#33533b">${title}</text><text data-count-ledger-value="${key}" x="${x+w-18}" y="407" text-anchor="end" font-size="32" font-weight="900" fill="#174d36">${n}</text></g>`).join('')+'</g>';
   }
   function renderHarvestCount(target,age){
-    const apple=age===2,kind=apple?'apple':'carrot',max=apple?5:10;
+    const apple=age===2,kind=apple?'apple':'carrot',max=countStockSize(age);
     const done=state.done&&countStage>=max;
-    let html=`<defs><linearGradient id="count-sky" x2="0" y2="1"><stop stop-color="#d9f1ff"/><stop offset="1" stop-color="#fbfff0"/></linearGradient><linearGradient id="count-grass" x2="0" y2="1"><stop stop-color="#b9df8c"/><stop offset="1" stop-color="#7fb765"/></linearGradient><clipPath id="count-basket-front"><rect x="635" y="327" width="330" height="93"/></clipPath></defs><rect x="10" y="12" width="980" height="415" rx="30" fill="url(#count-sky)" stroke="#b6cea1" stroke-width="6"/><path d="M14 294Q220 248 438 293T986 287V399Q986 425 960 425H40Q14 425 14 399Z" fill="url(#count-grass)"/>`;
+    let html=`<defs><linearGradient id="count-sky" x2="0" y2="1"><stop stop-color="#d9f1ff"/><stop offset="1" stop-color="#fbfff0"/></linearGradient><linearGradient id="count-grass" x2="0" y2="1"><stop stop-color="#b9df8c"/><stop offset="1" stop-color="#7fb765"/></linearGradient><clipPath id="count-basket-front"><rect x="635" y="267" width="330" height="93"/></clipPath></defs><rect x="10" y="12" width="980" height="415" rx="30" fill="url(#count-sky)" stroke="#b6cea1" stroke-width="6"/><path d="M14 294Q220 248 438 293T986 287V399Q986 425 960 425H40Q14 425 14 399Z" fill="url(#count-grass)"/>`;
     if(apple){
-      html+=countImage('apple-tree',20,40,360,350,'aria-label="Apple tree"');
-      html+=`<g data-count-drop="basket" role="img" aria-label="Basket for the apples">${countImage('basket',635,200,330,220)}<rect x="635" y="200" width="330" height="220" fill="transparent" pointer-events="none"/></g>`;
+      html+=countImage('apple-tree',20,12,360,350,'aria-label="Apple tree"');
+      html+=`<g data-count-drop="basket" role="img" aria-label="Basket for the apples">${countImage('basket',635,140,330,220)}<rect x="635" y="140" width="330" height="220" fill="transparent" pointer-events="none"/></g>`;
     }else{
-      html+=countImage('carrot-garden',20,160,540,235,'aria-label="Carrot garden"');
-      html+=`<g data-count-drop="rabbit" role="img" aria-label="Rabbit waiting for carrots">${countImage('rabbit',695,110,260,260)}<rect x="650" y="145" width="310" height="245" fill="transparent" pointer-events="none"/></g>`;
+      html+=countImage('carrot-garden',20,100,540,235,'aria-label="Carrot garden"');
+      html+=`<g data-count-drop="rabbit" role="img" aria-label="Rabbit waiting for carrots">${countImage('rabbit',695,65,260,260)}<rect x="650" y="100" width="310" height="245" fill="transparent" pointer-events="none"/></g>`;
     }
     for(let i=0;i<max;i++){
       if(countCollected.has(i))continue;
@@ -407,11 +408,11 @@
     [...countCollected].map((id,index)=>({id,index})).sort((a,b)=>slots[a.index][1]-slots[b.index][1]).forEach(({id,index})=>{
       const [x,y]=slots[index];html+=`<g data-count-collected="${id}" role="img" aria-label="${kind} ${index+1} ${apple?'in the basket':'beside the rabbit'}">${countIcon(x,y,kind,apple?1:.78)}</g>`;
     });
-    if(apple)html+=countImage('basket',635,200,330,220,'clip-path="url(#count-basket-front)" pointer-events="none"');
+    if(apple)html+=countImage('basket',635,140,330,220,'clip-path="url(#count-basket-front)" pointer-events="none"');
     if(countHolding||done)html+=countPraise(done);
-    else html+=`<rect x="395" y="20" width="575" height="98" rx="26" fill="#fffbed" stroke="#b6cea1" stroke-width="3"/><text x="418" y="58" font-size="31" font-weight="900" fill="#285d4c">Count to ${target}</text><text x="418" y="91" font-size="22" font-weight="800" fill="#30564d">${apple?`Put ${target} apple${target===1?'':'s'} in the basket.`:`Bring ${target} carrot${target===1?'':'s'} to the rabbit.`}</text>`;
+    else html+=`<rect x="395" y="20" width="330" height="98" rx="26" fill="#fffbed" stroke="#b6cea1" stroke-width="3"/><text x="410" y="57" font-size="31" font-weight="900" fill="#285d4c">Count to ${target}</text><text x="410" y="91" font-size="21" font-weight="800" fill="#30564d">${apple?`Put ${target} apple${target===1?'':'s'} in the basket.`:`Give ${target} carrot${target===1?'':'s'} to the rabbit.`}</text>`;
     // Keep the physical collection and its numeral visible during the praise.
-    html+=`<rect x="865" y="29" width="94" height="74" rx="20" fill="#e4f4d7" stroke="#79ab61" stroke-width="3"/><text data-count-counter="" x="912" y="76" text-anchor="middle" font-size="32" font-weight="900" fill="#215a3e">${countPlaced} / ${target}</text>`;
+    html+=`<rect x="760" y="12" width="200" height="45" rx="20" fill="#e4f4d7" stroke="#79ab61" stroke-width="3"/><text data-count-counter="" x="860" y="45" text-anchor="middle" font-size="32" font-weight="900" fill="#215a3e">${countPlaced} / ${target}</text>`;
     html+=countLedger(age);
     return html;
   }
@@ -424,7 +425,7 @@
       hint(countHolding?'Well done! Wait for the next count.':state.done?'Wonderful counting! Choose Again to play.':age===2?`Put ${target} apple${target>1?'s':''} into the basket. Drag each apple!`:`Feed the rabbit ${target} carrot${target>1?'s':''}!`);
     }else{
       const base=`<rect x="10" y="12" width="980" height="415" rx="30" fill="#ffefcc" stroke="#bd9163" stroke-width="8"/><text x="500" y="62" text-anchor="middle" font-size="38" font-weight="900" fill="#30564d">${countTitle()}</text><text x="500" y="115" text-anchor="middle" font-size="48" font-weight="900" fill="#3c6351">Find number: ${target}</text>`;
-      let content=`<rect x="75" y="162" width="165" height="110" rx="25" fill="#f6aa62" stroke="#985e3b" stroke-width="6"/><circle cx="115" cy="286" r="21" fill="#51443c"/><circle cx="210" cy="286" r="21" fill="#51443c"/><text x="157" y="222" font-size="28" font-weight="900" text-anchor="middle" fill="#fff">TRAIN</text>`;
+      let content=`<rect x="75" y="162" width="165" height="110" rx="25" fill="#f6aa62" stroke="#985e3b" stroke-width="6"/><circle cx="115" cy="286" r="21" fill="#51443c"/><circle cx="210" cy="286" r="21" fill="#51443c"/><text data-train-engine="" x="157" y="208" font-size="24" font-weight="900" text-anchor="middle" fill="#fff"><tspan x="157">Train </tspan><tspan x="157" dy="27">Engine</tspan></text>`;
       for(let i=0;i<4;i++){const n=Math.min(countMax(),Math.max(1,target-1)+i);const x=270+i*170;content+=`<g data-count-choice="${n}" role="button" tabindex="0" aria-label="Choose ${n}" style="cursor:pointer"><rect x="${x}" y="168" width="145" height="103" rx="20" fill="${['#ffd17e','#b5ddf4','#d8c3f2','#bce4bd'][i]}" stroke="#667c67" stroke-width="6"/><text x="${x+72}" y="238" text-anchor="middle" font-size="58" font-weight="900" fill="#304c4c">${n}</text><circle cx="${x+32}" cy="286" r="18" fill="#51443c"/><circle cx="${x+112}" cy="286" r="18" fill="#51443c"/></g>`;}
       scene.innerHTML=base+content+`<text data-train-instruction="" x="500" y="380" text-anchor="middle" font-size="38" font-weight="900" fill="#30564d">Tap the carriage showing ${target}</text>`;
       hint(`Find number ${target} and tap its train carriage!`);
@@ -493,7 +494,7 @@
     const right=g.left+16,rw=g.width-right-12,radius=Math.min(260,rw*.32),cx=right+radius+6,base=286,circleR=Math.min(130,rw*.16),circleX=g.width-circleR-18,circleY=150,band=radius/10;
     const rainbow=abacusColors.slice(0,7).map(([name,color],i)=>{const outer=radius-i*band,inner=outer-band;return `<path data-rainbow-band="${i}" data-color-region="${i}" d="M${cx-outer} ${base}A${outer} ${outer} 0 0 1 ${cx+outer} ${base}L${cx+inner} ${base}A${inner} ${inner} 0 0 0 ${cx-inner} ${base}Z" fill="${abacusCount(i)?color:'#000'}" stroke="#90969e" stroke-width="3"/>`;}).join('');
     const circles=[[7,'outer',circleR],[9,'middle',circleR*.68],[8,'inner',circleR*.35]].map(([row,region,r])=>`<circle data-circle-region="${region}" data-color-region="${row}" cx="${circleX}" cy="${circleY}" r="${r}" fill="${abacusCount(row)?abacusColors[row][1]:'#000'}" stroke="#90969e" stroke-width="3"/>`).join('');
-    scene.innerHTML=`<g id="abacus-frame"><rect x="10" y="5" width="${g.left-24}" height="586" rx="18" fill="#101010" stroke="#9b7e60" stroke-width="7"/>${abacusColors.map(([name,color],row)=>{const y=34+row*56,count=abacusCount(row);return `<g data-abacus-row="${row}"><rect data-row-highlight="${row}" x="20" y="${y-25}" width="${g.left-44}" height="50" rx="12" fill="none" stroke="${row===active?'#ffe17a':'transparent'}" stroke-width="3"/><text data-abacus-left="${row}" x="28" y="${y+8}" text-anchor="middle" font-size="23" fill="#fff" font-weight="900">${10-count}</text><text data-abacus-right="${row}" x="${g.left-27}" y="${y+8}" text-anchor="middle" font-size="23" fill="#fff" font-weight="900">${count}</text><path d="M${g.start-g.r} ${y}H${g.end+g.r}" stroke="#90969e" stroke-width="4"/><circle data-abacus-start="${row}" cx="${g.start}" cy="${y}" r="${g.r+2}" fill="none" stroke="#555" stroke-width="3" stroke-dasharray="5 5"/><circle data-abacus-destination="${row}" cx="${g.end}" cy="${y}" r="${g.r+2}" fill="none" stroke="#777" stroke-width="3" stroke-dasharray="5 5"/>${state.abacusRows[row].map((moved,index)=>{const p=abacusBeadPoint(row,index,g);return `<g data-bead-row="${row}" data-bead-index="${index}" data-moved="${moved}" transform="translate(${p.x} ${p.y})" role="button" aria-label="${name} bead ${index+1}" aria-disabled="false" tabindex="${index===9-count||index===10-count?'0':'-1'}"><circle r="${g.r}" fill="${color}" stroke="#ffffffb0" stroke-width="1.5"/><path d="M${-g.r*.45} ${-g.r*.48}L${g.r*.05} ${-g.r*.7}" stroke="white" stroke-opacity=".65" stroke-width="3" stroke-linecap="round"/></g>`;}).join('')}</g>`;}).join('')}</g><path d="M${g.left} 12V588" stroke="#555" stroke-width="2"/><g id="rainbow-picture" role="img" aria-label="Rainbow bands fill with the colors counted">${rainbow}</g><g id="circle-picture" role="img" aria-label="Pink outer circle, white middle circle, brown center">${circles}</g><g id="abacus-addition"><rect x="${right+4}" y="289" width="${rw-8}" height="51" rx="13" fill="#fff4c8" stroke="#a97e37" stroke-width="3"/><text x="${right+20}" y="310" font-size="18" font-weight="800" fill="#213b38">TOTAL BEADS →</text><text data-abacus-total x="${g.width-35}" y="331" text-anchor="end" font-size="49" font-weight="900" fill="#155c4a">${abacusTotal()}</text><text data-abacus-equation x="${right+20}" y="333" font-size="24" font-weight="900" fill="#334d47">0</text></g><g id="abacus-labels"><rect data-abacus-label-panel x="${right+4}" y="346" width="${rw-8}" height="241" rx="17" fill="#30343b" stroke="#a8adb4" stroke-width="4"/>${abacusColors.map(([name,color],row)=>`<text data-color-label="${row}" x="${right+16+(row<5?0:rw*.52)}" y="${376+(row%5)*42}" fill="${color}" stroke="#111820" stroke-width="${Math.max(1.2,font*.065)}" paint-order="stroke fill" stroke-linejoin="round" font-size="${font}" font-weight="900" font-family="inherit">${abacusLabel(row,abacusCount(row))}</text>`).join('')}</g>`;
+    scene.innerHTML=`<g id="abacus-frame"><rect x="10" y="5" width="${g.left-24}" height="586" rx="18" fill="#101010" stroke="#9b7e60" stroke-width="7"/>${abacusColors.map(([name,color],row)=>{const y=34+row*56,count=abacusCount(row);return `<g data-abacus-row="${row}"><rect data-row-highlight="${row}" x="20" y="${y-25}" width="${g.left-44}" height="50" rx="12" fill="none" stroke="${row===active?'#ffe17a':'transparent'}" stroke-width="3"/><text data-abacus-left="${row}" x="28" y="${y+8}" text-anchor="middle" font-size="23" fill="#fff" font-weight="900">${10-count}</text><text data-abacus-right="${row}" x="${g.left-27}" y="${y+8}" text-anchor="middle" font-size="23" fill="#fff" font-weight="900">${count}</text><path d="M${g.start-g.r} ${y}H${g.end+g.r}" stroke="#90969e" stroke-width="4"/><circle data-abacus-start="${row}" cx="${g.start}" cy="${y}" r="${g.r+2}" fill="none" stroke="#555" stroke-width="3" stroke-dasharray="5 5"/><circle data-abacus-destination="${row}" cx="${g.end}" cy="${y}" r="${g.r+2}" fill="none" stroke="#777" stroke-width="3" stroke-dasharray="5 5"/>${state.abacusRows[row].map((moved,index)=>{const p=abacusBeadPoint(row,index,g);return `<g data-bead-row="${row}" data-bead-index="${index}" data-moved="${moved}" transform="translate(${p.x} ${p.y})" role="button" aria-label="${name} bead ${index+1}" aria-disabled="false" tabindex="${index===9-count||index===10-count?'0':'-1'}"><circle r="${g.r}" fill="${color}" stroke="#ffffffb0" stroke-width="1.5"/><path d="M${-g.r*.45} ${-g.r*.48}L${g.r*.05} ${-g.r*.7}" stroke="white" stroke-opacity=".65" stroke-width="3" stroke-linecap="round"/></g>`;}).join('')}</g>`;}).join('')}</g><path d="M${g.left} 12V588" stroke="#555" stroke-width="2"/><g id="rainbow-picture" role="img" aria-label="Rainbow bands fill with the colors counted">${rainbow}</g><g id="circle-picture" role="img" aria-label="Pink outer circle, white middle circle, brown center">${circles}</g><g id="abacus-addition"><rect x="${right+4}" y="289" width="${rw-8}" height="51" rx="13" fill="#fff4c8" stroke="#a97e37" stroke-width="3"/><text x="${right+20}" y="310" font-size="18" font-weight="800" fill="#213b38" data-abacus-total-caption="">TOTAL BEADS MOVED →</text><text data-abacus-total x="${g.width-35}" y="331" text-anchor="end" font-size="49" font-weight="900" fill="#155c4a">${abacusTotal()}</text><text data-abacus-equation x="${right+20}" y="333" font-size="24" font-weight="900" fill="#334d47">0</text></g><g id="abacus-labels"><rect data-abacus-label-panel x="${right+4}" y="346" width="${rw-8}" height="241" rx="17" fill="#30343b" stroke="#a8adb4" stroke-width="4"/>${abacusColors.map(([name,color],row)=>`<text data-color-label="${row}" x="${right+16+(row<5?0:rw*.52)}" y="${376+(row%5)*42}" fill="${color}" stroke="#111820" stroke-width="${Math.max(1.2,font*.065)}" paint-order="stroke fill" stroke-linejoin="round" font-size="${font}" font-weight="900" font-family="inherit">${abacusLabel(row,abacusCount(row))}</text>`).join('')}</g>`;
     state.abacusElements=abacusColors.map((_,row)=>({beads:[...scene.querySelectorAll(`[data-bead-row="${row}"]`)],region:scene.querySelector(`[data-color-region="${row}"]`),label:scene.querySelector(`[data-color-label="${row}"]`),count:scene.querySelector(`[data-row-count="${row}"]`),highlight:scene.querySelector(`[data-row-highlight="${row}"]`)}));
     updateAbacusProgress();updateAbacusFeedback(active);updateAbacusAddition();
   }
@@ -596,7 +597,7 @@
     }else if(state.activity==='abacus'&&state.age!==5){
       showItemStrip(Array.from({length:countMax()},(_,i)=>({label:`Count ${i+1}`,icon:String(i+1),done:i<countStage,current:i===countStage,later:state.age<4&&i>countStage})));
     }else if(state.activity==='abacus'){
-      showItemStrip(abacusColors.map(([name,color],i)=>({label:name,icon:`<span style="color:${color};text-shadow:0 1px #333">●</span> ${name} ${abacusCount(i)}`,current:i===state.abacusSelectedRow,done:abacusCount(i)>0})));
+      showItemStrip(abacusColors.map(([name,color],i)=>({label:name,icon:`<span class="abacus-chip-label">${name}</span><span class="abacus-chip-value"><i style="color:${color};text-shadow:0 1px #333">●</i> <b data-abacus-chip-count="">${abacusCount(i)}</b></span>`,current:i===state.abacusSelectedRow,done:abacusCount(i)>0})));
     }else showItemStrip([]);
   }
   function renderDrag(){
@@ -1070,7 +1071,8 @@
     }
     const hand=document.createElementNS(ns,'g');hand.dataset.demoHand='';hand.style.pointerEvents='none';
     // The fingertip is exactly (0,0); the rest of the hand extends below it.
-    hand.innerHTML='<g data-demo-hand-shape=""><path d="M-5 27V6Q-5 0 0 0Q5 0 5 6V23L9 19Q12 17 16 20L25 27Q29 30 27 36L22 48H5L-10 34Q-14 29-10 25Q-7 23-5 27Z" fill="#ffd0a1" stroke="#514632" stroke-width="2.5" stroke-linejoin="round"/></g>';
+    const fingerPath='M-5 27V6Q-5 0 0 0Q5 0 5 6V23L9 19Q12 17 16 20L25 27Q29 30 27 36L22 48H5L-10 34Q-14 29-10 25Q-7 23-5 27Z';
+    hand.innerHTML=`<g data-demo-hand-shape=""><path d="${fingerPath}" fill="none" stroke="#ffffff" stroke-width="8" stroke-linejoin="round"/><path d="${fingerPath}" fill="${activity==='abacus'&&age===4?'#2563eb':'#ffd0a1'}" stroke="${activity==='abacus'&&age===4?'#17305f':'#514632'}" stroke-width="2.5" stroke-linejoin="round"/></g>`;
     overlay.appendChild(hand);scene.appendChild(overlay);
     const shape=hand.firstElementChild,reduced=matchMedia('(prefers-reduced-motion:reduce)').matches;
     const valid=()=>token===demoGeneration&&serial===roundSerial&&activity===state.activity&&age===state.age&&overlay.isConnected;
@@ -1080,7 +1082,8 @@
       if(words){hint('Demo: '+words);sanaSay(words);}
       backing.querySelectorAll('[data-demo-target]').forEach(el=>el.removeAttribute('data-demo-target'));
       if(node)node.setAttribute('data-demo-target','');
-      shape.setAttribute('transform',`scale(${Math.max(.08,Math.min(.65,span*.62/51))})`);
+      const fingerHeight=activity==='bubbles'?span/3:activity==='abacus'&&age===4?Math.min(78,Math.max(52,span*1.5)):Math.min(36.4,span*.62);
+      shape.setAttribute('transform',`scale(${Math.max(.04,fingerHeight/(activity==='bubbles'?48:56))})`);
       hand.style.transition=reduced||!positioned?'none':`transform ${ms}ms ease-in-out`;
       hand.setAttribute('transform',`translate(${x} ${y})`);positioned=true;
       return await demoPause(ms,token)&&valid();
@@ -1135,12 +1138,26 @@
               const friend=backing.querySelector('g[role="img"] text');
               if(friend)await pointAt(friend,'Look! You found a friend.');
               const caption=backing.querySelector('[data-slide-caption]');if(caption)caption.textContent='Door OPEN · You found '+slideObjects[state.slideIndex][0]+'!';
+              overlay.dataset.demoDoorState='open';
+              if(!await demoPause(1000,token)||!valid())return;
+              if(!await pointAt(knob,'Now slide the door closed.',250))return;
+              overlay.dataset.demoDoorState='closing';
+              door.setAttribute('transform','translate(0 0) scale(1 1)');
+              if(!await move(715,345,null,850,48,knob))return;
+              if(caption)caption.textContent='Door CLOSED · Well done!';
+              overlay.dataset.demoDoorState='closed';
               await success(state.slideIndex);
             }
           }
         }
       }else if(activity==='bubbles'){
-        const nodes=[...backing.querySelectorAll('[data-bubble]')].filter(n=>n.getAttribute('aria-hidden')!=='true'&&(state.bubbleMode==='plain'||!state.bubbleHits.has(n.dataset.token))),bubble=nodes[0];
+        const nodes=[...backing.querySelectorAll('[data-bubble]')].filter(n=>state.bubbleMode==='plain'||!state.bubbleHits.has(n.dataset.token)),bubble=nodes.find(n=>n.getAttribute('aria-hidden')!=='true')||nodes[0];
+        // A large bubble may never fit wholly onstage. Bring only the preview
+        // copy into view, so Demo works while preserving the real floating field.
+        if(bubble&&bubble.getAttribute('aria-hidden')==='true'){
+          const bounds=demoBounds(bubble),diameter=Math.min(bounds.width,bounds.height);
+          bubble.setAttribute('transform',`translate(${scene.viewBox.baseVal.width/2} ${Math.max(30,Math.min(220,440-diameter*.4))})`);
+        }
         if(bubble&&await touch(bubble,'Touch the bubble.')){
           const index=state.bubbleMode==='plain'?state.bubblePops:bubbleItems().indexOf(bubble.dataset.token);
           // Keep an invisible target for the fingertip while the bubble pops.
@@ -1168,7 +1185,7 @@
             const region=backing.querySelector(`[data-color-region="${row}"]`);if(region)region.setAttribute('fill',next?abacusColors[row][1]:'#000');
             const total=backing.querySelector('[data-abacus-total]');if(total)total.textContent=String(abacusTotal()+next-count);
             const equation=backing.querySelector('[data-abacus-equation]');if(equation)equation.textContent=abacusColors.map((_,i)=>i===row?next:abacusCount(i)).filter(Boolean).join(' + ')||'0';
-            const chip=demoProgress?.copy.children[row];if(chip){chip.title=abacusColors[row][0]+' '+next;chip.lastChild.textContent=' '+abacusColors[row][0]+' '+next;}
+            const chip=demoProgress?.copy.children[row];if(chip){chip.title=abacusColors[row][0]+' '+next;const value=chip.querySelector('[data-abacus-chip-count]');if(value)value.textContent=String(next);}
             await success(row);
           }
         }

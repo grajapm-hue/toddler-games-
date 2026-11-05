@@ -372,7 +372,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
 <script>for(const type of ['touchstart','touchmove'])document.addEventListener(type,event=>{if(event.touches.length>1)event.preventDefault();},{passive:false,capture:true});for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});</script>
-<meta name="sana-release" content="sana-little-hands-beta-v119-count-ledgers-demo">
+<meta name="sana-release" content="sana-little-hands-beta-v120-count-lesson-polish">
 <style>
 #music-toggle{font-size:24px;font-weight:900;color:#183f37;background:#d6c4fa}
 #music-toggle[aria-pressed="true"]{background:#bce8c8}
@@ -527,6 +527,14 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 }
 #app.immersive .play-mat #exit-play svg {color:#ed1c24!important;stroke:#ed1c24!important;}
 </style>
+<style>/* v1.20: ten compact colour thumbnails, for Age 5 only. */
+#app[data-age="5"][data-view="abacus"] .play-mat>.item-progress-strip:not([hidden]){display:grid!important;grid-template-columns:repeat(10,minmax(0,1fr))!important;width:100%!important;gap:3px!important;padding:3px 5px!important;overflow:hidden!important;scroll-snap-type:none!important;touch-action:auto!important;box-sizing:border-box}
+#app[data-age="5"][data-view="abacus"] .play-mat>.item-progress-strip .item-chip{display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:center!important;gap:1px!important;width:auto!important;min-width:0!important;max-width:none!important;flex:initial!important;height:37px!important;padding:1px!important;white-space:nowrap!important;box-sizing:border-box}
+#app[data-age="5"][data-view="abacus"] .abacus-chip-label{font-size:clamp(9px,1.6vw,12px);line-height:1.05;font-weight:800}
+#app[data-age="5"][data-view="abacus"] .abacus-chip-value{font-size:13px;line-height:1.05;font-weight:900;display:flex;align-items:center;gap:3px}
+#app[data-age="5"][data-view="abacus"] .abacus-chip-value i{font-style:normal}
+#app[data-age="5"][data-view="abacus"] .item-chip.is-done::after{width:11px!important;height:11px!important;line-height:11px!important;font-size:9px!important;right:0!important;top:0!important}
+</style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true"><defs>
@@ -578,7 +586,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 (()=>{const status=document.getElementById("game-results"),slot=document.getElementById("game-status-top");if(status&&slot)slot.appendChild(status);})();
 </script>
 <script src="age-profiles.js"></script>
-<script src="app.js?v119"></script>
+<script src="app.js?v120"></script>
 <script src="pwa.js"></script>
 <script>
 /* v1.04 beta: Web Audio buffer playback avoids HTMLMediaElement media cards.
