@@ -17,6 +17,9 @@ let browser;
   window.SpeechSynthesisUtterance=class{constructor(text){this.text=text;}};
   const synth={getVoices:()=>window.__voice.voices||[{name:'English US',lang:'en-US'},{name:'English India',lang:'en-IN'}],speak(u){
    const v=window.__voice,entry={text:u.text,rate:u.rate,lang:u.lang,voice:u.voice?.lang,start:performance.now(),hint:document.getElementById('hint').textContent};
+   const hand=document.querySelector('[data-demo-hand]'),target=document.querySelector('[data-demo-target]');
+   entry.fingerVisible=!!hand&&getComputedStyle(hand).visibility==='visible';
+   if(hand&&target){const p=new DOMPoint(0,0).matrixTransform(hand.getScreenCTM()),b=target.getBoundingClientRect();entry.tipError=Math.hypot(p.x-b.x-b.width/2,p.y-b.y-b.height/2);}
    entry.finish=()=>{entry.end=performance.now();if(v.active?.entry===entry)v.active=null;u.onend?.();};
    v.lines.push(entry);v.active={u,entry};
    if(v.mode==='normal')entry.timer=setTimeout(entry.finish,3500);
@@ -33,11 +36,14 @@ let browser;
  async function realState(){return page.evaluate(()=>({chips:document.getElementById('item-progress-strip').innerHTML,saved:JSON.stringify({...localStorage}),view:document.getElementById('app').dataset.view}));}
  await open(2,'abacus');const before=await realState();await page.locator('#show-me').click();await advance(2200);
  let spoken=await lines();check('The first instruction is allowed to finish',spoken.length===1&&!spoken[0].cancelled&&!spoken[0].end,spoken);
- check('The demo voice is slower and prefers Indian English',spoken[0]?.rate<=.7&&spoken[0]?.voice==='en-IN',spoken);
+ check('The voice pace is midway between original and slow, with Indian English preferred',spoken[0]?.rate>=.73&&spoken[0]?.rate<=.75&&spoken[0]?.voice==='en-IN',spoken);
+ check('The finger is already pointing at the target when speech starts',spoken[0]?.fingerVisible&&spoken[0]?.tipError<1.5,spoken);
  check('SaNa keeps the complete instruction visible while speaking',(await page.locator('#hint').textContent()).includes('Pick an apple.'),spoken);
  check('No item moves while the picking instruction is spoken',await page.locator('[data-demo-moving]').count()===0);
+ await page.screenshot({path:path.join(out,'first-finger-and-voice.png')});
  await finish();spoken=await lines();
  check('Every instruction finishes without being interrupted',spoken.length>=3&&spoken.every(l=>l.end&&!l.cancelled),spoken);
+ check('The finger stays visible throughout all spoken steps',spoken.every(l=>l.fingerVisible),spoken);
  check('Instructions have a clear gap instead of overlapping',spoken.slice(1).every((l,i)=>l.start-spoken[i].end>=490),spoken);
  check('The demo returns the child to exactly the same progress and settings',JSON.stringify(await realState())===JSON.stringify(before));
  // Check that the demonstrated object also waits, not only the pointing hand.
@@ -62,7 +68,7 @@ let browser;
  check('Every Slide instruction and phrase finishes completely',spoken.length>=6&&spoken.every(l=>l.end&&!l.cancelled),spoken);
  for(const voices of [[{name:'English US',lang:'en-US'}],[]]){
   await open(4,'abacus');await page.evaluate(voices=>window.__voice.voices=voices,voices);await page.locator('#show-me').click();await advance(1000);spoken=await lines();
-  check('A device without an Indian voice keeps its English fallback',spoken[0]?.lang==='en-US'&&spoken[0]?.rate<=.7,spoken);await page.locator('#show-me').click();
+  check('A device without an Indian voice keeps its English fallback',spoken[0]?.lang==='en-US'&&spoken[0]?.rate>=.73&&spoken[0]?.rate<=.75,spoken);await page.locator('#show-me').click();
  }
  await open(4,'abacus');await page.locator('#show-me').click();
  for(let i=0;i<160;i++){if(await page.locator('[data-demo-phase="hold"]').count())break;await advance(250);}
