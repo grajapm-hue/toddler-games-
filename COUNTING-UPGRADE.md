@@ -1,4 +1,4 @@
-# SaNa Little Hands Beta v1.19
+# SaNa Little Hands Beta v1.20
 
 The published Beta is `docs/beta/`. The v1.17 release was uploaded directly there;
 the older root prototype and `beta-runtime/` build inputs have not caught up.
@@ -25,12 +25,12 @@ built-in image generator. No fruit is baked into the tree, soil, basket, or rabb
 so the visible collection always agrees with the counter. Assets and the exact
 generation prompts are in [docs/beta/count-art](docs/beta/count-art/generation.json).
 
-The install manifest, other games' artwork, and the Age 5 abacus remain unchanged.
+The install manifest and original illustration dimensions remain unchanged.
 The Beta worker precaches the six illustrations and the exact versioned game script.
 
 ## Demo lessons
 
-Every activity demonstrates one successful action in the current room. A smaller
+Every activity demonstrates one successful action in the current room. An adaptive
 finger points at the target centre, the finished action holds for one second, and
 its preview thumbnail ticks. The real board, progress and saved settings are then
 restored. Count ledgers and abacus labels also update in the virtual copy.
@@ -55,3 +55,14 @@ room, drawing in both art modes, age/bubble mode and abacus colour. It uses the
 browser clock to exercise all those lessons quickly; geometry checks use rendered
 targets, including rotated screens. The separate counting test measures the real
 three-second play hold, cancellation and offline behaviour.
+
+## v1.20 feedback corrections
+
+- Carrot stock is explicitly ten, with both picking orders checked from ten to five to zero.
+- Count tabs sit directly under the tree/farm and basket/rabbit. Illustrations move upward without resizing.
+- The engine is labelled Train Engine. The larger blue demo pointer contrasts with the carriage.
+- Age 5 shows all ten compact colour/count tabs in one row without scrolling, and uses TOTAL BEADS MOVED →.
+- Slide Demo opens the door, pauses, closes it, then holds for one second before its preview tick.
+- Bubble Demo sizes its pointer to one third of the current bubble. If no whole bubble is onstage, it brings only a preview copy into view; real bubbles remain untouched.
+
+Run `node check-v120-feedback.cjs` for the feedback-specific stock, placement, responsive tabs, door sequence, pointer size and contrast checks. `FEEDBACK_EVIDENCE` selects its evidence directory.
