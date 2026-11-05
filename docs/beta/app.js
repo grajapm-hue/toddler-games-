@@ -375,7 +375,8 @@
     return `<g transform="translate(${x} ${y}) scale(${scale})">${countImage(carrot?'carrot':'apple',carrot?-28:-32,carrot?-48:-37,carrot?56:64,carrot?88:74,'pointer-events="none"')}</g>`;
   }
   function countSourcePoint(index,age=state.age){
-    return age===2?[[110,99],[225,77],[310,117],[150,187],[260,192]][index]:[105+(index%5)*90,180+Math.floor(index/5)*92];
+    // Stagger the two carrot rows on the dark soil, clear of the orange boards.
+    return age===2?[[110,99],[225,77],[310,117],[150,187],[260,192]][index]:[155+(index%5)*70-(index>=5?35:0),index<5?172:210];
   }
   function countCollectedPoint(index,age=state.age){return age===2?[[715,229],[780,229],[845,229],[747,186],[812,186]][index]:[795-(index%5)*49,235+Math.floor(index/5)*65];}
   function countDestination(age=state.age){return age===2?{x:800,y:240,rx:175,ry:110}:{x:810,y:215,rx:170,ry:135};}
@@ -402,7 +403,8 @@
     for(let i=0;i<max;i++){
       if(countCollected.has(i))continue;
       const [x,y]=countSourcePoint(i,age);
-      html+=`<g data-count-fruit="${i}" role="button" tabindex="${countHolding||done?-1:0}" aria-disabled="${countHolding||done}" aria-label="Drag ${kind} ${i+1} to ${apple?'basket':'rabbit'}" transform="translate(${x} ${y})" style="cursor:${countHolding||done?'default':'grab'};touch-action:none"><rect x="-34" y="-48" width="68" height="92" fill="transparent"/>${countIcon(0,0,kind)}</g>`;
+      const hitWidth=apple?68:52;
+      html+=`<g data-count-fruit="${i}" role="button" tabindex="${countHolding||done?-1:0}" aria-disabled="${countHolding||done}" aria-label="Drag ${kind} ${i+1} to ${apple?'basket':'rabbit'}" transform="translate(${x} ${y})" style="cursor:${countHolding||done?'default':'grab'};touch-action:none"><rect x="${-hitWidth/2}" y="-48" width="${hitWidth}" height="92" fill="transparent"/>${countIcon(0,0,kind)}</g>`;
     }
     const slots=Array.from({length:max},(_,index)=>countCollectedPoint(index,age));
     [...countCollected].map((id,index)=>({id,index})).sort((a,b)=>slots[a.index][1]-slots[b.index][1]).forEach(({id,index})=>{
