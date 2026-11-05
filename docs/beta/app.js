@@ -307,13 +307,13 @@
       chooseParentAge(ageOptions[next].dataset.ageOption);ageOptions[next].focus({preventScroll:true});
     });
   });
-  function home(){stopBubbles();cancelGesture();clearEffects();state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('sound'),$('music-toggle'),$('vibration-toggle'));app.dataset.view='home';parentAgeControls();$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;$('item-progress-strip').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
+  function home(){cancelCountAdvance();stopBubbles();cancelGesture();clearEffects();state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('sound'),$('music-toggle'),$('vibration-toggle'));app.dataset.view='home';parentAgeControls();$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;$('item-progress-strip').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
   function levelControls(){document.querySelectorAll('[data-level]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.level)===state.level)));}
   function setLevel(level,reset=true){cancelGesture();const changed=state.level!==level;state.level=level;if(changed)state.brushSize=profile().brushSize;levelControls();save();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');if(reset&&state.activity)resetRound();else if(reset)hint(level===2?'Medium level: choose a picture and play together!':level===1?'Easy level: fewer, bigger things to try.':'Challenge level: a few more things to discover.');}
   function startActivity(id,paintMode=false){closeAgeMenu();$('game-mid-controls').append($('sound'),$('music-toggle'),$('vibration-toggle'),$('fullscreen'));state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
   function resetRound(){
     roundSerial++;
-    clearTimeout(slideAdvanceTimer);clearTimeout(brushTimer);clearTimeout(countTimer);$('art-reward').hidden=true;stopBubbles();cancelGesture();clearEffects();state.done=false;state.selected=null;state.strokes=[];
+    clearTimeout(slideAdvanceTimer);clearTimeout(brushTimer);cancelCountAdvance();$('art-reward').hidden=true;stopBubbles();cancelGesture();clearEffects();state.done=false;state.selected=null;state.strokes=[];
     $('play-levels').hidden=true;$('abacus-stage').hidden=state.activity!=='abacus';
     $('bubble-score').hidden=state.activity!=='bubbles';
     $('bubble-modes').hidden=state.activity!=='bubbles';$('bubble-tracker').hidden=state.activity!=='bubbles';$('step-note').hidden=true;
@@ -347,70 +347,115 @@
       const points=artPicture().dirt;
       state.dirt=points.map(([x,y],i)=>({id:i,x,y,r:state.level===3?22:29,health:profile().dirtHealth,max:profile().dirtHealth}));renderClean();
     }
-    hint(state.activity==='brush'?(state.paintMode?`Pick a color and paint inside the ${artPicture().name}. SaNa will cheer you on!`:`Brush the muddy ${artPicture().name}. Give it a gentle wash.`):activities[state.activity].hint);
+    if(state.activity!=='abacus')hint(state.activity==='brush'?(state.paintMode?`Pick a color and paint inside the ${artPicture().name}. SaNa will cheer you on!`:`Brush the muddy ${artPicture().name}. Give it a gentle wash.`):activities[state.activity].hint);
     updateGameNavigation();
     if(state.activity==='abacus'&&state.age===5)abacusHint();
     if(state.activity==='bubbles')hint(state.bubbleMode==='plain'?'Tap the rising bubbles. Splash, pop! They keep coming.':'Pop a bubble to color its matching item above. Find them all!');
   }
-  // v1.03: Age 2–4 counting adventures. Age 5 retains the original abacus unchanged.
-  let countStage=0,countPlaced=0,countTimer=null;
+  // Ages 2/3 keep the completed collection visible before marking its thumbnail.
+  let countStage=0,countPlaced=0,countTimer=null,countHolding=false;
+  const countCollected=new Set();
+  const COUNT_HOLD_MS=3000;
   const countMax=()=>state.age===2?5:state.age===3?10:20;
   const countTitle=()=>state.age===2?'Apple Basket':state.age===3?'Feed the Hungry Rabbit':'Number Train Adventure';
-  function resetCountAdventure(){
-    clearTimeout(countTimer);countStage=0;countPlaced=0;renderCountAdventure();
+  function cancelCountAdvance(){
+    clearTimeout(countTimer);countTimer=null;countHolding=false;
+    $('show-me').disabled=false;
   }
-  function countIcon(x,y,kind){
-    if(kind==='apple')return `<g transform="translate(${x} ${y})"><circle r="25" fill="#fa5b59" stroke="#9b3e32" stroke-width="4"/><path d="M0 -22Q-2 -38 9 -43M0 -32Q15 -45 26 -31Q12 -26 0 -32" fill="#5caa5b" stroke="#39764a" stroke-width="3"/></g>`;
-    return `<g transform="translate(${x} ${y})"><path d="M-12 -21L-22 -42M-4 -21L5 -46M5 -20L23 -39" stroke="#338746" stroke-width="9" stroke-linecap="round"/><path d="M-19 -17Q0 -28 19 -17Q14 9 0 37Q-13 12 -19 -17Z" fill="#ff932b" stroke="#ba5619" stroke-width="4"/><path d="M-11 -6H11M-7 7H8" stroke="#e6b05a" stroke-width="3"/></g>`;
+  function resetCountAdventure(){
+    cancelCountAdvance();countStage=0;countPlaced=0;countCollected.clear();renderCountAdventure();
+  }
+  function countImage(name,x,y,width,height,extra=''){
+    return `<image href="count-art/${name}.png" x="${x}" y="${y}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid meet" ${extra}/>`;
+  }
+  function countIcon(x,y,kind,scale=1){
+    const carrot=kind==='carrot';
+    return `<g transform="translate(${x} ${y}) scale(${scale})">${countImage(carrot?'carrot':'apple',carrot?-28:-32,carrot?-48:-37,carrot?56:64,carrot?88:74,'pointer-events="none"')}</g>`;
+  }
+  function countSourcePoint(index,age=state.age){
+    return age===2?[[110,127],[225,105],[310,145],[150,215],[260,220]][index]:[105+(index%5)*90,240+Math.floor(index/5)*92];
+  }
+  function countCollectedPoint(index,age=state.age){return age===2?[[715,289],[780,289],[845,289],[747,246],[812,246]][index]:[795-(index%5)*49,290+Math.floor(index/5)*65];}
+  function countDestination(age=state.age){return age===2?{x:800,y:300,rx:175,ry:110}:{x:810,y:270,rx:170,ry:135};}
+  function countPraise(final=false){
+    const message=final?'Every count is complete!':countHolding?'Wait for the next count.':'Choose Again to play.';
+    return `<g data-count-praise="" role="status" aria-live="polite"><rect x="395" y="20" width="575" height="98" rx="26" fill="#fffbed" stroke="#75a460" stroke-width="4"/><circle cx="435" cy="66" r="28" fill="#ffe385"/><text x="435" y="78" text-anchor="middle" font-size="34" aria-hidden="true">🐒</text><text x="476" y="57" font-size="28" font-weight="900" fill="#216144">Well done!</text><text x="476" y="91" font-size="22" font-weight="800" fill="#30564d">${message}</text></g>`;
+  }
+  function renderHarvestCount(target,age){
+    const apple=age===2,kind=apple?'apple':'carrot',max=apple?5:10;
+    const done=state.done&&countStage>=max;
+    let html=`<defs><linearGradient id="count-sky" x2="0" y2="1"><stop stop-color="#d9f1ff"/><stop offset="1" stop-color="#fbfff0"/></linearGradient><linearGradient id="count-grass" x2="0" y2="1"><stop stop-color="#b9df8c"/><stop offset="1" stop-color="#7fb765"/></linearGradient><clipPath id="count-basket-front"><rect x="635" y="327" width="330" height="93"/></clipPath></defs><rect x="10" y="12" width="980" height="415" rx="30" fill="url(#count-sky)" stroke="#b6cea1" stroke-width="6"/><path d="M14 294Q220 248 438 293T986 287V399Q986 425 960 425H40Q14 425 14 399Z" fill="url(#count-grass)"/>`;
+    if(apple){
+      html+=countImage('apple-tree',20,40,360,350,'aria-label="Apple tree"');
+      html+=`<g data-count-drop="basket" role="img" aria-label="Basket for the apples">${countImage('basket',635,200,330,220)}<rect x="635" y="200" width="330" height="220" fill="transparent" pointer-events="none"/></g>`;
+    }else{
+      html+=countImage('carrot-garden',20,160,540,235,'aria-label="Carrot garden"');
+      html+=`<g data-count-drop="rabbit" role="img" aria-label="Rabbit waiting for carrots">${countImage('rabbit',695,110,260,260)}<rect x="650" y="145" width="310" height="245" fill="transparent" pointer-events="none"/></g>`;
+    }
+    for(let i=0;i<max;i++){
+      if(countCollected.has(i))continue;
+      const [x,y]=countSourcePoint(i,age);
+      html+=`<g data-count-fruit="${i}" role="button" tabindex="${countHolding||done?-1:0}" aria-disabled="${countHolding||done}" aria-label="Drag ${kind} ${i+1} to ${apple?'basket':'rabbit'}" transform="translate(${x} ${y})" style="cursor:${countHolding||done?'default':'grab'};touch-action:none"><rect x="-34" y="-48" width="68" height="92" fill="transparent"/>${countIcon(0,0,kind)}</g>`;
+    }
+    const slots=Array.from({length:max},(_,index)=>countCollectedPoint(index,age));
+    [...countCollected].map((id,index)=>({id,index})).sort((a,b)=>slots[a.index][1]-slots[b.index][1]).forEach(({id,index})=>{
+      const [x,y]=slots[index];html+=`<g data-count-collected="${id}" role="img" aria-label="${kind} ${index+1} ${apple?'in the basket':'beside the rabbit'}">${countIcon(x,y,kind,apple?1:.78)}</g>`;
+    });
+    if(apple)html+=countImage('basket',635,200,330,220,'clip-path="url(#count-basket-front)" pointer-events="none"');
+    if(countHolding||done)html+=countPraise(done);
+    else html+=`<rect x="395" y="20" width="575" height="98" rx="26" fill="#fffbed" stroke="#b6cea1" stroke-width="3"/><text x="418" y="58" font-size="31" font-weight="900" fill="#285d4c">Count to ${target}</text><text x="418" y="91" font-size="22" font-weight="800" fill="#30564d">${apple?`Put ${target} apple${target===1?'':'s'} in the basket.`:`Bring ${target} carrot${target===1?'':'s'} to the rabbit.`}</text>`;
+    // Keep the physical collection and its numeral visible during the praise.
+    html+=`<rect x="865" y="29" width="94" height="74" rx="20" fill="#e4f4d7" stroke="#79ab61" stroke-width="3"/><text data-count-counter="" x="912" y="76" text-anchor="middle" font-size="32" font-weight="900" fill="#215a3e">${countPlaced} / ${target}</text>`;
+    return html;
   }
   function renderCountAdventure(){
     if(state.activity!=='abacus'||state.age===5)return;
-    const target=countStage+1,age=state.age;
-    const title=countTitle();$('activity-name').textContent=title;
-    scene.setAttribute('viewBox','0 0 1000 440');
-    const base=`<rect x="10" y="12" width="980" height="415" rx="30" fill="#ffefcc" stroke="#bd9163" stroke-width="8"/><text x="500" y="62" text-anchor="middle" font-size="38" font-weight="900" fill="#30564d">${title}</text><text x="500" y="115" text-anchor="middle" font-size="48" font-weight="900" fill="#3c6351">${age===4?'Find number: ':'Count to '}${target}</text>`;
-    let content='';
+    const age=state.age,target=Math.min(countStage+1,countMax());
+    $('activity-name').textContent=countTitle();scene.setAttribute('viewBox','0 0 1000 440');
     if(age===2||age===3){
-      const apple=age===2,kind=apple?'apple':'carrot';
-      if(apple){
-        content=`<g aria-label="Apple tree"><path d="M165 365Q200 285 185 140" stroke="#87502c" stroke-width="42" fill="none" stroke-linecap="round"/><path d="M47 170Q25 70 116 63Q155 3 225 50Q315 25 330 123Q360 211 263 241Q164 281 85 231Q30 226 47 170Z" fill="#4ca64a" stroke="#286f37" stroke-width="9"/><path d="M65 139Q122 59 200 103Q259 48 304 129" stroke="#8bda68" stroke-width="24" opacity=".55" fill="none" stroke-linecap="round"/></g>`;
-      }else{
-        content=`<g aria-label="Carrot garden"><rect x="18" y="290" width="535" height="110" rx="35" fill="#986139" stroke="#704124" stroke-width="6"/><path d="M24 316Q110 286 196 315T365 313T543 311" stroke="#c9915d" stroke-width="13" fill="none"/></g>`;
-      }
-      for(let i=0;i<(apple?5:10);i++){
-        const x=apple?90+(i%3)*91:75+(i%5)*94;
-        const y=apple?137+Math.floor(i/3)*77:285+Math.floor(i/5)*54;
-        if(!apple)content+=`<path d="M${x-11} ${y-24}Q${x-28} ${y-58} ${x-9} ${y-50}Q${x} ${y-67} ${x+8} ${y-45}Q${x+29} ${y-62} ${x+15} ${y-24}" fill="#50b95a" stroke="#317a3e" stroke-width="4"/>`;
-        if(i<countPlaced)continue;
-        content+=`<g data-count-fruit="${i}" role="button" tabindex="0" aria-label="Drag ${kind} ${i+1} to ${apple?'basket':'rabbit'}" transform="translate(${x} ${y})" style="cursor:grab;touch-action:none">${countIcon(0,0,kind)}</g>`;
-      }
-      if(apple){
-        content+=`<g data-count-drop="basket"><path d="M416 272Q576 312 747 272L709 393Q575 424 454 393Z" fill="#e5faff" fill-opacity=".26" stroke="#5ca5b0" stroke-width="9"/><ellipse cx="580" cy="273" rx="164" ry="22" fill="none" stroke="#83b7c3" stroke-width="8"/></g>`;
-        for(let i=0;i<countPlaced;i++)content+=countIcon(486+(i%5)*48,350-Math.floor(i/5)*48,'apple');
-      }else{
-        content+=`<g data-count-drop="rabbit" transform="translate(745 295)"><ellipse cx="0" cy="45" rx="96" ry="99" fill="#f5f5f5" stroke="#c9cbd2" stroke-width="6"/><ellipse cx="-39" cy="-101" rx="24" ry="95" transform="rotate(-15 -39 -101)" fill="#fff" stroke="#d3d2d6" stroke-width="5"/><ellipse cx="38" cy="-101" rx="24" ry="95" transform="rotate(15 38 -101)" fill="#fff" stroke="#d3d2d6" stroke-width="5"/><ellipse cx="-39" cy="-101" rx="10" ry="68" transform="rotate(-15 -39 -101)" fill="#ffb8ca"/><ellipse cx="38" cy="-101" rx="10" ry="68" transform="rotate(15 38 -101)" fill="#ffb8ca"/><circle cy="-21" r="75" fill="#fff" stroke="#d4d6d9" stroke-width="5"/><circle cx="-25" cy="-38" r="7" fill="#333"/><circle cx="25" cy="-38" r="7" fill="#333"/><path d="M-10 -8Q0 0 10 -8M0 -8V5M-15 9Q0 25 15 9" fill="none" stroke="#8e646c" stroke-width="5" stroke-linecap="round"/><ellipse cy="-12" rx="12" ry="8" fill="#ff9cb4"/></g>`;
-        for(let i=0;i<countPlaced;i++)content+=countIcon(880+(i%3)*34,340+Math.floor(i/3)*25,'carrot');
-      }
-      content+=`<rect x="400" y="130" width="570" height="66" rx="26" fill="#fff9e8" stroke="#d9b17a" stroke-width="3"/><text x="685" y="172" text-anchor="middle" font-size="25" font-weight="900" fill="#285d4c">Pick ${target} ${kind}${target===1?'':'s'} ${apple?'from the tree into the basket':'from the garden to feed the rabbit'}</text><text x="595" y="243" text-anchor="middle" font-size="39" font-weight="900" fill="#285d4c">${countPlaced} / ${target}</text>`;
+      scene.innerHTML=renderHarvestCount(target,age);
+      hint(countHolding?'Well done! Wait for the next count.':state.done?'Wonderful counting! Choose Again to play.':age===2?`Put ${target} apple${target>1?'s':''} into the basket. Drag each apple!`:`Feed the rabbit ${target} carrot${target>1?'s':''}!`);
     }else{
-      content=`<rect x="75" y="162" width="165" height="110" rx="25" fill="#f6aa62" stroke="#985e3b" stroke-width="6"/><circle cx="115" cy="286" r="21" fill="#51443c"/><circle cx="210" cy="286" r="21" fill="#51443c"/><text x="157" y="222" font-size="28" font-weight="900" text-anchor="middle" fill="#fff">TRAIN</text>`;
+      const base=`<rect x="10" y="12" width="980" height="415" rx="30" fill="#ffefcc" stroke="#bd9163" stroke-width="8"/><text x="500" y="62" text-anchor="middle" font-size="38" font-weight="900" fill="#30564d">${countTitle()}</text><text x="500" y="115" text-anchor="middle" font-size="48" font-weight="900" fill="#3c6351">Find number: ${target}</text>`;
+      let content=`<rect x="75" y="162" width="165" height="110" rx="25" fill="#f6aa62" stroke="#985e3b" stroke-width="6"/><circle cx="115" cy="286" r="21" fill="#51443c"/><circle cx="210" cy="286" r="21" fill="#51443c"/><text x="157" y="222" font-size="28" font-weight="900" text-anchor="middle" fill="#fff">TRAIN</text>`;
       for(let i=0;i<4;i++){const n=Math.min(countMax(),Math.max(1,target-1)+i);const x=270+i*170;content+=`<g data-count-choice="${n}" role="button" tabindex="0" aria-label="Choose ${n}" style="cursor:pointer"><rect x="${x}" y="168" width="145" height="103" rx="20" fill="${['#ffd17e','#b5ddf4','#d8c3f2','#bce4bd'][i]}" stroke="#667c67" stroke-width="6"/><text x="${x+72}" y="238" text-anchor="middle" font-size="58" font-weight="900" fill="#304c4c">${n}</text><circle cx="${x+32}" cy="286" r="18" fill="#51443c"/><circle cx="${x+112}" cy="286" r="18" fill="#51443c"/></g>`;}
-      content+=`<text x="500" y="380" text-anchor="middle" font-size="28" font-weight="800" fill="#466a5a">Tap the carriage showing ${target}</text>`;
+      scene.innerHTML=base+content+`<text x="500" y="380" text-anchor="middle" font-size="28" font-weight="800" fill="#466a5a">Tap the carriage showing ${target}</text>`;
+      hint(`Find number ${target} and tap its train carriage!`);
     }
-    scene.innerHTML=base+content;progress(countStage,countMax());updateGameItemStrip();
-    hint(age===2?`Put ${target} apple${target>1?'s':''} into the basket. Drag each apple!`:age===3?`Feed the rabbit ${target} carrot${target>1?'s':''}!`:`Find number ${target} and tap its train carriage!`);
+    progress(countStage,countMax());updateGameItemStrip();
   }
   function countTap(event,point){
-    if(state.done||state.activity!=='abacus'||state.age===5)return;
-    const choice=event.target.closest('[data-count-choice]');const add=event.target.closest('[data-count-action]');
-    if(state.age===4){if(!choice)return;if(Number(choice.dataset.countChoice)!==countStage+1){hint(`Try number ${countStage+1}!`);return;}}
-    else {if(!add&&!event.countDragSuccess)return;countPlaced++;haptic(38,0);tone(560);if(countPlaced<countStage+1){renderCountAdventure();return;}}
+    if(state.done||countHolding||state.activity!=='abacus'||state.age===5)return;
+    if(state.age===2||state.age===3){
+      const fruit=event.target.closest('[data-count-fruit]');
+      const id=Number(fruit?.dataset.countFruit);
+      if(!event.countDragSuccess||!fruit||!Number.isInteger(id)||id<0||id>=countMax()||countCollected.has(id))return;
+      countCollected.add(id);countPlaced=countCollected.size;haptic(38,0);tone(560);
+      if(countPlaced===countStage+1){
+        countHolding=true;$('show-me').disabled=true;
+        const serial=roundSerial,age=state.age,stage=countStage;
+        renderCountAdventure();sanaSay('Well done! Wait for the next count.');
+        countTimer=setTimeout(()=>{
+          countTimer=null;
+          if(!countHolding||serial!==roundSerial||state.activity!=='abacus'||state.age!==age||countStage!==stage)return;
+          countHolding=false;$('show-me').disabled=false;countStage++;
+          if(countStage===countMax()){
+            state.done=true;renderCountAdventure();tone(700,true);applause();
+          }else{countPlaced=0;countCollected.clear();renderCountAdventure();}
+        },COUNT_HOLD_MS);
+      }else renderCountAdventure();
+      return;
+    }
+    const choice=event.target.closest('[data-count-choice]');
+    if(!choice)return;
+    if(Number(choice.dataset.countChoice)!==countStage+1){hint(`Try number ${countStage+1}!`);return;}
     haptic(45,0);tone(700);countStage++;countPlaced=0;
     if(countStage>=countMax()){
       progress(countStage,countMax());updateGameItemStrip();celebrate(`Wonderful counting! You completed ${countTitle()}!`);applause();
-      clearTimeout(countTimer);countTimer=setTimeout(()=>{if(state.activity==='abacus'&&state.age!==5)resetCountAdventure();},2000);
+      countTimer=setTimeout(()=>{if(state.activity==='abacus'&&state.age===4)resetCountAdventure();},2000);
     }else renderCountAdventure();
   }
+
   scene.addEventListener('keydown',event=>{
     if(state.activity!=='abacus'||state.age===5||!['Enter',' '].includes(event.key))return;
     if(event.target.closest('[data-count-action],[data-count-choice]')){event.preventDefault();countTap(event,{x:0,y:0});}
@@ -541,7 +586,7 @@
     }else if(state.activity==='slide'){
       showItemStrip(slideObjects.slice(0,slideTotal()).map(([name,emoji],i)=>({label:`Room ${i+1}: ${name}`,icon:`<span class="item-emoji">${emoji}</span><small class="item-index">${i+1}</small>`,current:i===state.slideIndex,done:i<state.slideIndex||(i===state.slideIndex&&state.slideRevealed)})));
     }else if(state.activity==='abacus'&&state.age!==5){
-      showItemStrip(Array.from({length:countMax()},(_,i)=>({label:`Count ${i+1}`,icon:String(i+1),done:i<countStage,current:i===countStage})));
+      showItemStrip(Array.from({length:countMax()},(_,i)=>({label:`Count ${i+1}`,icon:String(i+1),done:i<countStage,current:i===countStage,later:state.age<4&&i>countStage})));
     }else if(state.activity==='abacus'){
       showItemStrip(abacusColors.map(([name,color],i)=>({label:name,icon:`<span style="color:${color};text-shadow:0 1px #333">●</span> ${name} ${abacusCount(i)}`,current:i===state.abacusSelectedRow,done:abacusCount(i)>0})));
     }else showItemStrip([]);
@@ -851,7 +896,7 @@
     if(state.activity==='abacus'&&state.age!==5){
       if(state.age===2||state.age===3){
         const fruit=event.target.closest('[data-count-fruit]');
-        if(!fruit||Number(fruit.dataset.countFruit)<countPlaced)return;
+        if(demoActive||countHolding||state.done||!fruit||countCollected.has(Number(fruit.dataset.countFruit)))return;
         state.pointer={id:event.pointerId,kind:'count-fruit',node:fruit,start:point,origin:fruit.getAttribute('transform')};
         event.preventDefault();try{scene.setPointerCapture(event.pointerId);}catch{}return;
       }
@@ -900,8 +945,8 @@
     state.pointer=null;
     try{if(scene.hasPointerCapture(event.pointerId))scene.releasePointerCapture(event.pointerId);}catch{/* Already released. */}
     if(pointer.kind==='count-fruit'){
-      const pt=localPoint(event),dest=state.age===2?{x:575,y:320,r:165}:{x:745,y:295,r:155};
-      if(pt&&Math.hypot(pt.x-dest.x,pt.y-dest.y)<dest.r){countTap({target:pointer.node,countDragSuccess:true},pt);hint('Great! Keep counting!');}
+      const pt=localPoint(event),dest=countDestination();
+      if(pt&&((pt.x-dest.x)/dest.rx)**2+((pt.y-dest.y)/dest.ry)**2<1){countTap({target:pointer.node,countDragSuccess:true},pt);}
       else {pointer.node.setAttribute('transform',pointer.origin);hint('Drag the fruit all the way to its destination.');}
       return;
     }
@@ -996,6 +1041,7 @@
     const t=pt.matrixTransform(m);return {x:t.x,y:t.y};
   }
   async function showMe(){
+    if(state.activity==='abacus'&&countHolding)return;
     if(demoActive){stopDemo();return;}
     stopDemo();demoActive=true;
     $('show-me').setAttribute('aria-pressed','true');
@@ -1049,33 +1095,25 @@
             choice.querySelector('rect')?.setAttribute('stroke-width','12');
             sanaSay(`Yes! Number ${target}.`);await demoPause(900,token);}
         }else{
-          const source=backing.querySelector('[data-count-fruit]');
-          if(source){
-            const from=age===2?{x:90,y:137}:{x:75,y:285};
-            const dest=age===2?{x:575,y:320}:{x:745,y:295};
-            for(let i=0;i<target&&valid();i++){
-              if(!await action(from.x,from.y,age===2?'Hold the apple!':'Hold the carrot!'))break;
-              const moving=document.createElementNS(ns,'g');
-              moving.innerHTML=countIcon(0,0,age===2?'apple':'banana');
-              moving.setAttribute('transform',`translate(${from.x} ${from.y})`);
-              moving.style.transition='transform 850ms ease-in-out';
-              backing.appendChild(moving);
-              moving.setAttribute('transform',`translate(${dest.x+(i%3)*30-30} ${dest.y+Math.floor(i/3)*20})`);
-              if(!await move(dest.x,dest.y,age===2?'Put it in the basket!':'Feed the rabbit!',850))break;
-              if(age===3)moving.setAttribute('opacity','.45');
-              const counter=backing.querySelector('[data-demo-counter]');
-              if(counter)counter.textContent=`${i+1} / ${target}`;
-              else{
-                const label=document.createElementNS(ns,'text');label.dataset.demoCounter='';
-                label.setAttribute('x','510');label.setAttribute('y','175');
-                label.setAttribute('text-anchor','middle');label.setAttribute('font-size','38');
-                label.setAttribute('font-weight','900');label.setAttribute('fill','#205c4b');
-                label.textContent=`${i+1} / ${target}`;backing.appendChild(label);
-              }
-              if(!await demoPause(250,token))break;
-            }
-            if(valid())sanaSay(`Good job! ${target} ${age===2?'apples':'carrots'}!`);
+          const sources=[...backing.querySelectorAll('[data-count-fruit]')];
+          const already=countPlaced;
+          for(let i=0;i<target-already&&i<sources.length&&valid();i++){
+            const source=sources[i];
+            const [x,y]=countSourcePoint(Number(source.dataset.countFruit),age);
+            const [destX,destY]=countCollectedPoint(already+i,age);
+            if(!await action(x,y,age===2?'Hold the apple!':'Hold the carrot!'))break;
+            source.setAttribute('visibility','hidden');
+            const moving=document.createElementNS(ns,'g');
+            moving.innerHTML=countIcon(0,0,age===2?'apple':'carrot',age===2?1:.78);
+            moving.setAttribute('transform',`translate(${x} ${y})`);
+            moving.style.transition='transform 850ms ease-in-out';backing.appendChild(moving);
+            moving.setAttribute('transform',`translate(${destX} ${destY})`);
+            if(!await move(destX,destY,age===2?'Put it in the basket!':'Bring it to the rabbit!',850))break;
+            const counter=backing.querySelector('[data-count-counter]');
+            if(counter)counter.textContent=`${already+i+1} / ${target}`;
+            if(!await demoPause(250,token))break;
           }
+          if(valid())sanaSay(`Good job! ${target} ${age===2?'apples':'carrots'}!`);
         }
       }else if(activity==='slide'){
         const door=backing.querySelector('[data-cave-door]');
