@@ -16,10 +16,11 @@ let browser;
   const nodes=[...scene.querySelectorAll('[data-count-choice]')];
   const boxes=nodes.map(n=>{const b=n.getBoundingClientRect(),label=n.querySelector('text'),text=label.getBoundingClientRect(),matrix=label.getScreenCTM();return{number:Number(n.dataset.countChoice),inside:b.left>=frame.left-1&&b.right<=frame.right+1&&b.top>=frame.top-1&&b.bottom<=frame.bottom+1,numberHeight:parseFloat(getComputedStyle(label).fontSize)*Math.hypot(matrix.a,matrix.b),hit:document.elementFromPoint(text.x+text.width/2,text.y+text.height/2)?.closest('[data-count-choice]')===n};});
   const world=scene.viewBox.baseVal,p1=new DOMPoint(world.x,world.y).matrixTransform(scene.getScreenCTM()),p2=new DOMPoint(world.x+world.width,world.y).matrixTransform(scene.getScreenCTM());
-  return{boxes,art:[...scene.querySelectorAll('image[data-train-art]')].map(n=>n.getAttribute('href')),fill:Math.hypot(p2.x-p1.x,p2.y-p1.y)/scene.clientWidth,row:{count:document.querySelector('#item-progress-strip').children.length,width:document.querySelector('#item-progress-strip').clientWidth,scroll:document.querySelector('#item-progress-strip').scrollWidth}};
+  return{boxes,art:[...scene.querySelectorAll('image[data-train-art]')].map(n=>n.getAttribute('href')),farm:getComputedStyle(document.querySelector('.play-mat')).backgroundImage.includes('farm-sky-v126.png'),fill:Math.hypot(p2.x-p1.x,p2.y-p1.y)/scene.clientWidth,row:{count:document.querySelector('#item-progress-strip').children.length,width:document.querySelector('#item-progress-strip').clientWidth,scroll:document.querySelector('#item-progress-strip').scrollWidth}};
  });}
  for(const [width,height] of viewports){await page.setViewportSize({width,height});await open();const g=await geometry();
   check(`${width}x${height} has one real engine and four real carriages`,g.art.length===5&&g.art.filter(s=>s.includes('locomotive')).length===1&&g.art.filter(s=>s.includes('carriage')).length===4,g);
+  check(`${width}x${height} shows four different colourful carriages in farmland`,new Set(g.art.filter(s=>s.includes('carriage'))).size===4&&g.farm,g);
   check(`${width}x${height} uses the play width and clear tappable numbers`,g.fill>.85&&g.boxes.length===4&&g.boxes.every(n=>n.inside&&n.hit&&n.numberHeight>=14),g);
   check(`${width}x${height} keeps all twenty thumbnails fitted`,g.row.count===20&&g.row.scroll<=g.row.width+1,g.row);
   await page.screenshot({path:path.join(out,`train-${width}x${height}.png`)});
@@ -43,15 +44,19 @@ let browser;
   if(engine==='chromium')await page.touchscreen.tap(number.x,number.y);
   else await page.mouse.click(number.x,number.y);
   check('The real carriage works with rotated '+(engine==='chromium'?'touch':'pointer')+' input',await page.locator('#item-progress-strip .is-done').count()===1,number);
- check('Train artwork decodes as actual images',await page.evaluate(async()=>{const imgs=[...new Set([...document.querySelectorAll('image[data-train-art]')].map(n=>n.getAttribute('href')))];return imgs.length===2&&(await Promise.all(imgs.map(src=>new Promise(resolve=>{const i=new Image();i.onload=()=>resolve(i.naturalWidth>200);i.onerror=()=>resolve(false);i.src=src;})))).every(Boolean);}));
+  check('Train artwork decodes as actual images',await page.evaluate(async()=>{const imgs=[...new Set([...document.querySelectorAll('image[data-train-art]')].map(n=>n.getAttribute('href')))];return imgs.length===5&&(await Promise.all(imgs.map(src=>new Promise(resolve=>{const i=new Image();i.onload=()=>resolve(i.naturalWidth>200);i.onerror=()=>resolve(false);i.src=src;})))).every(Boolean);}));
   if(!process.env.TRAIN_RED){
    await page.goto(base+'index.html');await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
-   const cached=await page.evaluate(async()=>{const cache=await caches.open('sana-little-hands-beta-v125-real-train');return Promise.all(['train-art/locomotive.png','train-art/carriage.png'].map(src=>cache.match(new URL(src,location.href)).then(Boolean)));});check('The installed cache includes both train pictures',cached.every(Boolean),cached);
+   const cached=await page.evaluate(async()=>{const cache=await caches.open('sana-little-hands-beta-v126-colourful-train');return Promise.all(['locomotive-colour-v126','carriage-turquoise-v126','carriage-yellow-v126','carriage-coral-v126','carriage-violet-v126','farm-sky-v126'].map(name=>cache.match(new URL('train-art/'+name+'.png',location.href)).then(Boolean)));});check('The installed cache includes every colourful train and farm picture',cached.every(Boolean),cached);
    if(engine==='chromium'){
     const cdp=await context.newCDPSession(page);await cdp.send('Network.clearBrowserCache');await context.setOffline(true);await open();
-    const decoded=await page.evaluate(async()=>Promise.all(['locomotive','carriage'].map(name=>new Promise(resolve=>{const i=new Image();i.onload=()=>resolve(i.naturalWidth>200);i.onerror=()=>resolve(false);i.src='train-art/'+name+'.png';}))));check('Both train pictures reload from the installed cache offline',decoded.every(Boolean),decoded);
+    const decoded=await page.evaluate(async()=>Promise.all(['locomotive-colour-v126','carriage-turquoise-v126','carriage-yellow-v126','carriage-coral-v126','carriage-violet-v126','farm-sky-v126'].map(name=>new Promise(resolve=>{const i=new Image();i.onload=()=>resolve(i.naturalWidth>200);i.onerror=()=>resolve(false);i.src='train-art/'+name+'.png';}))));check('All train and farm pictures reload from the installed cache offline',decoded.every(Boolean),decoded);
     await page.locator('[data-count-choice="1"]').click();check('The real train game advances offline',await page.locator('#item-progress-strip .is-done').count()===1);
    }
+   await page.goto(base+'play.html?age=3');await page.locator('[data-age-option="3"]').click();await page.locator('[data-activity="abacus"]').click();
+   check('The carrot game retains its own background',await page.locator('.play-mat').evaluate(el=>!getComputedStyle(el).backgroundImage.includes('farm-sky-v126.png')));
+   await page.locator('[data-age-option="4"]').click();await page.locator('#game-home').click();await page.locator('[data-activity="drag"]').click();
+   check('Other Age 4 games retain their own backgrounds',await page.locator('.play-mat').evaluate(el=>!getComputedStyle(el).backgroundImage.includes('farm-sky-v126.png')));
   }
  check('No uncaught train-game errors',errors.length===0,errors);fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({engine,results,errors},null,2));assert(results.every(r=>r.pass),'Real train checks failed');
 })().catch(e=>{console.error(e);fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({engine,results,errors,exception:String(e)},null,2));process.exitCode=1;}).finally(async()=>{await browser?.close();server.close();});
