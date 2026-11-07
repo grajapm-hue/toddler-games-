@@ -1,4 +1,4 @@
-# SaNa Little Hands Beta v1.23
+# SaNa Little Hands Beta v1.24
 
 The published Beta is `docs/beta/`. The v1.17 release was uploaded directly there;
 the older root prototype and `beta-runtime/` build inputs have not caught up.
@@ -86,3 +86,11 @@ Well done finishes and holds for another 2,000 ms before the preview thumbnail t
 The finger points at the item as the instruction starts, with the SaNa message shown at the same time. Dragged objects still wait until the instruction and its short pause finish. The demo speech rate is 0.74, between the original 0.82 and v1.22's 0.65. The extra lead-in before speech is removed. Phrase gaps, readable text fallback, cancellation and the two-second pause after spoken praise remain.
 
 Voice regression checks capture finger visibility and target alignment at the actual speech call, as well as its midpoint rate and uninterrupted completion.
+
+## v1.24 fitted thumbnail rows
+
+Every game uses a single fitted row of all available thumbnails. Column count comes from the current items, so the full alphabet (26), number set (20), shapes (20), drawings/rooms (up to 16) and every counting activity fit without horizontal scrolling. Tab widths, numbers, icons and ticks adapt to the available space. Drawing buttons remain selectable and keyboard focus is drawn inside the tab.
+
+The existing 54px game thumbnail band and 46px counting band are preserved, so the picture area keeps its height. Active/completed styles remain, and Demo copies inherit the same fitted layout without auto-scrolling.
+
+`node check-fitted-thumbnails.cjs` checks every age/game and full bubble set on nine phone/tablet/desktop viewports, including rotation, fullscreen, manual selection of the final drawing, Count 20 progression, and preview/restored rows. `THUMB_EVIDENCE` selects its screenshot and check output directory.
