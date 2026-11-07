@@ -1,4 +1,4 @@
-# SaNa Little Hands Beta v1.26
+# SaNa Little Hands Beta v1.27
 
 The published Beta is `docs/beta/`. The v1.17 release was uploaded directly there;
 the older root prototype and `beta-runtime/` build inputs have not caught up.
@@ -108,3 +108,9 @@ The final counts now retain four unique carriage choices, including 20, rather t
 The realistic train now has a bright yellow/coral/turquoise engine and four differently coloured coaches: turquoise, yellow, coral and violet. Wheels and bogies are painted in bright colours and light silver instead of black. Edited sprites preserve the original train shapes and transparency; the original v1.25 files are kept. A new green-farmland/blue-sky photograph-style background fills only the Age 4 train play area. Light heading panels and outlined captions preserve readability over the scene.
 
 The six new pictures are precached for offline play. Built-in image-generator edits/prompts and file names are saved in `docs/beta/train-art/generation-v126.json`. The number logic, touch targets, fitted thumbnail row and spoken Demo timing are preserved.
+
+## v1.27 fixed train groups
+
+Age 4 keeps each carriage and its number in place while the child completes a group. The groups are 1–4, 5–9, 10–13, 14–16 and 17–20; the next group appears only after the final correct answer in the current group. Five coaches fit together for 5–9, while the three-coach group retains the standard coach size. Number labels keep their readable size. Completed or incorrect numbers do not advance the target; Demo previews the current group without changing real progress.
+
+`node check-real-train.cjs` now checks every group's fixed positions and tappable labels across all seven viewport sizes, group transitions through 20, keyboard/touch input, Demo in the five-coach group, restart and offline play. Screenshots wait for the artwork to decode before capture.
