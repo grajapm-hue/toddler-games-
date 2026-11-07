@@ -543,31 +543,14 @@
     strip.hidden=!state.activity||!items.length;
     if(strip.hidden){strip.innerHTML='';return;}
 
-    // Keep manual scroll position during ordinary re-renders; only follow a newly
-    // active item. Completed items remain available by swiping back to the right.
-    const oldKey=strip.dataset.progressKey||'';
-    const oldScroll=strip.scrollLeft;
-    const activeIndex=items.findIndex(item=>item.current&&!item.done);
-    const nextIndex=activeIndex>=0?activeIndex:items.findIndex(item=>!item.done&&!item.later);
-    const key=`${state.activity}:${state.bubbleMode||''}:${state.age}:${nextIndex}`;
+    // Every item gets a column in the fitted row, including the Demo copy.
+    strip.style.setProperty('--thumb-count',String(items.length));
     strip.innerHTML=items.map(({label,icon='',current=false,done=false,later=false},i)=>{
       const safe=String(label).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
       if(state.activity==='brush')return `<button type="button" class="item-chip brush-choice ${current?'is-current':''} ${done?'is-done':''}" data-brush-choice="${i}" aria-label="Select ${safe} drawing${done?', completed':''}" aria-pressed="${current}" title="Tap to draw ${safe}">${icon||safe}</button>`;
       return `<span class="item-chip ${current?'is-current':''} ${done?'is-done':''} ${later?'is-later':''}" role="listitem" aria-label="${safe} ${done?'completed':current?'current':later?'later level':'available'}" title="${safe}">${icon||safe}</span>`;
     }).join('');
-    strip.dataset.progressKey=key;
-    if(oldKey===key){strip.scrollLeft=oldScroll;return;}
-    if(nextIndex>=0){
-      const chip=strip.children[nextIndex];
-      // Move the completed sequence left only when the next target is obscured.
-      if(chip){
-        const left=chip.offsetLeft-strip.offsetLeft;
-        const right=left+chip.offsetWidth;
-        if(left<strip.scrollLeft+8||right>strip.scrollLeft+strip.clientWidth-8){
-          strip.scrollTo({left:Math.max(0,left-strip.clientWidth*.35),behavior:'smooth'});
-        }
-      }
-    }else strip.scrollLeft=0;
+    strip.scrollLeft=0;
 
   }
   // The shared visible strip replaces the hidden legacy brush thumbnail row.
@@ -1149,7 +1132,7 @@
       overlay.dataset.demoPhase='hold';
       if(!await narrate('Well done!',2000))return;
       const copy=demoProgress?.copy,chip=copy?.children[index];
-      if(chip){chip.classList.remove('is-current','is-later');chip.classList.add('is-done','is-demo-done');chip.setAttribute('aria-label','Demo completed: '+chip.title);copy.dataset.successIndex=String(index);copy.scrollLeft=Math.max(0,chip.offsetLeft-copy.offsetLeft-copy.clientWidth/3);}
+      if(chip){chip.classList.remove('is-current','is-later');chip.classList.add('is-done','is-demo-done');chip.setAttribute('aria-label','Demo completed: '+chip.title);copy.dataset.successIndex=String(index);copy.scrollLeft=0;}
       overlay.dataset.demoPhase='success';hint('Demo: Success! Now it is your turn.');
       await demoPause(2000,token);
     };
