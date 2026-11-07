@@ -1,0 +1,15 @@
+{
+  "tool": "built-in image_gen",
+  "generated": "2026-11-07",
+  "background": "transparent alpha",
+  "assets": [
+    {
+      "file": "locomotive.png",
+      "prompt": "Use case: product-mockup / realistic educational game sprite. Create one single realistic Indian passenger-train DIESEL LOCOMOTIVE engine, isolated on a truly transparent alpha background. Exact orthographic SIDE PROFILE, front nose facing LEFT, whole locomotive visible from front coupling to rear coupling including every wheel and roof, no foreshortening. Warm ivory/cream painted steel body with a broad deep red stripe, charcoal gray roof, black detailed wheel bogies and realistic cab windows, headlights, vents and metal handrails. Clean, well maintained recognizable real railway engine, friendly bright daylight product photograph quality, authentic dimensional metal and glass, not a cartoon, not a toy, no face. Landscape composition approximately 2.7:1 subject width to height, closely framed with small transparent margins. No track, no ground, no scenery, no smoke, no people, NO text, numbers, logos or watermarks. Camera exactly perpendicular to the side at wheel level, neutral lighting. It will sit on the left of four matching passenger carriages in a preschool counting game."
+    },
+    {
+      "file": "carriage.png",
+      "prompt": "Use case: product-mockup / realistic educational game sprite. Create one single realistic Indian railway PASSENGER CARRIAGE, isolated on a truly transparent alpha background. Exact orthographic SIDE PROFILE, whole coach visible from left coupling to right coupling including roof and all wheel bogies, no foreshortening, no locomotive. Clean deep railway-blue painted metal body, a broad light cream panel down the lower-middle side, metallic pale gray rounded roof, a row of realistic rectangular dark-glass passenger windows along the upper half, doors at each end, black detailed wheel bogies. The CENTER of the cream side panel must be clean and open so a large readable number can be overlaid by the game; DO NOT generate any number or writing. Authentic real train coach with photographic steel/glass materials in bright neutral daylight, not a toy and not a cartoon. Landscape subject about 3.4:1 width to height, closely framed with small transparent margins. No track, ground, scenery, people, faces, text, numbers, logos or watermarks. Camera exactly perpendicular to the side at wheel level. Match an ivory and deep-red diesel locomotive facing left."
+    }
+  ]
+}

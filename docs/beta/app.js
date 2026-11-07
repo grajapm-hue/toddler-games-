@@ -418,6 +418,25 @@
     html+=countLedger(age);
     return html;
   }
+  function numberTrainLayout(){
+    const width=1000,height=Math.max(140,Math.min(440,width*scene.clientHeight/Math.max(1,scene.clientWidth)));
+    return{width,height,compact:height<280,baseline:height<280?height-38:height*.70,unit:width/Math.max(1,scene.clientWidth)};
+  }
+  function renderNumberTrain(target){
+    const g=numberTrainLayout(),h=g.height,base=g.baseline,compact=g.compact;
+    scene.setAttribute('viewBox',`0 0 1000 ${h}`);
+    state.trainSize=`${scene.clientWidth}/${scene.clientHeight}`;
+    const titleFont=Math.max(compact?23:32,14*g.unit),targetFont=Math.max(compact?30:44,18*g.unit),numberFont=Math.max(32,18*g.unit),plateW=Math.max(54,numberFont*1.4),plateH=Math.max(36,numberFont*1.1);
+    let html=`<defs><linearGradient id="train-sky" x2="0" y2="1"><stop stop-color="#e2f3f9"/><stop offset="1" stop-color="#fff8e6"/></linearGradient></defs><rect x="6" y="4" width="988" height="${h-8}" rx="18" fill="url(#train-sky)" stroke="#bd9163" stroke-width="5"/><text x="24" y="${Math.max(compact?25:43,titleFont*.9+4)}" font-size="${titleFont}" font-weight="900" fill="#30564d">${countTitle()}</text><text x="976" y="${Math.max(compact?27:46,targetFont*.9+4)}" text-anchor="end" font-size="${targetFont}" font-weight="900" fill="#30564d">Find number: ${target}</text>`;
+    for(let x=25;x<980;x+=24)html+=`<path d="M${x} ${base-4}v10" stroke="#9a795a" stroke-width="7"/>`;
+    html+=`<path d="M20 ${base-5}H980M20 ${base+2}H980" stroke="#64747a" stroke-width="3"/><image data-train-art="engine" href="train-art/locomotive.png" x="20" y="${base-100}" width="190" height="100" preserveAspectRatio="xMidYMax meet"/><text data-train-engine="" x="115" y="${base+24}" text-anchor="middle" font-size="${Math.max(compact?17:24,12*g.unit)}" font-weight="900" fill="#30564d">Train Engine</text>`;
+    const first=Math.max(1,Math.min(countMax()-3,target-1));
+    for(let i=0;i<4;i++){
+      const n=first+i,x=210+i*190,cx=x+92.5,cy=base-27;
+      html+=`<g data-count-choice="${n}" role="button" tabindex="0" aria-label="Choose carriage ${n}" style="cursor:pointer"><rect x="${x+2}" y="${base-78}" width="181" height="85" rx="10" fill="transparent"/><image data-train-art="carriage" href="train-art/carriage.png" x="${x}" y="${base-100}" width="185" height="100" preserveAspectRatio="xMidYMax meet"/><rect x="${cx-plateW/2}" y="${cy-plateH/2}" width="${plateW}" height="${plateH}" rx="7" fill="#fff8dd" stroke="#42616d" stroke-width="2"/><text x="${cx}" y="${cy+numberFont*.35}" text-anchor="middle" font-size="${numberFont}" font-weight="900" fill="#173e49">${n}</text></g>`;
+    }
+    scene.innerHTML=html+`<text data-train-instruction="" x="600" y="${h-9}" text-anchor="middle" font-size="${Math.max(compact?24:36,14*g.unit)}" font-weight="900" fill="#30564d">Tap the carriage showing ${target}</text>`;
+  }
   function renderCountAdventure(){
     if(state.activity!=='abacus'||state.age===5)return;
     const age=state.age,target=Math.min(countStage+1,countMax());
@@ -426,10 +445,7 @@
       scene.innerHTML=renderHarvestCount(target,age);
       hint(countHolding?'Well done! Wait for the next count.':state.done?'Wonderful counting! Choose Again to play.':age===2?`Put ${target} apple${target>1?'s':''} into the basket. Drag each apple!`:`Feed the rabbit ${target} carrot${target>1?'s':''}!`);
     }else{
-      const base=`<rect x="10" y="12" width="980" height="415" rx="30" fill="#ffefcc" stroke="#bd9163" stroke-width="8"/><text x="500" y="62" text-anchor="middle" font-size="38" font-weight="900" fill="#30564d">${countTitle()}</text><text x="500" y="115" text-anchor="middle" font-size="48" font-weight="900" fill="#3c6351">Find number: ${target}</text>`;
-      let content=`<rect x="75" y="162" width="165" height="110" rx="25" fill="#f6aa62" stroke="#985e3b" stroke-width="6"/><circle cx="115" cy="286" r="21" fill="#51443c"/><circle cx="210" cy="286" r="21" fill="#51443c"/><text data-train-engine="" x="157" y="208" font-size="24" font-weight="900" text-anchor="middle" fill="#fff"><tspan x="157">Train </tspan><tspan x="157" dy="27">Engine</tspan></text>`;
-      for(let i=0;i<4;i++){const n=Math.min(countMax(),Math.max(1,target-1)+i);const x=270+i*170;content+=`<g data-count-choice="${n}" role="button" tabindex="0" aria-label="Choose ${n}" style="cursor:pointer"><rect x="${x}" y="168" width="145" height="103" rx="20" fill="${['#ffd17e','#b5ddf4','#d8c3f2','#bce4bd'][i]}" stroke="#667c67" stroke-width="6"/><text x="${x+72}" y="238" text-anchor="middle" font-size="58" font-weight="900" fill="#304c4c">${n}</text><circle cx="${x+32}" cy="286" r="18" fill="#51443c"/><circle cx="${x+112}" cy="286" r="18" fill="#51443c"/></g>`;}
-      scene.innerHTML=base+content+`<text data-train-instruction="" x="500" y="380" text-anchor="middle" font-size="38" font-weight="900" fill="#30564d">Tap the carriage showing ${target}</text>`;
+      renderNumberTrain(target);
       hint(`Find number ${target} and tap its train carriage!`);
     }
     progress(countStage,countMax());updateGameItemStrip();
@@ -537,6 +553,7 @@
     if(count!==pointer.preview){pointer.preview=count;updateAbacusFeedback(pointer.row,count);}
   }
   new ResizeObserver(()=>{if(state.activity==='abacus'&&state.age===5&&state.abacusSize!==`${scene.clientWidth}/${scene.clientHeight}`){cancelGesture();renderAbacus();}}).observe(scene);
+  new ResizeObserver(()=>{if(state.activity==='abacus'&&state.age===4&&state.trainSize!==`${scene.clientWidth}/${scene.clientHeight}`){stopDemo();cancelGesture();renderCountAdventure();}}).observe(scene);
   // Shared, game-specific progress strip. Never moves to a side in immersive mode.
   function showItemStrip(items){
     const strip=$('item-progress-strip');if(!strip)return;
