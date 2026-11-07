@@ -1,4 +1,4 @@
-# SaNa Little Hands Beta v1.24
+# SaNa Little Hands Beta v1.25
 
 The published Beta is `docs/beta/`. The v1.17 release was uploaded directly there;
 the older root prototype and `beta-runtime/` build inputs have not caught up.
@@ -94,3 +94,11 @@ Every game uses a single fitted row of all available thumbnails. Column count co
 The existing 54px game thumbnail band and 46px counting band are preserved, so the picture area keeps its height. Active/completed styles remain, and Demo copies inherit the same fitted layout without auto-scrolling.
 
 `node check-fitted-thumbnails.cjs` checks every age/game and full bubble set on nine phone/tablet/desktop viewports, including rotation, fullscreen, manual selection of the final drawing, Count 20 progression, and preview/restored rows. `THUMB_EVIDENCE` selects its screenshot and check output directory.
+
+## v1.25 realistic Number Train
+
+Age 4 now uses separate transparent AI-generated photographic-style locomotive and passenger-carriage assets. The game overlays its own readable numbers; the artwork contains no baked-in numerals. A responsive train layout uses the available play width on short phone screens, retains large tap regions and bold instructions, and redraws on resize. The 20 fitted thumbnails and existing spoken Demo remain.
+
+The final counts now retain four unique carriage choices, including 20, rather than repeating the last value. Both image files are precached for offline play. Original count artwork and the install manifest remain unchanged. Assets and exact built-in image-generator prompts are under `docs/beta/train-art/generation.json`.
+
+`node check-real-train.cjs` verifies the generated image references, seven viewport layouts, tap targets and numbers, all 20 stages, incorrect choices, Demo alignment/progress preservation, rotated touch, resize, decoded images and Chromium cold offline play. `TRAIN_EVIDENCE` selects its output folder.
