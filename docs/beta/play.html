@@ -350,7 +350,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
 <script>for(const type of ['touchstart','touchmove'])document.addEventListener(type,event=>{if(event.touches.length>1)event.preventDefault();},{passive:false,capture:true});for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});</script>
-<meta name="sana-release" content="sana-little-hands-beta-v125-real-train">
+<meta name="sana-release" content="sana-little-hands-beta-v126-colourful-train">
 <style>
 #music-toggle{font-size:24px;font-weight:900;color:#183f37;background:#d6c4fa}
 #music-toggle[aria-pressed="true"]{background:#bce8c8}
@@ -513,6 +513,10 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 #app[data-age="5"][data-view="abacus"] .abacus-chip-value i{font-style:normal}
 #app[data-age="5"][data-view="abacus"] .item-chip.is-done::after{width:11px!important;height:11px!important;line-height:11px!important;font-size:9px!important;right:0!important;top:0!important}
 </style>
+<style>/* v1.26: the Age 4 train travels through green fields under blue sky. */
+#app[data-age="4"][data-view="abacus"] .play-mat{background:#b6df84 url('./train-art/farm-sky-v126.png') center center/cover no-repeat!important}
+#app[data-age="4"][data-view="abacus"] #scene{background:transparent!important}
+</style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true"><defs>
@@ -564,7 +568,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 (()=>{const status=document.getElementById("game-results"),slot=document.getElementById("game-status-top");if(status&&slot)slot.appendChild(status);})();
 </script>
 <script src="age-profiles.js"></script>
-<script src="app.js?v125"></script>
+<script src="app.js?v126"></script>
 <script src="pwa.js"></script>
 <script>
 /* v1.04 beta: Web Audio buffer playback avoids HTMLMediaElement media cards.

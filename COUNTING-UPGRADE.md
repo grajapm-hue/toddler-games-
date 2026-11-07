@@ -1,4 +1,4 @@
-# SaNa Little Hands Beta v1.25
+# SaNa Little Hands Beta v1.26
 
 The published Beta is `docs/beta/`. The v1.17 release was uploaded directly there;
 the older root prototype and `beta-runtime/` build inputs have not caught up.
@@ -102,3 +102,9 @@ Age 4 now uses separate transparent AI-generated photographic-style locomotive a
 The final counts now retain four unique carriage choices, including 20, rather than repeating the last value. Both image files are precached for offline play. Original count artwork and the install manifest remain unchanged. Assets and exact built-in image-generator prompts are under `docs/beta/train-art/generation.json`.
 
 `node check-real-train.cjs` verifies the generated image references, seven viewport layouts, tap targets and numbers, all 20 stages, incorrect choices, Demo alignment/progress preservation, rotated touch, resize, decoded images and Chromium cold offline play. `TRAIN_EVIDENCE` selects its output folder.
+
+## v1.26 colourful train and countryside
+
+The realistic train now has a bright yellow/coral/turquoise engine and four differently coloured coaches: turquoise, yellow, coral and violet. Wheels and bogies are painted in bright colours and light silver instead of black. Edited sprites preserve the original train shapes and transparency; the original v1.25 files are kept. A new green-farmland/blue-sky photograph-style background fills only the Age 4 train play area. Light heading panels and outlined captions preserve readability over the scene.
+
+The six new pictures are precached for offline play. Built-in image-generator edits/prompts and file names are saved in `docs/beta/train-art/generation-v126.json`. The number logic, touch targets, fitted thumbnail row and spoken Demo timing are preserved.

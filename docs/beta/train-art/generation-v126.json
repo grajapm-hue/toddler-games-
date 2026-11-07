@@ -1,0 +1,36 @@
+{
+  "tool": "built-in image_gen",
+  "generated": "2026-11-07",
+  "assets": [
+    {
+      "file": "locomotive-colour-v126.png",
+      "editSource": "locomotive.png",
+      "prompt": "Edit the referenced train-engine sprite. Preserve its exact realistic locomotive shape, left-facing orthographic side profile, wheel/cab/vent details, complete uncropped composition and genuinely transparent alpha background. Repaint it cheerfully for a preschool game: vivid coral-red lower body, sunny golden-yellow upper body, bright turquoise roof, and ivory trim. Repaint EVERY VISIBLE WHEEL and bogie in bright turquoise and vermilion/red with pale silver hubs, light gray steel treads and silver axle details. NO black or charcoal wheels, chassis, roof or windows; use light silver and turquoise mechanical parts and light-blue reflective cab glass. Keep realistic photographic painted metal and glass, not a cartoon or toy. Neutral bright daylight. No numbers, lettering, logos, people, track, ground or background. No geometry changes."
+    },
+    {
+      "file": "carriage-turquoise-v126.png",
+      "editSource": "carriage.png",
+      "prompt": "Edit the referenced passenger-carriage sprite. Preserve its exact realistic coach shape, complete orthographic side profile, every door/window/wheel position, composition and truly transparent alpha background. Repaint the coach a bright TURQUOISE with a sunny YELLOW roof and ivory middle number-panel (blank). EVERY visible wheel must be bright CORAL RED with pale silver hubs; wheel bogies/axles should be turquoise and light silver, NOT black or charcoal. Replace the dark windows with light blue reflective glass. Keep detailed photographic metal/glass realism and a whole uncropped train coach. Cheerful preschool colors, NO black-dominant areas. No text, digits, logos, people, track or scenery."
+    },
+    {
+      "file": "carriage-yellow-v126.png",
+      "editSource": "carriage.png",
+      "prompt": "Edit the referenced passenger-carriage sprite. Preserve its exact realistic coach shape, complete orthographic side profile, every door/window/wheel position, composition and truly transparent alpha background. Repaint the coach a bright SUNFLOWER YELLOW with a TURQUOISE roof and ivory middle number-panel (blank), coral-red door trim. EVERY visible wheel must be vivid COBALT BLUE with pale silver hubs; wheel bogies/axles should be turquoise and light silver, NOT black or charcoal. Replace the dark windows with light blue reflective glass. Keep detailed photographic metal/glass realism and a whole uncropped train coach. Cheerful preschool colors, NO black-dominant areas. No text, digits, logos, people, track or scenery."
+    },
+    {
+      "file": "carriage-coral-v126.png",
+      "editSource": "carriage.png",
+      "prompt": "Edit the referenced passenger-carriage sprite. Preserve its exact realistic coach shape, complete orthographic side profile, every door/window/wheel position, composition and truly transparent alpha background. Repaint the coach bright CORAL ORANGE/RED with a pale sky-BLUE roof and ivory middle number-panel (blank), golden-yellow door trim. EVERY visible wheel must be vivid TURQUOISE with pale silver hubs; wheel bogies/axles should be turquoise and light silver, NOT black or charcoal. Replace the dark windows with light blue reflective glass. Keep detailed photographic metal/glass realism and a whole uncropped train coach. Cheerful preschool colors, NO black-dominant areas. No text, digits, logos, people, track or scenery."
+    },
+    {
+      "file": "carriage-violet-v126.png",
+      "editSource": "carriage.png",
+      "prompt": "Edit the referenced passenger-carriage sprite. Preserve its exact realistic coach shape, complete orthographic side profile, every door/window/wheel position, composition and truly transparent alpha background. Repaint the coach a bright VIOLET/PURPLE with a CORAL RED roof and ivory middle number-panel (blank), turquoise door trim. EVERY visible wheel must be sunny GOLDEN YELLOW with pale silver hubs; wheel bogies/axles should be turquoise and light silver, NOT black or charcoal. Replace the dark windows with light blue reflective glass. Keep detailed photographic metal/glass realism and a whole uncropped train coach. Cheerful preschool colors, NO black-dominant areas. No text, digits, logos, people, track or scenery."
+    },
+    {
+      "file": "farm-sky-v126.png",
+      "editSource": null,
+      "prompt": "A bright, peaceful realistic countryside panorama for the background of a preschool train counting game. Wide landscape, clear saturated light-blue sky with soft fluffy white clouds in the upper half, a clean horizon near the middle, lush vivid green farmland and gentle patchwork crop fields across the lower half, distant soft rolling hills and small leafy tree lines. Open uncluttered center and foreground grass so a separate side-profile train can be overlaid by the game. Sunny warm daylight, inviting natural colors, photographic textures with a clean softly polished children's-game art finish. No train, no railway track, no cars, no people, no animals, no buildings, no text or numbers, no logos, no dark/black-dominant areas. Edge-to-edge full background, no frame, no transparency."
+    }
+  ]
+}
