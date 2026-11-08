@@ -636,9 +636,8 @@
     if(previous===count){restoreAbacusRow(row);updateAbacusFeedback(row);return;}
     state.abacusRows[row]=Array.from({length:10},(_,index)=>index>=10-count);
     restoreAbacusRow(row);popObject(state.abacusElements[row].beads[Math.min(9,Math.max(0,10-count))],'bead');updateAbacusProgress();updateAbacusFeedback(row,count,!previous&&!!count);tone(520+count*20);
-    const complete=state.abacusRows.every((_,index)=>abacusCount(index)>0);
-    if(complete&&!state.done){celebrate('Wonderful counting! SaNa loves your rainbow and circle!');$('art-reward').hidden=false;applause();scheduleNextRound();}
-    else{if(!complete&&state.done){state.done=false;clearEffects();}abacusHint();}
+    // The rainbow and circle monitor the freely movable beads; they do not end a game.
+    abacusHint();
   }
   function finishAbacusBead(row,index,toRight=true){const count=abacusCount(row);setAbacusCount(row,toRight?Math.max(count,10-index):Math.min(count,9-index));}
   function beginAbacusSlide(point,id){
@@ -810,6 +809,11 @@
     const pitch=radius*2.5+gap,rows=Math.ceil(440/pitch)+1;
     return {radius,columns,pitch,rows};
   }
+  function bubbleWaveOffset(column,layout){
+    // Two gentle troughs form a W across the available lanes. Every lane keeps
+    // its existing horizontal clearance, row pitch and upward speed.
+    return layout.pitch*.3*(1-Math.cos(4*Math.PI*column/Math.max(4,layout.columns-1)))/2;
+  }
   function syncBubbleSlots(){
     const layer=$('bubble-layer');if(!layer||!state.bubbles)return;
     const layout=bubbleLayout(),key=`${state.bubbleWidth.toFixed(1)}/${layout.radius.toFixed(1)}/${layout.columns}`;
@@ -822,7 +826,7 @@
       bubble.slot=index;
       // Reflow only when geometry changes. Collection progress and retained nodes survive.
       bubble.x=(index%layout.columns+.5)*state.bubbleWidth/layout.columns;
-      bubble.y=layout.radius+8+Math.floor(index/layout.columns)*layout.pitch;
+      bubble.y=layout.radius+8+Math.floor(index/layout.columns)*layout.pitch+bubbleWaveOffset(index%layout.columns,layout);
       if(bubble.element)positionBubble(bubble);else spawnBubble(bubble,true);
     });
   }
@@ -837,7 +841,7 @@
   }
   function spawnBubble(bubble,initial=false){
     const layout=state.bubbleLayout,column=bubble.slot%layout.columns;
-    const entry=440-layout.radius*.6;
+    const wave=bubbleWaveOffset(column,layout),entry=440-layout.radius*.6+wave;
     // A new row follows the lowest balloon in its lane, rather than waiting for
     // that lane's only balloon to leave the top. Popping cannot stack replacements.
     const lowest=Math.max(-Infinity,...state.bubbles.filter(other=>other!==bubble&&other.element&&other.slot%layout.columns===column).map(other=>other.y));
@@ -849,7 +853,7 @@
     bubble.token=pool.length?pool[Math.floor(Math.random()*pool.length)]:'';
     bubble.id=++state.bubbleSerial;bubble.color=bubbleColors[Math.floor(Math.random()*bubbleColors.length)];bubble.r=bubbleRadius();
     bubble.x=(column+.5)*state.bubbleWidth/layout.columns;
-    bubble.y=initial?layout.radius+8+Math.floor(bubble.slot/layout.columns)*layout.pitch:Math.max(entry,lowest+layout.pitch);bubble.wait=0;
+    bubble.y=initial?layout.radius+8+Math.floor(bubble.slot/layout.columns)*layout.pitch+wave:Math.max(entry,lowest+layout.pitch);bubble.wait=0;
     const element=document.createElementNS('http://www.w3.org/2000/svg','g');bubble.element=element;
     element.classList.add('bubble');element.dataset.bubble=String(bubble.id);element.dataset.token=bubble.token;element.dataset.color=bubble.color;
     element.setAttribute('role','button');element.setAttribute('aria-label',`Pop ${bubble.token||'plain'} bubble`);
