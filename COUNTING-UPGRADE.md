@@ -1,4 +1,4 @@
-# SaNa Little Hands Beta v1.28
+# SaNa Little Hands Beta v1.29
 
 The published Beta is `docs/beta/`. The v1.17 release was uploaded directly there;
 the older root prototype and `beta-runtime/` build inputs have not caught up.
@@ -27,6 +27,29 @@ generation prompts are in [docs/beta/count-art](docs/beta/count-art/generation.j
 
 The install manifest and original illustration dimensions remain unchanged.
 The Beta worker precaches the six illustrations and the exact versioned game script.
+
+## v1.29 ready artwork and fullscreen transitions
+
+The same readiness function now covers every game's SVG pictures and board
+background. A first visit shows a short loading message until the required images
+have decoded; incomplete boards cannot receive gestures or start Demo. Failed
+downloads offer Try again, and Games/navigation remain available. Completed image
+decodes are retained and reused across layout changes and rounds. Leaving a room
+invalidates its pending callback. Fullscreen preserves the current round and stops
+an active Demo safely before changing its geometry.
+
+The twelve counting/train PNG originals remain in the repository. Runtime WebP
+copies retain full dimensions and exact alpha, reducing those downloads from
+25,404,698 to 3,914,888 bytes (84.6%). Run `node optimize-game-art.cjs` to reproduce
+them. The worker precaches the exact runtime copies. Board background URLs now
+match the precache URL, avoiding a separate query-string fetch.
+
+`node check-fullscreen-ready.cjs` checks delayed/failed downloads, retry, navigation
+during loading, every age and game mode, repeated normal/fullscreen switches,
+progress preservation and asset reuse in four viewports. It also measures real
+animation-frame timings, with a four-times CPU slowdown in Chromium. Existing
+counting, train, carrot-visibility, replay, Demo and offline checks use the new
+runtime pictures.
 
 ## v1.28 automatic replay and visible Drag shapes
 

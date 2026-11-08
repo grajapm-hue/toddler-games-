@@ -6,15 +6,15 @@ const engine=process.env.PLAYROOM_BROWSER||'chromium',root=path.resolve(__dirnam
 const out=process.env.REPLAY_EVIDENCE||path.resolve(__dirname,'artifacts/auto-replay',engine);
 fs.mkdirSync(out,{recursive:true});const results=[],errors=[];
 const check=(name,pass,detail)=>{results.push({name,pass:!!pass,detail});console.log((pass?'PASS ':'FAIL ')+name);};
-const server=createServer((req,res)=>{try{const u=new URL(req.url,'http://localhost'),f=path.resolve(root,'.'+u.pathname+(u.pathname.endsWith('/')?'index.html':''));if(!f.startsWith(root+path.sep))throw Error('path');res.writeHead(200,{'Content-Type':({'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml','.webmanifest':'application/manifest+json'})[path.extname(f)]||'application/octet-stream'}).end(fs.readFileSync(f));}catch{res.writeHead(404).end();}});
+const server=createServer((req,res)=>{try{const u=new URL(req.url,'http://localhost'),f=path.resolve(root,'.'+u.pathname+(u.pathname.endsWith('/')?'index.html':''));if(!f.startsWith(root+path.sep))throw Error('path');res.writeHead(200,{'Content-Type':({'.html':'text/html','.js':'text/javascript','.css':'text/css','.webp':'image/webp','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml','.webmanifest':'application/manifest+json'})[path.extname(f)]||'application/octet-stream'}).end(fs.readFileSync(f));}catch{res.writeHead(404).end();}});
 let browser;
 (async()=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=process.env.COUNT_URL||`http://127.0.0.1:${server.address().port}/beta/`;
  browser=await({chromium,webkit})[engine].launch({headless:true,...(engine==='chromium'&&process.env.MM_CHROME?{executablePath:process.env.MM_CHROME}:{})});
  const context=await browser.newContext({viewport:{width:844,height:390},hasTouch:true,reducedMotion:'reduce'}),page=await context.newPage();
  await page.clock.install();page.on('pageerror',e=>errors.push(e.message));
- async function open(age,activity){await page.goto(base+'play.html?age='+age);await page.locator(`[data-age-option="${age}"]`).click();await page.locator(`[data-activity="${activity}"]`).click();await page.clock.runFor(100);}
- async function switchTo(activity){await page.locator('#game-home').click();await page.locator(`[data-activity="${activity}"]`).click();await page.clock.runFor(100);}
+ async function open(age,activity){await page.goto(base+'play.html?age='+age);await page.locator(`[data-age-option="${age}"]`).click();await page.locator(`[data-activity="${activity}"]`).click();await page.locator('#scene[data-art-state="ready"]').waitFor();await page.clock.runFor(100);}
+ async function switchTo(activity){await page.locator('#game-home').click();await page.locator(`[data-activity="${activity}"]`).click();await page.locator('#scene[data-art-state="ready"]').waitFor();await page.clock.runFor(100);}
  async function point(selector,x=0,y=0){return page.locator(selector).first().evaluate((el,p)=>{const v=new DOMPoint(p.x,p.y).matrixTransform(el.getScreenCTM());return{x:v.x,y:v.y};},{x,y});}
  async function drag(selector,to){const from=await point(selector);await page.mouse.move(from.x,from.y);await page.mouse.down();await page.mouse.move(to.x,to.y,{steps:8});await page.mouse.up();}
  async function harvest(){const to=await page.locator('[data-count-drop]').evaluate(el=>{const b=el.getBBox(),p=new DOMPoint(b.x+b.width/2,b.y+b.height/2).matrixTransform(el.getScreenCTM());return{x:p.x,y:p.y};});await drag('[data-count-fruit]',to);}
@@ -46,7 +46,7 @@ let browser;
   await page.setViewportSize({width:1024,height:768});
   for(const age of [2,3,4,5])for(const mode of ['plain','numbers','letters','shapes']){
    await open(age,'bubbles');await page.locator(`[data-bubble-mode="${mode}"]`).click();await page.locator('[data-bubble-size="small"]').click();await page.locator('[data-bubble-speed="slow"]').click();
-   for(let tick=0;tick<600;tick++){if(await page.locator('#art-reward').isVisible())break;const b=page.locator('[data-bubble][data-onstage="true"]').first();if(await b.count())await b.press('Enter');else await page.clock.runFor(100);}
+   for(let tick=0;tick<600;tick++){if(await page.locator('#art-reward').isVisible())break;const b=page.locator('[data-bubble][data-onstage="true"]').first();if(await b.count())await b.press('Enter');else await page.locator('#scene[data-art-state="ready"]').waitFor();await page.clock.runFor(100);}
    check(`Age ${age} ${mode} bubbles can finish`,await page.locator('#art-reward').isVisible());await page.clock.runFor(2100);
    check(`Age ${age} ${mode} bubbles automatically refill`,await page.locator('#art-reward').isHidden()&&await page.locator('#item-progress-strip .is-done').count()===0&&await page.locator('[data-bubble]').count()>0);
   }

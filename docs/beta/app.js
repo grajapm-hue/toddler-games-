@@ -2,6 +2,37 @@
   'use strict';
   const $=id=>document.getElementById(id);
   const app=$('app'),scene=$('scene');
+  const decodedArt=new Map();let artGeneration=0;
+  const gameReady=()=>scene.dataset.artState==='ready';
+  function artState(value){
+    scene.dataset.artState=value;scene.parentElement.setAttribute('aria-busy',String(value==='loading'));
+    const status=$('game-art-status');status.hidden=value==='ready';
+    status.querySelector('span').textContent=value==='error'?'The pictures could not load. Try again.':'Getting your game ready…';
+    $('game-art-retry').hidden=value!=='error';$('show-me').disabled=value!=='ready'||countHolding;
+  }
+  function decodeArt(url){
+    if(decodedArt.has(url))return decodedArt.get(url);
+    const image=new Image(),entry={image,ready:false};image.decoding='async';
+    entry.promise=(async()=>{
+      if(image.decode){image.src=url;await image.decode();}
+      else await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;image.src=url;});
+      if(!image.naturalWidth)throw new Error('Picture unavailable');entry.ready=true;
+    })().catch(error=>{decodedArt.delete(url);throw error;});
+    decodedArt.set(url,entry);return entry;
+  }
+  function prepareSceneArt(){
+    const generation=++artGeneration,serial=roundSerial,activity=state.activity;
+    const urls=new Set([...scene.querySelectorAll('image')].map(el=>new URL(el.getAttribute('href'),document.baseURI).href));
+    const background=getComputedStyle(scene.parentElement).backgroundImage;
+    for(const match of background.matchAll(/url\(["']?([^"')]+)["']?\)/g))urls.add(new URL(match[1],document.baseURI).href);
+    const pictures=[...urls].map(decodeArt);
+    if(pictures.every(entry=>entry.ready)){artState('ready');return;}
+    artState('loading');
+    Promise.all(pictures.map(entry=>entry.promise)).then(()=>{
+      if(generation===artGeneration&&serial===roundSerial&&activity===state.activity)artState('ready');
+    }).catch(()=>{if(generation===artGeneration&&serial===roundSerial&&activity===state.activity)artState('error');});
+  }
+  $('game-art-retry').addEventListener('click',prepareSceneArt);
   const ageProfiles=window.SaNaProfiles;
   const profile=()=>ageProfiles.preset(state.level);
   if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}
@@ -319,7 +350,7 @@
       chooseParentAge(ageOptions[next].dataset.ageOption);ageOptions[next].focus({preventScroll:true});
     });
   });
-  function home(){cancelCountAdvance();stopBubbles();cancelGesture();clearEffects();state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('sound'),$('music-toggle'),$('vibration-toggle'));app.dataset.view='home';parentAgeControls();$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;$('item-progress-strip').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
+  function home(){cancelCountAdvance();stopBubbles();cancelGesture();clearEffects();artGeneration++;artState('ready');state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('sound'),$('music-toggle'),$('vibration-toggle'));app.dataset.view='home';parentAgeControls();$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;$('item-progress-strip').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
   function levelControls(){document.querySelectorAll('[data-level]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.level)===state.level)));}
   function setLevel(level,reset=true){cancelGesture();const changed=state.level!==level;state.level=level;if(changed)state.brushSize=profile().brushSize;levelControls();save();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');if(reset&&state.activity)resetRound();else if(reset)hint(level===2?'Medium level: choose a picture and play together!':level===1?'Easy level: fewer, bigger things to try.':'Challenge level: a few more things to discover.');}
   function startActivity(id,paintMode=false){closeAgeMenu();$('game-mid-controls').append($('sound'),$('music-toggle'),$('vibration-toggle'),$('fullscreen'));state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
@@ -362,6 +393,7 @@
     updateGameNavigation();
     if(state.activity==='abacus'&&state.age===5)abacusHint();
     if(state.activity==='bubbles')hint(state.bubbleMode==='plain'?'Tap the rising bubbles. Splash, pop! They keep coming.':'Pop a bubble to color its matching item above. Find them all!');
+    prepareSceneArt();
   }
   // Ages 2/3 keep the completed collection visible before marking its thumbnail.
   let countStage=0,countPlaced=0,countTimer=null,countHolding=false;
@@ -378,7 +410,7 @@
     cancelCountAdvance();countStage=0;countPlaced=0;countCollected.clear();renderCountAdventure();
   }
   function countImage(name,x,y,width,height,extra=''){
-    return `<image href="count-art/${name}.png" x="${x}" y="${y}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid meet" ${extra}/>`;
+    return `<image href="count-art/${name}.webp" x="${x}" y="${y}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid meet" ${extra}/>`;
   }
   function countIcon(x,y,kind,scale=1){
     const carrot=kind==='carrot';
@@ -440,13 +472,13 @@
     const headingH=Math.max(titleFont,targetFont)*1.4+12;
     let html=`<rect data-train-panel="" x="6" y="4" width="988" height="${h-8}" rx="18" fill="#ffffff" fill-opacity=".10" stroke="#7aaa4b" stroke-width="5"/><rect x="16" y="4" width="470" height="${headingH}" rx="12" fill="#fffce8" fill-opacity=".93"/><rect x="575" y="4" width="409" height="${headingH}" rx="12" fill="#fffce8" fill-opacity=".93"/><text x="24" y="${Math.max(compact?25:43,titleFont*.9+4)}" font-size="${titleFont}" font-weight="900" fill="#30564d">${countTitle()}</text><text x="976" y="${Math.max(compact?27:46,targetFont*.9+4)}" text-anchor="end" font-size="${targetFont}" font-weight="900" fill="#30564d">Find number: ${target}</text>`;
     for(let x=25;x<980;x+=24)html+=`<path d="M${x} ${base-4}v10" stroke="#9a795a" stroke-width="7"/>`;
-    html+=`<path d="M20 ${base-5}H980M20 ${base+2}H980" stroke="#64747a" stroke-width="3"/><image data-train-art="engine" href="train-art/locomotive-colour-v126.png" x="20" y="${base-100}" width="190" height="100" preserveAspectRatio="xMidYMax meet"/><text data-train-engine="" x="115" y="${base+24}" text-anchor="middle" font-size="${Math.max(compact?17:24,12*g.unit)}" font-weight="900" fill="#30564d" stroke="#fffce8" stroke-width="3" paint-order="stroke fill">Train Engine</text>`;
+    html+=`<path d="M20 ${base-5}H980M20 ${base+2}H980" stroke="#64747a" stroke-width="3"/><image data-train-art="engine" href="train-art/locomotive-colour-v126.webp" x="20" y="${base-100}" width="190" height="100" preserveAspectRatio="xMidYMax meet"/><text data-train-engine="" x="115" y="${base+24}" text-anchor="middle" font-size="${Math.max(compact?17:24,12*g.unit)}" font-weight="900" fill="#30564d" stroke="#fffce8" stroke-width="3" paint-order="stroke fill">Train Engine</text>`;
     const [first,last]=[[1,4],[5,9],[10,13],[14,16],[17,20]].find(([,end])=>target<=end);
     const coachCount=last-first+1,step=760/Math.max(4,coachCount),coachWidth=step-5,coachScale=coachWidth/185;
     const coachColours=['turquoise','yellow','coral','violet'];
     for(let i=0;i<coachCount;i++){
       const n=first+i,x=210+i*step,cx=x+coachWidth/2,cy=base-27*coachScale;
-      html+=`<g data-count-choice="${n}" role="button" tabindex="0" aria-label="Choose carriage ${n}" style="cursor:pointer"><rect x="${x+2}" y="${base-78*coachScale}" width="${coachWidth-4}" height="${85*coachScale}" rx="10" fill="transparent"/><image data-train-art="carriage" href="train-art/carriage-${coachColours[i%coachColours.length]}-v126.png" x="${x}" y="${base-100*coachScale}" width="${coachWidth}" height="${100*coachScale}" preserveAspectRatio="xMidYMax meet"/><rect x="${cx-plateW/2}" y="${cy-plateH/2}" width="${plateW}" height="${plateH}" rx="7" fill="#fff8dd" stroke="#42616d" stroke-width="2"/><text x="${cx}" y="${cy+numberFont*.35}" text-anchor="middle" font-size="${numberFont}" font-weight="900" fill="#173e49">${n}</text></g>`;
+      html+=`<g data-count-choice="${n}" role="button" tabindex="0" aria-label="Choose carriage ${n}" style="cursor:pointer"><rect x="${x+2}" y="${base-78*coachScale}" width="${coachWidth-4}" height="${85*coachScale}" rx="10" fill="transparent"/><image data-train-art="carriage" href="train-art/carriage-${coachColours[i%coachColours.length]}-v126.webp" x="${x}" y="${base-100*coachScale}" width="${coachWidth}" height="${100*coachScale}" preserveAspectRatio="xMidYMax meet"/><rect x="${cx-plateW/2}" y="${cy-plateH/2}" width="${plateW}" height="${plateH}" rx="7" fill="#fff8dd" stroke="#42616d" stroke-width="2"/><text x="${cx}" y="${cy+numberFont*.35}" text-anchor="middle" font-size="${numberFont}" font-weight="900" fill="#173e49">${n}</text></g>`;
     }
     scene.innerHTML=html+`<text data-train-instruction="" x="600" y="${h-9}" text-anchor="middle" font-size="${Math.max(compact?24:36,14*g.unit)}" font-weight="900" fill="#30564d" stroke="#fffce8" stroke-width="4" stroke-linejoin="round" paint-order="stroke fill">Tap the carriage showing ${target}</text>`;
   }
@@ -461,7 +493,7 @@
       renderNumberTrain(target);
       hint(`Find number ${target} and tap its train carriage!`);
     }
-    progress(countStage,countMax());updateGameItemStrip();
+    progress(countStage,countMax());updateGameItemStrip();prepareSceneArt();
   }
   function countTap(event,point){
     if(state.done||countHolding||state.activity!=='abacus'||state.age===5)return;
@@ -496,7 +528,7 @@
   }
 
   scene.addEventListener('keydown',event=>{
-    if(demoActive){event.preventDefault();return;}
+    if(!gameReady()||demoActive){event.preventDefault();return;}
     if(state.activity!=='abacus'||state.age===5||!['Enter',' '].includes(event.key))return;
     if(event.target.closest('[data-count-action],[data-count-choice]')){event.preventDefault();countTap(event,{x:0,y:0});}
   });
@@ -640,7 +672,7 @@
       <text y="86" text-anchor="middle" fill="#163d33" font-size="28" font-weight="900" paint-order="stroke" stroke="#fff9e8" stroke-width="4" font-family="inherit">${shape.id.toUpperCase()}</text></g>`).join('')+
       state.shapes.filter(shape=>!shape.placed).map(shape=>`<g data-piece="${shape.id}" role="button" tabindex="0" aria-label="${shape.id} shape" class="piece ${state.selected===shape.id?'selected':''}" transform="translate(${shape.x} ${shape.y})">
       ${glossyShape(shape.id,shape.color)}</g>`).join('');
-    progress(shapeCompleted+done,pool.length);updateGameItemStrip();
+    progress(shapeCompleted+done,pool.length);updateGameItemStrip();prepareSceneArt();
   }
   function matchShape(id){
     const shape=state.shapes.find(item=>item.id===id);if(!shape||shape.placed)return;
@@ -818,6 +850,7 @@
     $('activity-name').textContent=`Cave Maze · Room ${state.slideIndex+1}/${slideTotal()}`;
     if(opened)hint(`SaNa says: ${item[0].toUpperCase()}! Slide the door closed for the next picture.`);
     else hint(`Room ${state.slideIndex+1} of ${slideTotal()}. Slide the big door to discover a picture!`);
+    prepareSceneArt();
   }
   function moveCaveDoor(open){
     if(state.activity!=='slide'||slideDoorAnimating||state.slideRevealed===open)return;
@@ -911,7 +944,7 @@
   function localPoint(event){const matrix=scene.getScreenCTM();if(!matrix)return null;return new DOMPoint(event.clientX,event.clientY).matrixTransform(matrix.inverse());}
   function hitBubble(point,id){const candidates=state.bubbles.filter(b=>b.element&&Math.hypot(point.x-b.x,point.y-b.y)<b.r+8);const bubble=candidates.find(b=>String(b.id)===id)||candidates.toSorted((a,b)=>Math.hypot(point.x-a.x,point.y-a.y)-Math.hypot(point.x-b.x,point.y-b.y))[0];if(bubble)popBubble(bubble);}
   function pointerDown(event){
-    if(demoActive||state.pointer||event.button>0||!state.activity)return;
+    if(!gameReady()||demoActive||state.pointer||event.button>0||!state.activity)return;
     const point=localPoint(event);if(!point)return;
     scene.querySelector('[data-guide]')?.remove();
     if(state.activity==='abacus'&&state.age!==5){
@@ -1021,7 +1054,7 @@
   scene.addEventListener('pointercancel',()=>{lastHapticPoint=null;},{passive:true});
   scene.addEventListener('pointerdown',pointerDown);scene.addEventListener('pointermove',pointerMove);scene.addEventListener('pointerup',pointerUp);scene.addEventListener('pointercancel',cancelGesture);scene.addEventListener('lostpointercapture',()=>{if(state.pointer)cancelGesture();});scene.addEventListener('contextmenu',e=>e.preventDefault());
   scene.addEventListener('keydown',event=>{
-    if(demoActive){event.preventDefault();return;}
+    if(!gameReady()||demoActive){event.preventDefault();return;}
     const piece=event.target.closest('[data-piece]'),target=event.target.closest('[data-target]'),bubble=event.target.closest('[data-bubble]'),handle=event.target.closest('[data-slider-handle]');
     const bead=event.target.closest('[data-bead-row]');
     if(bead&&['ArrowRight','ArrowLeft','End','Home','Enter',' '].includes(event.key)){
@@ -1090,6 +1123,7 @@
     return{x:left+width/2,y:top+height/2,width,height};
   }
   async function showMe(){
+    if(!gameReady())return;
     if(state.activity==='abacus'&&countHolding)return;
     if(demoActive){stopDemo();return;}
     cancelGesture();stopDemo();demoActive=true;$('show-me').setAttribute('aria-pressed','true');
@@ -1292,6 +1326,7 @@
     immersiveNoticeTimer=setTimeout(()=>{notice.hidden=true;},2200);
   }
   async function immersiveMode(active){
+    if(demoActive){stopDemo();hint('Your turn! Play the game.');}
     cancelGesture();app.classList.toggle('immersive',active);
     if(active)app.querySelector('.play-mat').append($('vibration-toggle'));
     else if(state.activity)$('game-mid-controls').append($('vibration-toggle'));
