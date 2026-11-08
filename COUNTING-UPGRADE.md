@@ -270,3 +270,7 @@ Train title/target headings, carriage numerals, harvest instructions/praise/coun
 ## v1.41 crisp text and fitted yellow tabs
 
 Game captions use plain dark lettering without text shadows or letter outlines. Yellow caption tabs with a thin border are measured from the actual text, including changing Abacus counts and sum lines, and are refitted on scene resize. Progress labels, status, hints and fullscreen notices share the compact yellow treatment; progress columns and game hit areas stay in place. Short words use short tabs. Colour names remain explicit, with the existing coloured beads, rainbow and progress dots identifying each colour. Game rules, controls, object artwork and feedback timing are retained.
+
+## v1.42 coordinated colours and left-aligned count lists
+
+An AI-generated comparison using the existing game screenshots was reviewed before implementation. The selected direction uses soft blue headings, sage results, cream instructions and muted lilac/peach accents. Abacus count-list tabs use light tints matching their colour names. Text remains dark and sharp; fitted widths, small padding, navigation controls and game behaviour are retained. The two Abacus count columns now have uniform left-aligned text with the existing row order and vertical spacing. The generated comparison is a design reference; actual browser checks verify contrast, fit, alignment and gameplay.
