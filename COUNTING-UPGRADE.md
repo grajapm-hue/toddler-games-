@@ -210,3 +210,13 @@ The four content choices share the speed/size settings row, releasing the old bo
 The current Beta is maintained directly in `docs/beta/`; the root prototype and `build-beta.mjs` still describe the older prototype and must not overwrite this published game. This release updates `docs/beta/app.js`, `play.html`, `index.html` and its worker together.
 
 `node check-balloon-flow.cjs` checks actual rendered rows, body/string separation, bounded recycling over all three speeds, all four ages/content modes/sizes, short/rotated phone and tablet layouts, touch, fullscreen, reset and automatic replay. Use `PLAYROOM_BROWSER=webkit` for the second browser engine and `FLOW_EVIDENCE` for screenshots and results.
+
+## v1.33 touch enlargement and counting scenery
+
+Age 2 Apple Basket and Age 3 Feed the Hungry Rabbit now share the train's full countryside backdrop. The counting scene leaves that scenery visible through its panel. All ten collected carrots lie on the ground around the rabbit, clear of the running-count displays; Demo uses the same destination and orientation.
+
+Shapes, apples, carrots and abacus beads enlarge while held and return to their fitted size on release or cancellation. Matched shapes stay visible in their pockets. Number Train uses smaller ordinary labels, an enlarged copy of the same selected numeral at approximately carriage size, and rails that reach both borders. These objects use enlargement without splash rays. Slide and Brush retain their existing effects and controls.
+
+Each balloon remains visible for a short enlargement before its splash, removal and collection tick. Separate pending balloons can finish together, while repeated input on the same balloon is ignored. Again, navigation and hiding the page cancel pending effects. Completed collections retain their 1.5-second replay pause. The v1.32 continuous rows and stable fullscreen sizes are preserved.
+
+`node check-touch-count.cjs` verifies rendered backgrounds, held-object geometry, normal-size recovery, carrot placement, train sizing/rails, the grow-then-splash sequence, concurrent input, cancellation and native animation. `TOUCH_EVIDENCE` selects the evidence folder.

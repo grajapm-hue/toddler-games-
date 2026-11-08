@@ -8,7 +8,7 @@
     scene.dataset.artState=value;scene.parentElement.setAttribute('aria-busy',String(value==='loading'));
     const status=$('game-art-status');status.hidden=value==='ready';
     status.querySelector('span').textContent=value==='error'?'The pictures could not load. Try again.':'Getting your game ready…';
-    $('game-art-retry').hidden=value!=='error';$('show-me').disabled=value!=='ready'||countHolding||!!objectFeedback;
+    $('game-art-retry').hidden=value!=='error';$('show-me').disabled=value!=='ready'||countHolding||!!objectFeedback||(state.activity==='bubbles'&&state.bubbles.some(b=>b.popping));
   }
   function decodeArt(url){
     if(decodedArt.has(url))return decodedArt.get(url);
@@ -99,7 +99,17 @@
   // Again, navigation and age/mode changes invalidate the previous board's work.
   const PLAY_PAUSE_MS=1500;
   const OBJECT_FEEDBACK_MS=300;
-  let objectFeedback=null,feedbackActionAt=null;
+  let objectFeedback=null,feedbackActionAt=null,heldObject=null;
+  function releaseHeldObject(){
+    if(!heldObject)return;
+    heldObject.visual.removeAttribute('transform');delete heldObject.node.dataset.objectHeld;heldObject=null;
+  }
+  function holdObject(node,kind){
+    releaseHeldObject();if(!node)return;
+    let visual=[...node.children].find(child=>child.hasAttribute('data-held-visual'));
+    if(!visual){visual=document.createElementNS(node.namespaceURI,'g');visual.dataset.heldVisual='';visual.append(...node.childNodes);node.appendChild(visual);}
+    visual.setAttribute('transform','scale(1.22)');node.dataset.objectHeld=kind;heldObject={node,visual};
+  }
   function clearObjectFeedback(){
     if(!objectFeedback)return;
     clearTimeout(objectFeedback.timer);objectFeedback.layer?.remove();objectFeedback.node?.classList.remove('object-selection-pop');objectFeedback.node?.removeAttribute('data-object-feedback');objectFeedback=null;
@@ -110,6 +120,7 @@
       const target=scene.querySelector(`[data-count-choice="${entry.node.textContent.trim()}"] text`);
       if(target){const b=target.getBBox(),m=scene.getScreenCTM().inverse().multiply(target.getScreenCTM()),p=new DOMPoint(b.x+b.width/2,b.y+b.height/2).matrixTransform(m),scale=b.height/entry.height;
         const placement=new DOMMatrix().translate(p.x,p.y).scale(scale).translate(-entry.centre.x,-entry.centre.y).multiply(entry.matrix);entry.layer.setAttribute('transform',`matrix(${placement.a} ${placement.b} ${placement.c} ${placement.d} ${placement.e} ${placement.f})`);}
+      if(target){const b=target.getBBox(),coach=target.closest('[data-count-choice]')?.querySelector('image')?.getBBox();if(coach)entry.layer.querySelector('.object-feedback-scale').style.setProperty('--pop-scale',String(Math.min(coach.width/Math.max(1,b.width),coach.height/Math.max(1,b.height))*.9));}
     }
     entry.layer.querySelector('.object-feedback-scale').style.animationDelay=`${-Math.min(OBJECT_FEEDBACK_MS,performance.now()-entry.started)}ms`;scene.appendChild(entry.layer);
   }
@@ -124,10 +135,13 @@
       for(const el of [clone,...clone.querySelectorAll('*')])for(const attr of [...el.attributes])if(attr.name==='id'||attr.name==='tabindex'||attr.name==='role'||attr.name.startsWith('data-'))el.removeAttribute(attr.name);
       const layer=document.createElementNS(ns,'g');layer.dataset.objectFeedback=kind;layer.setAttribute('aria-hidden','true');layer.setAttribute('pointer-events','none');layer.setAttribute('transform',`matrix(${matrix.a} ${matrix.b} ${matrix.c} ${matrix.d} ${matrix.e} ${matrix.f})`);
       const centre=document.createElementNS(ns,'g');centre.setAttribute('transform',`translate(${cx} ${cy})`);
-      const pop=document.createElementNS(ns,'g');pop.classList.add('object-feedback-scale');pop.style.setProperty('--pop-scale',String(Math.min(1.55,1+75/span)));
+      const pop=document.createElementNS(ns,'g');pop.classList.add('object-feedback-scale');
+      const coach=kind==='train'?node.closest('[data-count-choice]')?.querySelector('image')?.getBBox():null;
+      const zoom=coach?Math.min(coach.width/Math.max(1,b.width),coach.height/Math.max(1,b.height))*.9:Math.min(1.55,1+75/span);
+      pop.style.setProperty('--pop-scale',String(zoom));
       const copy=document.createElementNS(ns,'g');copy.dataset.feedbackCopy='';copy.setAttribute('transform',`translate(${-cx} ${-cy})`);copy.appendChild(clone);pop.appendChild(copy);
       const radius=Math.min(75,Math.max(18,span*.6));
-      for(let i=0;i<8;i++){const a=i*Math.PI/4,ray=document.createElementNS(ns,'path');ray.setAttribute('d',`M${Math.cos(a)*radius} ${Math.sin(a)*radius}L${Math.cos(a)*(radius+12)} ${Math.sin(a)*(radius+12)}`);ray.setAttribute('stroke','#f6b83d');ray.setAttribute('stroke-width','4');ray.setAttribute('stroke-linecap','round');pop.appendChild(ray);}
+      if(!['shape','fruit','train','bead'].includes(kind))for(let i=0;i<8;i++){const a=i*Math.PI/4,ray=document.createElementNS(ns,'path');ray.setAttribute('d',`M${Math.cos(a)*radius} ${Math.sin(a)*radius}L${Math.cos(a)*(radius+12)} ${Math.sin(a)*(radius+12)}`);ray.setAttribute('stroke','#f6b83d');ray.setAttribute('stroke-width','4');ray.setAttribute('stroke-linecap','round');pop.appendChild(ray);}
       centre.appendChild(pop);layer.appendChild(centre);entry.layer=layer;queueMicrotask(()=>{if(objectFeedback===entry)restoreObjectFeedback();});
     }else{node.classList.add('object-selection-pop');node.dataset.objectFeedback=kind;}
     $('show-me').disabled=true;
@@ -361,9 +375,11 @@
   $('paint-tools').insertAdjacentHTML('beforeend',colors.map((color,i)=>`<button class="paint-color" type="button" data-paint="${color}" style="--paint:${color}" aria-label="${colorNames[i]} paint" aria-pressed="${i===0}"></button>`).join(''));
   function clearEffects(){clearObjectFeedback();stopDemo();clearTimeout(nextRoundTimer);nextRoundTimer=null;clearTimeout(rewardTimer);clearTimeout(guideTimer);$('celebrate').hidden=true;$('art-reward').hidden=true;scene.querySelector('[data-guide]')?.remove();}
   function cancelGesture(){
+    releaseHeldObject();
     const pointer=state.pointer;state.pointer=null;
     if(pointer&&scene.hasPointerCapture?.(pointer.id)){try{scene.releasePointerCapture(pointer.id);}catch{/* Gesture may already have ended. */}}
     if(pointer?.kind==='drag')renderDrag();
+    if(pointer?.kind==='count-fruit')pointer.node.setAttribute('transform',pointer.origin);
     if(pointer?.kind==='abacus'&&state.activity==='abacus'){restoreAbacusRow(pointer.row);updateAbacusFeedback(pointer.row);}
     scene.querySelector('#brush-cursor')?.remove();
   }
@@ -463,7 +479,7 @@
     // Stagger the two carrot rows on the dark soil, clear of the orange boards.
     return age===2?[[110,99],[225,77],[310,117],[150,187],[260,192]][index]:[155+(index%5)*70-(index>=5?35:0),index<5?172:210];
   }
-  function countCollectedPoint(index,age=state.age){return age===2?[[715,229],[780,229],[845,229],[747,186],[812,186]][index]:[795-(index%5)*49,235+Math.floor(index/5)*65];}
+  function countCollectedPoint(index,age=state.age){return age===2?[[715,229],[780,229],[845,229],[747,186],[812,186]][index]:[640+(index%5)*62+(index>=5?25:0),306+Math.floor(index/5)*38];}
   function countDestination(age=state.age){return age===2?{x:800,y:240,rx:175,ry:110}:{x:810,y:215,rx:170,ry:135};}
   function countPraise(final=false){
     const message=countHolding&&!final?'Wait for the next count.':'Let’s count again!';
@@ -477,13 +493,14 @@
   function renderHarvestCount(target,age){
     const apple=age===2,kind=apple?'apple':'carrot',max=countStockSize(age);
     const done=state.done&&countStage>=max;
-    let html=`<defs><linearGradient id="count-sky" x2="0" y2="1"><stop stop-color="#d9f1ff"/><stop offset="1" stop-color="#fbfff0"/></linearGradient><linearGradient id="count-grass" x2="0" y2="1"><stop stop-color="#b9df8c"/><stop offset="1" stop-color="#7fb765"/></linearGradient><clipPath id="count-basket-front"><rect x="635" y="267" width="330" height="93"/></clipPath></defs><rect x="10" y="12" width="980" height="415" rx="30" fill="url(#count-sky)" stroke="#b6cea1" stroke-width="6"/><path d="M14 294Q220 248 438 293T986 287V399Q986 425 960 425H40Q14 425 14 399Z" fill="url(#count-grass)"/>`;
+    let html=`<defs><clipPath id="count-basket-front"><rect x="635" y="267" width="330" height="93"/></clipPath></defs><rect x="10" y="12" width="980" height="415" rx="30" fill="#fff" fill-opacity=".10" stroke="#b6cea1" stroke-width="6"/>`;
     if(apple){
       html+=countImage('apple-tree',20,12,360,350,'aria-label="Apple tree"');
       html+=`<g data-count-drop="basket" role="img" aria-label="Basket for the apples">${countImage('basket',635,140,330,220)}<rect x="635" y="140" width="330" height="220" fill="transparent" pointer-events="none"/></g>`;
     }else{
       html+=countImage('carrot-garden',20,100,540,235,'aria-label="Carrot garden"');
       html+=`<g data-count-drop="rabbit" role="img" aria-label="Rabbit waiting for carrots">${countImage('rabbit',695,65,260,260)}<rect x="650" y="100" width="310" height="245" fill="transparent" pointer-events="none"/></g>`;
+      html+='<ellipse cx="780" cy="327" rx="190" ry="38" fill="#b1ca78" fill-opacity=".45" pointer-events="none"/>';
     }
     for(let i=0;i<max;i++){
       if(countCollected.has(i))continue;
@@ -493,7 +510,7 @@
     }
     const slots=Array.from({length:max},(_,index)=>countCollectedPoint(index,age));
     [...countCollected].map((id,index)=>({id,index})).sort((a,b)=>slots[a.index][1]-slots[b.index][1]).forEach(({id,index})=>{
-      const [x,y]=slots[index];html+=`<g data-count-collected="${id}" role="img" aria-label="${kind} ${index+1} ${apple?'in the basket':'beside the rabbit'}">${countIcon(x,y,kind,apple?1:.78)}</g>`;
+      const [x,y]=slots[index];html+=`<g data-count-collected="${id}" role="img" aria-label="${kind} ${index+1} ${apple?'in the basket':'on the ground beside the rabbit'}"${apple?'':` transform="translate(${x} ${y}) rotate(-90)"`}>${countIcon(apple?x:0,apple?y:0,kind,apple?1:.6)}</g>`;
     });
     if(apple)html+=countImage('basket',635,140,330,220,'clip-path="url(#count-basket-front)" pointer-events="none"');
     if(countHolding||done)html+=countPraise(done);
@@ -511,11 +528,11 @@
     const g=numberTrainLayout(),h=g.height,base=g.baseline,compact=g.compact;
     scene.setAttribute('viewBox',`0 0 1000 ${h}`);
     state.trainSize=`${scene.clientWidth}/${scene.clientHeight}`;
-    const titleFont=Math.max(compact?23:32,14*g.unit),targetFont=Math.max(compact?30:44,18*g.unit),numberFont=Math.max(32,18*g.unit),plateW=Math.max(54,numberFont*1.4),plateH=Math.max(36,numberFont*1.1);
+    const titleFont=Math.max(compact?23:32,14*g.unit),targetFont=Math.max(compact?30:44,18*g.unit),numberFont=Math.max(24,15*g.unit),plateW=Math.max(54,numberFont*1.4),plateH=Math.max(36,numberFont*1.1);
     const headingH=Math.max(titleFont,targetFont)*1.4+12;
     let html=`<rect data-train-panel="" x="6" y="4" width="988" height="${h-8}" rx="18" fill="#ffffff" fill-opacity=".10" stroke="#7aaa4b" stroke-width="5"/><rect x="16" y="4" width="470" height="${headingH}" rx="12" fill="#fffce8" fill-opacity=".93"/><rect x="575" y="4" width="409" height="${headingH}" rx="12" fill="#fffce8" fill-opacity=".93"/><text x="24" y="${Math.max(compact?25:43,titleFont*.9+4)}" font-size="${titleFont}" font-weight="900" fill="#30564d">${countTitle()}</text><text x="976" y="${Math.max(compact?27:46,targetFont*.9+4)}" text-anchor="end" font-size="${targetFont}" font-weight="900" fill="#30564d">Find number: ${target}</text>`;
-    for(let x=25;x<980;x+=24)html+=`<path d="M${x} ${base-4}v10" stroke="#9a795a" stroke-width="7"/>`;
-    html+=`<path d="M20 ${base-5}H980M20 ${base+2}H980" stroke="#64747a" stroke-width="3"/><image data-train-art="engine" href="train-art/locomotive-colour-v126.webp" x="20" y="${base-100}" width="190" height="100" preserveAspectRatio="xMidYMax meet"/><text data-train-engine="" x="115" y="${base+24}" text-anchor="middle" font-size="${Math.max(compact?17:24,12*g.unit)}" font-weight="900" fill="#30564d" stroke="#fffce8" stroke-width="3" paint-order="stroke fill">Train Engine</text>`;
+    for(let x=0;x<=1000;x+=24)html+=`<path d="M${x} ${base-4}v10" stroke="#9a795a" stroke-width="7"/>`;
+    html+=`<path data-train-track="" d="M0 ${base-5}H1000M0 ${base+2}H1000" stroke="#64747a" stroke-width="3"/><image data-train-art="engine" href="train-art/locomotive-colour-v126.webp" x="20" y="${base-100}" width="190" height="100" preserveAspectRatio="xMidYMax meet"/><text data-train-engine="" x="115" y="${base+24}" text-anchor="middle" font-size="${Math.max(compact?17:24,12*g.unit)}" font-weight="900" fill="#30564d" stroke="#fffce8" stroke-width="3" paint-order="stroke fill">Train Engine</text>`;
     const [first,last]=[[1,4],[5,9],[10,13],[14,16],[17,20]].find(([,end])=>target<=end);
     const coachCount=last-first+1,step=760/Math.max(4,coachCount),coachWidth=step-5,coachScale=coachWidth/185;
     const coachColours=['turquoise','yellow','coral','violet'];
@@ -545,7 +562,6 @@
       const id=Number(fruit?.dataset.countFruit);
       if(!event.countDragSuccess||!fruit||!Number.isInteger(id)||id<0||id>=countMax()||countCollected.has(id))return;
       countCollected.add(id);countPlaced=countCollected.size;haptic(38,0);tone(560);
-      popObject(fruit,'fruit');
       if(countPlaced===countStage+1){
         countHolding=true;$('show-me').disabled=true;
         const serial=roundSerial,age=state.age,stage=countStage;
@@ -559,11 +575,12 @@
           }else renderCountAdventure();
         },PLAY_PAUSE_MS);
       }else renderCountAdventure();
+      popObject(scene.querySelector(`[data-count-collected="${id}"]`),'fruit');
       return;
     }
     const choice=event.target.closest('[data-count-choice]');
     if(!choice||objectFeedback?.after)return;
-    if(Number(choice.dataset.countChoice)!==countStage+1){hint(`Try number ${countStage+1}!`);return;}
+    if(Number(choice.dataset.countChoice)!==countStage+1){popObject(choice.querySelector('text'),'train');hint(`Try number ${countStage+1}!`);return;}
     haptic(45,0);tone(700);popObject(choice.querySelector('text'),'train',()=>{countStage++;countPlaced=0;
     if(countStage>=countMax()){
       progress(countStage,countMax());updateGameItemStrip();celebrate(`Wonderful counting! You completed ${countTitle()}!`);applause();
@@ -713,8 +730,8 @@
       <path d="M500 105V419" stroke="#ffe2aa" stroke-width="3" stroke-dasharray="8 13" opacity=".75"/>
       <path d="M466 260H530M516 248L530 260L516 272" stroke="#fff0c8" stroke-width="5" fill="none" stroke-linecap="round"/>`;
     scene.innerHTML=`<rect x="0" y="0" width="1000" height="76" fill="#f7e9d2"/>${board}`+
-      state.shapes.filter(shape=>!shape.placed).map(shape=>`<g class="target" data-target="${shape.id}" transform="translate(${shape.tx} ${shape.ty})" role="button" tabindex="0" aria-label="${shape.id} shadow">
-      <g>${primitive(shape.id,'#271d19',shape.color)}</g>
+      state.shapes.map(shape=>`<g class="target" ${shape.placed?`data-pocket-filled="${shape.id}" role="img" aria-label="${shape.id} fitted into its pocket"`:`data-target="${shape.id}" role="button" tabindex="0" aria-label="${shape.id} shadow"`} transform="translate(${shape.tx} ${shape.ty})">
+      <g>${shape.placed?glossyShape(shape.id,shape.color):primitive(shape.id,'#271d19',shape.color)}</g>
       <text y="86" text-anchor="middle" fill="#163d33" font-size="28" font-weight="900" paint-order="stroke" stroke="#fff9e8" stroke-width="4" font-family="inherit">${shape.id.toUpperCase()}</text></g>`).join('')+
       state.shapes.filter(shape=>!shape.placed).map(shape=>`<g data-piece="${shape.id}" role="button" tabindex="0" aria-label="${shape.id} shape" class="piece ${state.selected===shape.id?'selected':''}" transform="translate(${shape.x} ${shape.y})">
       ${glossyShape(shape.id,shape.color)}</g>`).join('');
@@ -722,6 +739,8 @@
   }
   function matchShape(id){
     const shape=state.shapes.find(item=>item.id===id);if(!shape||shape.placed)return;
+    releaseHeldObject();
+    scene.querySelector(`[data-piece="${id}"]`)?.setAttribute('transform',`translate(${shape.tx} ${shape.ty})`);
     popObject(scene.querySelector(`[data-piece="${id}"]`),'shape');
     shape.placed=true;state.selected=null;renderDrag();tone(640);
     if(state.shapes.every(item=>item.placed)){
@@ -736,8 +755,12 @@
       }
     }else hint('A perfect fit! Find another little shape.');
   }
-  const activeBubble=()=>state.bubbles.find(bubble=>bubble.element?.dataset.onstage==='true');
-  function stopBubbles(){if(bubbleFrame!==null)cancelAnimationFrame(bubbleFrame);bubbleFrame=null;lastBubbleTime=0;}
+  const activeBubble=()=>state.bubbles.find(bubble=>!bubble.popping&&bubble.element?.dataset.onstage==='true');
+  function stopBubbles(){
+    if(bubbleFrame!==null)cancelAnimationFrame(bubbleFrame);bubbleFrame=null;lastBubbleTime=0;
+    for(const bubble of state.bubbles){clearTimeout(bubble.popTimer);bubble.popTimer=null;bubble.popping=false;const visual=bubble.element?.querySelector('[data-balloon-visual]');visual?.classList.remove('balloon-growing');visual?.removeAttribute('data-object-feedback');bubble.element?.removeAttribute('aria-disabled');}
+    $('show-me').disabled=countHolding||!!objectFeedback||!gameReady();
+  }
   function bubbleTracker(){
     if(objectFeedback)return;
     const mode={...bubbleModes[state.bubbleMode],items:bubbleItems()};
@@ -807,7 +830,7 @@
     if(!bubble.element)return;
     bubble.x=Math.max(bubble.r+4,Math.min(state.bubbleWidth-bubble.r-4,bubble.x));
     bubble.element.setAttribute('transform',`translate(${bubble.x.toFixed(1)} ${bubble.y.toFixed(1)})`);
-    const onstage=bubble.y>=bubble.r&&bubble.y<=440-bubble.r;
+    const onstage=!bubble.popping&&bubble.y>=bubble.r&&bubble.y<=440-bubble.r;
     if(bubble.element.dataset.onstage!==String(onstage)){
       bubble.element.dataset.onstage=String(onstage);bubble.element.setAttribute('tabindex',onstage?'0':'-1');bubble.element.setAttribute('aria-hidden',String(!onstage));
     }
@@ -836,6 +859,8 @@
   function drawBubble(bubble){
     const content=state.bubbleMode==='plain'?`<g transform="scale(${bubble.r/68})">${face(0,8)}</g>`:state.bubbleMode==='shapes'?`<g transform="scale(${bubble.r/95})">${primitive(bubble.token,shapeById(bubble.token)?.color||'#ffcf64','#274b44')}</g>`:`<text text-anchor="middle" dominant-baseline="central" font-family="inherit" font-size="${bubble.r*(bubble.token.length===2?.9:1.1)}" font-weight="900" fill="#29463e">${bubble.token}</text>`;
     bubble.element.innerHTML=`<circle data-balloon-body="" r="${bubble.r}" fill="${bubble.color}" stroke="#fffdf3" stroke-width="${bubble.r*.025}"/><circle r="${bubble.r}" fill="url(#balloon-shade)" pointer-events="none"/><ellipse data-balloon-shine="" cx="${-bubble.r*.3}" cy="${-bubble.r*.35}" rx="${bubble.r*.2}" ry="${bubble.r*.32}" transform="rotate(32)" fill="white" opacity=".55" pointer-events="none"/><path data-balloon-knot="" d="M0 ${bubble.r-2}l${-bubble.r*.1} ${bubble.r*.16}q${bubble.r*.1} ${-bubble.r*.05} ${bubble.r*.2} 0Z" fill="${bubble.color}" stroke="#52676e" stroke-width="1.5"/><path d="M0 ${bubble.r*1.13}q${-bubble.r*.13} ${bubble.r*.1} 0 ${bubble.r*.2}t0 ${bubble.r*.16}" fill="none" stroke="#fff8df" stroke-width="${Math.max(1.5,bubble.r*.016)}" pointer-events="none"/>${content}`;
+    const visual=document.createElementNS(bubble.element.namespaceURI,'g');visual.dataset.balloonVisual='';visual.append(...bubble.element.childNodes);bubble.element.appendChild(visual);
+    if(bubble.popping){visual.classList.add('balloon-growing');visual.dataset.objectFeedback='balloon';}
   }
   function renderBubbles(){
     state.bubbleHits=new Map();state.bubblePops=0;state.bubbleRecent=[];state.bubbleEffects=[];
@@ -850,6 +875,7 @@
     const elapsed=lastBubbleTime?Math.min(.05,(now-lastBubbleTime)/1000):0;lastBubbleTime=now;
     fitBubbleField();
     for(const bubble of state.bubbles){
+      if(bubble.popping)continue;
       if(!bubble.element){bubble.wait-=elapsed;if(bubble.wait<=0)spawnBubble(bubble);continue;}
       bubble.y-=elapsed*bubbleSpeeds[selectedBubbleSpeed()];
       if(bubble.y < -bubble.r*1.5){bubble.element.remove();bubble.element=null;bubble.wait=0;spawnBubble(bubble);}
@@ -863,8 +889,19 @@
     state.bubbleEffects=state.bubbleEffects.filter(splash=>splash.age<.48);
   }
   function popBubble(bubble){
-    if(!bubble?.element||state.done)return;
-    popObject(bubble.element,'balloon');
+    if(!bubble?.element||bubble.popping||state.done)return;
+    bubble.popping=true;const element=bubble.element,serial=roundSerial;
+    const visual=element.querySelector('[data-balloon-visual]');visual.classList.add('balloon-growing');visual.dataset.objectFeedback='balloon';element.setAttribute('aria-disabled','true');positionBubble(bubble);$('show-me').disabled=true;
+    bubble.popTimer=setTimeout(()=>{
+      bubble.popTimer=null;
+      if(serial!==roundSerial||state.activity!=='bubbles'||bubble.element!==element)return;
+      bubble.popping=false;
+      if(state.done){visual.classList.remove('balloon-growing');visual.removeAttribute('data-object-feedback');element.removeAttribute('aria-disabled');positionBubble(bubble);$('show-me').disabled=state.bubbles.some(b=>b.popping)||!gameReady();return;}
+      finishBubblePop(bubble);
+      $('show-me').disabled=state.bubbles.some(b=>b.popping)||!gameReady();
+    },OBJECT_FEEDBACK_MS);
+  }
+  function finishBubblePop(bubble){
     const focused=document.activeElement===bubble.element;
     const splash=document.createElementNS('http://www.w3.org/2000/svg','g');splash.dataset.splash='';splash.setAttribute('transform',`translate(${bubble.x} ${bubble.y})`);splash.setAttribute('fill',bubble.color);
     splash.innerHTML=Array.from({length:8},()=>'<circle r="9"/>').join('');$('splash-layer').appendChild(splash);
@@ -1009,7 +1046,7 @@
     cursor.setAttribute('transform',`translate(${point.x} ${point.y}) scale(${{small:.6,medium:1,large:1.4}[state.brushSize]})`);
   }
   function localPoint(event){const matrix=scene.getScreenCTM();if(!matrix)return null;return new DOMPoint(event.clientX,event.clientY).matrixTransform(matrix.inverse());}
-  function hitBubble(point,id){const candidates=state.bubbles.filter(b=>b.element&&Math.hypot(point.x-b.x,point.y-b.y)<b.r+8);const bubble=candidates.find(b=>String(b.id)===id)||candidates.toSorted((a,b)=>Math.hypot(point.x-a.x,point.y-a.y)-Math.hypot(point.x-b.x,point.y-b.y))[0];if(bubble)popBubble(bubble);}
+  function hitBubble(point,id){const candidates=state.bubbles.filter(b=>b.element&&!b.popping&&Math.hypot(point.x-b.x,point.y-b.y)<b.r+8);const bubble=candidates.find(b=>String(b.id)===id)||candidates.toSorted((a,b)=>Math.hypot(point.x-a.x,point.y-a.y)-Math.hypot(point.x-b.x,point.y-b.y))[0];if(bubble)popBubble(bubble);}
   function pointerDown(event){
     if(!gameReady()||demoActive||state.pointer||event.button>0||!state.activity)return;
     const point=localPoint(event);if(!point)return;
@@ -1019,19 +1056,21 @@
         const fruit=event.target.closest('[data-count-fruit]');
         if(demoActive||countHolding||state.done||!fruit||countCollected.has(Number(fruit.dataset.countFruit)))return;
         state.pointer={id:event.pointerId,kind:'count-fruit',node:fruit,start:point,origin:fruit.getAttribute('transform')};
+        holdObject(fruit,'fruit');
         event.preventDefault();try{scene.setPointerCapture(event.pointerId);}catch{}return;
       }
       countTap(event,point);event.preventDefault();return;
     }
     if(state.activity==='abacus'){
       state.pointer=beginAbacusSlide(point,event.pointerId);if(!state.pointer)return;
+      holdObject(state.pointer.elements[state.pointer.index],'bead');
     }else if(state.activity==='drag'){
       if(state.done)return;
       const target=event.target.closest('[data-target]');
       if(target&&state.selected===target.dataset.target){matchShape(state.selected);event.preventDefault();return;}
       const item=event.target.closest('[data-piece]');if(!item)return;
       const shape=state.shapes.find(s=>s.id===item.dataset.piece);state.selected=shape.id;
-      popObject(item,'shape');
+      holdObject(item,'shape');
       state.pointer={id:event.pointerId,kind:'drag',shape,dx:point.x-shape.x,dy:point.y-shape.y,x:shape.x,y:shape.y};
       item.classList.add('selected');
     }else if(state.activity==='bubbles'){
@@ -1064,6 +1103,7 @@
   }
   function pointerUp(event){
     const pointer=state.pointer;if(!pointer||pointer.id!==event.pointerId)return;
+    releaseHeldObject();
     state.pointer=null;
     try{if(scene.hasPointerCapture(event.pointerId))scene.releasePointerCapture(event.pointerId);}catch{/* Already released. */}
     if(pointer.kind==='count-fruit'){
@@ -1133,7 +1173,7 @@
     else if(handle&&['ArrowRight','ArrowLeft','Home','End'].includes(event.key)){
       event.preventDefault();const slider=state.sliders[Number(handle.dataset.sliderHandle)];const value=event.key==='End'?1:event.key==='Home'?0:slider.value+(event.key==='ArrowRight' ? .15 : -.15);slideTo(slider,slider.x+25+value*(slider.w-50));
     }else if(event.key==='Enter'||event.key===' '){
-      event.preventDefault();if(piece){state.selected=piece.dataset.piece;renderDrag();popObject(scene.querySelector(`[data-piece="${state.selected}"]`),'shape');hint('Now choose the matching shadow.');scene.querySelector(`[data-target="${state.selected}"]`)?.focus();}
+      event.preventDefault();if(piece){state.selected=piece.dataset.piece;renderDrag();holdObject(scene.querySelector(`[data-piece="${state.selected}"]`),'shape');hint('Now choose the matching shadow.');scene.querySelector(`[data-target="${state.selected}"]`)?.focus();}
       else if(target&&target.dataset.target===state.selected)matchShape(state.selected);
       else if(bubble)popBubble(state.bubbles.find(item=>item.id===Number(bubble.dataset.bubble)));
     }
@@ -1276,15 +1316,16 @@
         const target=Math.min(countStage+1,countMax());
         if(age===4){
           const choice=backing.querySelector(`[data-count-choice="${target}"]`),number=choice?.querySelector('text');
-          if(number&&await touch(number,`Tap the carriage showing ${target}.`)){choice.querySelector('rect').setAttribute('stroke','#218844');choice.querySelector('rect').setAttribute('stroke-width','12');await success(countStage);}
+          if(number&&await touch(number,`Tap the carriage showing ${target}.`)){const b=number.getBBox(),coach=choice.querySelector('image').getBBox(),s=Math.min(coach.width/b.width,coach.height/b.height)*.9,cx=b.x+b.width/2,cy=b.y+b.height/2;number.setAttribute('transform',`translate(${cx} ${cy}) scale(${s}) translate(${-cx} ${-cy})`);await success(countStage);}
         }else{
           const source=backing.querySelector('[data-count-fruit]');
-          if(source){const [x,y]=countSourcePoint(Number(source.dataset.countFruit),age),[destX,destY]=countCollectedPoint(countPlaced,age),scale=age===2?1:.78;
+          if(source){const [x,y]=countSourcePoint(Number(source.dataset.countFruit),age),[destX,destY]=countCollectedPoint(countPlaced,age),scale=age===2?1:.6;
             if(await touch(source,age===2?'Pick an apple.':'Pick a carrot.')){
               source.setAttribute('visibility','hidden');const moving=document.createElementNS(ns,'g');moving.dataset.demoMoving='';moving.innerHTML=countIcon(0,0,age===2?'apple':'carrot',scale);moving.setAttribute('transform',`translate(${x} ${y})`);backing.appendChild(moving);
               moving.getBoundingClientRect();
               const image=moving.querySelector('image');
               if(await move(destX,destY+(age===2?0:-4*scale),age===2?'Put it in the basket.':'Give it to the rabbit.',850,Math.min(age===2?64:56*scale,age===2?74:88*scale),image,()=>{moving.style.transition=reduced?'none':'transform 850ms ease-in-out';moving.setAttribute('transform',`translate(${destX} ${destY})`);})){
+                if(age===3){moving.firstElementChild.setAttribute('transform',`rotate(-90) scale(${scale})`);const p=demoBounds(image);pointHand(p.x,p.y,Math.min(p.width,p.height),image);}
                 const counter=backing.querySelector('[data-count-counter]');if(counter)counter.textContent=`${countPlaced+1} / ${target}`;
                 const left=backing.querySelector('[data-count-ledger-value="source"]'),right=backing.querySelector('[data-count-ledger-value="collected"]');if(left)left.textContent=String(countMax()-countPlaced-1);if(right)right.textContent=String(countPlaced+1);
                 await success(countStage);
