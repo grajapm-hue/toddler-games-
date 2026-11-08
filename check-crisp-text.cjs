@@ -1,4 +1,5 @@
 // Rendered text contrast, compact label fit and changing Abacus counts.
+// Allow one rendered pixel for browser font hinting, regardless of SVG scale.
 const fs=require('node:fs'),path=require('node:path'),{createServer}=require('node:http');
 const {chromium,webkit}=require(process.env.MM_PLAYWRIGHT||'C:/Users/jeyan/Projects/DotMd/node_modules/@playwright/test');
 const engine=process.env.PLAYROOM_BROWSER||'chromium',root=path.resolve(__dirname,'docs'),out=process.env.TEXT_EVIDENCE||path.resolve(__dirname,'artifacts/crisp-text',engine),results=[],errors=[];
@@ -13,7 +14,7 @@ const server=createServer((req,res)=>{try{const u=new URL(req.url,'http://localh
  async function inspect(){return page.evaluate(()=>{
   const candidates=[...document.querySelectorAll('#scene .scene-caption,#scene [data-color-label],#scene [data-train-engine],#scene [data-train-instruction],#scene .target>text,#scene [data-cave-object] text:last-child,#scene [data-cave-door] text')];
   const glyphBox=n=>{const glyphs=Array.from({length:n.getNumberOfChars()},(_,i)=>n.getExtentOfChar(i));if(!glyphs.length)return n.getBBox();const x=Math.min(...glyphs.map(g=>g.x)),y=Math.min(...glyphs.map(g=>g.y));return{x,y,width:Math.max(...glyphs.map(g=>g.x+g.width))-x,height:Math.max(...glyphs.map(g=>g.y+g.height))-y};};
-  const labels=candidates.map(n=>{const text=glyphBox(n),tab=n.previousElementSibling,b=tab?.getBBox(),s=getComputedStyle(n),f=parseFloat(s.fontSize);return{label:n.textContent,tab:tab?.hasAttribute('data-caption-tab'),ink:s.fill,stroke:s.stroke,shadow:s.textShadow,fill:tab&&getComputedStyle(tab).fill,fit:!!b&&text.x>=b.x-.5&&text.y>=b.y-.5&&text.x+text.width<=b.x+b.width+.5&&text.y+text.height<=b.y+b.height+.5,dx:b?text.x+text.width/2-b.x-b.width/2:null,dy:b?text.y+text.height/2-b.y-b.height/2:null,compact:!!b&&b.width<=text.width+f*.6+2&&b.height<=text.height+f*.35+2,centered:!!b&&Math.abs(text.x+text.width/2-b.x-b.width/2)<1&&Math.abs(text.y+text.height/2-b.y-b.height/2)<1};});
+  const labels=candidates.map(n=>{const text=glyphBox(n),tab=n.previousElementSibling,b=tab?.getBBox(),s=getComputedStyle(n),f=parseFloat(s.fontSize),m=n.getScreenCTM(),pixel=1/Math.hypot(m.a,m.b);return{label:n.textContent,tab:tab?.hasAttribute('data-caption-tab'),ink:s.fill,stroke:s.stroke,shadow:s.textShadow,fill:tab&&getComputedStyle(tab).fill,fit:!!b&&text.x>=b.x-pixel&&text.y>=b.y-pixel&&text.x+text.width<=b.x+b.width+pixel&&text.y+text.height<=b.y+b.height+pixel,dx:b?text.x+text.width/2-b.x-b.width/2:null,dy:b?text.y+text.height/2-b.y-b.height/2:null,compact:!!b&&b.width<=text.width+f*.6+2&&b.height<=text.height+f*.35+2,centered:!!b&&Math.abs(text.x+text.width/2-b.x-b.width/2)<=pixel&&Math.abs(text.y+text.height/2-b.y-b.height/2)<=pixel};});
   const chips=[...document.querySelectorAll('.item-chip')].map(n=>{const r=document.createRange();r.selectNodeContents(n);const b=n.getBoundingClientRect(),t=r.getBoundingClientRect(),s=getComputedStyle(n);return{fit:t.left>=b.left-1&&t.right<=b.right+1&&t.top>=b.top-1&&t.bottom<=b.bottom+1,shadow:s.textShadow,background:s.backgroundColor,compact:n.querySelector('svg')||b.width<=t.width+17};});
   const badges=[...document.querySelectorAll('.item-chip.is-done .abacus-chip-label')].map(n=>{const chip=n.parentElement,b=chip.getBoundingClientRect(),t=n.getBoundingClientRect(),s=getComputedStyle(chip,'::after'),style=getComputedStyle(chip),left=b.right-parseFloat(style.borderRightWidth)-parseFloat(s.right)-parseFloat(s.width);return left>=t.right-1;});
   const html=[...document.querySelectorAll('#activity-name,#result-score:not([hidden]),#bubble-score:not([hidden]),#play-version,#hint-copy')].filter(n=>n.getBoundingClientRect().width&&n.textContent).map(n=>{const s=getComputedStyle(n);return{id:n.id,background:s.backgroundColor,shadow:s.textShadow,fit:n.scrollWidth<=n.clientWidth+1};});
@@ -27,8 +28,3 @@ const server=createServer((req,res)=>{try{const u=new URL(req.url,'http://localh
  }}
  await context.close();check('No browser errors',errors.length===0,errors);
 })().catch(e=>check('Unexpected exception',false,e.stack)).finally(async()=>{fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({engine,results,errors},null,2));await browser?.close();await new Promise(r=>server.close(r));const failed=results.filter(r=>!r.pass);console.log(JSON.stringify({engine,checks:results.length,failed:failed.length,failures:failed.slice(0,2)}));process.exitCode=failed.length?1:0;});
-
-
-
-
-

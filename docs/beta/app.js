@@ -27,6 +27,12 @@
       Object.entries({x:box.x-px,y:box.y-py,width:box.width+px*2,height:box.height+py*2,rx:Math.min(8,font*.22),fill:'#ffe17a',stroke:'#b69c43','stroke-width':1,'vector-effect':'non-scaling-stroke'}).forEach(([key,value])=>tab.setAttribute(key,value));
     });
   }
+  let captionFrame=0;
+  function refreshSceneTextTabs(){
+    fitSceneTextTabs();cancelAnimationFrame(captionFrame);
+    // WebKit settles glyph metrics after a changed SVG viewBox reaches a frame.
+    captionFrame=requestAnimationFrame(()=>{captionFrame=0;fitSceneTextTabs();});
+  }
   const decodedArt=new Map();let artGeneration=0;
   const gameReady=()=>scene.dataset.artState==='ready';
   function artState(value){
@@ -46,7 +52,7 @@
     decodedArt.set(url,entry);return entry;
   }
   function prepareSceneArt(){
-    fitSceneTextTabs();
+    refreshSceneTextTabs();
     restoreObjectFeedback();
     const generation=++artGeneration,serial=roundSerial,activity=state.activity;
     const urls=new Set([...scene.querySelectorAll('image')].map(el=>new URL(el.getAttribute('href'),document.baseURI).href));
@@ -640,7 +646,7 @@
       const width=Math.max(...[...lines].map(line=>line.getComputedTextLength())),available=Number(equation.dataset.maxWidth);
       if(width>available)equation.setAttribute('font-size',font*available/width);
     }
-    fitSceneTextTabs();
+    refreshSceneTextTabs();
   }
   function abacusHint(){const row=activeAbacusRow(),count=abacusCount(row),suggestion=state.age===null||state.level===1?'':state.level===2?` Together, try ${profile().abacusGoal} beads in any color.`:` Together, try ${profile().abacusGoal} beads, then another color. All amounts are welcome.`;hint(`${abacusColors[row][0]}: ${count} ${abacusWords[count]} on the right. Slide beads in any row, either way!${suggestion}`);}
   function abacusGeometry(){const width=Math.max(1000,600*scene.clientWidth/Math.max(1,scene.clientHeight)),left=width*.5,start=54,end=left-78,pitch=(end-start)*.043;return {width,left,start,end,pitch,r:Math.min(21,pitch*.44)};}
@@ -694,7 +700,7 @@
     const count=across?(pointer.right?10-index:9-index):pointer.original;
     if(count!==pointer.preview){pointer.preview=count;updateAbacusFeedback(pointer.row,count);}
   }
-  new ResizeObserver(fitSceneTextTabs).observe(scene);
+  new ResizeObserver(refreshSceneTextTabs).observe(scene);
   new ResizeObserver(()=>{if(state.activity==='abacus'&&state.age===5&&state.abacusSize!==`${scene.clientWidth}/${scene.clientHeight}`){cancelGesture();renderAbacus();}}).observe(scene);
   new ResizeObserver(()=>{if(state.activity==='abacus'&&state.age===4&&state.trainSize!==`${scene.clientWidth}/${scene.clientHeight}`){stopDemo();cancelGesture();renderCountAdventure();}}).observe(scene);
   // Shared, game-specific progress strip. Never moves to a side in immersive mode.
@@ -1368,7 +1374,7 @@
                 if(age===3){moving.firstElementChild.setAttribute('transform',`rotate(-90) scale(${scale})`);const p=demoBounds(image);pointHand(p.x,p.y,Math.min(p.width,p.height),image);}
                 const counter=backing.querySelector('[data-count-counter]');if(counter)counter.textContent=`${countPlaced+1} / ${target}`;
                 const left=backing.querySelector('[data-count-ledger-value="source"]'),right=backing.querySelector('[data-count-ledger-value="collected"]');if(left)left.textContent=String(countMax()-countPlaced-1);if(right)right.textContent=String(countPlaced+1);
-                fitSceneTextTabs();
+                refreshSceneTextTabs();
                 await success(countStage);
               }
             }
@@ -1382,14 +1388,14 @@
               const friend=backing.querySelector('g[role="img"] text');
               if(friend)await pointAt(friend,'Look! You found a friend.');
               const caption=backing.querySelector('[data-slide-caption]');if(caption)caption.textContent='Door OPEN · You found '+slideObjects[state.slideIndex][0]+'!';
-              fitSceneTextTabs();
+              refreshSceneTextTabs();
               overlay.dataset.demoDoorState='open';
               if(!await demoPause(1000,token)||!valid())return;
               if(!await pointAt(knob,'Now slide the door closed.',250))return;
               overlay.dataset.demoDoorState='closing';
               if(!await move(715,345,null,850,48,knob,()=>door.setAttribute('transform','translate(0 0) scale(1 1)')))return;
               if(caption)caption.textContent='Door CLOSED · Well done!';
-              fitSceneTextTabs();
+              refreshSceneTextTabs();
               overlay.dataset.demoDoorState='closed';
               await success(state.slideIndex);
             }
