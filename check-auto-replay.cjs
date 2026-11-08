@@ -51,7 +51,7 @@ let browser;
    check(`Age ${age} ${mode} bubbles can finish`,await page.locator('#art-reward').isVisible());await pause(`Age ${age} ${mode} bubbles`,async()=>await page.locator('#art-reward').isHidden());
    check(`Age ${age} ${mode} bubbles automatically refill`,await page.locator('#art-reward').isHidden()&&await page.locator('#item-progress-strip .is-done').count()===0&&await page.locator('[data-bubble]').count()>0);
   }
-  await open(4,'abacus');for(let n=1;n<=20;n++)await page.locator(`[data-count-choice="${n}"]`).press('Enter');await pause('Number Train',async()=>await page.locator('#item-progress-strip .is-done').count()===0);
+  await open(4,'abacus');for(let n=1;n<=20;n++){await page.locator(`[data-count-choice="${n}"]`).press('Enter');if(n<20)await page.clock.runFor(300);}await pause('Number Train',async()=>await page.locator('#item-progress-strip .is-done').count()===0);
   check('Number Train restarts at its fixed 1-4 group',JSON.stringify(await page.locator('[data-count-choice]').evaluateAll(nodes=>nodes.map(n=>Number(n.dataset.countChoice))))==='[1,2,3,4]'&&await page.locator('#art-reward').isHidden());
   await open(5,'abacus');for(let row=0;row<10;row++)await page.locator(`[data-bead-row="${row}"][data-bead-index="9"]`).press('ArrowRight');await pause('Rainbow Abacus',async()=>await page.locator('[data-bead-row][data-moved="true"]').count()===0);
   check('Rainbow Abacus automatically resets every row',await page.locator('[data-bead-row][data-moved="true"]').count()===0&&await page.locator('#art-reward').isHidden());

@@ -8,7 +8,7 @@
     scene.dataset.artState=value;scene.parentElement.setAttribute('aria-busy',String(value==='loading'));
     const status=$('game-art-status');status.hidden=value==='ready';
     status.querySelector('span').textContent=value==='error'?'The pictures could not load. Try again.':'Getting your game ready…';
-    $('game-art-retry').hidden=value!=='error';$('show-me').disabled=value!=='ready'||countHolding;
+    $('game-art-retry').hidden=value!=='error';$('show-me').disabled=value!=='ready'||countHolding||!!objectFeedback;
   }
   function decodeArt(url){
     if(decodedArt.has(url))return decodedArt.get(url);
@@ -21,6 +21,7 @@
     decodedArt.set(url,entry);return entry;
   }
   function prepareSceneArt(){
+    restoreObjectFeedback();
     const generation=++artGeneration,serial=roundSerial,activity=state.activity;
     const urls=new Set([...scene.querySelectorAll('image')].map(el=>new URL(el.getAttribute('href'),document.baseURI).href));
     const background=getComputedStyle(scene.parentElement).backgroundImage;
@@ -83,7 +84,7 @@
   const state={age:ageProfiles.getAge(),level:1,activity:null,done:false,pointer:null,selected:null,paintMode:false,paintColor:colors[0],strokes:[],shapes:[],bubbles:[],sliders:[],slideIndex:0,slideRevealed:false,dirt:[],sound:saved.sound===true,haptics:saved.haptics!==false};
   Object.assign(state,{brushSize:profile().brushSize,erase:false,coverage:[],bubbleMode:profile().bubbleMode,bubbleSet:initial.bubbleSet==='full'||state.age===null?'full':'starter',bubbleHits:new Map(),bubblePops:0,bubbleRecent:[],bubbleEffects:[],bubbleSerial:0,bubbleWidth:1000});
   const bubbleModes={plain:{label:'Plain',items:[]},numbers:{label:'1–20',items:Array.from({length:20},(_,i)=>String(i+1))},letters:{label:'A–Z',items:Array.from({length:26},(_,i)=>String.fromCharCode(65+i))},shapes:{label:'Shapes',items:shapes.map(shape=>shape.id)}};
-  const bubbleColors=['#a6d1d3','#e6a6a4','#cfbfdf','#f0d47a','#afd1a2','#f1bd91'];
+  const bubbleColors=['#46b8cf','#ee6c88','#a890e5','#f5ce51','#76bc74','#f49d60'];
   const bubbleSpeeds={slow:72,medium:136,fast:464},bubbleDiameters={small:88,medium:120,large:384};
   state.bubbleSpeed=Object.hasOwn(bubbleSpeeds,initial.bubbleSpeed)?initial.bubbleSpeed:null;
   state.bubbleSize=Object.hasOwn(bubbleDiameters,initial.bubbleSize)?initial.bubbleSize:null;
@@ -97,6 +98,48 @@
   // One cancellable transition for every completed round or picture batch.
   // Again, navigation and age/mode changes invalidate the previous board's work.
   const PLAY_PAUSE_MS=1500;
+  const OBJECT_FEEDBACK_MS=300;
+  let objectFeedback=null,feedbackActionAt=null;
+  function clearObjectFeedback(){
+    if(!objectFeedback)return;
+    clearTimeout(objectFeedback.timer);objectFeedback.layer?.remove();objectFeedback.node?.classList.remove('object-selection-pop');objectFeedback.node?.removeAttribute('data-object-feedback');objectFeedback=null;
+  }
+  function restoreObjectFeedback(){
+    const entry=objectFeedback;if(!entry?.layer||entry.layer.isConnected)return;
+    if(entry.kind==='train'){
+      const target=scene.querySelector(`[data-count-choice="${entry.node.textContent.trim()}"] text`);
+      if(target){const b=target.getBBox(),m=scene.getScreenCTM().inverse().multiply(target.getScreenCTM()),p=new DOMPoint(b.x+b.width/2,b.y+b.height/2).matrixTransform(m),scale=b.height/entry.height;
+        const placement=new DOMMatrix().translate(p.x,p.y).scale(scale).translate(-entry.centre.x,-entry.centre.y).multiply(entry.matrix);entry.layer.setAttribute('transform',`matrix(${placement.a} ${placement.b} ${placement.c} ${placement.d} ${placement.e} ${placement.f})`);}
+    }
+    entry.layer.querySelector('.object-feedback-scale').style.animationDelay=`${-Math.min(OBJECT_FEEDBACK_MS,performance.now()-entry.started)}ms`;scene.appendChild(entry.layer);
+  }
+  /** Reuse the chosen object for one short pop, then release its thumbnail update. */
+  function popObject(node,kind,after=null){
+    clearObjectFeedback();if(!node){after?.();return;}
+    const entry={node,kind,after,serial:roundSerial,activity:state.activity,started:performance.now()};objectFeedback=entry;
+    if(node.namespaceURI==='http://www.w3.org/2000/svg'){
+      const ns=node.namespaceURI,b=node.getBBox(),matrix=scene.getScreenCTM().inverse().multiply(node.getScreenCTM()),cx=b.x+b.width/2,cy=b.y+b.height/2,span=Math.max(1,b.width,b.height);
+      Object.assign(entry,{matrix,centre:new DOMPoint(cx,cy).matrixTransform(matrix),height:Math.max(1,b.height)});
+      const clone=node.cloneNode(true);clone.removeAttribute('transform');
+      for(const el of [clone,...clone.querySelectorAll('*')])for(const attr of [...el.attributes])if(attr.name==='id'||attr.name==='tabindex'||attr.name==='role'||attr.name.startsWith('data-'))el.removeAttribute(attr.name);
+      const layer=document.createElementNS(ns,'g');layer.dataset.objectFeedback=kind;layer.setAttribute('aria-hidden','true');layer.setAttribute('pointer-events','none');layer.setAttribute('transform',`matrix(${matrix.a} ${matrix.b} ${matrix.c} ${matrix.d} ${matrix.e} ${matrix.f})`);
+      const centre=document.createElementNS(ns,'g');centre.setAttribute('transform',`translate(${cx} ${cy})`);
+      const pop=document.createElementNS(ns,'g');pop.classList.add('object-feedback-scale');pop.style.setProperty('--pop-scale',String(Math.min(1.55,1+75/span)));
+      const copy=document.createElementNS(ns,'g');copy.dataset.feedbackCopy='';copy.setAttribute('transform',`translate(${-cx} ${-cy})`);copy.appendChild(clone);pop.appendChild(copy);
+      const radius=Math.min(75,Math.max(18,span*.6));
+      for(let i=0;i<8;i++){const a=i*Math.PI/4,ray=document.createElementNS(ns,'path');ray.setAttribute('d',`M${Math.cos(a)*radius} ${Math.sin(a)*radius}L${Math.cos(a)*(radius+12)} ${Math.sin(a)*(radius+12)}`);ray.setAttribute('stroke','#f6b83d');ray.setAttribute('stroke-width','4');ray.setAttribute('stroke-linecap','round');pop.appendChild(ray);}
+      centre.appendChild(pop);layer.appendChild(centre);entry.layer=layer;queueMicrotask(()=>{if(objectFeedback===entry)restoreObjectFeedback();});
+    }else{node.classList.add('object-selection-pop');node.dataset.objectFeedback=kind;}
+    $('show-me').disabled=true;
+    entry.timer=setTimeout(()=>{
+      if(objectFeedback!==entry)return;
+      clearObjectFeedback();
+      if(entry.serial!==roundSerial||entry.activity!==state.activity)return;
+      feedbackActionAt=entry.started;try{after?.();}finally{feedbackActionAt=null;}
+      if(state.activity==='bubbles')bubbleTracker();else updateGameItemStrip();
+      $('show-me').disabled=countHolding||!gameReady();
+    },OBJECT_FEEDBACK_MS);
+  }
   function scheduleNextRound(prepare=null){
     clearTimeout(nextRoundTimer);
     const serial=roundSerial,activity=state.activity,age=state.age;
@@ -104,7 +147,7 @@
       nextRoundTimer=null;
       if(serial!==roundSerial||activity!==state.activity||age!==state.age)return;
       prepare?.();resetRound();
-    },PLAY_PAUSE_MS);
+    },feedbackActionAt===null?PLAY_PAUSE_MS:Math.max(0,PLAY_PAUSE_MS-(performance.now()-feedbackActionAt)));
   }
   const save=()=>{
     const key=state.age??'common',current={level:state.level,bubbleSpeed:state.bubbleSpeed,bubbleSize:state.bubbleSize,bubbleSet:state.bubbleSet};ageSettings[key]=current;
@@ -261,10 +304,10 @@
     if(current){const x=current.offsetLeft-strip.offsetLeft; if(x<strip.scrollLeft||x+current.offsetWidth>strip.scrollLeft+strip.clientWidth)strip.scrollLeft=Math.max(0,x-strip.clientWidth/3);}
   }
   $('brush-thumbnails').addEventListener('click',event=>{const button=event.target.closest('[data-brush-index]');if(!button||state.activity!=='brush')return;const index=Number(button.dataset.brushIndex);if(!Number.isInteger(index)||index<0||index>=brushCount())return;brushIndex=index;resetRound();});
-  function brushComplete(message){if(state.done)return;brushFinished.add(brushIndex);updateBrushThumbnails();celebrate(message);applause();scheduleNextRound(()=>{brushIndex=(brushIndex+1)%brushCount();if(brushIndex===0)brushFinished.clear();});}
+  function brushComplete(message){if(state.done)return;popObject(scene.querySelector('[data-art-picture]'),'art');brushFinished.add(brushIndex);updateBrushThumbnails();celebrate(message);applause();scheduleNextRound(()=>{brushIndex=(brushIndex+1)%brushCount();if(brushIndex===0)brushFinished.clear();});}
   const artPicture=()=>state.activity==='brush'?brushPicture():({...artPictures[profile().picture],target:profile().paintTarget});
   function pictureArt(outline=false){
-    const picture=artPicture();if(state.activity==='brush')return `<g stroke="#536b5b" stroke-width="5" stroke-linejoin="round" fill="${outline?'none':brushThumbColor(picture.name)}">${picture.region}</g>`;if(picture.name==='puppy')return puppy(outline);
+    const picture=artPicture();if(state.activity==='brush')return `<g data-art-picture="" stroke="#536b5b" stroke-width="5" stroke-linejoin="round" fill="${outline?'none':brushThumbColor(picture.name)}">${picture.region}</g>`;if(picture.name==='puppy')return puppy(outline);
     return `<g stroke="#5c6555" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><g fill="${outline?'none':picture.color}">${picture.region}</g><g fill="${outline?'none':'#f6d789'}">${picture.details}</g></g>`;
   }
   function preview(id){
@@ -316,7 +359,7 @@
     event.preventDefault();scrollCards(event.key==='Home'?0:event.key==='End'?cardGrid.scrollWidth:cardGrid.scrollLeft+(event.key==='ArrowRight'?cardStep():-cardStep()));
   });
   $('paint-tools').insertAdjacentHTML('beforeend',colors.map((color,i)=>`<button class="paint-color" type="button" data-paint="${color}" style="--paint:${color}" aria-label="${colorNames[i]} paint" aria-pressed="${i===0}"></button>`).join(''));
-  function clearEffects(){stopDemo();clearTimeout(nextRoundTimer);nextRoundTimer=null;clearTimeout(rewardTimer);clearTimeout(guideTimer);$('celebrate').hidden=true;$('art-reward').hidden=true;scene.querySelector('[data-guide]')?.remove();}
+  function clearEffects(){clearObjectFeedback();stopDemo();clearTimeout(nextRoundTimer);nextRoundTimer=null;clearTimeout(rewardTimer);clearTimeout(guideTimer);$('celebrate').hidden=true;$('art-reward').hidden=true;scene.querySelector('[data-guide]')?.remove();}
   function cancelGesture(){
     const pointer=state.pointer;state.pointer=null;
     if(pointer&&scene.hasPointerCapture?.(pointer.id)){try{scene.releasePointerCapture(pointer.id);}catch{/* Gesture may already have ended. */}}
@@ -502,6 +545,7 @@
       const id=Number(fruit?.dataset.countFruit);
       if(!event.countDragSuccess||!fruit||!Number.isInteger(id)||id<0||id>=countMax()||countCollected.has(id))return;
       countCollected.add(id);countPlaced=countCollected.size;haptic(38,0);tone(560);
+      popObject(fruit,'fruit');
       if(countPlaced===countStage+1){
         countHolding=true;$('show-me').disabled=true;
         const serial=roundSerial,age=state.age,stage=countStage;
@@ -518,13 +562,13 @@
       return;
     }
     const choice=event.target.closest('[data-count-choice]');
-    if(!choice)return;
+    if(!choice||objectFeedback?.after)return;
     if(Number(choice.dataset.countChoice)!==countStage+1){hint(`Try number ${countStage+1}!`);return;}
-    haptic(45,0);tone(700);countStage++;countPlaced=0;
+    haptic(45,0);tone(700);popObject(choice.querySelector('text'),'train',()=>{countStage++;countPlaced=0;
     if(countStage>=countMax()){
       progress(countStage,countMax());updateGameItemStrip();celebrate(`Wonderful counting! You completed ${countTitle()}!`);applause();
       scheduleNextRound();
-    }else renderCountAdventure();
+    }else renderCountAdventure();});
   }
 
   scene.addEventListener('keydown',event=>{
@@ -559,7 +603,7 @@
     const circles=[[7,'outer',circleR],[9,'middle',circleR*.68],[8,'inner',circleR*.35]].map(([row,region,r])=>`<circle data-circle-region="${region}" data-color-region="${row}" cx="${circleX}" cy="${circleY}" r="${r}" fill="${abacusCount(row)?abacusColors[row][1]:'#000'}" stroke="#90969e" stroke-width="3"/>`).join('');
     scene.innerHTML=`<g id="abacus-frame"><rect x="10" y="5" width="${g.left-24}" height="586" rx="18" fill="#101010" stroke="#9b7e60" stroke-width="7"/>${abacusColors.map(([name,color],row)=>{const y=34+row*56,count=abacusCount(row);return `<g data-abacus-row="${row}"><rect data-row-highlight="${row}" x="20" y="${y-25}" width="${g.left-44}" height="50" rx="12" fill="none" stroke="${row===active?'#ffe17a':'transparent'}" stroke-width="3"/><text data-abacus-left="${row}" x="28" y="${y+8}" text-anchor="middle" font-size="23" fill="#fff" font-weight="900">${10-count}</text><text data-abacus-right="${row}" x="${g.left-27}" y="${y+8}" text-anchor="middle" font-size="23" fill="#fff" font-weight="900">${count}</text><path d="M${g.start-g.r} ${y}H${g.end+g.r}" stroke="#90969e" stroke-width="4"/><circle data-abacus-start="${row}" cx="${g.start}" cy="${y}" r="${g.r+2}" fill="none" stroke="#555" stroke-width="3" stroke-dasharray="5 5"/><circle data-abacus-destination="${row}" cx="${g.end}" cy="${y}" r="${g.r+2}" fill="none" stroke="#777" stroke-width="3" stroke-dasharray="5 5"/>${state.abacusRows[row].map((moved,index)=>{const p=abacusBeadPoint(row,index,g);return `<g data-bead-row="${row}" data-bead-index="${index}" data-moved="${moved}" transform="translate(${p.x} ${p.y})" role="button" aria-label="${name} bead ${index+1}" aria-disabled="false" tabindex="${index===9-count||index===10-count?'0':'-1'}"><circle r="${g.r}" fill="${color}" stroke="#ffffffb0" stroke-width="1.5"/><path d="M${-g.r*.45} ${-g.r*.48}L${g.r*.05} ${-g.r*.7}" stroke="white" stroke-opacity=".65" stroke-width="3" stroke-linecap="round"/></g>`;}).join('')}</g>`;}).join('')}</g><path d="M${g.left} 12V588" stroke="#555" stroke-width="2"/><g id="rainbow-picture" role="img" aria-label="Rainbow bands fill with the colors counted">${rainbow}</g><g id="circle-picture" role="img" aria-label="Pink outer circle, white middle circle, brown center">${circles}</g><g id="abacus-addition"><rect x="${right+4}" y="289" width="${rw-8}" height="51" rx="13" fill="#fff4c8" stroke="#a97e37" stroke-width="3"/><text x="${right+20}" y="310" font-size="18" font-weight="800" fill="#213b38" data-abacus-total-caption="">TOTAL BEADS MOVED →</text><text data-abacus-total x="${g.width-35}" y="331" text-anchor="end" font-size="49" font-weight="900" fill="#155c4a">${abacusTotal()}</text><text data-abacus-equation x="${right+20}" y="333" font-size="24" font-weight="900" fill="#334d47">0</text></g><g id="abacus-labels"><rect data-abacus-label-panel x="${right+4}" y="346" width="${rw-8}" height="241" rx="17" fill="#30343b" stroke="#a8adb4" stroke-width="4"/>${abacusColors.map(([name,color],row)=>`<text data-color-label="${row}" x="${right+16+(row<5?0:rw*.52)}" y="${376+(row%5)*42}" fill="${color}" stroke="#111820" stroke-width="${Math.max(1.2,font*.065)}" paint-order="stroke fill" stroke-linejoin="round" font-size="${font}" font-weight="900" font-family="inherit">${abacusLabel(row,abacusCount(row))}</text>`).join('')}</g>`;
     state.abacusElements=abacusColors.map((_,row)=>({beads:[...scene.querySelectorAll(`[data-bead-row="${row}"]`)],region:scene.querySelector(`[data-color-region="${row}"]`),label:scene.querySelector(`[data-color-label="${row}"]`),count:scene.querySelector(`[data-row-count="${row}"]`),highlight:scene.querySelector(`[data-row-highlight="${row}"]`)}));
-    updateAbacusProgress();updateAbacusFeedback(active);updateAbacusAddition();
+    updateAbacusProgress();updateAbacusFeedback(active);updateAbacusAddition();restoreObjectFeedback();
   }
   function updateAbacusFeedback(row,count=abacusCount(row),reveal=false){
     const nodes=state.abacusElements[row];if(!nodes)return;
@@ -574,7 +618,7 @@
     const previous=abacusCount(row);state.abacusSelectedRow=row;
     if(previous===count){restoreAbacusRow(row);updateAbacusFeedback(row);return;}
     state.abacusRows[row]=Array.from({length:10},(_,index)=>index>=10-count);
-    restoreAbacusRow(row);updateAbacusProgress();updateAbacusFeedback(row,count,!previous&&!!count);tone(520+count*20);
+    restoreAbacusRow(row);popObject(state.abacusElements[row].beads[Math.min(9,Math.max(0,10-count))],'bead');updateAbacusProgress();updateAbacusFeedback(row,count,!previous&&!!count);tone(520+count*20);
     const complete=state.abacusRows.every((_,index)=>abacusCount(index)>0);
     if(complete&&!state.done){celebrate('Wonderful counting! SaNa loves your rainbow and circle!');$('art-reward').hidden=false;applause();scheduleNextRound();}
     else{if(!complete&&state.done){state.done=false;clearEffects();}abacusHint();}
@@ -625,8 +669,10 @@
     brushIndex=index;
     resetRound();
     hint(`Selected ${artPicture().name}. ${state.paintMode?'Choose a color and paint inside the lines!':'Brush away the dirt to reveal the colors!'}`);
+    popObject($('item-progress-strip').querySelector(`[data-brush-choice="${index}"]`),'drawing');
   });
   function updateGameItemStrip(){
+    if(objectFeedback)return;
     if(state.activity==='drag'){
       const limit=shapeLevelLimits[state.age]||4;
       showItemStrip(shapes.slice(0,limit).map((shape,i)=>({label:shape.id,icon:`<svg viewBox="-68 -68 136 136" aria-hidden="true">${primitive(shape.id,shape.color,'#274b44')}</svg>`,later:i>=limit,done:!!state.shapes?.find(x=>x.id===shape.id&&x.placed),current:state.selected===shape.id})));
@@ -676,6 +722,7 @@
   }
   function matchShape(id){
     const shape=state.shapes.find(item=>item.id===id);if(!shape||shape.placed)return;
+    popObject(scene.querySelector(`[data-piece="${id}"]`),'shape');
     shape.placed=true;state.selected=null;renderDrag();tone(640);
     if(state.shapes.every(item=>item.placed)){
       const total=shapeLevelLimits[state.age]||4;
@@ -692,6 +739,7 @@
   const activeBubble=()=>state.bubbles.find(bubble=>bubble.element?.dataset.onstage==='true');
   function stopBubbles(){if(bubbleFrame!==null)cancelAnimationFrame(bubbleFrame);bubbleFrame=null;lastBubbleTime=0;}
   function bubbleTracker(){
+    if(objectFeedback)return;
     const mode={...bubbleModes[state.bubbleMode],items:bubbleItems()};
     if(state.bubbleMode==='numbers')mode.label=`1–${mode.items.length}`;else if(state.bubbleMode==='letters')mode.label=`A–${mode.items.at(-1)}`;
     $('bubble-score').textContent=state.bubbleMode==='plain'?`Popped ${Math.min(state.bubblePops,plainGoal())}/${plainGoal()}`:`${mode.label} · ${state.bubbleHits.size}/${mode.items.length}`;
@@ -723,7 +771,7 @@
     document.querySelectorAll('[data-bubble-size]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.bubbleSize===selectedBubbleSize())));
   }
   // Keep touch sizes useful across phone/tablet layouts and fit short play fields.
-  function bubbleRadius(){const desired=bubbleDiameters[selectedBubbleSize()]*220/Math.max(1,scene.clientHeight);return Math.max(14,Math.min(392,desired,selectedBubbleSize()==='large'?state.bubbleWidth*.44:392));}
+  function bubbleRadius(){const desired=bubbleDiameters[selectedBubbleSize()]*220/Math.max(1,scene.clientHeight);return Math.max(14,Math.min(({small:100,medium:145,large:180})[selectedBubbleSize()],desired,state.bubbleWidth*.44));}
   // Large bubbles need fewer simultaneous lanes on narrow screens. Keep a full bubble diameter plus a touch-safe gap between lanes.
   function bubbleCapacity(){const diameter=bubbleRadius()*2,gap=Math.max(18,diameter*.12);return Math.max(1,Math.min(8,Math.floor((state.bubbleWidth-8+gap)/(diameter+gap))));}
   function syncBubbleSlots(){
@@ -760,7 +808,7 @@
     // Fixed lane centers with no random horizontal drift: adjacent centers remain
     // at least one bubble diameter plus a safety gap apart.
     bubble.x=(bubble.slot+.5)*lane;
-    bubble.y=initial?Math.max(bubble.r+5,Math.min(435-bubble.r,110+(bubble.slot%3)*100+Math.random()*12)):440+bubble.r+8;bubble.wait=0;
+    bubble.y=initial?Math.min(430-bubble.r,220+(bubble.slot%3)*Math.min(35,Math.max(0,(440-2*bubble.r-20)/2))):440-bubble.r*.6;bubble.wait=0;
     const element=document.createElementNS('http://www.w3.org/2000/svg','g');bubble.element=element;
     element.classList.add('bubble');element.dataset.bubble=String(bubble.id);element.dataset.token=bubble.token;element.dataset.color=bubble.color;
     element.setAttribute('role','button');element.setAttribute('aria-label',`Pop ${bubble.token||'plain'} bubble`);
@@ -769,12 +817,12 @@
   }
   function drawBubble(bubble){
     const content=state.bubbleMode==='plain'?`<g transform="scale(${bubble.r/68})">${face(0,8)}</g>`:state.bubbleMode==='shapes'?`<g transform="scale(${bubble.r/95})">${primitive(bubble.token,shapeById(bubble.token)?.color||'#ffcf64','#274b44')}</g>`:`<text text-anchor="middle" dominant-baseline="central" font-family="inherit" font-size="${bubble.r*(bubble.token.length===2?.9:1.1)}" font-weight="900" fill="#29463e">${bubble.token}</text>`;
-    bubble.element.innerHTML=`<circle r="${bubble.r}" fill="${bubble.color}" stroke="#fffdf3" stroke-width="${bubble.r*.07}"/><circle r="${bubble.r*.83}" fill="none" stroke="white" stroke-opacity=".35" stroke-width="${bubble.r*.04}"/>${content}`;
+    bubble.element.innerHTML=`<circle data-balloon-body="" r="${bubble.r}" fill="${bubble.color}" stroke="#fffdf3" stroke-width="${bubble.r*.025}"/><circle r="${bubble.r}" fill="url(#balloon-shade)" pointer-events="none"/><ellipse data-balloon-shine="" cx="${-bubble.r*.3}" cy="${-bubble.r*.35}" rx="${bubble.r*.2}" ry="${bubble.r*.32}" transform="rotate(32)" fill="white" opacity=".55" pointer-events="none"/><path data-balloon-knot="" d="M0 ${bubble.r-2}l${-bubble.r*.1} ${bubble.r*.16}q${bubble.r*.1} ${-bubble.r*.05} ${bubble.r*.2} 0Z" fill="${bubble.color}" stroke="#52676e" stroke-width="1.5"/><path d="M0 ${bubble.r*1.13}q${-bubble.r*.13} ${bubble.r*.1} 0 ${bubble.r*.2}t0 ${bubble.r*.16}" fill="none" stroke="#fff8df" stroke-width="${Math.max(1.5,bubble.r*.016)}" pointer-events="none"/>${content}`;
   }
   function renderBubbles(){
     state.bubbleHits=new Map();state.bubblePops=0;state.bubbleRecent=[];state.bubbleEffects=[];
     state.bubbles=[];bubbleTracker();fitBubbleField();
-    scene.innerHTML='<g id="bubble-layer"></g><g id="splash-layer" pointer-events="none"></g>';scene.setAttribute('aria-label','Rising bubbles');
+    scene.innerHTML='<defs><radialGradient id="balloon-shade" cx=".3" cy=".25" r=".8"><stop offset="0" stop-color="white" stop-opacity=".35"/><stop offset=".5" stop-color="white" stop-opacity="0"/><stop offset=".8" stop-color="#25334b" stop-opacity=".14"/><stop offset="1" stop-color="#192339" stop-opacity=".4"/></radialGradient></defs><g id="bubble-layer"></g><g id="splash-layer" pointer-events="none"></g>';scene.setAttribute('aria-label','Rising balloons');
     state.bubbles=Array.from({length:bubbleCapacity()},(_,slot)=>({slot,element:null}));
     state.bubbles.forEach(bubble=>spawnBubble(bubble,true));progress(0,0);bubbleFrame=requestAnimationFrame(bubbleTick);
   }
@@ -799,11 +847,12 @@
   }
   function popBubble(bubble){
     if(!bubble?.element||state.done)return;
+    popObject(bubble.element,'balloon');
     const focused=document.activeElement===bubble.element;
     const splash=document.createElementNS('http://www.w3.org/2000/svg','g');splash.dataset.splash='';splash.setAttribute('transform',`translate(${bubble.x} ${bubble.y})`);splash.setAttribute('fill',bubble.color);
     splash.innerHTML=Array.from({length:8},()=>'<circle r="9"/>').join('');$('splash-layer').appendChild(splash);
     state.bubbleEffects.push({element:splash,drops:[...splash.children],age:0,radius:bubble.r*.85});
-    bubble.element.remove();bubble.element=null;bubble.wait=.15;state.bubblePops++;state.bubbleRecent=[...state.bubbleRecent.slice(-7),bubble.color];
+    bubble.element.remove();bubble.element=null;bubble.wait=.05;state.bubblePops++;state.bubbleRecent=[...state.bubbleRecent.slice(-7),bubble.color];
     if(bubble.token)state.bubbleHits.set(bubble.token,bubble.color);bubbleTracker();tone(450+(bubble.id%8)*55);
     if(focused)activeBubble()?.element.focus();
     if(state.bubbleMode==='plain'){
@@ -836,7 +885,7 @@
       <rect x="10" y="8" width="980" height="425" rx="25" fill="#1d1a27" opacity=".20"/>
       <rect x="205" y="22" width="590" height="386" rx="165" fill="#35203c" stroke="#f4cf77" stroke-width="14"/>
       <rect x="232" y="42" width="536" height="344" rx="145" fill="#050505" stroke="#d7a657" stroke-width="7"/>
-      <g aria-label="${item[0]}" role="img"><text x="500" y="238" font-size="145" text-anchor="middle">${item[1]}</text><text x="500" y="330" font-size="46" font-weight="900" text-anchor="middle" fill="#ffffff" stroke="#101010" stroke-width="1">${item[0]}</text></g>
+      <g data-cave-object="" aria-label="${item[0]}" role="img"><text x="500" y="238" font-size="145" text-anchor="middle">${item[1]}</text><text x="500" y="330" font-size="46" font-weight="900" text-anchor="middle" fill="#ffffff" stroke="#101010" stroke-width="1">${item[0]}</text></g>
       <g data-cave-door="1" transform="translate(${opened?720:0} 0) scale(${opened?.34:1} 1)" >
         <rect x="205" y="22" width="590" height="386" rx="165" fill="url(#caveDoor)" stroke="#f8d38c" stroke-width="13"/>
         ${Array.from({length:6},(_,i)=>`<path d="M${250+i*90} 75V375" stroke="#7a401d" stroke-width="9" opacity=".55"/>`).join('')}
@@ -866,6 +915,7 @@
       if(state.activity!=='slide'||serial!==roundSerial)return;
       state.slideRevealed=open;
       if(!open)state.slideIndex=(state.slideIndex+1)%slideTotal();
+      if(open)popObject(scene.querySelector('[data-cave-object]'),'cave');
       renderSlide();tone(open?660:480,true);
     },380);
   }
@@ -880,7 +930,7 @@
   }
   function renderPaint(){
     scene.setAttribute('aria-label',`Paint the ${artPicture().name}`);
-    scene.innerHTML=`<defs><clipPath id="picture-clip">${artPicture().region}</clipPath></defs><rect id="paint-paper" x="126" y="20" width="748" height="400" rx="26" fill="#fffdf5" stroke="#d8c8a6" stroke-width="4"/><g id="strokes" clip-path="url(#picture-clip)"></g><g pointer-events="none">${pictureArt(true)}</g><path d="M147 46L160 33M837 405L852 391" stroke="#debb7c" stroke-width="5" stroke-linecap="round"/>`;
+    scene.innerHTML=`<defs><clipPath id="picture-clip">${artPicture().region}</clipPath></defs><g data-art-picture=""><g fill="#fffaf0">${artPicture().region}</g><g id="strokes" clip-path="url(#picture-clip)"></g><g pointer-events="none">${pictureArt(true)}</g></g>`;
     state.coverage=[];
     for(let y=65;y<397;y+=9)for(let x=255;x<750;x+=9)if(insidePicture({x,y}))state.coverage.push({x,y,painted:false});
     progress(0,5);
@@ -964,6 +1014,7 @@
       if(target&&state.selected===target.dataset.target){matchShape(state.selected);event.preventDefault();return;}
       const item=event.target.closest('[data-piece]');if(!item)return;
       const shape=state.shapes.find(s=>s.id===item.dataset.piece);state.selected=shape.id;
+      popObject(item,'shape');
       state.pointer={id:event.pointerId,kind:'drag',shape,dx:point.x-shape.x,dy:point.y-shape.y,x:shape.x,y:shape.y};
       item.classList.add('selected');
     }else if(state.activity==='bubbles'){
@@ -1065,7 +1116,7 @@
     else if(handle&&['ArrowRight','ArrowLeft','Home','End'].includes(event.key)){
       event.preventDefault();const slider=state.sliders[Number(handle.dataset.sliderHandle)];const value=event.key==='End'?1:event.key==='Home'?0:slider.value+(event.key==='ArrowRight' ? .15 : -.15);slideTo(slider,slider.x+25+value*(slider.w-50));
     }else if(event.key==='Enter'||event.key===' '){
-      event.preventDefault();if(piece){state.selected=piece.dataset.piece;renderDrag();hint('Now choose the matching shadow.');scene.querySelector(`[data-target="${state.selected}"]`)?.focus();}
+      event.preventDefault();if(piece){state.selected=piece.dataset.piece;renderDrag();popObject(scene.querySelector(`[data-piece="${state.selected}"]`),'shape');hint('Now choose the matching shadow.');scene.querySelector(`[data-target="${state.selected}"]`)?.focus();}
       else if(target&&target.dataset.target===state.selected)matchShape(state.selected);
       else if(bubble)popBubble(state.bubbles.find(item=>item.id===Number(bubble.dataset.bubble)));
     }
@@ -1123,7 +1174,7 @@
     return{x:left+width/2,y:top+height/2,width,height};
   }
   async function showMe(){
-    if(!gameReady())return;
+    if(!gameReady()||objectFeedback)return;
     if(state.activity==='abacus'&&countHolding)return;
     if(demoActive){stopDemo();return;}
     cancelGesture();stopDemo();demoActive=true;$('show-me').setAttribute('aria-pressed','true');
@@ -1294,7 +1345,7 @@
   document.querySelectorAll('[data-bubble-speed]').forEach(button=>button.addEventListener('click',()=>{state.bubbleSpeed=button.dataset.bubbleSpeed;updateBubbleSettings();save();}));
   document.querySelectorAll('[data-bubble-size]').forEach(button=>button.addEventListener('click',()=>{state.bubbleSize=button.dataset.bubbleSize;updateBubbleSettings();fitBubbleField();save();}));
   $('paint-mode').addEventListener('click',()=>{state.paintMode=true;resetRound();});$('clean-mode').addEventListener('click',()=>{state.paintMode=false;resetRound();});
-  document.querySelectorAll('[data-paint]').forEach(button=>button.addEventListener('click',()=>{cancelGesture();state.erase=false;state.paintColor=button.dataset.paint;updateArtTools();tone(620);}));
+  document.querySelectorAll('[data-paint]').forEach(button=>button.addEventListener('click',()=>{cancelGesture();state.erase=false;state.paintColor=button.dataset.paint;updateArtTools();tone(620);popObject(button,'paint-color');}));
   document.querySelectorAll('[data-brush-size]').forEach(button=>button.addEventListener('click',()=>{cancelGesture();state.brushSize=button.dataset.brushSize;updateArtTools();}));
   $('erase-paint').addEventListener('click',()=>{cancelGesture();state.erase=!state.erase;updateArtTools();hint(state.erase?'Rub over the paint to erase. The picture stays safe.':`Choose a color and paint inside the ${artPicture().name}.`);});
   function soundButton(){$('sound').setAttribute('aria-pressed',String(state.sound));$('sound').setAttribute('aria-label',state.sound?'All sound on':'All sound off');$('sound').style.opacity='1';window.dispatchEvent(new CustomEvent('sana-sound-change',{detail:{enabled:state.sound}}));}
