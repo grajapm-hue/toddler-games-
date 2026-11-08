@@ -1,4 +1,4 @@
-# SaNa Little Hands Beta v1.27
+# SaNa Little Hands Beta v1.28
 
 The published Beta is `docs/beta/`. The v1.17 release was uploaded directly there;
 the older root prototype and `beta-runtime/` build inputs have not caught up.
@@ -12,7 +12,7 @@ from those older inputs. Running `build-beta.mjs` would replace newer features.
 - The collection and its completed numeral remain visible for 3,000 milliseconds.
   Further drops and Demo are paused. The current thumbnail stays unticked.
 - After that pause, the thumbnail ticks and the next count begins. The last
-  collection stays visible until Again, rather than restarting automatically.
+  collection stays visible for the celebration, then a fresh round starts automatically.
 - The five apples and ten carrots are now one running collection. Items stay
   collected between consecutive thumbnails; source and receiver tabs show both
   sides of the count in the unused picture space without resizing the illustrations.
@@ -27,6 +27,29 @@ generation prompts are in [docs/beta/count-art](docs/beta/count-art/generation.j
 
 The install manifest and original illustration dimensions remain unchanged.
 The Beta worker precaches the six illustrations and the exact versioned game script.
+
+## v1.28 automatic replay and visible Drag shapes
+
+Completed rounds use one cancellable `scheduleNextRound()` function. Apple Basket
+and Feed the Hungry Rabbit now celebrate their final collection and refill after
+two seconds; each individual count still retains its three-second hold. Train,
+Abacus, Drag, all four Bubble modes, and both art modes keep their previous replay
+or next-picture delays. Cave retains its open/close sequence and wraps from the
+last room to the first. Again remains an optional manual restart in every game.
+Age/mode changes, Games, navigation, and Again cancel a pending replay. Finishing
+an art collection clears its completion ticks before starting the first picture.
+
+Shape Bubble thumbnails previously inserted duplicate `sanaShapeShadow` and
+`sanaShapeSheen` IDs into every thumbnail. After leaving that game, browsers could
+resolve Drag's effects to those now-hidden definitions, making its left-hand
+pieces disappear even though their hit targets still existed. Flat thumbnails now
+render only their geometry, leaving Drag's own effects as the unique definitions.
+
+`node check-auto-replay.cjs` tests completion/replay across ages and modes, repeated
+Shape Bubbles → Drag navigation, actual screenshot pixels, Demo cancellation,
+cancelled gestures, portrait/landscape layouts, and timer cancellation. It uses
+the same Playwright configuration as the counting checks; `MM_SHARP` optionally
+selects the installed Sharp module for screenshot pixel checks.
 
 ## Demo lessons
 
