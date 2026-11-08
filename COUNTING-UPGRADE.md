@@ -200,3 +200,13 @@ The six new pictures are precached for offline play. Built-in image-generator ed
 Age 4 keeps each carriage and its number in place while the child completes a group. The groups are 1–4, 5–9, 10–13, 14–16 and 17–20; the next group appears only after the final correct answer in the current group. Five coaches fit together for 5–9, while the three-coach group retains the standard coach size. Number labels keep their readable size. Completed or incorrect numbers do not advance the target; Demo previews the current group without changing real progress.
 
 `node check-real-train.cjs` now checks every group's fixed positions and tappable labels across all seven viewport sizes, group transitions through 20, keyboard/touch input, Demo in the five-coach group, restart and offline play. Screenshots wait for the artwork to decode before capture.
+
+## v1.32 continuous balloon rows
+
+Bubble Garden now keeps several rows travelling together instead of one balloon per horizontal lane. Body sizes fit multiple rows; row spacing includes the knot and full string. A bounded pool queues the next row below the field before the previous row exits. Popped balloons rejoin only when their lane has space. Every row uses the selected speed, so balloons cannot catch or touch the row above.
+
+The four content choices share the speed/size settings row, releasing the old bottom toolbar's height for larger balloon targets. Short screens can scroll this settings row horizontally. The artwork, starter/full collections, saved preferences, shared selection feedback, Demo, and 1.5-second completion/replay pauses are preserved. Fullscreen and rotation reflow existing balloons without clearing collection progress. Fullscreen retains the normal view's visible balloon diameter and spacing for Small, Medium and Large; its extra area increases balloon quantity rather than doubling their size.
+
+The current Beta is maintained directly in `docs/beta/`; the root prototype and `build-beta.mjs` still describe the older prototype and must not overwrite this published game. This release updates `docs/beta/app.js`, `play.html`, `index.html` and its worker together.
+
+`node check-balloon-flow.cjs` checks actual rendered rows, body/string separation, bounded recycling over all three speeds, all four ages/content modes/sizes, short/rotated phone and tablet layouts, touch, fullscreen, reset and automatic replay. Use `PLAYROOM_BROWSER=webkit` for the second browser engine and `FLOW_EVIDENCE` for screenshots and results.
