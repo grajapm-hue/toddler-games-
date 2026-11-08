@@ -280,3 +280,9 @@ An AI-generated comparison using the existing game screenshots was reviewed befo
 Fullscreen scene captions target a 12% increase over their normal rendered size, rather than growing with the SVG playfield. Tabs are remeasured around the smaller text, including mixed-size counters. Normal layout geometry is retained per viewport/game; a hidden inert layout copy supplies the reference after fullscreen rotation without changing the active game. Progress text also gets a modest increase.
 
 The Abacus board and unfilled rainbow/circle areas show the countryside, with a sandalwood board border. Circle regions use independent ring masks so filling pink or white does not paint an uncounted inner region. Bead colours are retained exactly. The right-side count text matches its bead colour; small contrasting backings keep even yellow and white readable without blurred outlines. Left-aligned monitor columns, counting, feedback and controls are retained.
+
+## v1.44 selection, peek-a-boo and smoother bead gestures
+
+Bubble content tabs use yellow only for the selected mode, including A–Z. Slide adds a fitted SaNa eye toggle below the door status; touch and keyboard use the existing open/close path. The door action changes to SLIDE TO CLOSE when open and SLIDE TO OPEN when closed, including Demo previews.
+
+Abacus bead transforms stay in the pointer handler while count feedback is scheduled once per animation frame, with only changed captions remeasured. A new drag clears the previous bead's feedback copy and flushes its progress count. Live left/right counts, total and colour label agree with the drag preview; releasing commits the count and cancellation restores it. The side counts use the same font size as the monitor list. Larger vertical oval beads, wider count margins and a thicker sandalwood frame retain ten beads per row, their colours and free-counting behaviour.
