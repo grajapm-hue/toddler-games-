@@ -244,3 +244,8 @@ The normal toolbar places fullscreen before vibration. Expanded play places vibr
 ## v1.36 Apple and Rabbit countryside correction
 
 Age 2 Apple and Age 3 Rabbit now share the Age 4 train's complete green countryside artwork, with the same cover positioning in normal and fullscreen play. The flat green override is restricted to the Age 5 abacus. Balloon sizing/formation, counting behaviour, SUM/TOTAL layout and controls are unchanged.
+
+
+## v1.37 keep harvest counts clear of the controls
+
+In fullscreen, vibration sits on the bottom row immediately left of the fullscreen return square. Apple and Rabbit reserve this bottom row so neither control covers the collected count. Normal toolbar order, toggle behaviour, countryside backgrounds and gameplay are unchanged.
