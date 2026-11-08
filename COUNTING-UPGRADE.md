@@ -266,3 +266,7 @@ The welcome page's version beside Update, the Update button in the Games menu/ev
 ## v1.40 centred transparent text panels
 
 Train title/target headings, carriage numerals, harvest instructions/praise/counters, Slide captions and Abacus sum/total/colour labels are centred within their areas. Noninteractive text-panel fills, progress-tab fills and status/hint backdrops are transparent; light text outlines preserve readability over the countryside. Progress borders/checkmarks, action-button colours, artwork, the painting surface and the bead board remain distinct. Text content, counting rules, feedback and replay timing are retained.
+
+## v1.41 crisp text and fitted yellow tabs
+
+Game captions use plain dark lettering without text shadows or letter outlines. Yellow caption tabs with a thin border are measured from the actual text, including changing Abacus counts and sum lines, and are refitted on scene resize. Progress labels, status, hints and fullscreen notices share the compact yellow treatment; progress columns and game hit areas stay in place. Short words use short tabs. Colour names remain explicit, with the existing coloured beads, rainbow and progress dots identifying each colour. Game rules, controls, object artwork and feedback timing are retained.
