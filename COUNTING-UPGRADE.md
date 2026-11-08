@@ -256,3 +256,8 @@ In fullscreen, vibration sits on the bottom row immediately left of the fullscre
 Every age and activity now uses the train's full green countryside backdrop, in normal and fullscreen play: Shapes, Balloons, Slide, Brush, Paint and all counting rooms including Age 5 Abacus. Slide retains its door and revealed objects while its separate cave photograph/dark room overlay is removed so the common landscape remains visible outside the door. Unused planet/cave backdrop downloads are removed from the new offline cache.
 
 The bottom-right fullscreen return square and vibration switch to its left remain consistent across all games. Every fullscreen room reserves a clear bottom row beneath its game field, protecting Abacus labels and game objects as well as Apple/Rabbit counts. Sizes, W rows, touch effects, game rules and timing are retained. Layout tests cover every age/game/mode in both views; room feedback, artwork loading, fullscreen size and installed/offline checks verify the shared background without changing interactions.
+
+
+## v1.39 visible running version
+
+The welcome page's version beside Update, the Update button in the Games menu/every room, and a passive fullscreen badge all identify the loaded page release. Compact headers stack the number beneath Update without widening the controls. Fullscreen shows the version at the left of the existing clear bottom row. The label follows the page metadata and stays on the running version while a newer worker downloads, changing only when that update is applied. Game logic, theme and controls are retained.
