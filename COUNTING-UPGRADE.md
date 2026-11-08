@@ -1,4 +1,4 @@
-# SaNa Little Hands Beta v1.30
+# SaNa Little Hands Beta v1.31
 
 The published Beta is `docs/beta/`. The v1.17 release was uploaded directly there;
 the older root prototype and `beta-runtime/` build inputs have not caught up.
@@ -27,6 +27,32 @@ generation prompts are in [docs/beta/count-art](docs/beta/count-art/generation.j
 
 The install manifest and original illustration dimensions remain unchanged.
 The Beta worker precaches the six illustrations and the exact versioned game script.
+
+## v1.31 sky painting, balloons and shared object feedback
+
+Finger Paint keeps its cream colouring shape and clipped strokes, while the
+area outside the shape is transparent over the same sky as Brush Clean. The
+outer white board has been removed for every drawing and starting age.
+
+All Bubble modes and ages use shaded balloon bodies, highlights, knots and
+strings. Responsive radii fit the playfield; replacements enter partly visible
+after 50 ms instead of travelling from entirely below the board. Fixed lanes
+still prevent horizontal overlap and uncollected content remains available.
+
+One `popObject()` helper reuses the selected object for a 300 ms growth/spark
+response. It covers shapes, collected fruit, numbered carriages, balloons,
+Abacus beads, Cave discoveries, finished pictures, drawing and colour choices.
+Visible thumbnail updates follow the pop. Train holds its number/target until
+the feedback ends and rejects repeated answers during that interval. Again,
+navigation and new rounds cancel pending feedback. Existing 1,500 ms round
+pauses include the Train pop rather than adding another delay. Reduced-motion
+settings receive a static, smaller emphasis.
+
+`node check-room-feedback.cjs` checks the sky outside Paint's object, clipped
+strokes, each room's feedback/tick order, repeated Train input, cancellation,
+fullscreen transitions and native animation. Its balloon matrix covers ages
+2-5, four modes, three sizes and four screen layouts, including a visible
+replacement in the same lane within 300 ms.
 
 ## v1.30 shared 1.5-second play pause
 

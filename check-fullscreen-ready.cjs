@@ -56,7 +56,7 @@ let browser;
    if(activity==='drag'){await game.locator('[data-piece="circle"]').press('Enter');await game.locator('[data-target="circle"]').press('Enter');}
    if(activity==='slide'){await game.locator('[data-slide-swipe]').press('ArrowRight');await game.clock.runFor(400);}
    if(activity==='brush')await stroke(await point('#scene',500,225),await point('#scene',520,225));
-   const before=await snapshot(),loads=requests;const timings=[];
+   await game.clock.runFor(300);const before=await snapshot(),loads=requests;const timings=[];
    for(let cycle=0;cycle<3;cycle++){
     const start=Date.now();await game.locator('#fullscreen').click();await ready();await game.clock.runFor(80);timings.push(Date.now()-start);
     check(`${width}x${height} age ${age} ${activity}/${mode} fullscreen preserves play ${cycle+1}`,JSON.stringify(await snapshot())===JSON.stringify(before));

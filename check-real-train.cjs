@@ -34,7 +34,7 @@ const groups=[[1,2,3,4],[5,6,7,8,9],[10,11,12,13],[14,15,16],[17,18,19,20]];
    for(const number of values){
     const current=await geometry();
     check(`${width}x${height} keeps group ${values[0]} fixed while choosing ${number}`,JSON.stringify(current.boxes.map(b=>b.number))===JSON.stringify(values)&&current.boxes.every((b,i)=>Math.hypot(b.x-start.boxes[i].x,b.y-start.boxes[i].y)<1),current);
-    await page.locator(`[data-count-choice="${number}"]`).click();
+    await page.locator(`[data-count-choice="${number}"]`).click();await page.clock.runFor(300);
    }
   }
  }
@@ -54,7 +54,7 @@ const groups=[[1,2,3,4],[5,6,7,8,9],[10,11,12,13],[14,15,16],[17,18,19,20]];
   }
   if(n===2||n===6){await page.locator(`[data-count-choice="${n-1}"]`).click();check('A completed carriage cannot advance target '+n,await page.locator('#item-progress-strip .is-done').count()===n-1);}
   const carriage=page.locator(`[data-count-choice="${n}"]`).first();
-  if(n===9||n===16){await carriage.focus();await carriage.press(n===9?'Enter':' ');}else await carriage.click();
+  if(n===9||n===16){await carriage.focus();await carriage.press(n===9?'Enter':' ');}else await carriage.click();await page.clock.runFor(300);
   check('Count '+n+' completes exactly its thumbnail',await page.locator('#item-progress-strip .is-done').count()===n);
  }
  check('All twenty counts finish',await page.locator('#item-progress-strip .is-done').count()===20);
@@ -69,15 +69,15 @@ const groups=[[1,2,3,4],[5,6,7,8,9],[10,11,12,13],[14,15,16],[17,18,19,20]];
   const number=await page.locator('[data-count-choice="1"] text').evaluate(el=>{const b=el.getBoundingClientRect();return{x:b.x+b.width/2,y:b.y+b.height/2};});
   if(engine==='chromium')await page.touchscreen.tap(number.x,number.y);
   else await page.mouse.click(number.x,number.y);
-  check('The real carriage works with rotated '+(engine==='chromium'?'touch':'pointer')+' input',await page.locator('#item-progress-strip .is-done').count()===1,number);
+  await page.clock.runFor(300);check('The real carriage works with rotated '+(engine==='chromium'?'touch':'pointer')+' input',await page.locator('#item-progress-strip .is-done').count()===1,number);
   check('Train artwork decodes as actual images',await page.evaluate(async()=>{const imgs=[...new Set([...document.querySelectorAll('image[data-train-art]')].map(n=>n.getAttribute('href')))];return imgs.length===5&&(await Promise.all(imgs.map(src=>new Promise(resolve=>{const i=new Image();i.onload=()=>resolve(i.naturalWidth>200);i.onerror=()=>resolve(false);i.src=src;})))).every(Boolean);}));
   if(!process.env.TRAIN_RED){
    await page.goto(base+'index.html');await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
-   const cached=await page.evaluate(async()=>{const cache=await caches.open('sana-little-hands-beta-v130-shared-pause');return Promise.all(['locomotive-colour-v126','carriage-turquoise-v126','carriage-yellow-v126','carriage-coral-v126','carriage-violet-v126','farm-sky-v126'].map(name=>cache.match(new URL('train-art/'+name+'.webp',location.href)).then(Boolean)));});check('The installed cache includes every colourful train and farm picture',cached.every(Boolean),cached);
+   const cached=await page.evaluate(async()=>{const cache=await caches.open('sana-little-hands-beta-v131-room-feedback');return Promise.all(['locomotive-colour-v126','carriage-turquoise-v126','carriage-yellow-v126','carriage-coral-v126','carriage-violet-v126','farm-sky-v126'].map(name=>cache.match(new URL('train-art/'+name+'.webp',location.href)).then(Boolean)));});check('The installed cache includes every colourful train and farm picture',cached.every(Boolean),cached);
    if(engine==='chromium'){
     const cdp=await context.newCDPSession(page);await cdp.send('Network.clearBrowserCache');await context.setOffline(true);await open();
     const decoded=await page.evaluate(async()=>Promise.all(['locomotive-colour-v126','carriage-turquoise-v126','carriage-yellow-v126','carriage-coral-v126','carriage-violet-v126','farm-sky-v126'].map(name=>new Promise(resolve=>{const i=new Image();i.onload=()=>resolve(i.naturalWidth>200);i.onerror=()=>resolve(false);i.src='train-art/'+name+'.webp';}))));check('All train and farm pictures reload from the installed cache offline',decoded.every(Boolean),decoded);
-    await page.locator('[data-count-choice="1"]').click();check('The real train game advances offline',await page.locator('#item-progress-strip .is-done').count()===1);
+    await page.locator('[data-count-choice="1"]').click();await page.clock.runFor(300);check('The real train game advances offline',await page.locator('#item-progress-strip .is-done').count()===1);
    }
    await page.goto(base+'play.html?age=3');await page.locator('[data-age-option="3"]').click();await page.locator('[data-activity="abacus"]').click();
    check('The carrot game retains its own background',await page.locator('.play-mat').evaluate(el=>!getComputedStyle(el).backgroundImage.includes('farm-sky-v126.webp')));

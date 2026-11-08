@@ -350,7 +350,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
 <script>for(const type of ['touchstart','touchmove'])document.addEventListener(type,event=>{if(event.touches.length>1)event.preventDefault();},{passive:false,capture:true});for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});</script>
-<meta name="sana-release" content="sana-little-hands-beta-v130-shared-pause">
+<meta name="sana-release" content="sana-little-hands-beta-v131-room-feedback">
 <style>
 #music-toggle{font-size:24px;font-weight:900;color:#183f37;background:#d6c4fa}
 #music-toggle[aria-pressed="true"]{background:#bce8c8}
@@ -522,6 +522,13 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 #game-art-status{position:absolute;inset:45% auto auto 50%;transform:translate(-50%,-50%);max-width:85%;z-index:20;padding:12px 18px;background:#fff8dc;color:#214b3e;border:2px solid #9c7140;border-radius:14px;font-size:18px;font-weight:800;text-align:center;pointer-events:none}
 #game-art-status button{display:block;margin:8px auto 0;padding:8px 18px;background:#ffe17a;color:#214b3e;border:2px solid #80613b;border-radius:10px;font:inherit;pointer-events:auto}
 </style>
+<style>
+.object-feedback-scale{transform-box:view-box;transform-origin:0 0;animation:object-pop 300ms ease-out both}
+@keyframes object-pop{0%{transform:scale(1);opacity:1}45%{transform:scale(var(--pop-scale,1.5));opacity:1}75%{transform:scale(1.18);opacity:1}100%{transform:scale(1.05);opacity:0}}
+.object-selection-pop{animation:selection-pop 300ms ease-out both}
+@keyframes selection-pop{0%,100%{transform:scale(1)}45%{transform:scale(1.15);box-shadow:0 0 0 4px #ffe17a}}
+@media(prefers-reduced-motion:reduce){.object-feedback-scale{animation:none!important;transform:scale(1.1)}.object-selection-pop{animation:none!important;outline:3px solid #e8b43c}}
+</style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true"><defs>
@@ -573,7 +580,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 (()=>{const status=document.getElementById("game-results"),slot=document.getElementById("game-status-top");if(status&&slot)slot.appendChild(status);})();
 </script>
 <script src="age-profiles.js"></script>
-<script src="app.js?v130"></script>
+<script src="app.js?v131"></script>
 <script src="pwa.js"></script>
 <script>
 /* v1.04 beta: Web Audio buffer playback avoids HTMLMediaElement media cards.
