@@ -228,3 +228,14 @@ The Age 5 rainbow/circle abacus is a counting monitor. Showing every colour, or 
 Balloon lanes use a gentle W-shaped vertical stagger. New and recycled rows retain this offset while all lanes travel at the existing speed, with the existing horizontal clearance, row spacing, sizes and fullscreen quantities. Touch enlargement, splashes, collections and Demo are unchanged.
 
 `node check-abacus-wave.cjs` verifies long waits with one bead in every row and all 100 beads, continued forward/backward counting, manual reset, fullscreen/rotation, the W silhouette, consistent upward movement, separated bodies/strings across layouts and sizes, recycling and Demo alignment. `WAVE_EVIDENCE` selects its output folder.
+
+
+## v1.35 larger balloons and clearer counting
+
+All three balloon sizes have 20% larger rendered diameters than v1.34. Existing lane and row geometry uses the larger radius to reduce the pool where necessary. The W stagger, travelling speed, stable fullscreen sizes, grow-then-splash feedback and collection rules remain unchanged.
+
+Apple, Rabbit and the Age 5 Abacus use the original mint-green across the complete play area in normal and fullscreen views. The Age 4 train retains its farmland. The abacus moves its rainbow/circle upward and provides a taller two-cell SUM/TOTAL table. Long sums wrap after five rows and fit within their own cell, including all 100 beads. Counting remains free with manual Again.
+
+The normal toolbar places fullscreen before vibration. Expanded play places vibration above the fullscreen return square, and the fullscreen controls share the normal blue/green palette. Existing sound, vibration, exit, navigation, Slide and Brush behaviour is retained.
+
+`node check-count-layout.cjs` compares rendered balloon sizes to v1.34, checks backgrounds and control order/colours, and verifies abacus text containment at 100 beads in normal/fullscreen layouts across phone, portrait and tablet viewports. `LAYOUT_EVIDENCE` chooses the evidence folder.
