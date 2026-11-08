@@ -7,8 +7,34 @@
     lilac:['#e9e1f2','#a591b5'],peach:['#f3dfd3','#b5927e']
   };
   const colourTints=[['#f6e0dd','#b9877f'],['#f5e5d3','#b99a75'],['#f6f0d5','#baad72'],['#dfebd9','#8aa67a'],['#dcebf5','#7e9fb7'],['#e3e3f3','#9396b9'],['#ebe1f2','#a591b5'],['#f4e1eb','#b78fa3'],['#e9e0d7','#a58e79'],['#f8f5ed','#aaa699']];
+  const normalSceneSizes=new Map();
+  function normalSceneSize(){
+    const key=[app.style.getPropertyValue('--frame-w'),app.style.getPropertyValue('--frame-h'),app.dataset.view,app.dataset.age,state.paintMode,state.bubbleMode].join('/');
+    if(!app.classList.contains('immersive')){const size={width:scene.clientWidth,height:scene.clientHeight};normalSceneSizes.set(key,size);return size;}
+    if(normalSceneSizes.has(key))return normalSceneSizes.get(key);
+    // Measure the existing normal CSS layout without changing the live game or its state.
+    const copy=app.cloneNode(true);copy.classList.remove('immersive','rotated');copy.setAttribute('aria-hidden','true');copy.inert=true;
+    copy.querySelector('#game-mid-controls').append(copy.querySelector('#vibration-toggle'));
+    Object.assign(copy.style,{left:'-20000px',top:'0',transform:'none',visibility:'hidden',pointerEvents:'none'});document.body.appendChild(copy);
+    const board=copy.querySelector('#scene'),size={width:board.clientWidth,height:board.clientHeight};copy.remove();normalSceneSizes.set(key,size);return size;
+  }
+  function fullscreenCaptionFont(node,base,size){
+    let width=scene.viewBox.baseVal.width,height=scene.viewBox.baseVal.height,font=base;
+    if(state.activity==='abacus'&&state.age===4){
+      width=1000;height=Math.max(140,Math.min(440,width*size.height/Math.max(1,size.width)));
+      const compact=height<280,unit=1000/Math.max(1,size.width),key=node.dataset.labelFor||'';
+      font=key==='train-title'?Math.max(compact?23:32,14*unit):key==='train-target'?Math.max(compact?30:44,18*unit):key.startsWith('train-number-')?Math.max(24,15*unit):node.hasAttribute('data-train-engine')?Math.max(compact?17:24,12*unit):Math.max(compact?24:36,14*unit);
+    }else if(state.activity==='abacus'&&state.age===5){
+      width=Math.max(1000,600*size.width/Math.max(1,size.height));height=600;
+      const scale=600/Math.max(1,size.height);
+      if(node.hasAttribute('data-color-label'))font=Math.min(42,Math.max(20,14*scale));
+      if(node.hasAttribute('data-abacus-equation'))font=Math.min(34,Math.max(26,14*scale));
+    }
+    const normalScale=Math.min(size.width/width,size.height/height),m=scene.getScreenCTM(),currentScale=Math.hypot(m.a,m.b);
+    return font*normalScale*1.12/Math.max(.001,currentScale);
+  }
   function captionTint(node){
-    if(node.hasAttribute('data-color-label'))return colourTints[Number(node.dataset.colorLabel)];
+    if(node.hasAttribute('data-color-label')){const row=Number(node.dataset.colorLabel);return row===5?['#f8f5ed',colourTints[row][1]]:['#09120d',colourTints[row][1]];}
     const key=node.dataset.labelFor||'';
     if(key.startsWith('train-number-'))return [captionTints.sky,captionTints.cream,captionTints.peach,captionTints.lilac][(Number(key.slice(13))-1)%4];
     if(key.includes('total')||key==='train-target'||key==='harvest-counter'||key==='harvest-ledger-collected')return captionTints.sage;
@@ -21,7 +47,8 @@
   // Measure the actual glyphs so short captions never inherit an oversized panel.
   // Keep the original SVG nodes and hit areas intact, including during bead updates.
   function fitSceneTextTabs(){
-    const captions=scene.querySelectorAll('.scene-caption,[data-color-label],[data-train-engine],[data-train-instruction],.target>text,[data-cave-object] text:last-child,[data-cave-door] text');
+    const captions=scene.querySelectorAll('.scene-caption,[data-color-label],[data-abacus-left],[data-abacus-right],[data-train-engine],[data-train-instruction],.target>text,[data-cave-object] text:last-child,[data-cave-door] text');
+    const immersive=app.classList.contains('immersive'),normalSize=normalSceneSize();
     const glyphBox=node=>{
       const glyphs=Array.from({length:node.getNumberOfChars()},(_,i)=>node.getExtentOfChar(i));
       if(!glyphs.length)return null;
@@ -33,11 +60,14 @@
         node.dataset.captionFont ||= node.getAttribute('font-size');
         if(node.getAttribute('font-size')!==node.dataset.captionFont)node.setAttribute('font-size',node.dataset.captionFont);
       }
+      const base=parseFloat(node.getAttribute('font-size'));
+      node.querySelectorAll('tspan[font-size]').forEach(span=>{span.dataset.captionFont ||= span.getAttribute('font-size');span.setAttribute('font-size',span.dataset.captionFont);});
+      if(immersive){const font=fullscreenCaptionFont(node,base,normalSize);node.setAttribute('font-size',font);node.querySelectorAll('tspan[data-caption-font]').forEach(span=>span.setAttribute('font-size',Number(span.dataset.captionFont)*font/base));}
       let box=glyphBox(node);if(!box)return;
       const panel=[...scene.querySelectorAll('[data-text-panel]')].find(rect=>node.dataset.labelFor===rect.dataset.textPanel||node.dataset.labelFor?.startsWith(rect.dataset.textPanel+'-'));
       const maxWidth=node.hasAttribute('data-color-label')?Number(scene.querySelector('[data-abacus-label-panel]').getAttribute('width'))/2-20:panel&&!panel.dataset.textPanel.startsWith('train-number-')?Number(panel.getAttribute('width'))-16:Infinity;
       if(box.width>maxWidth){node.setAttribute('font-size',parseFloat(getComputedStyle(node).fontSize)*maxWidth/box.width);box=glyphBox(node);}
-      const font=parseFloat(getComputedStyle(node).fontSize),px=Math.max(3,font*.22),py=Math.max(1.5,font*.1);
+      const font=parseFloat(getComputedStyle(node).fontSize),edgeCount=node.matches('[data-abacus-left],[data-abacus-right]'),px=edgeCount?2:Math.max(3,font*.22),py=Math.max(1.5,font*.1);
       const [fill,stroke]=captionTint(node);
       let tab=node.previousElementSibling;
       if(!tab?.hasAttribute('data-caption-tab')){tab=document.createElementNS(scene.namespaceURI,'rect');tab.setAttribute('data-caption-tab','');tab.setAttribute('aria-hidden','true');tab.setAttribute('pointer-events','none');node.before(tab);}
@@ -676,15 +706,15 @@
     state.abacusSize=`${scene.clientWidth}/${scene.clientHeight}`;scene.setAttribute('viewBox',`0 0 ${g.width} 600`);scene.setAttribute('aria-label','Freely count abacus beads, rainbow and circle');
     const right=g.left+16,rw=g.width-right-12,radius=Math.min(204,rw*.32),cx=right+radius+6,base=214,circleR=Math.min(96,rw*.16),circleX=g.width-circleR-18,circleY=108,band=radius/10;
     const sumWidth=(rw-16)*.73,totalX=right+sumWidth+12,totalWidth=rw-sumWidth-16,sumFont=Math.min(34,Math.max(26,14*scale));
-    const rainbow=abacusColors.slice(0,7).map(([name,color],i)=>{const outer=radius-i*band,inner=outer-band;return `<path data-rainbow-band="${i}" data-color-region="${i}" d="M${cx-outer} ${base}A${outer} ${outer} 0 0 1 ${cx+outer} ${base}L${cx+inner} ${base}A${inner} ${inner} 0 0 0 ${cx-inner} ${base}Z" fill="${abacusCount(i)?color:'#000'}" stroke="#90969e" stroke-width="3"/>`;}).join('');
-    const circles=[[7,'outer',circleR],[9,'middle',circleR*.68],[8,'inner',circleR*.35]].map(([row,region,r])=>`<circle data-circle-region="${region}" data-color-region="${row}" cx="${circleX}" cy="${circleY}" r="${r}" fill="${abacusCount(row)?abacusColors[row][1]:'#000'}" stroke="#90969e" stroke-width="3"/>`).join('');
-    scene.innerHTML=`<g id="abacus-frame"><rect x="10" y="5" width="${g.left-24}" height="586" rx="18" fill="#101010" stroke="#9b7e60" stroke-width="7"/>${abacusColors.map(([name,color],row)=>{const y=34+row*56,count=abacusCount(row);return `<g data-abacus-row="${row}"><rect data-row-highlight="${row}" x="20" y="${y-25}" width="${g.left-44}" height="50" rx="12" fill="none" stroke="${row===active?'#ffe17a':'transparent'}" stroke-width="3"/><text data-abacus-left="${row}" x="28" y="${y+8}" text-anchor="middle" font-size="23" fill="#fff" font-weight="900">${10-count}</text><text data-abacus-right="${row}" x="${g.left-27}" y="${y+8}" text-anchor="middle" font-size="23" fill="#fff" font-weight="900">${count}</text><path d="M${g.start-g.r} ${y}H${g.end+g.r}" stroke="#90969e" stroke-width="4"/><circle data-abacus-start="${row}" cx="${g.start}" cy="${y}" r="${g.r+2}" fill="none" stroke="#555" stroke-width="3" stroke-dasharray="5 5"/><circle data-abacus-destination="${row}" cx="${g.end}" cy="${y}" r="${g.r+2}" fill="none" stroke="#777" stroke-width="3" stroke-dasharray="5 5"/>${state.abacusRows[row].map((moved,index)=>{const p=abacusBeadPoint(row,index,g);return `<g data-bead-row="${row}" data-bead-index="${index}" data-moved="${moved}" transform="translate(${p.x} ${p.y})" role="button" aria-label="${name} bead ${index+1}" aria-disabled="false" tabindex="${index===9-count||index===10-count?'0':'-1'}"><circle r="${g.r}" fill="${color}" stroke="#ffffffb0" stroke-width="1.5"/><path d="M${-g.r*.45} ${-g.r*.48}L${g.r*.05} ${-g.r*.7}" stroke="white" stroke-opacity=".65" stroke-width="3" stroke-linecap="round"/></g>`;}).join('')}</g>`;}).join('')}</g><path d="M${g.left} 12V588" stroke="#555" stroke-width="2"/><g id="rainbow-picture" role="img" aria-label="Rainbow bands fill with the colors counted">${rainbow}</g><g id="circle-picture" role="img" aria-label="Pink outer circle, white middle circle, brown center">${circles}</g><g id="abacus-addition"><g data-abacus-sum-cell=""><rect data-text-panel="abacus-sum" x="${right+4}" y="226" width="${sumWidth}" height="116" rx="13" fill="none" stroke="#a97e37" stroke-width="3"/><text class="scene-caption" data-label-for="abacus-sum-heading" x="${right+4+sumWidth/2}" y="240" text-anchor="middle" dominant-baseline="central" font-size="20" font-weight="800" fill="#213b38">SUM</text><text class="scene-caption" data-label-for="abacus-sum-value" data-abacus-equation x="${right+4+sumWidth/2}" y="299" text-anchor="middle" dominant-baseline="central" font-size="${sumFont}" data-font-size="${sumFont}" data-max-width="${sumWidth-28}" font-weight="900" fill="#334d47"><tspan x="${right+4+sumWidth/2}" y="299" dominant-baseline="central">0</tspan><tspan x="${right+4+sumWidth/2}" y="320" dominant-baseline="central"></tspan></text></g><g data-abacus-total-cell=""><rect data-text-panel="abacus-total" x="${totalX}" y="226" width="${totalWidth}" height="116" rx="13" fill="none" stroke="#71935c" stroke-width="3"/><text class="scene-caption" data-label-for="abacus-total-heading" x="${totalX+totalWidth/2}" y="240" text-anchor="middle" dominant-baseline="central" font-size="20" font-weight="800" fill="#213b38" data-abacus-total-caption="">TOTAL</text><text class="scene-caption" data-label-for="abacus-total-value" data-abacus-total x="${totalX+totalWidth/2}" y="299" text-anchor="middle" dominant-baseline="central" font-size="66" font-weight="900" fill="#155c4a">${abacusTotal()}</text></g></g><g id="abacus-labels"><rect data-text-panel="abacus-colours" data-abacus-label-panel x="${right+4}" y="346" width="${rw-8}" height="241" rx="17" fill="none" stroke="#a8adb4" stroke-width="4"/>${abacusColors.map(([name,color],row)=>`<text data-color-label="${row}" x="${right+20+(rw-8)*(row<5?0:.5)}" y="${346+241*((row%5)+.5)/5}" text-anchor="start" dominant-baseline="central" fill="${color}" stroke="#111820" stroke-width="${Math.max(1.2,font*.065)}" paint-order="stroke fill" stroke-linejoin="round" font-size="${font}" font-weight="900" font-family="inherit">${abacusLabel(row,abacusCount(row))}</text>`).join('')}</g>`;
+    const rainbow=abacusColors.slice(0,7).map(([name,color],i)=>{const outer=radius-i*band,inner=outer-band;return `<path data-rainbow-band="${i}" data-color-region="${i}" d="M${cx-outer} ${base}A${outer} ${outer} 0 0 1 ${cx+outer} ${base}L${cx+inner} ${base}A${inner} ${inner} 0 0 0 ${cx-inner} ${base}Z" fill="${abacusCount(i)?color:'none'}" stroke="#90969e" stroke-width="3"/>`;}).join('');
+    const circles=[[7,'outer',circleR],[9,'middle',circleR*.68],[8,'inner',circleR*.35]].map(([row,region,r])=>`<circle data-circle-region="${region}" data-color-region="${row}" ${row===7?'mask="url(#abacus-pink-ring)"':row===9?'mask="url(#abacus-white-ring)"':''} cx="${circleX}" cy="${circleY}" r="${r}" fill="${abacusCount(row)?abacusColors[row][1]:'none'}" stroke="#90969e" stroke-width="3"/>`).join('');
+    scene.innerHTML=`<defs><mask id="abacus-pink-ring"><rect width="${g.width}" height="600" fill="white"/><circle cx="${circleX}" cy="${circleY}" r="${circleR*.68}" fill="black"/></mask><mask id="abacus-white-ring"><rect width="${g.width}" height="600" fill="white"/><circle cx="${circleX}" cy="${circleY}" r="${circleR*.35}" fill="black"/></mask></defs><g id="abacus-frame"><rect data-abacus-board="" x="10" y="5" width="${g.left-24}" height="586" rx="18" fill="none" stroke="#bd9666" stroke-width="7"/>${abacusColors.map(([name,color],row)=>{const y=34+row*56,count=abacusCount(row);return `<g data-abacus-row="${row}"><rect data-row-highlight="${row}" x="20" y="${y-25}" width="${g.left-44}" height="50" rx="12" fill="none" stroke="${row===active?'#ffe17a':'transparent'}" stroke-width="3"/><text data-abacus-left="${row}" x="24" y="${y+8}" text-anchor="middle" font-size="23" fill="#fff" font-weight="900">${10-count}</text><text data-abacus-right="${row}" x="${g.left-27}" y="${y+8}" text-anchor="middle" font-size="23" fill="#fff" font-weight="900">${count}</text><path d="M${g.start-g.r} ${y}H${g.end+g.r}" stroke="#90969e" stroke-width="4"/><circle data-abacus-start="${row}" cx="${g.start}" cy="${y}" r="${g.r+2}" fill="none" stroke="#555" stroke-width="3" stroke-dasharray="5 5"/><circle data-abacus-destination="${row}" cx="${g.end}" cy="${y}" r="${g.r+2}" fill="none" stroke="#777" stroke-width="3" stroke-dasharray="5 5"/>${state.abacusRows[row].map((moved,index)=>{const p=abacusBeadPoint(row,index,g);return `<g data-bead-row="${row}" data-bead-index="${index}" data-moved="${moved}" transform="translate(${p.x} ${p.y})" role="button" aria-label="${name} bead ${index+1}" aria-disabled="false" tabindex="${index===9-count||index===10-count?'0':'-1'}"><circle r="${g.r}" fill="${color}" stroke="#ffffffb0" stroke-width="1.5"/><path d="M${-g.r*.45} ${-g.r*.48}L${g.r*.05} ${-g.r*.7}" stroke="white" stroke-opacity=".65" stroke-width="3" stroke-linecap="round"/></g>`;}).join('')}</g>`;}).join('')}</g><path d="M${g.left} 12V588" stroke="#555" stroke-width="2"/><g id="rainbow-picture" role="img" aria-label="Rainbow bands fill with the colors counted">${rainbow}</g><g id="circle-picture" role="img" aria-label="Pink outer circle, white middle circle, brown center">${circles}</g><g id="abacus-addition"><g data-abacus-sum-cell=""><rect data-text-panel="abacus-sum" x="${right+4}" y="226" width="${sumWidth}" height="116" rx="13" fill="none" stroke="#a97e37" stroke-width="3"/><text class="scene-caption" data-label-for="abacus-sum-heading" x="${right+4+sumWidth/2}" y="240" text-anchor="middle" dominant-baseline="central" font-size="20" font-weight="800" fill="#213b38">SUM</text><text class="scene-caption" data-label-for="abacus-sum-value" data-abacus-equation x="${right+4+sumWidth/2}" y="299" text-anchor="middle" dominant-baseline="central" font-size="${sumFont}" data-font-size="${sumFont}" data-max-width="${sumWidth-28}" font-weight="900" fill="#334d47"><tspan x="${right+4+sumWidth/2}" y="299" dominant-baseline="central">0</tspan><tspan x="${right+4+sumWidth/2}" y="320" dominant-baseline="central"></tspan></text></g><g data-abacus-total-cell=""><rect data-text-panel="abacus-total" x="${totalX}" y="226" width="${totalWidth}" height="116" rx="13" fill="none" stroke="#71935c" stroke-width="3"/><text class="scene-caption" data-label-for="abacus-total-heading" x="${totalX+totalWidth/2}" y="240" text-anchor="middle" dominant-baseline="central" font-size="20" font-weight="800" fill="#213b38" data-abacus-total-caption="">TOTAL</text><text class="scene-caption" data-label-for="abacus-total-value" data-abacus-total x="${totalX+totalWidth/2}" y="299" text-anchor="middle" dominant-baseline="central" font-size="66" font-weight="900" fill="#155c4a">${abacusTotal()}</text></g></g><g id="abacus-labels"><rect data-text-panel="abacus-colours" data-abacus-label-panel x="${right+4}" y="346" width="${rw-8}" height="241" rx="17" fill="none" stroke="#a8adb4" stroke-width="4"/>${abacusColors.map(([name,color],row)=>`<text data-color-label="${row}" x="${right+20+(rw-8)*(row<5?0:.5)}" y="${346+241*((row%5)+.5)/5}" text-anchor="start" dominant-baseline="central" fill="${color}" stroke="#111820" stroke-width="${Math.max(1.2,font*.065)}" paint-order="stroke fill" stroke-linejoin="round" font-size="${font}" font-weight="900" font-family="inherit" style="--bead-ink:${color}">${abacusLabel(row,abacusCount(row))}</text>`).join('')}</g>`;
     state.abacusElements=abacusColors.map((_,row)=>({beads:[...scene.querySelectorAll(`[data-bead-row="${row}"]`)],region:scene.querySelector(`[data-color-region="${row}"]`),label:scene.querySelector(`[data-color-label="${row}"]`),count:scene.querySelector(`[data-row-count="${row}"]`),highlight:scene.querySelector(`[data-row-highlight="${row}"]`)}));
     updateAbacusProgress();updateAbacusFeedback(active);updateAbacusAddition();restoreObjectFeedback();
   }
   function updateAbacusFeedback(row,count=abacusCount(row),reveal=false){
     const nodes=state.abacusElements[row];if(!nodes)return;
-    nodes.region.setAttribute('fill',count?abacusColors[row][1]:'#000');if(nodes.count)nodes.count.textContent=String(count);nodes.label.textContent=abacusLabel(row,count);
+    nodes.region.setAttribute('fill',count?abacusColors[row][1]:'none');if(nodes.count)nodes.count.textContent=String(count);nodes.label.textContent=abacusLabel(row,count);
     nodes.label.classList.toggle('abacus-pop',reveal);updateGameItemStrip();
     $('result-score').textContent=`${abacusColors[row][0]}: ${count} ${abacusWords[count]}`;
     state.abacusElements.forEach((item,i)=>item.highlight.setAttribute('stroke',i===row?'#ffe17a':'transparent'));updateAbacusAddition();
@@ -1448,8 +1478,9 @@
           const dest=right?g.end-count*g.pitch:g.start,y=34+row*56,next=count+(right?1:-1);
           if(await move(dest,y,'Slide the bead.',850,g.r*2,bead.querySelector('circle'),()=>{bead.style.transition=reduced?'none':'transform 850ms ease-in-out';bead.setAttribute('transform',`translate(${dest} ${y})`);})){
             const label=backing.querySelector(`[data-color-label="${row}"]`);if(label)label.textContent=abacusLabel(row,next);
+            refreshSceneTextTabs();
             const left=backing.querySelector(`[data-abacus-left="${row}"]`),end=backing.querySelector(`[data-abacus-right="${row}"]`);if(left)left.textContent=String(10-next);if(end)end.textContent=String(next);
-            const region=backing.querySelector(`[data-color-region="${row}"]`);if(region)region.setAttribute('fill',next?abacusColors[row][1]:'#000');
+            const region=backing.querySelector(`[data-color-region="${row}"]`);if(region)region.setAttribute('fill',next?abacusColors[row][1]:'none');
             const total=backing.querySelector('[data-abacus-total]');if(total)total.textContent=String(abacusTotal()+next-count);
             const equation=backing.querySelector('[data-abacus-equation]');if(equation)equation.textContent=abacusColors.map((_,i)=>i===row?next:abacusCount(i)).filter(Boolean).join(' + ')||'0';
             const chip=demoProgress?.copy.children[row];if(chip){chip.title=abacusColors[row][0]+' '+next;const value=chip.querySelector('[data-abacus-chip-count]');if(value)value.textContent=String(next);}
@@ -1504,6 +1535,7 @@
   }
   async function immersiveMode(active){
     if(demoActive){stopDemo();hint('Your turn! Play the game.');}
+    if(active&&!app.classList.contains('immersive'))normalSceneSize();
     cancelGesture();app.classList.toggle('immersive',active);
     if(active)app.querySelector('.play-mat').append($('vibration-toggle'));
     else if(state.activity)$('game-mid-controls').append($('vibration-toggle'));
@@ -1518,6 +1550,7 @@
       button.focus({preventScroll:true});
     }
     fitFrame();
+    refreshSceneTextTabs();
   }
   const gameSteps=()=>Object.keys(activities).flatMap(activity=>[1].flatMap(level=>(activity==='bubbles'?['plain','numbers','letters','shapes']:activity==='brush'?['clean','paint']:['']).map(mode=>({activity,level,mode}))));
   function currentStep(){return gameSteps().findIndex(step=>step.activity===state.activity&&((state.activity==='abacus'&&state.age===null)||step.level===state.level)&&step.mode===(state.activity==='bubbles'?state.bubbleMode:state.activity==='brush'?(state.paintMode?'paint':'clean'):''));}

@@ -1,6 +1,6 @@
-const CACHE='sana-little-hands-beta-v142-balanced-tabs';
+const CACHE='sana-little-hands-beta-v143-gentle-fullscreen';
 const PREFIX='sana-little-hands-beta-';
-const ASSETS=['./sese-enhanced-v89.png','./index.html','./play.html','./age-profiles.js','./app.js','./app.js?v142','./bgm-sana-v86.mp3','./pwa.js','./share.js','./share.css','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png','./count-art/apple-tree.webp','./count-art/basket.webp','./count-art/carrot-garden.webp','./count-art/rabbit.webp','./count-art/apple.webp','./count-art/carrot.webp','./train-art/locomotive-colour-v126.webp','./train-art/carriage-turquoise-v126.webp','./train-art/carriage-yellow-v126.webp','./train-art/carriage-coral-v126.webp','./train-art/carriage-violet-v126.webp','./train-art/farm-sky-v126.webp'];
+const ASSETS=['./sese-enhanced-v89.png','./index.html','./play.html','./age-profiles.js','./app.js','./app.js?v143','./bgm-sana-v86.mp3','./pwa.js','./share.js','./share.css','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png','./count-art/apple-tree.webp','./count-art/basket.webp','./count-art/carrot-garden.webp','./count-art/rabbit.webp','./count-art/apple.webp','./count-art/carrot.webp','./train-art/locomotive-colour-v126.webp','./train-art/carriage-turquoise-v126.webp','./train-art/carriage-yellow-v126.webp','./train-art/carriage-coral-v126.webp','./train-art/carriage-violet-v126.webp','./train-art/farm-sky-v126.webp'];
 self.addEventListener('install',event=>{
   event.waitUntil((async()=>{
     const cache=await caches.open(CACHE);
