@@ -220,3 +220,11 @@ Shapes, apples, carrots and abacus beads enlarge while held and return to their 
 Each balloon remains visible for a short enlargement before its splash, removal and collection tick. Separate pending balloons can finish together, while repeated input on the same balloon is ignored. Again, navigation and hiding the page cancel pending effects. Completed collections retain their 1.5-second replay pause. The v1.32 continuous rows and stable fullscreen sizes are preserved.
 
 `node check-touch-count.cjs` verifies rendered backgrounds, held-object geometry, normal-size recovery, carrot placement, train sizing/rails, the grow-then-splash sequence, concurrent input, cancellation and native animation. `TOUCH_EVIDENCE` selects the evidence folder.
+
+## v1.34 free abacus and W balloon rows
+
+The Age 5 rainbow/circle abacus is a counting monitor. Showing every colour, or moving all 100 beads, does not finish a game or schedule a reset. The beads and counts remain available for continued counting; Again still deliberately clears the board. Other games retain their completion and replay behaviour.
+
+Balloon lanes use a gentle W-shaped vertical stagger. New and recycled rows retain this offset while all lanes travel at the existing speed, with the existing horizontal clearance, row spacing, sizes and fullscreen quantities. Touch enlargement, splashes, collections and Demo are unchanged.
+
+`node check-abacus-wave.cjs` verifies long waits with one bead in every row and all 100 beads, continued forward/backward counting, manual reset, fullscreen/rotation, the W silhouette, consistent upward movement, separated bodies/strings across layouts and sizes, recycling and Demo alignment. `WAVE_EVIDENCE` selects its output folder.

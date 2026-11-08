@@ -350,7 +350,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
 <script>for(const type of ['touchstart','touchmove'])document.addEventListener(type,event=>{if(event.touches.length>1)event.preventDefault();},{passive:false,capture:true});for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});</script>
-<meta name="sana-release" content="sana-little-hands-beta-v133-touch-count">
+<meta name="sana-release" content="sana-little-hands-beta-v134-abacus-wave">
 <style>
 /* Keep balloon choices together and give the travelling rows the released height. */
 #app[data-view="bubbles"] #bubble-settings{flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;gap:4px;scrollbar-width:thin}
@@ -595,7 +595,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 (()=>{const status=document.getElementById("game-results"),slot=document.getElementById("game-status-top");if(status&&slot)slot.appendChild(status);})();
 </script>
 <script src="age-profiles.js"></script>
-<script src="app.js?v133"></script>
+<script src="app.js?v134"></script>
 <script src="pwa.js"></script>
 <script>
 /* v1.04 beta: Web Audio buffer playback avoids HTMLMediaElement media cards.
