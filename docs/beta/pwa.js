@@ -6,6 +6,15 @@
   const normalUpdateLabel=updateLabel?.textContent;
   const app=document.getElementById('app');
   const release=document.querySelector('meta[name="sana-release"]')?.content;
+  // Report the page currently running, even while a newer worker downloads.
+  const releaseNumber=release?.match(/-v(\d+)(?:-|$)/)?.[1];
+  if(releaseNumber){
+    const number=Number(releaseNumber),version=`v${Math.floor(number/100)}.${String(number%100).padStart(2,'0')}`;
+    document.querySelectorAll('[data-release-version]').forEach(label=>{
+      label.textContent=version;label.title=`Currently running ${version}`;
+      label.setAttribute('aria-label',`App version ${version}`);
+    });
+  }
   const standalone=window.matchMedia('(display-mode: standalone)');
   let nativePrompt=null,installed=standalone.matches||navigator.standalone===true;
   function renderInstall(){

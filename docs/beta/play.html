@@ -350,7 +350,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
 <script>for(const type of ['touchstart','touchmove'])document.addEventListener(type,event=>{if(event.touches.length>1)event.preventDefault();},{passive:false,capture:true});for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});</script>
-<meta name="sana-release" content="sana-little-hands-beta-v138-countryside-rooms">
+<meta name="sana-release" content="sana-little-hands-beta-v139-version-labels">
 <style>
 /* Keep balloon choices together and give the travelling rows the released height. */
 #app[data-view="bubbles"] #bubble-settings{flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;gap:4px;scrollbar-width:thin}
@@ -544,7 +544,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 @media(prefers-reduced-motion:reduce){[data-object-feedback="train"] .object-feedback-scale{transform:scale(var(--pop-scale))}.balloon-growing{animation:none!important;transform:scale(1.15)}}
 @media(prefers-reduced-motion:reduce){[data-object-feedback="shape"] .object-feedback-scale,[data-object-feedback="fruit"] .object-feedback-scale,[data-object-feedback="bead"] .object-feedback-scale{transform:scale(1)}}
 </style>
-<style>/* v1.38: full green counting rooms and consistent fullscreen controls. */
+<style>/* v1.39: full green counting rooms and consistent fullscreen controls. */
 #fullscreen{background:#b3def0!important;color:#173e35!important;border-color:#a89a62!important}
 #app.immersive .play-mat #exit-play,
 #app.immersive .play-mat:has(> .item-progress-strip:not([hidden])) #exit-play,
@@ -552,6 +552,18 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 #app.immersive .play-mat #exit-play svg{color:inherit!important;stroke:currentColor!important}
 #app.immersive .play-mat #vibration-toggle{bottom:max(12px,env(safe-area-inset-bottom))!important;right:70px!important}
 #app.immersive:not([data-view="home"]) .play-mat{padding-bottom:calc(max(12px,env(safe-area-inset-bottom)) + 46px)}
+</style>
+<style>/* v1.39: identify the running release without covering play. */
+.app-update-button .update-copy{display:flex;align-items:center;gap:5px}
+.app-update-button [data-update-label]{line-height:1.05}
+.app-update-button .update-version{font-size:11px;font-weight:800;line-height:1}
+.compact .app-update-button .update-copy{flex-direction:column;gap:1px}
+.compact .app-update-button .update-version{font-size:10px}
+.short-play:not([data-view="home"]) .app-update-button{padding-top:1px;padding-bottom:1px}
+.short-play .app-update-button .update-copy{gap:0}
+.short-play .app-update-button .update-version{font-size:9px}
+#play-version{display:none}
+#app.immersive #play-version{display:block;position:absolute;left:max(12px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));padding:3px 7px;border:1px solid #55756d;border-radius:7px;background:#fff8e9ed;color:#173e35;font-size:13px;font-weight:900;line-height:1.2;pointer-events:none;z-index:104}
 </style>
 </head>
 <body>
@@ -568,7 +580,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 <div id="viewport"><div id="app" data-view="home">
 <header class="topbar has-app-update">
   <button class="icon-button" id="home" type="button" aria-label="Home"><svg aria-hidden="true"><use href="#home-icon"/></svg></button>
-  <a class="brand" href="index.html" aria-label="SaNa Beta welcome" style="color:inherit;text-decoration:none"><svg class="brand-mark" aria-hidden="true"><use href="#monkey"/></svg><div class="brand-copy"><div class="wordmark">SaNa</div><small>little hands · beta</small></div></a><button class="app-update-button" id="update-app" type="button" aria-label="Update app" aria-busy="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7V3M20 7H16M20 7A8 8 0 1 0 21 14"/></svg><span data-update-label>Update</span></button>
+  <a class="brand" href="index.html" aria-label="SaNa Beta welcome" style="color:inherit;text-decoration:none"><svg class="brand-mark" aria-hidden="true"><use href="#monkey"/></svg><div class="brand-copy"><div class="wordmark">SaNa</div><small>little hands · beta</small></div></a><button class="app-update-button" id="update-app" type="button" aria-label="Update app" aria-busy="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7V3M20 7H16M20 7A8 8 0 1 0 21 14"/></svg><span class="update-copy"><span data-update-label>Update</span><span class="update-version" data-release-version>v1.39</span></span></button>
   <div class="parent-age" role="radiogroup" aria-label="Choose age"><span>Age:</span><button type="button" class="age-radio" data-age-option="2" role="radio" aria-checked="false">2</button><button type="button" class="age-radio" data-age-option="3" role="radio" aria-checked="false">3</button><button type="button" class="age-radio" data-age-option="4" role="radio" aria-checked="false">4</button><button type="button" class="age-radio" data-age-option="5" role="radio" aria-checked="false">5</button></div>
 
   <nav class="game-pages" id="game-pages" aria-label="Browse game cards"><button class="icon-button" id="previous-games" type="button" aria-label="Previous games" aria-controls="activity-grid" disabled><svg aria-hidden="true"><use href="#back-icon"/></svg></button><span class="visually-hidden" id="card-page" aria-live="polite"></span><button class="icon-button" id="next-games" type="button" aria-label="Next games" aria-controls="activity-grid"><svg viewBox="0 0 32 32" aria-hidden="true"><use href="#back-icon" transform="translate(32 0) scale(-1 1)"/></svg></button></nav>
@@ -592,7 +604,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
   <span id="step-note" hidden></span>
   <div class="bubble-settings" id="bubble-settings" hidden><div class="bubble-setting-group" role="group" aria-label="Bubble speed"><span>Speed</span><button type="button" data-bubble-speed="slow" aria-label="Slow bubble speed" aria-pressed="false">Slow</button><button type="button" data-bubble-speed="medium" aria-label="Medium bubble speed" aria-pressed="true">Medium</button><button type="button" data-bubble-speed="fast" aria-label="High bubble speed" aria-pressed="false">High</button></div><div class="bubble-setting-group" role="group" aria-label="Bubble size"><span>Size</span><button type="button" data-bubble-size="small" aria-label="Small bubbles" aria-pressed="false">Small</button><button type="button" data-bubble-size="medium" aria-label="Medium bubbles" aria-pressed="true">Medium</button><button type="button" data-bubble-size="large" aria-label="Large bubbles" aria-pressed="false">Large</button></div><button type="button" class="mode-button" id="bubble-full-set" aria-label="Full bubble collection" aria-pressed="false" hidden>Full set</button></div>
   <div class="art-tools" id="art-tools" hidden><div class="brush-sizes" role="group" aria-label="Brush size"><span class="paint-label">Brush</span><button class="art-tool" type="button" data-brush-size="small" aria-label="Small brush" aria-pressed="false">Small</button><button class="art-tool" type="button" data-brush-size="medium" aria-label="Medium brush" aria-pressed="true">Medium</button><button class="art-tool" type="button" data-brush-size="large" aria-label="Large brush" aria-pressed="false">Large</button></div><div class="paint-tools" id="paint-tools" hidden><span class="paint-label">Color</span><button class="art-tool" type="button" id="erase-paint" aria-label="Erase paint" aria-pressed="false">Eraser</button></div></div>
-  <div class="play-mat"><div id="game-status-top" class="game-status-top" aria-label="Current game status"></div><button id="exit-play" type="button" aria-label="Exit fullscreen play" title="Exit fullscreen"><svg aria-hidden="true" viewBox="0 0 32 32" width="28" height="28"><rect x="4" y="4" width="24" height="24" rx="2" fill="none" stroke="currentColor" stroke-width="2.5"/><rect x="10" y="10" width="12" height="12" rx="1" fill="none" stroke="currentColor" stroke-width="2.5"/></svg></button><div class="play-toolbar"><div id="game-results" aria-label="Game results" aria-live="polite"><h1 id="activity-name">Shape picnic</h1><span id="result-score"></span><span class="bubble-score" id="bubble-score" hidden></span></div><div id="play-options" aria-label="Sub-levels"><div class="levels" id="play-levels" role="group" aria-label="Difficulty level">
+  <div class="play-mat"><span id="play-version" data-release-version>v1.39</span><div id="game-status-top" class="game-status-top" aria-label="Current game status"></div><button id="exit-play" type="button" aria-label="Exit fullscreen play" title="Exit fullscreen"><svg aria-hidden="true" viewBox="0 0 32 32" width="28" height="28"><rect x="4" y="4" width="24" height="24" rx="2" fill="none" stroke="currentColor" stroke-width="2.5"/><rect x="10" y="10" width="12" height="12" rx="1" fill="none" stroke="currentColor" stroke-width="2.5"/></svg></button><div class="play-toolbar"><div id="game-results" aria-label="Game results" aria-live="polite"><h1 id="activity-name">Shape picnic</h1><span id="result-score"></span><span class="bubble-score" id="bubble-score" hidden></span></div><div id="play-options" aria-label="Sub-levels"><div class="levels" id="play-levels" role="group" aria-label="Difficulty level">
     <button class="level" type="button" data-level="1" aria-label="Easy level" aria-pressed="false">Easy<small>little steps</small></button>
     <button class="level" type="button" data-level="2" aria-label="Medium level" aria-pressed="true">Medium<small>guided play</small></button>
     <button class="level" type="button" data-level="3" aria-label="Challenge level" aria-pressed="false">Challenge<small>extra fun</small></button>
@@ -604,7 +616,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 (()=>{const status=document.getElementById("game-results"),slot=document.getElementById("game-status-top");if(status&&slot)slot.appendChild(status);})();
 </script>
 <script src="age-profiles.js"></script>
-<script src="app.js?v138"></script>
+<script src="app.js?v139"></script>
 <script src="pwa.js"></script>
 <script>
 /* v1.04 beta: Web Audio buffer playback avoids HTMLMediaElement media cards.
