@@ -39,7 +39,7 @@ const groups=[[1,2,3,4],[5,6,7,8,9],[10,11,12,13],[14,15,16],[17,18,19,20]];
   }
  }
  await page.setViewportSize({width:844,height:390});await open();
- const before=await page.locator('#scene').textContent();await page.locator('[data-count-choice="2"]').click();check('A wrong carriage does not advance the count',await page.locator('#scene').textContent()===before);
+ const before=await page.locator('#scene').textContent();await page.locator('[data-count-choice="2"]').click();check('A wrong carriage enlarges its own number without advancing the count',await page.locator('[data-object-feedback="train"]').textContent()==='2'&&await page.locator('#item-progress-strip .is-done').count()===0);await page.clock.runFor(300);check('A wrong carriage restores the unchanged target after its feedback',await page.locator('#scene').textContent()===before);
  for(let n=1;n<=20;n++){
   const values=await page.locator('[data-count-choice]').evaluateAll(nodes=>nodes.map(n=>Number(n.dataset.countChoice)));
   check('Count '+n+' keeps the complete current group available',JSON.stringify(values)===JSON.stringify(groups.find(g=>g.includes(n))),values);
@@ -73,14 +73,14 @@ const groups=[[1,2,3,4],[5,6,7,8,9],[10,11,12,13],[14,15,16],[17,18,19,20]];
   check('Train artwork decodes as actual images',await page.evaluate(async()=>{const imgs=[...new Set([...document.querySelectorAll('image[data-train-art]')].map(n=>n.getAttribute('href')))];return imgs.length===5&&(await Promise.all(imgs.map(src=>new Promise(resolve=>{const i=new Image();i.onload=()=>resolve(i.naturalWidth>200);i.onerror=()=>resolve(false);i.src=src;})))).every(Boolean);}));
   if(!process.env.TRAIN_RED){
    await page.goto(base+'index.html');await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
-   const cached=await page.evaluate(async()=>{const cache=await caches.open('sana-little-hands-beta-v131-room-feedback');return Promise.all(['locomotive-colour-v126','carriage-turquoise-v126','carriage-yellow-v126','carriage-coral-v126','carriage-violet-v126','farm-sky-v126'].map(name=>cache.match(new URL('train-art/'+name+'.webp',location.href)).then(Boolean)));});check('The installed cache includes every colourful train and farm picture',cached.every(Boolean),cached);
+   const cached=await page.evaluate(async()=>{const cache=await caches.open(document.querySelector('meta[name="sana-release"]').content);return Promise.all(['locomotive-colour-v126','carriage-turquoise-v126','carriage-yellow-v126','carriage-coral-v126','carriage-violet-v126','farm-sky-v126'].map(name=>cache.match(new URL('train-art/'+name+'.webp',location.href)).then(Boolean)));});check('The installed cache includes every colourful train and farm picture',cached.every(Boolean),cached);
    if(engine==='chromium'){
     const cdp=await context.newCDPSession(page);await cdp.send('Network.clearBrowserCache');await context.setOffline(true);await open();
     const decoded=await page.evaluate(async()=>Promise.all(['locomotive-colour-v126','carriage-turquoise-v126','carriage-yellow-v126','carriage-coral-v126','carriage-violet-v126','farm-sky-v126'].map(name=>new Promise(resolve=>{const i=new Image();i.onload=()=>resolve(i.naturalWidth>200);i.onerror=()=>resolve(false);i.src='train-art/'+name+'.webp';}))));check('All train and farm pictures reload from the installed cache offline',decoded.every(Boolean),decoded);
     await page.locator('[data-count-choice="1"]').click();await page.clock.runFor(300);check('The real train game advances offline',await page.locator('#item-progress-strip .is-done').count()===1);
    }
    await page.goto(base+'play.html?age=3');await page.locator('[data-age-option="3"]').click();await page.locator('[data-activity="abacus"]').click();
-   check('The carrot game retains its own background',await page.locator('.play-mat').evaluate(el=>!getComputedStyle(el).backgroundImage.includes('farm-sky-v126.webp')));
+   check('The carrot game shares the requested countryside background',await page.locator('.play-mat').evaluate(el=>getComputedStyle(el).backgroundImage.includes('farm-sky-v126.webp')));
    await page.locator('[data-age-option="4"]').click();await page.locator('#game-home').click();await page.locator('[data-activity="drag"]').click();
    check('Other Age 4 games retain their own backgrounds',await page.locator('.play-mat').evaluate(el=>!getComputedStyle(el).backgroundImage.includes('farm-sky-v126.webp')));
   }

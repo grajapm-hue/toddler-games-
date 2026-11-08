@@ -118,7 +118,7 @@ let browser;
     await page.locator('#home').click();await page.locator('[data-activity="brush"]').click();check('Paint still opens',await page.locator('#app').getAttribute('data-view')==='brush');
     await page.goto(base+'index.html');await page.waitForFunction(()=>!!navigator.serviceWorker.controller,{timeout:30000});
     await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
-    const cached=await page.evaluate(async()=>{const cache=await caches.open('sana-little-hands-beta-v131-room-feedback');return Promise.all(['app.js?v131',...['apple-tree','basket','carrot-garden','rabbit','apple','carrot'].map(name=>'count-art/'+name+'.webp')].map(name=>cache.match(new URL(name,location.href)).then(Boolean)));});
+    const cached=await page.evaluate(async()=>{const cache=await caches.open(document.querySelector('meta[name="sana-release"]').content),play=await cache.match(new URL('play.html',location.href)),html=new DOMParser().parseFromString(await play.text(),'text/html'),script=html.querySelector('script[src^="app.js"]').getAttribute('src');return Promise.all([script,...['apple-tree','basket','carrot-garden','rabbit','apple','carrot'].map(name=>'count-art/'+name+'.webp')].map(name=>cache.match(new URL(name,location.href)).then(Boolean)));});
     check('The worker precaches the exact game script and every illustration',cached.every(Boolean),cached);
     if(engine==='chromium')await context.setOffline(true);else await new Promise(done=>server.close(done));
     await open(2);await drag(2);check('Offline counting retains the completed apple',(await state()).collected===1);

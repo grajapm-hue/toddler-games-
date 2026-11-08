@@ -350,7 +350,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
 <script>for(const type of ['touchstart','touchmove'])document.addEventListener(type,event=>{if(event.touches.length>1)event.preventDefault();},{passive:false,capture:true});for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});</script>
-<meta name="sana-release" content="sana-little-hands-beta-v132-continuous-balloons">
+<meta name="sana-release" content="sana-little-hands-beta-v133-touch-count">
 <style>
 /* Keep balloon choices together and give the travelling rows the released height. */
 #app[data-view="bubbles"] #bubble-settings{flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;gap:4px;scrollbar-width:thin}
@@ -521,8 +521,8 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 #app[data-age="5"][data-view="abacus"] .item-chip.is-done::after{width:11px!important;height:11px!important;line-height:11px!important;font-size:9px!important;right:0!important;top:0!important}
 </style>
 <style>/* v1.26: the Age 4 train travels through green fields under blue sky. */
-#app[data-age="4"][data-view="abacus"] .play-mat{background:#b6df84 url('./train-art/farm-sky-v126.webp') center center/cover no-repeat!important}
-#app[data-age="4"][data-view="abacus"] #scene{background:transparent!important}
+#app:is([data-age="2"],[data-age="3"],[data-age="4"])[data-view="abacus"] .play-mat{background:#b6df84 url('./train-art/farm-sky-v126.webp') center center/cover no-repeat!important}
+#app:is([data-age="2"],[data-age="3"],[data-age="4"])[data-view="abacus"] #scene{background:transparent!important}
 </style>
 <style>
 #scene[data-art-state="loading"],#scene[data-art-state="error"]{visibility:hidden;pointer-events:none}
@@ -532,9 +532,17 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 <style>
 .object-feedback-scale{transform-box:view-box;transform-origin:0 0;animation:object-pop 300ms ease-out both}
 @keyframes object-pop{0%{transform:scale(1);opacity:1}45%{transform:scale(var(--pop-scale,1.5));opacity:1}75%{transform:scale(1.18);opacity:1}100%{transform:scale(1.05);opacity:0}}
+[data-object-feedback="train"] .object-feedback-scale{animation-name:number-enlarge}
+[data-object-feedback="shape"] .object-feedback-scale,[data-object-feedback="fruit"] .object-feedback-scale,[data-object-feedback="bead"] .object-feedback-scale{animation-name:object-settle}
+@keyframes object-settle{0%,90%{transform:scale(1);opacity:1}100%{transform:scale(1);opacity:0}}
+@keyframes number-enlarge{0%{transform:scale(1);opacity:1}40%,85%{transform:scale(var(--pop-scale));opacity:1}100%{transform:scale(var(--pop-scale));opacity:0}}
+.balloon-growing{transform-box:view-box;transform-origin:0 0;animation:balloon-enlarge 300ms ease-out both}
+@keyframes balloon-enlarge{0%{transform:scale(1)}50%,100%{transform:scale(1.35)}}
 .object-selection-pop{animation:selection-pop 300ms ease-out both}
 @keyframes selection-pop{0%,100%{transform:scale(1)}45%{transform:scale(1.15);box-shadow:0 0 0 4px #ffe17a}}
 @media(prefers-reduced-motion:reduce){.object-feedback-scale{animation:none!important;transform:scale(1.1)}.object-selection-pop{animation:none!important;outline:3px solid #e8b43c}}
+@media(prefers-reduced-motion:reduce){[data-object-feedback="train"] .object-feedback-scale{transform:scale(var(--pop-scale))}.balloon-growing{animation:none!important;transform:scale(1.15)}}
+@media(prefers-reduced-motion:reduce){[data-object-feedback="shape"] .object-feedback-scale,[data-object-feedback="fruit"] .object-feedback-scale,[data-object-feedback="bead"] .object-feedback-scale{transform:scale(1)}}
 </style>
 </head>
 <body>
@@ -587,7 +595,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 (()=>{const status=document.getElementById("game-results"),slot=document.getElementById("game-status-top");if(status&&slot)slot.appendChild(status);})();
 </script>
 <script src="age-profiles.js"></script>
-<script src="app.js?v132"></script>
+<script src="app.js?v133"></script>
 <script src="pwa.js"></script>
 <script>
 /* v1.04 beta: Web Audio buffer playback avoids HTMLMediaElement media cards.
