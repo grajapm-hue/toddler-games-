@@ -1,4 +1,4 @@
-# SaNa Little Hands Beta v1.29
+# SaNa Little Hands Beta v1.30
 
 The published Beta is `docs/beta/`. The v1.17 release was uploaded directly there;
 the older root prototype and `beta-runtime/` build inputs have not caught up.
@@ -9,7 +9,7 @@ from those older inputs. Running `build-beta.mjs` would replace newer features.
 
 - Age 2 keeps the counted apples in the basket; Age 3 keeps the carrots beside the rabbit.
 - On reaching the requested count, SaNa says **Well done! Wait for the next count.**
-- The collection and its completed numeral remain visible for 3,000 milliseconds.
+- The collection and its completed numeral remain visible for 1,500 milliseconds.
   Further drops and Demo are paused. The current thumbnail stays unticked.
 - After that pause, the thumbnail ticks and the next count begins. The last
   collection stays visible for the celebration, then a fresh round starts automatically.
@@ -27,6 +27,20 @@ generation prompts are in [docs/beta/count-art](docs/beta/count-art/generation.j
 
 The install manifest and original illustration dimensions remain unchanged.
 The Beta worker precaches the six illustrations and the exact versioned game script.
+
+## v1.30 shared 1.5-second play pause
+
+The “Well done! Wait for the next count.” hold is now 1,500 milliseconds.
+Counting, final celebrations, shape batches, completed art pictures, Bubble
+rounds, Number Train and Abacus replays use the same `PLAY_PAUSE_MS` constant.
+The round scheduler accepts only a preparation callback, so individual games
+cannot silently choose a different delay. Again/navigation still cancel it.
+Cave retains its child-controlled open/close sequence; Demo narration retains
+its spoken pacing.
+
+`check-auto-replay.cjs` verifies progress is held at 1,400 ms and advances at
+1,500 ms for every counting step and each kind of automatic play transition.
+Set `REPLAY_IMMERSIVE=1` to repeat these checks in fullscreen. The real-time counting checks also measure the shorter hold.
 
 ## v1.29 ready artwork and fullscreen transitions
 
@@ -89,7 +103,7 @@ an installed Chromium executable. `PLAYROOM_BROWSER=webkit` selects WebKit.
 `COUNT_URL` can target the published Beta; otherwise a local server serves `docs/`.
 `COUNT_EVIDENCE` selects the evidence directory.
 
-Checks cover every Age 2 and Age 3 count, the full three-second hold, delayed ticks,
+Checks cover every Age 2 and Age 3 count, the full 1.5-second hold, delayed ticks,
 extra/invalid/canceled drops, reset and age navigation, phone/tablet/desktop and
 rotated touch input, immersive praise, Age 4/5 and Slide/Paint smoke flows, and
 offline images/play. WebKit's local offline check stops the real local origin;
@@ -100,7 +114,7 @@ device installation.
 room, drawing in both art modes, age/bubble mode and abacus colour. It uses the
 browser clock to exercise all those lessons quickly; geometry checks use rendered
 targets, including rotated screens. The separate counting test measures the real
-three-second play hold, cancellation and offline behaviour.
+1.5-second play hold, cancellation and offline behaviour.
 
 ## v1.20 feedback corrections
 
@@ -123,7 +137,7 @@ The lower row overlapped the orange front boards, so five carrots were hard to d
 
 Demo messages appear first. Speech uses rate 0.65, prefers an available Indian English voice, and retains the device's English fallback. Short spoken phrases finish completely, with 500 ms between phrases and 1,200 ms after the instruction. Both the pointer and demonstrated object wait for the instruction and pause before moving. SaNa's complete message remains visible throughout.
 
-Well done finishes and holds for another 2,000 ms before the preview thumbnail ticks. Muted/unavailable speech keeps a readable text pause. Stop, Again, Games and age navigation cancel speech and pending steps; muting immediately stops the voice. A stalled engine has a bounded text fallback. Real counting retains its separate three-second completion hold.
+Well done finishes and holds for another 2,000 ms before the preview thumbnail ticks. Muted/unavailable speech keeps a readable text pause. Stop, Again, Games and age navigation cancel speech and pending steps; muting immediately stops the voice. A stalled engine has a bounded text fallback. Real counting uses the shared 1.5-second completion hold from v1.30.
 
 `node check-demo-voice.cjs` controls delayed completion/error events to check no interruption, slow voice selection, deferred object motion, phrase gaps, praise timing, cancellation and fallback. Actual installed voices depend on the device. The full room-by-room Demo suite also checks the longer silent reading/praise timing.
 

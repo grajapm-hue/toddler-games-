@@ -55,7 +55,7 @@ let browser;
     }else{await page.mouse.move(from.x,from.y);await page.mouse.down();await page.mouse.move(to.x,to.y,{steps:8});await page.mouse.up();}
     const left=await page.locator('[data-count-fruit]').count(),collected=await page.locator('[data-count-collected]').count();
     check(label+` visible-root drag ${count+1} leaves ${9-count}`,left===9-count&&collected===count+1,{left,collected});
-    await page.clock.runFor(3100);
+    await page.clock.runFor(1600);
     if(count===4){const remaining=await visibleRoots();check(label+' five remaining carrots are clear and touchable',remaining.length===5&&remaining.every(n=>n.probes.every(p=>p.onSoil&&p.hit)),remaining);await page.screenshot({path:path.join(out,`five-left-${width}x${height}-order-${order[0]}.png`)});}
    }
    check(label+' completes all ten thumbnails',await page.locator('#item-progress-strip .is-done').count()===10);
