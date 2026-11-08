@@ -350,7 +350,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
 <script>for(const type of ['touchstart','touchmove'])document.addEventListener(type,event=>{if(event.touches.length>1)event.preventDefault();},{passive:false,capture:true});for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});</script>
-<meta name="sana-release" content="sana-little-hands-beta-v135-count-layout">
+<meta name="sana-release" content="sana-little-hands-beta-v136-count-countryside">
 <style>
 /* Keep balloon choices together and give the travelling rows the released height. */
 #app[data-view="bubbles"] #bubble-settings{flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;gap:4px;scrollbar-width:thin}
@@ -544,8 +544,8 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 @media(prefers-reduced-motion:reduce){[data-object-feedback="train"] .object-feedback-scale{transform:scale(var(--pop-scale))}.balloon-growing{animation:none!important;transform:scale(1.15)}}
 @media(prefers-reduced-motion:reduce){[data-object-feedback="shape"] .object-feedback-scale,[data-object-feedback="fruit"] .object-feedback-scale,[data-object-feedback="bead"] .object-feedback-scale{transform:scale(1)}}
 </style>
-<style>/* v1.35: full green counting rooms and consistent fullscreen controls. */
-#app:is([data-age="2"],[data-age="3"],[data-age="5"])[data-view="abacus"] .play-mat{background:#bbe5c4!important}
+<style>/* v1.36: full green counting rooms and consistent fullscreen controls. */
+#app[data-age="5"][data-view="abacus"] .play-mat{background:#bbe5c4!important}
 #fullscreen{background:#b3def0!important;color:#173e35!important;border-color:#a89a62!important}
 #app.immersive .play-mat #exit-play,
 #app.immersive .play-mat:has(> .item-progress-strip:not([hidden])) #exit-play,
@@ -604,7 +604,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 (()=>{const status=document.getElementById("game-results"),slot=document.getElementById("game-status-top");if(status&&slot)slot.appendChild(status);})();
 </script>
 <script src="age-profiles.js"></script>
-<script src="app.js?v135"></script>
+<script src="app.js?v136"></script>
 <script src="pwa.js"></script>
 <script>
 /* v1.04 beta: Web Audio buffer playback avoids HTMLMediaElement media cards.

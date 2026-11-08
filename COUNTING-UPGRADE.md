@@ -239,3 +239,8 @@ Apple, Rabbit and the Age 5 Abacus use the original mint-green across the comple
 The normal toolbar places fullscreen before vibration. Expanded play places vibration above the fullscreen return square, and the fullscreen controls share the normal blue/green palette. Existing sound, vibration, exit, navigation, Slide and Brush behaviour is retained.
 
 `node check-count-layout.cjs` compares rendered balloon sizes to v1.34, checks backgrounds and control order/colours, and verifies abacus text containment at 100 beads in normal/fullscreen layouts across phone, portrait and tablet viewports. `LAYOUT_EVIDENCE` chooses the evidence folder.
+
+
+## v1.36 Apple and Rabbit countryside correction
+
+Age 2 Apple and Age 3 Rabbit now share the Age 4 train's complete green countryside artwork, with the same cover positioning in normal and fullscreen play. The flat green override is restricted to the Age 5 abacus. Balloon sizing/formation, counting behaviour, SUM/TOTAL layout and controls are unchanged.
