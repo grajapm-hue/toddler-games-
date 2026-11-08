@@ -274,3 +274,9 @@ Game captions use plain dark lettering without text shadows or letter outlines. 
 ## v1.42 coordinated colours and left-aligned count lists
 
 An AI-generated comparison using the existing game screenshots was reviewed before implementation. The selected direction uses soft blue headings, sage results, cream instructions and muted lilac/peach accents. Abacus count-list tabs use light tints matching their colour names. Text remains dark and sharp; fitted widths, small padding, navigation controls and game behaviour are retained. The two Abacus count columns now have uniform left-aligned text with the existing row order and vertical spacing. The generated comparison is a design reference; actual browser checks verify contrast, fit, alignment and gameplay.
+
+## v1.43 gentle fullscreen captions and natural Abacus board
+
+Fullscreen scene captions target a 12% increase over their normal rendered size, rather than growing with the SVG playfield. Tabs are remeasured around the smaller text, including mixed-size counters. Normal layout geometry is retained per viewport/game; a hidden inert layout copy supplies the reference after fullscreen rotation without changing the active game. Progress text also gets a modest increase.
+
+The Abacus board and unfilled rainbow/circle areas show the countryside, with a sandalwood board border. Circle regions use independent ring masks so filling pink or white does not paint an uncounted inner region. Bead colours are retained exactly. The right-side count text matches its bead colour; small contrasting backings keep even yellow and white readable without blurred outlines. Left-aligned monitor columns, counting, feedback and controls are retained.
