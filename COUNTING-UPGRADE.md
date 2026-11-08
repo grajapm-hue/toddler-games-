@@ -261,3 +261,8 @@ The bottom-right fullscreen return square and vibration switch to its left remai
 ## v1.39 visible running version
 
 The welcome page's version beside Update, the Update button in the Games menu/every room, and a passive fullscreen badge all identify the loaded page release. Compact headers stack the number beneath Update without widening the controls. Fullscreen shows the version at the left of the existing clear bottom row. The label follows the page metadata and stays on the running version while a newer worker downloads, changing only when that update is applied. Game logic, theme and controls are retained.
+
+
+## v1.40 centred transparent text panels
+
+Train title/target headings, carriage numerals, harvest instructions/praise/counters, Slide captions and Abacus sum/total/colour labels are centred within their areas. Noninteractive text-panel fills, progress-tab fills and status/hint backdrops are transparent; light text outlines preserve readability over the countryside. Progress borders/checkmarks, action-button colours, artwork, the painting surface and the bead board remain distinct. Text content, counting rules, feedback and replay timing are retained.

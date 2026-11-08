@@ -82,7 +82,7 @@ const groups=[[1,2,3,4],[5,6,7,8,9],[10,11,12,13],[14,15,16],[17,18,19,20]];
    await page.goto(base+'play.html?age=3');await page.locator('[data-age-option="3"]').click();await page.locator('[data-activity="abacus"]').click();
    check('The carrot game shares the requested countryside background',await page.locator('.play-mat').evaluate(el=>getComputedStyle(el).backgroundImage.includes('farm-sky-v126.webp')));
    await page.locator('[data-age-option="4"]').click();await page.locator('#game-home').click();await page.locator('[data-activity="drag"]').click();
-   check('Other Age 4 games retain their own backgrounds',await page.locator('.play-mat').evaluate(el=>!getComputedStyle(el).backgroundImage.includes('farm-sky-v126.webp')));
+   check('All Age 4 games share the requested countryside',await page.locator('.play-mat').evaluate(el=>getComputedStyle(el).backgroundImage.includes('farm-sky-v126.webp')));
   }
  check('No uncaught train-game errors',errors.length===0,errors);fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({engine,results,errors},null,2));assert(results.every(r=>r.pass),'Real train checks failed');
 })().catch(e=>{console.error(e);fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({engine,results,errors,exception:String(e)},null,2));process.exitCode=1;}).finally(async()=>{await browser?.close();server.close();});
