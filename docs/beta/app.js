@@ -757,6 +757,7 @@
     $('bubble-full-set').hidden=state.age===null;$('bubble-full-set').setAttribute('aria-pressed',String(state.bubbleSet==='full'));
   }
   function fitBubbleField(){
+    if(!app.classList.contains('immersive'))state.bubbleNormalHeight=Math.max(1,scene.clientHeight);
     const width=Math.max(1,440*scene.clientWidth/Math.max(1,scene.clientHeight));
     if(Math.abs(width-state.bubbleWidth)>.5){
       state.bubbleWidth=width;
@@ -770,22 +771,36 @@
     document.querySelectorAll('[data-bubble-speed]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.bubbleSpeed===selectedBubbleSpeed())));
     document.querySelectorAll('[data-bubble-size]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.bubbleSize===selectedBubbleSize())));
   }
-  // Keep touch sizes useful across phone/tablet layouts and fit short play fields.
-  function bubbleRadius(){const desired=bubbleDiameters[selectedBubbleSize()]*220/Math.max(1,scene.clientHeight);return Math.max(14,Math.min(({small:100,medium:145,large:180})[selectedBubbleSize()],desired,state.bubbleWidth*.44));}
-  // Large bubbles need fewer simultaneous lanes on narrow screens. Keep a full bubble diameter plus a touch-safe gap between lanes.
-  function bubbleCapacity(){const diameter=bubbleRadius()*2,gap=Math.max(18,diameter*.12);return Math.max(1,Math.min(8,Math.floor((state.bubbleWidth-8+gap)/(diameter+gap))));}
+  // Fit several travelling rows into the field, including each balloon's string.
+  // Keep the three size choices distinct even in the short, normal phone layout.
+  function bubbleRadius(){
+    const height=Math.max(1,scene.clientHeight),scale=(state.bubbleNormalHeight||height)/height;
+    const desired=bubbleDiameters[selectedBubbleSize()]*220/height;
+    // SVG units grow on expansion. Scale the cap back so the visible diameter
+    // stays the same; extra fullscreen space supplies more rows, not larger bodies.
+    return Math.max(2,Math.min(({small:50,medium:66,large:84})[selectedBubbleSize()]*scale,desired,state.bubbleWidth*.44));
+  }
+  function bubbleLayout(){
+    const radius=bubbleRadius(),scale=(state.bubbleNormalHeight||scene.clientHeight)/Math.max(1,scene.clientHeight),gap=Math.max(16*scale,radius*.2);
+    const columns=Math.max(1,Math.min(8,Math.floor((state.bubbleWidth-8+gap)/(radius*2+gap))));
+    // The string ends 1.49 radii below its centre; leave clearance before the next body.
+    const pitch=radius*2.5+gap,rows=Math.ceil(440/pitch)+1;
+    return {radius,columns,pitch,rows};
+  }
   function syncBubbleSlots(){
     const layer=$('bubble-layer');if(!layer||!state.bubbles)return;
-    const count=bubbleCapacity();
+    const layout=bubbleLayout(),key=`${state.bubbleWidth.toFixed(1)}/${layout.radius.toFixed(1)}/${layout.columns}`;
+    if(state.bubbleLayoutKey===key)return;
+    state.bubbleLayoutKey=key;state.bubbleLayout=layout;
+    const count=layout.columns*layout.rows;
     while(state.bubbles.length>count){const bubble=state.bubbles.pop();bubble.element?.remove();}
-    while(state.bubbles.length<count){const bubble={slot:state.bubbles.length,element:null};state.bubbles.push(bubble);spawnBubble(bubble);}
+    while(state.bubbles.length<count)state.bubbles.push({slot:state.bubbles.length,element:null});
     state.bubbles.forEach((bubble,index)=>{
       bubble.slot=index;
-      // Re-center every bubble in its own lane after viewport or capacity changes.
-      // This prevents stale x-coordinates from causing bubbles to touch or overlap.
-      const lane=state.bubbleWidth/Math.max(1,state.bubbles.length);
-      bubble.x=(index+.5)*lane;
-      if(bubble.element)positionBubble(bubble);
+      // Reflow only when geometry changes. Collection progress and retained nodes survive.
+      bubble.x=(index%layout.columns+.5)*state.bubbleWidth/layout.columns;
+      bubble.y=layout.radius+8+Math.floor(index/layout.columns)*layout.pitch;
+      if(bubble.element)positionBubble(bubble);else spawnBubble(bubble,true);
     });
   }
   function positionBubble(bubble){
@@ -798,17 +813,20 @@
     }
   }
   function spawnBubble(bubble,initial=false){
+    const layout=state.bubbleLayout,column=bubble.slot%layout.columns;
+    const entry=440-layout.radius*.6;
+    // A new row follows the lowest balloon in its lane, rather than waiting for
+    // that lane's only balloon to leave the top. Popping cannot stack replacements.
+    const lowest=Math.max(-Infinity,...state.bubbles.filter(other=>other!==bubble&&other.element&&other.slot%layout.columns===column).map(other=>other.y));
+    if(!initial&&lowest>entry){bubble.wait=0;return;}
     const items=bubbleItems();
     const missing=items.filter(token=>!state.bubbleHits.has(token));
     const available=(missing.length?missing:items).filter(token=>!state.bubbles.some(other=>other!==bubble&&other.element&&other.token===token));
     const pool=available.length?available:missing.length?missing:items;
     bubble.token=pool.length?pool[Math.floor(Math.random()*pool.length)]:'';
     bubble.id=++state.bubbleSerial;bubble.color=bubbleColors[Math.floor(Math.random()*bubbleColors.length)];bubble.r=bubbleRadius();
-    const lane=state.bubbleWidth/Math.max(1,state.bubbles.length);
-    // Fixed lane centers with no random horizontal drift: adjacent centers remain
-    // at least one bubble diameter plus a safety gap apart.
-    bubble.x=(bubble.slot+.5)*lane;
-    bubble.y=initial?Math.min(430-bubble.r,220+(bubble.slot%3)*Math.min(35,Math.max(0,(440-2*bubble.r-20)/2))):440-bubble.r*.6;bubble.wait=0;
+    bubble.x=(column+.5)*state.bubbleWidth/layout.columns;
+    bubble.y=initial?layout.radius+8+Math.floor(bubble.slot/layout.columns)*layout.pitch:Math.max(entry,lowest+layout.pitch);bubble.wait=0;
     const element=document.createElementNS('http://www.w3.org/2000/svg','g');bubble.element=element;
     element.classList.add('bubble');element.dataset.bubble=String(bubble.id);element.dataset.token=bubble.token;element.dataset.color=bubble.color;
     element.setAttribute('role','button');element.setAttribute('aria-label',`Pop ${bubble.token||'plain'} bubble`);
@@ -821,10 +839,9 @@
   }
   function renderBubbles(){
     state.bubbleHits=new Map();state.bubblePops=0;state.bubbleRecent=[];state.bubbleEffects=[];
-    state.bubbles=[];bubbleTracker();fitBubbleField();
+    state.bubbles=[];state.bubbleLayoutKey=null;bubbleTracker();
     scene.innerHTML='<defs><radialGradient id="balloon-shade" cx=".3" cy=".25" r=".8"><stop offset="0" stop-color="white" stop-opacity=".35"/><stop offset=".5" stop-color="white" stop-opacity="0"/><stop offset=".8" stop-color="#25334b" stop-opacity=".14"/><stop offset="1" stop-color="#192339" stop-opacity=".4"/></radialGradient></defs><g id="bubble-layer"></g><g id="splash-layer" pointer-events="none"></g>';scene.setAttribute('aria-label','Rising balloons');
-    state.bubbles=Array.from({length:bubbleCapacity()},(_,slot)=>({slot,element:null}));
-    state.bubbles.forEach(bubble=>spawnBubble(bubble,true));progress(0,0);bubbleFrame=requestAnimationFrame(bubbleTick);
+    fitBubbleField();progress(0,0);bubbleFrame=requestAnimationFrame(bubbleTick);
   }
   function bubbleTick(now){
     if(state.activity!=='bubbles'||document.hidden){bubbleFrame=null;return;}
@@ -835,7 +852,7 @@
     for(const bubble of state.bubbles){
       if(!bubble.element){bubble.wait-=elapsed;if(bubble.wait<=0)spawnBubble(bubble);continue;}
       bubble.y-=elapsed*bubbleSpeeds[selectedBubbleSpeed()];
-      if(bubble.y < -bubble.r){bubble.element.remove();bubble.element=null;spawnBubble(bubble);}
+      if(bubble.y < -bubble.r*1.5){bubble.element.remove();bubble.element=null;bubble.wait=0;spawnBubble(bubble);}
       positionBubble(bubble);
     }
     for(const splash of state.bubbleEffects){
@@ -1340,6 +1357,8 @@
   $('home').addEventListener('click',home);$('again').addEventListener('click',resetRound);$('show-me').addEventListener('click',showMe);
   document.querySelectorAll('[data-activity]').forEach(button=>button.addEventListener('click',()=>{tone(500);startActivity(button.dataset.activity);}));
   document.querySelectorAll('[data-level]').forEach(button=>button.addEventListener('click',()=>setLevel(Number(button.dataset.level))));
+  // Share one settings area so normal phone play has height for several readable rows.
+  $('bubble-settings').prepend($('bubble-modes'));
   document.querySelectorAll('[data-bubble-mode]').forEach(button=>button.addEventListener('click',()=>{state.bubbleMode=button.dataset.bubbleMode;resetRound();}));
   $('bubble-full-set').addEventListener('click',()=>{state.bubbleSet=state.bubbleSet==='full'?'starter':'full';save();resetRound();});
   document.querySelectorAll('[data-bubble-speed]').forEach(button=>button.addEventListener('click',()=>{state.bubbleSpeed=button.dataset.bubbleSpeed;updateBubbleSettings();save();}));
