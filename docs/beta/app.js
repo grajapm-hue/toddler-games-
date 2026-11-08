@@ -96,14 +96,15 @@
   let audio=null,lastTone=0,rewardTimer=null,guideTimer=null,bubbleFrame=null,lastBubbleTime=0,roundSerial=0,nextRoundTimer=null;
   // One cancellable transition for every completed round or picture batch.
   // Again, navigation and age/mode changes invalidate the previous board's work.
-  function scheduleNextRound(delay=2000,prepare=null){
+  const PLAY_PAUSE_MS=1500;
+  function scheduleNextRound(prepare=null){
     clearTimeout(nextRoundTimer);
     const serial=roundSerial,activity=state.activity,age=state.age;
     nextRoundTimer=setTimeout(()=>{
       nextRoundTimer=null;
       if(serial!==roundSerial||activity!==state.activity||age!==state.age)return;
       prepare?.();resetRound();
-    },delay);
+    },PLAY_PAUSE_MS);
   }
   const save=()=>{
     const key=state.age??'common',current={level:state.level,bubbleSpeed:state.bubbleSpeed,bubbleSize:state.bubbleSize,bubbleSet:state.bubbleSet};ageSettings[key]=current;
@@ -260,7 +261,7 @@
     if(current){const x=current.offsetLeft-strip.offsetLeft; if(x<strip.scrollLeft||x+current.offsetWidth>strip.scrollLeft+strip.clientWidth)strip.scrollLeft=Math.max(0,x-strip.clientWidth/3);}
   }
   $('brush-thumbnails').addEventListener('click',event=>{const button=event.target.closest('[data-brush-index]');if(!button||state.activity!=='brush')return;const index=Number(button.dataset.brushIndex);if(!Number.isInteger(index)||index<0||index>=brushCount())return;brushIndex=index;resetRound();});
-  function brushComplete(message){if(state.done)return;brushFinished.add(brushIndex);updateBrushThumbnails();celebrate(message);applause();scheduleNextRound(2100,()=>{brushIndex=(brushIndex+1)%brushCount();if(brushIndex===0)brushFinished.clear();});}
+  function brushComplete(message){if(state.done)return;brushFinished.add(brushIndex);updateBrushThumbnails();celebrate(message);applause();scheduleNextRound(()=>{brushIndex=(brushIndex+1)%brushCount();if(brushIndex===0)brushFinished.clear();});}
   const artPicture=()=>state.activity==='brush'?brushPicture():({...artPictures[profile().picture],target:profile().paintTarget});
   function pictureArt(outline=false){
     const picture=artPicture();if(state.activity==='brush')return `<g stroke="#536b5b" stroke-width="5" stroke-linejoin="round" fill="${outline?'none':brushThumbColor(picture.name)}">${picture.region}</g>`;if(picture.name==='puppy')return puppy(outline);
@@ -398,7 +399,6 @@
   // Ages 2/3 keep the completed collection visible before marking its thumbnail.
   let countStage=0,countPlaced=0,countTimer=null,countHolding=false;
   const countCollected=new Set();
-  const COUNT_HOLD_MS=3000;
   const countStockSize=age=>age===2?5:age===3?10:0;
   const countMax=()=>countStockSize(state.age)||20;
   const countTitle=()=>state.age===2?'Apple Basket':state.age===3?'Feed the Hungry Rabbit':'Number Train Adventure';
@@ -513,7 +513,7 @@
           if(countStage===countMax()){
             celebrate(`Wonderful counting! You completed ${countTitle()}!`);renderCountAdventure();applause();scheduleNextRound();
           }else renderCountAdventure();
-        },COUNT_HOLD_MS);
+        },PLAY_PAUSE_MS);
       }else renderCountAdventure();
       return;
     }
@@ -576,7 +576,7 @@
     state.abacusRows[row]=Array.from({length:10},(_,index)=>index>=10-count);
     restoreAbacusRow(row);updateAbacusProgress();updateAbacusFeedback(row,count,!previous&&!!count);tone(520+count*20);
     const complete=state.abacusRows.every((_,index)=>abacusCount(index)>0);
-    if(complete&&!state.done){celebrate('Wonderful counting! SaNa loves your rainbow and circle!');$('art-reward').hidden=false;applause();scheduleNextRound(2100);}
+    if(complete&&!state.done){celebrate('Wonderful counting! SaNa loves your rainbow and circle!');$('art-reward').hidden=false;applause();scheduleNextRound();}
     else{if(!complete&&state.done){state.done=false;clearEffects();}abacusHint();}
   }
   function finishAbacusBead(row,index,toRight=true){const count=abacusCount(row);setAbacusCount(row,toRight?Math.max(count,10-index):Math.min(count,9-index));}
@@ -681,11 +681,11 @@
       const total=shapeLevelLimits[state.age]||4;
       shapeCompleted+=state.shapes.length;
       if(shapeCompleted>=total){
-        celebrate(`Wonderful! You matched all ${total} shapes. Let's play again!`);scheduleNextRound(1900);
+        celebrate(`Wonderful! You matched all ${total} shapes. Let's play again!`);scheduleNextRound();
         shapeRound=0;shapeCompleted=0;
       }else{
         hint('Great matching! Here come four new shapes.');
-        scheduleNextRound(650,()=>{shapeRound++;});
+        scheduleNextRound(()=>{shapeRound++;});
       }
     }else hint('A perfect fit! Find another little shape.');
   }
@@ -809,10 +809,10 @@
     if(state.bubbleMode==='plain'){
       if(state.bubblePops>=plainGoal()&&!state.done){
         celebrate(`SaNa says hooray! You popped all ${plainGoal()} bubbles!`);
-        scheduleNextRound(1900);
+        scheduleNextRound();
       }else if(!state.done)hint(`Splash, pop! ${state.bubblePops} of ${plainGoal()} bubbles popped. Keep going!`);
     }else if(state.bubbleHits.size===bubbleItems().length&&!state.done){
-      celebrate(`SaNa says hooray! You found all the ${state.bubbleMode==='numbers'?'numbers':state.bubbleMode==='letters'?'letters':'shapes'}. Keep popping!`);scheduleNextRound(1800);
+      celebrate(`SaNa says hooray! You found all the ${state.bubbleMode==='numbers'?'numbers':state.bubbleMode==='letters'?'letters':'shapes'}. Keep popping!`);scheduleNextRound();
     }else if(!state.done)hint(`Splash! ${bubble.token} is now the same color above. Keep looking!`);
   }
 

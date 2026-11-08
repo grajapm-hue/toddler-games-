@@ -13,11 +13,12 @@ let browser;
  browser=await({chromium,webkit})[engine].launch({headless:true,...(engine==='chromium'&&process.env.MM_CHROME?{executablePath:process.env.MM_CHROME}:{})});
  const context=await browser.newContext({viewport:{width:844,height:390},hasTouch:true,reducedMotion:'reduce'}),page=await context.newPage();
  await page.clock.install();page.on('pageerror',e=>errors.push(e.message));
- async function open(age,activity){await page.goto(base+'play.html?age='+age);await page.locator(`[data-age-option="${age}"]`).click();await page.locator(`[data-activity="${activity}"]`).click();await page.locator('#scene[data-art-state="ready"]').waitFor();await page.clock.runFor(100);}
- async function switchTo(activity){await page.locator('#game-home').click();await page.locator(`[data-activity="${activity}"]`).click();await page.locator('#scene[data-art-state="ready"]').waitFor();await page.clock.runFor(100);}
+ async function open(age,activity){await page.goto(base+'play.html?age='+age);await page.locator(`[data-age-option="${age}"]`).click();await page.locator(`[data-activity="${activity}"]`).click();await page.locator('#scene[data-art-state="ready"]').waitFor();await page.clock.pauseAt(new Date(await page.evaluate(()=>Date.now()+50)));}
+ async function switchTo(activity){await page.locator('#game-home').click();await page.locator(`[data-activity="${activity}"]`).click();await page.locator('#scene[data-art-state="ready"]').waitFor();await page.clock.pauseAt(new Date(await page.evaluate(()=>Date.now()+50)));}
  async function point(selector,x=0,y=0){return page.locator(selector).first().evaluate((el,p)=>{const v=new DOMPoint(p.x,p.y).matrixTransform(el.getScreenCTM());return{x:v.x,y:v.y};},{x,y});}
  async function drag(selector,to){const from=await point(selector);await page.mouse.move(from.x,from.y);await page.mouse.down();await page.mouse.move(to.x,to.y,{steps:8});await page.mouse.up();}
- async function harvest(){const to=await page.locator('[data-count-drop]').evaluate(el=>{const b=el.getBBox(),p=new DOMPoint(b.x+b.width/2,b.y+b.height/2).matrixTransform(el.getScreenCTM());return{x:p.x,y:p.y};});await drag('[data-count-fruit]',to);}
+ async function harvest(){if(process.env.REPLAY_IMMERSIVE&&!await page.locator('#app').evaluate(el=>el.classList.contains('immersive')))await page.locator('#fullscreen').click();const to=await page.locator('[data-count-drop]').evaluate(el=>{const b=el.getBBox(),p=new DOMPoint(b.x+b.width/2,b.y+b.height/2).matrixTransform(el.getScreenCTM());return{x:p.x,y:p.y};});await drag('[data-count-fruit]',to);}
+ async function pause(label,advanced){if(process.env.REPLAY_IMMERSIVE&&!await page.locator('#app').evaluate(el=>el.classList.contains('immersive')))await page.locator('#fullscreen').click();await page.clock.runFor(1400);check(label+' holds before 1.5 seconds',!await advanced());await page.clock.runFor(100);check(label+' advances at 1.5 seconds',await advanced());}
  async function pixels(name){const points=await page.locator('[data-piece]').evaluateAll(nodes=>nodes.map(el=>{const p=new DOMPoint(0,0).matrixTransform(el.getScreenCTM());return{id:el.dataset.piece,x:p.x,y:p.y};}));const buffer=await page.screenshot({path:path.join(out,name+'.png')}),{data,info}=await sharp(buffer).removeAlpha().raw().toBuffer({resolveWithObject:true});return points.map(p=>({...p,rgb:[...data.subarray((Math.round(p.y)*info.width+Math.round(p.x))*info.channels,(Math.round(p.y)*info.width+Math.round(p.x))*info.channels+3)]}));}
  // A pixel comparison is essential: invisible filtered shapes still have DOM boxes and hit targets.
  await open(5,'drag');const baseline=await pixels('drag-before-bubbles');
@@ -26,17 +27,17 @@ let browser;
  check('Drag shapes remain visibly coloured after visiting Shape Bubbles',after.length===4&&after.every((p,i)=>p.rgb.every((c,j)=>Math.abs(c-baseline[i].rgb[j])<12)),{baseline,after});
  for(const age of [2,3]){
   await open(age,'abacus');const max=age===2?5:10;
-  for(let n=1;n<=max;n++){await harvest();await page.clock.runFor(2900);check(`Age ${age} count ${n} retains its collection before ticking`,await page.locator('[data-count-collected]').count()===n&&await page.locator('#item-progress-strip .is-done').count()===n-1);await page.clock.runFor(200);}
+  for(let n=1;n<=max;n++){await harvest();await page.clock.runFor(1400);check(`Age ${age} count ${n} retains its collection before ticking`,await page.locator('[data-count-collected]').count()===n&&await page.locator('#item-progress-strip .is-done').count()===n-1);await page.clock.runFor(100);check(`Age ${age} count ${n} ticks at 1.5 seconds`,await page.locator('#item-progress-strip .is-done').count()===n);}
   check(`Age ${age} celebrates the whole completed collection`,await page.locator('[data-count-collected]').count()===max&&await page.locator('#item-progress-strip .is-done').count()===max);
-  await page.clock.runFor(2200);
+  await pause(`Age ${age} final count`,async()=>await page.locator('[data-count-collected]').count()===0);
   check(`Age ${age} automatically refills for another game`,await page.locator('[data-count-fruit]').count()===max&&await page.locator('[data-count-collected]').count()===0&&await page.locator('#item-progress-strip .is-done').count()===0);
  }
  if(!process.env.REPLAY_RED){
   for(const age of [2,3,4,5]){
    await open(age,'drag');const limit={2:4,3:12,4:16,5:20}[age];
    for(let round=0;round<2;round++){
-    for(let n=0;n<limit;n++){const id=await page.locator('[data-piece]').first().getAttribute('data-piece');await page.locator(`[data-piece="${id}"]`).press('Enter');await page.locator(`[data-target="${id}"]`).press('Enter');if((n+1)%4===0&&n+1<limit)await page.clock.runFor(700);}
-    await page.clock.runFor(2100);check(`Age ${age} Drag automatically starts round ${round+2}`,await page.locator('[data-piece]').count()===4&&await page.locator('[data-piece="circle"]').count()===1&&await page.locator('#art-reward').isHidden());
+    for(let n=0;n<limit;n++){const id=await page.locator('[data-piece]').first().getAttribute('data-piece');await page.locator(`[data-piece="${id}"]`).press('Enter');await page.locator(`[data-target="${id}"]`).press('Enter');if((n+1)%4===0&&n+1<limit)await pause(`Age ${age} next shape batch`,async()=>await page.locator('[data-piece]').count()===4);}
+    await pause(`Age ${age} Drag`,async()=>await page.locator('[data-piece]').count()===4);check(`Age ${age} Drag automatically starts round ${round+2}`,await page.locator('[data-piece]').count()===4&&await page.locator('[data-piece="circle"]').count()===1&&await page.locator('#art-reward').isHidden());
    }
    await open(age,'slide');const rooms={2:4,3:8,4:12,5:16}[age];
    for(let i=0;i<rooms;i++){await page.locator('[data-slide-swipe]').press('ArrowRight');await page.clock.runFor(400);await page.locator('[data-slide-swipe]').press('ArrowLeft');await page.clock.runFor(400);}
@@ -46,13 +47,13 @@ let browser;
   await page.setViewportSize({width:1024,height:768});
   for(const age of [2,3,4,5])for(const mode of ['plain','numbers','letters','shapes']){
    await open(age,'bubbles');await page.locator(`[data-bubble-mode="${mode}"]`).click();await page.locator('[data-bubble-size="small"]').click();await page.locator('[data-bubble-speed="slow"]').click();
-   for(let tick=0;tick<600;tick++){if(await page.locator('#art-reward').isVisible())break;const b=page.locator('[data-bubble][data-onstage="true"]').first();if(await b.count())await b.press('Enter');else await page.locator('#scene[data-art-state="ready"]').waitFor();await page.clock.runFor(100);}
-   check(`Age ${age} ${mode} bubbles can finish`,await page.locator('#art-reward').isVisible());await page.clock.runFor(2100);
+   for(let tick=0;tick<600;tick++){if(await page.locator('#art-reward').isVisible())break;const b=page.locator('[data-bubble][data-onstage="true"]').first();if(await b.count())await b.press('Enter');else await page.locator('#scene[data-art-state="ready"]').waitFor();await page.clock.pauseAt(new Date(await page.evaluate(()=>Date.now()+50)));}
+   check(`Age ${age} ${mode} bubbles can finish`,await page.locator('#art-reward').isVisible());await pause(`Age ${age} ${mode} bubbles`,async()=>await page.locator('#art-reward').isHidden());
    check(`Age ${age} ${mode} bubbles automatically refill`,await page.locator('#art-reward').isHidden()&&await page.locator('#item-progress-strip .is-done').count()===0&&await page.locator('[data-bubble]').count()>0);
   }
-  await open(4,'abacus');for(let n=1;n<=20;n++)await page.locator(`[data-count-choice="${n}"]`).press('Enter');await page.clock.runFor(2100);
+  await open(4,'abacus');for(let n=1;n<=20;n++)await page.locator(`[data-count-choice="${n}"]`).press('Enter');await pause('Number Train',async()=>await page.locator('#item-progress-strip .is-done').count()===0);
   check('Number Train restarts at its fixed 1-4 group',JSON.stringify(await page.locator('[data-count-choice]').evaluateAll(nodes=>nodes.map(n=>Number(n.dataset.countChoice))))==='[1,2,3,4]'&&await page.locator('#art-reward').isHidden());
-  await open(5,'abacus');for(let row=0;row<10;row++)await page.locator(`[data-bead-row="${row}"][data-bead-index="9"]`).press('ArrowRight');await page.clock.runFor(2200);
+  await open(5,'abacus');for(let row=0;row<10;row++)await page.locator(`[data-bead-row="${row}"][data-bead-index="9"]`).press('ArrowRight');await pause('Rainbow Abacus',async()=>await page.locator('[data-bead-row][data-moved="true"]').count()===0);
   check('Rainbow Abacus automatically resets every row',await page.locator('[data-bead-row][data-moved="true"]').count()===0&&await page.locator('#art-reward').isHidden());
   async function finishArt(mode){
    if(mode==='clean')for(let t=0;t<50&&await page.locator('[data-dirt]').count();t++){const p=await page.locator('[data-dirt]').first().evaluate(el=>{const b=el.getBBox(),p=new DOMPoint(b.x+b.width/2,b.y+b.height/2).matrixTransform(el.getScreenCTM());return{x:p.x,y:p.y};});await page.mouse.move(p.x,p.y);await page.mouse.down();await page.mouse.move(p.x+4,p.y,{steps:3});await page.mouse.up();}
@@ -60,9 +61,9 @@ let browser;
   }
   for(const mode of ['clean','paint']){
    await open(2,'brush');if(mode==='paint')await page.locator('#paint-mode').click();await page.locator('[data-brush-size="large"]').click();await finishArt(mode);
-   check(`${mode} art celebrates completion`,await page.locator('#art-reward').isVisible());await page.clock.runFor(2200);
+   check(`${mode} art celebrates completion`,await page.locator('#art-reward').isVisible());await pause(`${mode} art`,async()=>await page.locator('#art-reward').isHidden());
    check(`${mode} art automatically opens the next drawing`,(await page.locator('#activity-name').textContent()).includes('Sun')&&await page.locator('#art-reward').isHidden());
-   await page.locator('[data-brush-choice="3"]').click();await finishArt(mode);await page.clock.runFor(2200);
+   await page.locator('[data-brush-choice="3"]').click();await finishArt(mode);await pause(`${mode} art`,async()=>await page.locator('#art-reward').isHidden());
    check(`${mode} art wraps to the first drawing with fresh progress`,(await page.locator('#activity-name').textContent()).includes('Apple')&&await page.locator('#item-progress-strip .is-done').count()===0);
   }
   // A cancelled completion must never wipe a later round or another game.
