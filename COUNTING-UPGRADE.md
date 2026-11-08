@@ -249,3 +249,10 @@ Age 2 Apple and Age 3 Rabbit now share the Age 4 train's complete green countrys
 ## v1.37 keep harvest counts clear of the controls
 
 In fullscreen, vibration sits on the bottom row immediately left of the fullscreen return square. Apple and Rabbit reserve this bottom row so neither control covers the collected count. Normal toolbar order, toggle behaviour, countryside backgrounds and gameplay are unchanged.
+
+
+## v1.38 one countryside theme for every playroom
+
+Every age and activity now uses the train's full green countryside backdrop, in normal and fullscreen play: Shapes, Balloons, Slide, Brush, Paint and all counting rooms including Age 5 Abacus. Slide retains its door and revealed objects while its separate cave photograph/dark room overlay is removed so the common landscape remains visible outside the door. Unused planet/cave backdrop downloads are removed from the new offline cache.
+
+The bottom-right fullscreen return square and vibration switch to its left remain consistent across all games. Every fullscreen room reserves a clear bottom row beneath its game field, protecting Abacus labels and game objects as well as Apple/Rabbit counts. Sizes, W rows, touch effects, game rules and timing are retained. Layout tests cover every age/game/mode in both views; room feedback, artwork loading, fullscreen size and installed/offline checks verify the shared background without changing interactions.

@@ -31,7 +31,7 @@ let browser;
  check('Unavailable artwork offers a retry while Games remains usable',await page.locator('#game-art-retry').isVisible()&&await page.locator('#game-home').isVisible());failed=false;await page.locator('#game-art-retry').click();await page.waitForFunction(()=>document.querySelector('#scene').dataset.artState==='ready');
  check('Retry restores the original untouched round',await page.locator('[data-count-fruit]').count()===5&&await page.locator('#item-progress-strip .is-done').count()===0);await page.unroute(/\/count-art\/apple\.(png|webp)$/);
  await context.close();
- for(const [age,activity,asset] of [[3,'abacus','carrot.webp'],[4,'abacus','locomotive-colour-v126.webp'],[2,'slide','slide-cave.jpg'],[2,'drag','sana-space-sky-v83.jpg'],[2,'brush','sana-space-sky-v83.jpg'],[2,'bubbles','sana-space-sky-v83.jpg']]){
+ for(const [age,activity,asset] of [[3,'abacus','carrot.webp'],[4,'abacus','locomotive-colour-v126.webp'],[2,'slide','train-art/farm-sky-v126.webp'],[2,'drag','train-art/farm-sky-v126.webp'],[2,'brush','train-art/farm-sky-v126.webp'],[2,'bubbles','train-art/farm-sky-v126.webp']]){
   const cold=await browser.newContext({viewport:{width:844,height:390},serviceWorkers:'block'}),p=await cold.newPage();p.on('pageerror',e=>errors.push(e.message));let allow;
   const gate=new Promise(r=>{allow=r;});await p.route('**/'+asset,async route=>{await gate;await route.continue();});
   await p.goto(base+'play.html?age='+age);await p.locator(`[data-activity="${activity}"]`).click();

@@ -14,13 +14,16 @@ let browser;
  async function effect(kind){return await page.locator(`[data-object-feedback="${kind}"]`).count()>0;}
  for(const age of [2,3,4,5]){
   await open(age,'brush');const sky=await page.locator('.play-mat').evaluate(el=>getComputedStyle(el).backgroundImage);await page.locator('#paint-mode').click();
-  check(`Age ${age} Paint uses Brush's sky without an outer white board`,await page.locator('#paint-paper').count()===0&&await page.locator('.play-mat').evaluate(el=>getComputedStyle(el).backgroundImage)===sky);
+  check(`Age ${age} Paint and Brush share the countryside without an outer white board`,sky.includes('farm-sky-v126.webp')&&await page.locator('#paint-paper').count()===0&&await page.locator('.play-mat').evaluate(el=>getComputedStyle(el).backgroundImage)===sky);
+  await open(age,'slide');const outside=await page.locator('#scene').evaluate(async svg=>{const text=new XMLSerializer().serializeToString(svg),img=new Image();img.src='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(text)));await img.decode();const c=document.createElement('canvas');c.width=1000;c.height=440;const ctx=c.getContext('2d');ctx.drawImage(img,0,0,1000,440);return ctx.getImageData(50,50,1,1).data[3];});check(`Age ${age} Slide leaves the common countryside visible outside its door`,outside===0,outside);
+  await open(age,'brush');await page.locator('#paint-mode').click();
   if(process.env.ROOM_RED)continue;
   const alpha=await page.locator('#scene').evaluate(async svg=>{const text=new XMLSerializer().serializeToString(svg),img=new Image();img.src='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(text)));await img.decode();const c=document.createElement('canvas');c.width=1000;c.height=440;const ctx=c.getContext('2d');ctx.drawImage(img,0,0,1000,440);return ctx.getImageData(150,50,1,1).data[3];});
-  check(`Age ${age} Paint leaves the sky visible outside its outline`,alpha===0,alpha);
+  check(`Age ${age} Paint leaves the countryside visible outside its outline`,alpha===0,alpha);
   await page.locator('[data-paint]').nth(2).click();check(`Age ${age} paint colour uses shared selection feedback`,await effect('paint-color'));await page.clock.runFor(300);
   await stroke(await point('#scene',500,225),await point('#scene',530,225));check(`Age ${age} Paint still clips strokes to the selected object`,await page.locator('[data-stroke]').count()===1&&await page.locator('#strokes').getAttribute('clip-path')==='url(#picture-clip)');
  }
+ if(process.env.ROOM_RED){await context.close();return;}
  await open(4,'abacus');await page.locator('[data-count-choice="1"]').press('Enter');
  check('Train enlarges the chosen number before ticking or changing the target',await effect('train')&&(await page.locator('[data-object-feedback="train"]').textContent()).includes('1')&&await page.locator('#item-progress-strip .is-done').count()===0&&(await page.locator('#scene').textContent()).includes('Find number: 1'));
  if(process.env.ROOM_RED){await context.close();return;}

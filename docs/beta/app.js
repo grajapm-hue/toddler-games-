@@ -948,8 +948,6 @@
     const item=slideObjects[state.slideIndex],opened=state.slideRevealed;
     scene.setAttribute('aria-label',`Cave door ${state.slideIndex+1} of ${slideTotal()}: ${item[0]}`);
     scene.innerHTML=`<defs><linearGradient id="caveDoor" x2="1" y2="1"><stop stop-color="#e7a94c"/><stop offset=".5" stop-color="#a85a24"/><stop offset="1" stop-color="#75421f"/></linearGradient><radialGradient id="glassKnob" cx=".25" cy=".2" r=".8"><stop stop-color="#fff"/><stop offset=".3" stop-color="#9de9ff"/><stop offset=".7" stop-color="#478cda"/><stop offset="1" stop-color="#284777"/></radialGradient></defs>
-      <image href="slide-cave.jpg" x="0" y="0" width="1000" height="440" preserveAspectRatio="xMidYMid slice"/>
-      <rect x="10" y="8" width="980" height="425" rx="25" fill="#1d1a27" opacity=".20"/>
       <rect x="205" y="22" width="590" height="386" rx="165" fill="#35203c" stroke="#f4cf77" stroke-width="14"/>
       <rect x="232" y="42" width="536" height="344" rx="145" fill="#050505" stroke="#d7a657" stroke-width="7"/>
       <g data-cave-object="" aria-label="${item[0]}" role="img"><text x="500" y="238" font-size="145" text-anchor="middle">${item[1]}</text><text x="500" y="330" font-size="46" font-weight="900" text-anchor="middle" fill="#ffffff" stroke="#101010" stroke-width="1">${item[0]}</text></g>
