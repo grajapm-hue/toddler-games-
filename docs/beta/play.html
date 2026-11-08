@@ -92,7 +92,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 #sound[aria-pressed="true"],#music-toggle[aria-pressed="true"]{background:#a9e4b9!important;color:#173e2b!important;border-color:#3d8d5a!important}
 
 /* Slide Cave only: extend cave scenery into SVG letterbox areas. All other games retain sandalwood. */
-#app[data-view="slide"] .play-mat{background:#3b261e url("slide-cave.jpg") center center / cover no-repeat;}
+#app[data-view="slide"] .play-mat{background:#b6df84 url("./train-art/farm-sky-v126.webp") center center / cover no-repeat;}
 
 /* Compact drawing previews, displayed only for Brush & Paint. */
 .brush-thumbnails:not([hidden]){display:flex;align-items:center;gap:5px;flex:0 0 auto;min-height:42px;max-height:50px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;touch-action:pan-x;background:#fff2d9;border-bottom:2px solid #b8976b;padding:3px 7px}
@@ -206,9 +206,9 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 #vibration-toggle{font-size:23px;font-weight:900;background:#a9e4b9;color:#173e2b;border:2px solid #3d8d5a}
 #vibration-toggle[aria-pressed="false"]{background:#f6a6a6;color:#512424;border-color:#a94b4b}
 #app.immersive #vibration-toggle{position:absolute;top:auto!important;right:auto!important;bottom:max(12px,env(safe-area-inset-bottom))!important;left:max(12px,env(safe-area-inset-left))!important;z-index:100;width:48px;height:48px;min-width:48px;display:flex!important;align-items:center;justify-content:center;border:3px solid #fff;border-radius:12px;pointer-events:auto;touch-action:manipulation;box-shadow:0 2px 8px #0005}
-/* v0.82 shared sky backdrop: decorative only; never captures touches. */
-#app:not([data-view="home"]) .play-mat{background:#d8b98e url('./sana-space-sky-v83.jpg') center center/cover no-repeat}
-#app[data-view="bubbles"] .play-mat{background:#d8b98e url('./sana-space-sky-v83.jpg') center center/cover no-repeat}
+/* v0.82 shared countryside backdrop: decorative only; never captures touches. */
+#app:not([data-view="home"]) .play-mat{background:#b6df84 url('./train-art/farm-sky-v126.webp') center center/cover no-repeat}
+#app[data-view="bubbles"] .play-mat{background:#b6df84 url('./train-art/farm-sky-v126.webp') center center/cover no-repeat}
 #app:not([data-view="home"]) #scene{background:transparent!important}
 
 /* v0.89: keep the original button background; highlight only the muted icon. */
@@ -231,8 +231,8 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 
 /* v1.03: music note and speaker use identical icon dimensions */
 #music-toggle svg,#sound svg{width:24px;height:24px;display:block;flex:none}
-/* v1.03 fullscreen resilience: retain a sky fallback behind the SVG. */
-#app[data-view="bubbles"] .play-mat, #app[data-view="bubbles"].immersive .play-mat {background-color:#d8b98e!important;background-image:url('./sana-space-sky-v83.jpg')!important;background-position:center!important;background-size:cover!important;}
+/* v1.03 fullscreen resilience: retain a countryside fallback behind the SVG. */
+#app[data-view="bubbles"] .play-mat, #app[data-view="bubbles"].immersive .play-mat {background-color:#b6df84!important;background-image:url('./train-art/farm-sky-v126.webp')!important;background-position:center!important;background-size:cover!important;}
 #app[data-view="bubbles"] #scene {background:transparent!important;}
 
 /* v1.03: shared top-of-play-room item/progress strip in every activity. */
@@ -350,7 +350,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
 <script>for(const type of ['touchstart','touchmove'])document.addEventListener(type,event=>{if(event.touches.length>1)event.preventDefault();},{passive:false,capture:true});for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});</script>
-<meta name="sana-release" content="sana-little-hands-beta-v137-vibration-position">
+<meta name="sana-release" content="sana-little-hands-beta-v138-countryside-rooms">
 <style>
 /* Keep balloon choices together and give the travelling rows the released height. */
 #app[data-view="bubbles"] #bubble-settings{flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;gap:4px;scrollbar-width:thin}
@@ -365,7 +365,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 .immersive .topbar #music-toggle{position:absolute;top:max(8px,env(safe-area-inset-top));right:calc(max(8px,env(safe-area-inset-right)) + 108px);z-index:12;width:46px;min-width:46px;height:46px}
 
 /* Slide Cave only: extend cave scenery into SVG letterbox areas. All other games retain sandalwood. */
-#app[data-view="slide"] .play-mat{background:#3b261e url("slide-cave.jpg") center center / cover no-repeat;}
+#app[data-view="slide"] .play-mat{background:#b6df84 url("./train-art/farm-sky-v126.webp") center center / cover no-repeat;}
 
 /* Compact drawing previews, displayed only for Brush & Paint. */
 .brush-thumbnails:not([hidden]){display:flex;align-items:center;gap:5px;flex:0 0 auto;min-height:42px;max-height:50px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;touch-action:pan-x;background:#fff2d9;border-bottom:2px solid #b8976b;padding:3px 7px}
@@ -409,9 +409,9 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 #app.immersive #exit-play{display:flex!important;position:absolute;right:10px;top:10px;z-index:99;align-items:center;justify-content:center;width:48px;height:48px;min-width:48px;min-height:48px;border:3px solid #fff;border-radius:12px;background:#ffe17a;color:#173e35;font-size:32px;font-weight:900;line-height:1;pointer-events:auto;touch-action:manipulation;box-shadow:0 2px 8px #0007}
 #exit-play{display:none}
 
-/* v0.82 shared sky backdrop: decorative only; never captures touches. */
-#app:not([data-view="home"]) .play-mat{background:#d8b98e url('./sana-space-sky-v83.jpg') center center/cover no-repeat}
-#app[data-view="bubbles"] .play-mat{background:#d8b98e url('./sana-space-sky-v83.jpg') center center/cover no-repeat}
+/* v0.82 shared countryside backdrop: decorative only; never captures touches. */
+#app:not([data-view="home"]) .play-mat{background:#b6df84 url('./train-art/farm-sky-v126.webp') center center/cover no-repeat}
+#app[data-view="bubbles"] .play-mat{background:#b6df84 url('./train-art/farm-sky-v126.webp') center center/cover no-repeat}
 #app:not([data-view="home"]) #scene{background:transparent!important}
 </style>
 <style id="game-control-isolation-v84">
@@ -429,16 +429,16 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 #app[data-view="bubbles"] #play-levels { display:none !important; }
 #app[data-view="home"] .play-toolbar { display:none !important; }
 
-/* v0.82 shared sky backdrop: decorative only; never captures touches. */
-#app:not([data-view="home"]) .play-mat{background:#d8b98e url('./sana-space-sky-v83.jpg') center center/cover no-repeat}
-#app[data-view="bubbles"] .play-mat{background:#d8b98e url('./sana-space-sky-v83.jpg') center center/cover no-repeat}
+/* v0.82 shared countryside backdrop: decorative only; never captures touches. */
+#app:not([data-view="home"]) .play-mat{background:#b6df84 url('./train-art/farm-sky-v126.webp') center center/cover no-repeat}
+#app[data-view="bubbles"] .play-mat{background:#b6df84 url('./train-art/farm-sky-v126.webp') center center/cover no-repeat}
 #app:not([data-view="home"]) #scene{background:transparent!important}
 </style>
 <style id="sana-sky-full-board-v84">
-/* The shared sky belongs to the entire play mat, including navigation/control strips.
+/* The shared countryside belongs to the entire play mat, including navigation/control strips.
    Keep these strips transparent so the same image is visible behind their buttons. */
 #app:not([data-view="home"]) .play-mat {
-  background: #d8b98e url('./sana-space-sky-v83.jpg') center center / cover no-repeat !important;
+  background: #b6df84 url('./train-art/farm-sky-v126.webp') center center / cover no-repeat !important;
 }
 #app:not([data-view="home"]) .play-mat > .play-navigation,
 #app:not([data-view="home"]) .play-mat > .play-toolbar {
@@ -544,15 +544,14 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 @media(prefers-reduced-motion:reduce){[data-object-feedback="train"] .object-feedback-scale{transform:scale(var(--pop-scale))}.balloon-growing{animation:none!important;transform:scale(1.15)}}
 @media(prefers-reduced-motion:reduce){[data-object-feedback="shape"] .object-feedback-scale,[data-object-feedback="fruit"] .object-feedback-scale,[data-object-feedback="bead"] .object-feedback-scale{transform:scale(1)}}
 </style>
-<style>/* v1.37: full green counting rooms and consistent fullscreen controls. */
-#app[data-age="5"][data-view="abacus"] .play-mat{background:#bbe5c4!important}
+<style>/* v1.38: full green counting rooms and consistent fullscreen controls. */
 #fullscreen{background:#b3def0!important;color:#173e35!important;border-color:#a89a62!important}
 #app.immersive .play-mat #exit-play,
 #app.immersive .play-mat:has(> .item-progress-strip:not([hidden])) #exit-play,
 #app.immersive .play-mat:not(:has(> .item-progress-strip:not([hidden]))) #exit-play{background:#b3def0!important;color:#173e35!important;border-color:#a89a62!important;top:auto!important;bottom:max(12px,env(safe-area-inset-bottom))!important}
 #app.immersive .play-mat #exit-play svg{color:inherit!important;stroke:currentColor!important}
 #app.immersive .play-mat #vibration-toggle{bottom:max(12px,env(safe-area-inset-bottom))!important;right:70px!important}
-#app.immersive:is([data-age="2"],[data-age="3"])[data-view="abacus"] .play-mat{padding-bottom:calc(max(12px,env(safe-area-inset-bottom)) + 46px)}
+#app.immersive:not([data-view="home"]) .play-mat{padding-bottom:calc(max(12px,env(safe-area-inset-bottom)) + 46px)}
 </style>
 </head>
 <body>
@@ -605,7 +604,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 (()=>{const status=document.getElementById("game-results"),slot=document.getElementById("game-status-top");if(status&&slot)slot.appendChild(status);})();
 </script>
 <script src="age-profiles.js"></script>
-<script src="app.js?v137"></script>
+<script src="app.js?v138"></script>
 <script src="pwa.js"></script>
 <script>
 /* v1.04 beta: Web Audio buffer playback avoids HTMLMediaElement media cards.
