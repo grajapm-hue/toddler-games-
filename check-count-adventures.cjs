@@ -85,7 +85,7 @@ let browser;
       await page.waitForFunction(n=>document.querySelectorAll('#item-progress-strip .is-done').length===n,target,{timeout:1800});
       const next=await state();check(`Age ${age} count ${target} ticks only after three seconds`,Date.now()-completedAt>=2900&&next.chips.filter(c=>c.done).length===target,next);
       if(target<max)check(`Age ${age} enables only the next count`,next.text.includes(`${target} / ${target+1}`)&&next.chips[target].current&&!next.praise,next);
-      else {await page.waitForTimeout(2100);const end=await state();check(`Age ${age} final collection remains visible until Again`,end.collected===max&&end.chips.every(c=>c.done)&&!end.text.includes('Count to '+(max+1)),end);}
+      else {await page.waitForTimeout(2100);const end=await state();check(`Age ${age} automatically refills after the final celebration`,end.collected===0&&end.sources.length===max&&!end.chips.some(c=>c.done)&&end.text.includes('0 / 1'),end);}
     }
   }
   if(!process.env.COUNT_RED) {
@@ -117,7 +117,7 @@ let browser;
     await page.locator('#home').click();await page.locator('[data-activity="brush"]').click();check('Paint still opens',await page.locator('#app').getAttribute('data-view')==='brush');
     await page.goto(base+'index.html');await page.waitForFunction(()=>!!navigator.serviceWorker.controller,{timeout:30000});
     await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
-    const cached=await page.evaluate(async()=>{const cache=await caches.open('sana-little-hands-beta-v127-train-groups');return Promise.all(['app.js?v127',...['apple-tree','basket','carrot-garden','rabbit','apple','carrot'].map(name=>'count-art/'+name+'.png')].map(name=>cache.match(new URL(name,location.href)).then(Boolean)));});
+    const cached=await page.evaluate(async()=>{const cache=await caches.open('sana-little-hands-beta-v128-auto-replay');return Promise.all(['app.js?v128',...['apple-tree','basket','carrot-garden','rabbit','apple','carrot'].map(name=>'count-art/'+name+'.png')].map(name=>cache.match(new URL(name,location.href)).then(Boolean)));});
     check('The worker precaches the exact game script and every illustration',cached.every(Boolean),cached);
     if(engine==='chromium')await context.setOffline(true);else await new Promise(done=>server.close(done));
     await open(2);await drag(2);check('Offline counting retains the completed apple',(await state()).collected===1);

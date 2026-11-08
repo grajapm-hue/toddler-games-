@@ -31,7 +31,7 @@
     {id:'arrow',color:'#8dd083'}
   ];
   const shapeLevelLimits={2:4,3:12,4:16,5:20};
-  let shapeRound=0, shapeAge=null, shapeCompleted=0, shapeAdvanceTimer=null;
+  let shapeRound=0, shapeAge=null, shapeCompleted=0;
   // Age is a parent-selected starting level, never a locked progression.
   const shapeBatchSize=4;
   const activities={
@@ -62,7 +62,18 @@
   // Plain bubbles have a finite, age-appropriate collection, just like the other modes.
   const plainGoal=()=>Math.max(1,Number(profile().bubbleCount)||4);
   const brushWidths={small:18,medium:38,large:72};
-  let audio=null,lastTone=0,rewardTimer=null,guideTimer=null,bubbleFrame=null,lastBubbleTime=0,roundSerial=0;
+  let audio=null,lastTone=0,rewardTimer=null,guideTimer=null,bubbleFrame=null,lastBubbleTime=0,roundSerial=0,nextRoundTimer=null;
+  // One cancellable transition for every completed round or picture batch.
+  // Again, navigation and age/mode changes invalidate the previous board's work.
+  function scheduleNextRound(delay=2000,prepare=null){
+    clearTimeout(nextRoundTimer);
+    const serial=roundSerial,activity=state.activity,age=state.age;
+    nextRoundTimer=setTimeout(()=>{
+      nextRoundTimer=null;
+      if(serial!==roundSerial||activity!==state.activity||age!==state.age)return;
+      prepare?.();resetRound();
+    },delay);
+  }
   const save=()=>{
     const key=state.age??'common',current={level:state.level,bubbleSpeed:state.bubbleSpeed,bubbleSize:state.bubbleSize,bubbleSet:state.bubbleSet};ageSettings[key]=current;
     try{
@@ -201,7 +212,7 @@
     ['cat','<path d="M366 179L378 76L453 132Q500 105 547 132L622 76L634 179Q688 305 598 349Q500 395 402 349Q312 305 366 179Z"/>'],
     ['crown','<path d="M322 150L397 239L500 98L603 239L678 150L647 350H353Z"/>']
   ];
-  let brushIndex=0,brushAge=null,brushTimer=null;const brushFinished=new Set();
+  let brushIndex=0,brushAge=null;const brushFinished=new Set();
   const brushCount=()=>brushLimits[state.age]||16;
   const brushPicture=()=>{const [name,region]=brushPictures[brushIndex%brushCount()];return {name,region,target:.97,dirt:[[420,155],[520,155],[600,185],[390,245],[500,240],[600,275],[450,320],[560,330]]};};
   const brushThumbColors={apple:'#ee5651',flower:'#55bdf4',star:'#ffcd43',car:'#6ad765',butterfly:'#bd83ef',fish:'#ffac54',sun:'#ffc94e',tree:'#60b66c',house:'#f09c6b',heart:'#f06e90',balloon:'#8e9ff2',bird:'#71b9e4',cat:'#d9aa77',dog:'#d8aa79',rainbow:'#e8a2d9',boat:'#75b4ee'};
@@ -217,8 +228,8 @@
     const current=strip.querySelector('.current');
     if(current){const x=current.offsetLeft-strip.offsetLeft; if(x<strip.scrollLeft||x+current.offsetWidth>strip.scrollLeft+strip.clientWidth)strip.scrollLeft=Math.max(0,x-strip.clientWidth/3);}
   }
-  $('brush-thumbnails').addEventListener('click',event=>{const button=event.target.closest('[data-brush-index]');if(!button||state.activity!=='brush')return;const index=Number(button.dataset.brushIndex);if(!Number.isInteger(index)||index<0||index>=brushCount())return;clearTimeout(brushTimer);brushIndex=index;resetRound();});
-  function brushComplete(message){if(state.done)return;brushFinished.add(brushIndex);updateBrushThumbnails();celebrate(message);applause();clearTimeout(brushTimer);brushTimer=setTimeout(()=>{if(state.activity==='brush'){brushIndex=(brushIndex+1)%brushCount();resetRound();}},2100);}
+  $('brush-thumbnails').addEventListener('click',event=>{const button=event.target.closest('[data-brush-index]');if(!button||state.activity!=='brush')return;const index=Number(button.dataset.brushIndex);if(!Number.isInteger(index)||index<0||index>=brushCount())return;brushIndex=index;resetRound();});
+  function brushComplete(message){if(state.done)return;brushFinished.add(brushIndex);updateBrushThumbnails();celebrate(message);applause();scheduleNextRound(2100,()=>{brushIndex=(brushIndex+1)%brushCount();if(brushIndex===0)brushFinished.clear();});}
   const artPicture=()=>state.activity==='brush'?brushPicture():({...artPictures[profile().picture],target:profile().paintTarget});
   function pictureArt(outline=false){
     const picture=artPicture();if(state.activity==='brush')return `<g stroke="#536b5b" stroke-width="5" stroke-linejoin="round" fill="${outline?'none':brushThumbColor(picture.name)}">${picture.region}</g>`;if(picture.name==='puppy')return puppy(outline);
@@ -273,7 +284,7 @@
     event.preventDefault();scrollCards(event.key==='Home'?0:event.key==='End'?cardGrid.scrollWidth:cardGrid.scrollLeft+(event.key==='ArrowRight'?cardStep():-cardStep()));
   });
   $('paint-tools').insertAdjacentHTML('beforeend',colors.map((color,i)=>`<button class="paint-color" type="button" data-paint="${color}" style="--paint:${color}" aria-label="${colorNames[i]} paint" aria-pressed="${i===0}"></button>`).join(''));
-  function clearEffects(){stopDemo();clearTimeout(rewardTimer);clearTimeout(guideTimer);$('celebrate').hidden=true;$('art-reward').hidden=true;scene.querySelector('[data-guide]')?.remove();}
+  function clearEffects(){stopDemo();clearTimeout(nextRoundTimer);nextRoundTimer=null;clearTimeout(rewardTimer);clearTimeout(guideTimer);$('celebrate').hidden=true;$('art-reward').hidden=true;scene.querySelector('[data-guide]')?.remove();}
   function cancelGesture(){
     const pointer=state.pointer;state.pointer=null;
     if(pointer&&scene.hasPointerCapture?.(pointer.id)){try{scene.releasePointerCapture(pointer.id);}catch{/* Gesture may already have ended. */}}
@@ -314,7 +325,7 @@
   function startActivity(id,paintMode=false){closeAgeMenu();$('game-mid-controls').append($('sound'),$('music-toggle'),$('vibration-toggle'),$('fullscreen'));state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
   function resetRound(){
     roundSerial++;
-    clearTimeout(slideAdvanceTimer);clearTimeout(brushTimer);cancelCountAdvance();$('art-reward').hidden=true;stopBubbles();cancelGesture();clearEffects();state.done=false;state.selected=null;state.strokes=[];
+    clearTimeout(slideAdvanceTimer);slideDoorAnimating=false;cancelCountAdvance();$('art-reward').hidden=true;stopBubbles();cancelGesture();clearEffects();state.done=false;state.selected=null;state.strokes=[];
     $('play-levels').hidden=true;$('abacus-stage').hidden=state.activity!=='abacus';
     $('bubble-score').hidden=state.activity!=='bubbles';
     $('bubble-modes').hidden=state.activity!=='bubbles';$('bubble-tracker').hidden=state.activity!=='bubbles';$('step-note').hidden=true;
@@ -330,7 +341,6 @@
     scene.style.background='transparent';
     if(state.activity==='abacus'){if(state.age===5){state.abacusRows=abacusColors.map(()=>Array(10).fill(false));state.abacusSelectedRow=0;renderAbacus();}else resetCountAdventure();}
     else if(state.activity==='drag'){
-      clearTimeout(shapeAdvanceTimer);
       if(shapeAge!==state.age){shapeAge=state.age;shapeRound=0;shapeCompleted=0;}
       const pool=shapes.slice(0,shapeLevelLimits[state.age]||4);
       const batches=Math.ceil(pool.length/shapeBatchSize);
@@ -381,7 +391,7 @@
   function countCollectedPoint(index,age=state.age){return age===2?[[715,229],[780,229],[845,229],[747,186],[812,186]][index]:[795-(index%5)*49,235+Math.floor(index/5)*65];}
   function countDestination(age=state.age){return age===2?{x:800,y:240,rx:175,ry:110}:{x:810,y:215,rx:170,ry:135};}
   function countPraise(final=false){
-    const message=final?'Every count is complete!':countHolding?'Wait for the next count.':'Choose Again to play.';
+    const message=countHolding&&!final?'Wait for the next count.':'Let’s count again!';
     return `<g data-count-praise="" role="status" aria-live="polite"><rect x="395" y="20" width="330" height="98" rx="26" fill="#fffbed" stroke="#75a460" stroke-width="4"/><circle cx="425" cy="56" r="22" fill="#ffe385"/><text x="425" y="66" text-anchor="middle" font-size="28" aria-hidden="true">🐒</text><text x="460" y="57" font-size="28" font-weight="900" fill="#216144">Well done!</text><text x="410" y="94" font-size="21" font-weight="800" fill="#30564d">${message}</text></g>`;
   }
   function countLedger(age){
@@ -446,7 +456,7 @@
     $('activity-name').textContent=countTitle();scene.setAttribute('viewBox','0 0 1000 440');
     if(age===2||age===3){
       scene.innerHTML=renderHarvestCount(target,age);
-      hint(countHolding?'Well done! Wait for the next count.':state.done?'Wonderful counting! Choose Again to play.':age===2?`Put ${target} apple${target>1?'s':''} into the basket. Drag each apple!`:`Feed the rabbit ${target} carrot${target>1?'s':''}!`);
+      hint(countHolding?'Well done! Wait for the next count.':state.done?'Wonderful counting! A new round starts soon.':age===2?`Put ${target} apple${target>1?'s':''} into the basket. Drag each apple!`:`Feed the rabbit ${target} carrot${target>1?'s':''}!`);
     }else{
       renderNumberTrain(target);
       hint(`Find number ${target} and tap its train carriage!`);
@@ -469,7 +479,7 @@
           if(!countHolding||serial!==roundSerial||state.activity!=='abacus'||state.age!==age||countStage!==stage)return;
           countHolding=false;$('show-me').disabled=false;countStage++;
           if(countStage===countMax()){
-            state.done=true;renderCountAdventure();tone(700,true);applause();
+            celebrate(`Wonderful counting! You completed ${countTitle()}!`);renderCountAdventure();applause();scheduleNextRound();
           }else renderCountAdventure();
         },COUNT_HOLD_MS);
       }else renderCountAdventure();
@@ -481,7 +491,7 @@
     haptic(45,0);tone(700);countStage++;countPlaced=0;
     if(countStage>=countMax()){
       progress(countStage,countMax());updateGameItemStrip();celebrate(`Wonderful counting! You completed ${countTitle()}!`);applause();
-      countTimer=setTimeout(()=>{if(state.activity==='abacus'&&state.age===4)resetCountAdventure();},2000);
+      scheduleNextRound();
     }else renderCountAdventure();
   }
 
@@ -534,7 +544,7 @@
     state.abacusRows[row]=Array.from({length:10},(_,index)=>index>=10-count);
     restoreAbacusRow(row);updateAbacusProgress();updateAbacusFeedback(row,count,!previous&&!!count);tone(520+count*20);
     const complete=state.abacusRows.every((_,index)=>abacusCount(index)>0);
-    if(complete&&!state.done){const roundAtCompletion=roundSerial;celebrate('Wonderful counting! SaNa loves your rainbow and circle!');$('art-reward').hidden=false;applause();setTimeout(()=>{if(state.activity==='abacus'&&state.done&&roundSerial===roundAtCompletion)resetRound();},2100);}
+    if(complete&&!state.done){celebrate('Wonderful counting! SaNa loves your rainbow and circle!');$('art-reward').hidden=false;applause();scheduleNextRound(2100);}
     else{if(!complete&&state.done){state.done=false;clearEffects();}abacusHint();}
   }
   function finishAbacusBead(row,index,toRight=true){const count=abacusCount(row);setAbacusCount(row,toRight?Math.max(count,10-index):Math.min(count,9-index));}
@@ -580,7 +590,6 @@
     if(!button||state.activity!=='brush')return;
     const index=Number(button.dataset.brushChoice);
     if(!Number.isInteger(index)||index<0||index>=brushCount())return;
-    clearTimeout(brushTimer);
     brushIndex=index;
     resetRound();
     hint(`Selected ${artPicture().name}. ${state.paintMode?'Choose a color and paint inside the lines!':'Brush away the dirt to reveal the colors!'}`);
@@ -640,16 +649,11 @@
       const total=shapeLevelLimits[state.age]||4;
       shapeCompleted+=state.shapes.length;
       if(shapeCompleted>=total){
-        const roundAtCompletion=roundSerial;celebrate(`Wonderful! You matched all ${total} shapes. Let's play again!`);shapeAdvanceTimer=setTimeout(()=>{if(state.activity==='drag'&&state.done&&roundSerial===roundAtCompletion)resetRound();},1900);
+        celebrate(`Wonderful! You matched all ${total} shapes. Let's play again!`);scheduleNextRound(1900);
         shapeRound=0;shapeCompleted=0;
       }else{
         hint('Great matching! Here come four new shapes.');
-        clearTimeout(shapeAdvanceTimer);
-        shapeAdvanceTimer=setTimeout(()=>{
-          if(state.activity!=='drag'||state.done)return;
-          shapeRound++;
-          resetRound();
-        },650);
+        scheduleNextRound(650,()=>{shapeRound++;});
       }
     }else hint('A perfect fit! Find another little shape.');
   }
@@ -661,7 +665,9 @@
     $('bubble-score').textContent=state.bubbleMode==='plain'?`Popped ${Math.min(state.bubblePops,plainGoal())}/${plainGoal()}`:`${mode.label} · ${state.bubbleHits.size}/${mode.items.length}`;
     $('bubble-targets').innerHTML=mode.items.length?mode.items.map(token=>{
       const color=state.bubbleHits.get(token);
-      const content=state.bubbleMode==='shapes'?`<svg viewBox="-68 -68 136 136" aria-hidden="true">${shapeEffects}${primitive(token,shapeById(token)?.color||'#ffcf64','#274b44')}</svg>`:token;
+      // These flat thumbnails need no filters. Hidden duplicate filter IDs here
+      // took precedence over Drag's visible definitions and made its pieces blank.
+      const content=state.bubbleMode==='shapes'?`<svg viewBox="-68 -68 136 136" aria-hidden="true">${primitive(token,shapeById(token)?.color||'#ffcf64','#274b44')}</svg>`:token;
       return `<span class="bubble-target" role="listitem" data-bubble-target="${token}" data-collected="${!!color}" style="${color?`background-color:${color}`:''}" aria-label="${token}${color?' popped':' not popped'}">${content}</span>`;
     }).join(''):state.bubbleRecent.map(color=>`<i class="pop-dot" style="background:${color}" aria-hidden="true"></i>`).join('');
     updateGameItemStrip();
@@ -770,12 +776,11 @@
     if(focused)activeBubble()?.element.focus();
     if(state.bubbleMode==='plain'){
       if(state.bubblePops>=plainGoal()&&!state.done){
-        const roundAtCompletion=roundSerial;
         celebrate(`SaNa says hooray! You popped all ${plainGoal()} bubbles!`);
-        setTimeout(()=>{if(state.activity==='bubbles'&&state.bubbleMode==='plain'&&state.done&&roundSerial===roundAtCompletion)resetRound();},1900);
+        scheduleNextRound(1900);
       }else if(!state.done)hint(`Splash, pop! ${state.bubblePops} of ${plainGoal()} bubbles popped. Keep going!`);
     }else if(state.bubbleHits.size===bubbleItems().length&&!state.done){
-      const roundAtCompletion=roundSerial;celebrate(`SaNa says hooray! You found all the ${state.bubbleMode==='numbers'?'numbers':state.bubbleMode==='letters'?'letters':'shapes'}. Keep popping!`);setTimeout(()=>{if(state.activity==='bubbles'&&state.done&&roundSerial===roundAtCompletion)resetRound();},1800);
+      celebrate(`SaNa says hooray! You found all the ${state.bubbleMode==='numbers'?'numbers':state.bubbleMode==='letters'?'letters':'shapes'}. Keep popping!`);scheduleNextRound(1800);
     }else if(!state.done)hint(`Splash! ${bubble.token} is now the same color above. Keep looking!`);
   }
 
@@ -822,9 +827,10 @@
     // Animate in place; do not rebuild the image or door during the gesture.
     door.style.transition='transform 360ms ease-in-out';
     door.setAttribute('transform',open?'translate(720 0) scale(.34 1)':'translate(0 0) scale(1 1)');
-    window.setTimeout(()=>{
+    const serial=roundSerial;
+    slideAdvanceTimer=window.setTimeout(()=>{
       slideDoorAnimating=false;
-      if(state.activity!=='slide')return;
+      if(state.activity!=='slide'||serial!==roundSerial)return;
       state.slideRevealed=open;
       if(!open)state.slideIndex=(state.slideIndex+1)%slideTotal();
       renderSlide();tone(open?660:480,true);
