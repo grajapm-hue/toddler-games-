@@ -27,7 +27,7 @@
     }else if(state.activity==='abacus'&&state.age===5){
       width=Math.max(1000,600*size.width/Math.max(1,size.height));height=600;
       const scale=600/Math.max(1,size.height);
-      if(node.hasAttribute('data-color-label'))font=Math.min(42,Math.max(20,14*scale));
+      if(node.matches('[data-color-label],[data-abacus-left],[data-abacus-right]'))font=Math.min(42,Math.max(20,14*scale));
       if(node.hasAttribute('data-abacus-equation'))font=Math.min(34,Math.max(26,14*scale));
     }
     const normalScale=Math.min(size.width/width,size.height/height),m=scene.getScreenCTM(),currentScale=Math.hypot(m.a,m.b);
@@ -46,8 +46,8 @@
   }
   // Measure the actual glyphs so short captions never inherit an oversized panel.
   // Keep the original SVG nodes and hit areas intact, including during bead updates.
-  function fitSceneTextTabs(){
-    const captions=scene.querySelectorAll('.scene-caption,[data-color-label],[data-abacus-left],[data-abacus-right],[data-train-engine],[data-train-instruction],.target>text,[data-cave-object] text:last-child,[data-cave-door] text');
+  function fitSceneTextTabs(nodes=null){
+    const captions=nodes||scene.querySelectorAll('.scene-caption,[data-color-label],[data-abacus-left],[data-abacus-right],[data-train-engine],[data-train-instruction],[data-slide-door-action],.target>text,[data-cave-object] text:last-child');
     const immersive=app.classList.contains('immersive'),normalSize=normalSceneSize();
     const glyphBox=node=>{
       const glyphs=Array.from({length:node.getNumberOfChars()},(_,i)=>node.getExtentOfChar(i));
@@ -71,14 +71,15 @@
       const [fill,stroke]=captionTint(node);
       let tab=node.previousElementSibling;
       if(!tab?.hasAttribute('data-caption-tab')){tab=document.createElementNS(scene.namespaceURI,'rect');tab.setAttribute('data-caption-tab','');tab.setAttribute('aria-hidden','true');tab.setAttribute('pointer-events','none');node.before(tab);}
+      if(node.closest('[data-slide-peek]')){tab.setAttribute('pointer-events','all');tab.style.cursor='pointer';const m=scene.getScreenCTM(),target=32/Math.hypot(m.a,m.b);let hit=node.parentElement.querySelector('[data-peek-hit]');if(!hit){hit=document.createElementNS(scene.namespaceURI,'rect');hit.setAttribute('data-peek-hit','');hit.setAttribute('fill','transparent');hit.setAttribute('pointer-events','all');hit.setAttribute('aria-hidden','true');tab.before(hit);}const width=Math.max(box.width+px*2,target),height=Math.max(box.height+py*2,target);Object.entries({x:box.x+box.width/2-width/2,y:box.y+box.height/2-height/2,width,height}).forEach(([key,value])=>hit.setAttribute(key,value));}
       Object.entries({x:box.x-px,y:box.y-py,width:box.width+px*2,height:box.height+py*2,rx:Math.min(8,font*.22),fill,stroke,'stroke-width':1,'vector-effect':'non-scaling-stroke'}).forEach(([key,value])=>tab.setAttribute(key,value));
     });
   }
   let captionFrame=0;
-  function refreshSceneTextTabs(){
-    fitSceneTextTabs();cancelAnimationFrame(captionFrame);
+  function refreshSceneTextTabs(nodes=null){
+    fitSceneTextTabs(nodes);cancelAnimationFrame(captionFrame);
     // WebKit settles glyph metrics after a changed SVG viewBox reaches a frame.
-    captionFrame=requestAnimationFrame(()=>{captionFrame=0;fitSceneTextTabs();});
+    captionFrame=requestAnimationFrame(()=>{captionFrame=0;fitSceneTextTabs(nodes);});
   }
   const decodedArt=new Map();let artGeneration=0;
   const gameReady=()=>scene.dataset.artState==='ready';
@@ -187,7 +188,7 @@
     releaseHeldObject();if(!node)return;
     let visual=[...node.children].find(child=>child.hasAttribute('data-held-visual'));
     if(!visual){visual=document.createElementNS(node.namespaceURI,'g');visual.dataset.heldVisual='';visual.append(...node.childNodes);node.appendChild(visual);}
-    visual.setAttribute('transform','scale(1.22)');node.dataset.objectHeld=kind;heldObject={node,visual};
+    visual.setAttribute('transform',kind==='bead'?'scale(1.08)':'scale(1.22)');node.dataset.objectHeld=kind;heldObject={node,visual};
   }
   function clearObjectFeedback(){
     if(!objectFeedback)return;
@@ -456,6 +457,7 @@
   function cancelGesture(){
     releaseHeldObject();
     const pointer=state.pointer;state.pointer=null;
+    if(pointer?.kind==='abacus')cancelAnimationFrame(pointer.feedbackFrame);
     if(pointer&&scene.hasPointerCapture?.(pointer.id)){try{scene.releasePointerCapture(pointer.id);}catch{/* Gesture may already have ended. */}}
     if(pointer?.kind==='drag')renderDrag();
     if(pointer?.kind==='count-fruit')pointer.node.setAttribute('transform',pointer.origin);
@@ -677,15 +679,15 @@
   const abacusCount=row=>state.abacusRows[row].filter(Boolean).length;
   const activeAbacusRow=()=>state.abacusSelectedRow??0;
   const abacusTotal=()=>state.abacusRows.reduce((sum,_,row)=>sum+abacusCount(row),0);
-  function updateAbacusAddition(){
+  function updateAbacusAddition(previewRow=-1,previewCount=0,live=false){
     if(state.activity!=='abacus'||!state.abacusRows)return;
-    const total=abacusTotal();
-    scene.querySelectorAll('[data-abacus-left]').forEach(node=>{const row=Number(node.dataset.abacusLeft);node.textContent=String(10-abacusCount(row));});
-    scene.querySelectorAll('[data-abacus-right]').forEach(node=>{const row=Number(node.dataset.abacusRight);node.textContent=String(abacusCount(row));});
+    const read=row=>row===previewRow?previewCount:abacusCount(row),total=state.abacusRows.reduce((sum,_,row)=>sum+read(row),0);
+    scene.querySelectorAll('[data-abacus-left]').forEach(node=>{const row=Number(node.dataset.abacusLeft),value=String(10-read(row));if(node.textContent!==value)node.textContent=value;});
+    scene.querySelectorAll('[data-abacus-right]').forEach(node=>{const row=Number(node.dataset.abacusRight),value=String(read(row));if(node.textContent!==value)node.textContent=value;});
     const box=scene.querySelector('[data-abacus-total]');if(box)box.textContent=String(total);
     const equation=scene.querySelector('[data-abacus-equation]');
     if(equation){
-      const counts=state.abacusRows.map((_,row)=>abacusCount(row)).filter(n=>n>0),lines=equation.querySelectorAll('tspan');
+      const counts=state.abacusRows.map((_,row)=>read(row)).filter(n=>n>0),lines=equation.querySelectorAll('tspan');
       lines[0].textContent=counts.slice(0,5).join(' + ')||'0';lines[1].textContent=counts.length>5?'+ '+counts.slice(5).join(' + '):'';
       lines[0].setAttribute('y',counts.length>5?276:299);lines[1].setAttribute('y',320);
       equation.setAttribute('aria-label',counts.join(' + ')||'0');
@@ -693,11 +695,13 @@
       const width=Math.max(...[...lines].map(line=>line.getComputedTextLength())),available=Number(equation.dataset.maxWidth);
       if(width>available)equation.setAttribute('font-size',font*available/width);
     }
-    refreshSceneTextTabs();
+    if(live)refreshSceneTextTabs([...scene.querySelectorAll(`[data-abacus-left="${previewRow}"],[data-abacus-right="${previewRow}"],[data-color-label="${previewRow}"],[data-abacus-equation],[data-abacus-total]`)]);
+    else refreshSceneTextTabs();
   }
   function abacusHint(){const row=activeAbacusRow(),count=abacusCount(row),suggestion=state.age===null||state.level===1?'':state.level===2?` Together, try ${profile().abacusGoal} beads in any color.`:` Together, try ${profile().abacusGoal} beads, then another color. All amounts are welcome.`;hint(`${abacusColors[row][0]}: ${count} ${abacusWords[count]} on the right. Slide beads in any row, either way!${suggestion}`);}
-  function abacusGeometry(){const width=Math.max(1000,600*scene.clientWidth/Math.max(1,scene.clientHeight)),left=width*.5,start=54,end=left-78,pitch=(end-start)*.043;return {width,left,start,end,pitch,r:Math.min(21,pitch*.44)};}
-  function abacusBeadPoint(row,index,g=abacusGeometry()){const count=abacusCount(row);return {x:index>=10-count?g.end-(9-index)*g.pitch:g.start+index*g.pitch,y:34+row*56};}
+  function abacusGeometry(){const width=Math.max(1000,600*scene.clientWidth/Math.max(1,scene.clientHeight)),left=width*.5,start=96,end=left-96,pitch=(end-start)*.048,r=Math.min(20,pitch*.46);return {width,left,start,end,pitch,r,ry:r*1.3};}
+  const abacusY=row=>40+row*56;
+  function abacusBeadPoint(row,index,g=abacusGeometry()){const count=abacusCount(row);return {x:index>=10-count?g.end-(9-index)*g.pitch:g.start+index*g.pitch,y:abacusY(row)};}
   function abacusLabel(row,count){return `${count} ${abacusWords[count]} ${abacusColors[row][0]}`;}
   /** Build the scene only on entry, reset or resize. Ordinary slides retain every bead node. */
   function renderAbacus(){
@@ -708,16 +712,19 @@
     const sumWidth=(rw-16)*.73,totalX=right+sumWidth+12,totalWidth=rw-sumWidth-16,sumFont=Math.min(34,Math.max(26,14*scale));
     const rainbow=abacusColors.slice(0,7).map(([name,color],i)=>{const outer=radius-i*band,inner=outer-band;return `<path data-rainbow-band="${i}" data-color-region="${i}" d="M${cx-outer} ${base}A${outer} ${outer} 0 0 1 ${cx+outer} ${base}L${cx+inner} ${base}A${inner} ${inner} 0 0 0 ${cx-inner} ${base}Z" fill="${abacusCount(i)?color:'none'}" stroke="#90969e" stroke-width="3"/>`;}).join('');
     const circles=[[7,'outer',circleR],[9,'middle',circleR*.68],[8,'inner',circleR*.35]].map(([row,region,r])=>`<circle data-circle-region="${region}" data-color-region="${row}" ${row===7?'mask="url(#abacus-pink-ring)"':row===9?'mask="url(#abacus-white-ring)"':''} cx="${circleX}" cy="${circleY}" r="${r}" fill="${abacusCount(row)?abacusColors[row][1]:'none'}" stroke="#90969e" stroke-width="3"/>`).join('');
-    scene.innerHTML=`<defs><mask id="abacus-pink-ring"><rect width="${g.width}" height="600" fill="white"/><circle cx="${circleX}" cy="${circleY}" r="${circleR*.68}" fill="black"/></mask><mask id="abacus-white-ring"><rect width="${g.width}" height="600" fill="white"/><circle cx="${circleX}" cy="${circleY}" r="${circleR*.35}" fill="black"/></mask></defs><g id="abacus-frame"><rect data-abacus-board="" x="10" y="5" width="${g.left-24}" height="586" rx="18" fill="none" stroke="#bd9666" stroke-width="7"/>${abacusColors.map(([name,color],row)=>{const y=34+row*56,count=abacusCount(row);return `<g data-abacus-row="${row}"><rect data-row-highlight="${row}" x="20" y="${y-25}" width="${g.left-44}" height="50" rx="12" fill="none" stroke="${row===active?'#ffe17a':'transparent'}" stroke-width="3"/><text data-abacus-left="${row}" x="24" y="${y+8}" text-anchor="middle" font-size="23" fill="#fff" font-weight="900">${10-count}</text><text data-abacus-right="${row}" x="${g.left-27}" y="${y+8}" text-anchor="middle" font-size="23" fill="#fff" font-weight="900">${count}</text><path d="M${g.start-g.r} ${y}H${g.end+g.r}" stroke="#90969e" stroke-width="4"/><circle data-abacus-start="${row}" cx="${g.start}" cy="${y}" r="${g.r+2}" fill="none" stroke="#555" stroke-width="3" stroke-dasharray="5 5"/><circle data-abacus-destination="${row}" cx="${g.end}" cy="${y}" r="${g.r+2}" fill="none" stroke="#777" stroke-width="3" stroke-dasharray="5 5"/>${state.abacusRows[row].map((moved,index)=>{const p=abacusBeadPoint(row,index,g);return `<g data-bead-row="${row}" data-bead-index="${index}" data-moved="${moved}" transform="translate(${p.x} ${p.y})" role="button" aria-label="${name} bead ${index+1}" aria-disabled="false" tabindex="${index===9-count||index===10-count?'0':'-1'}"><circle r="${g.r}" fill="${color}" stroke="#ffffffb0" stroke-width="1.5"/><path d="M${-g.r*.45} ${-g.r*.48}L${g.r*.05} ${-g.r*.7}" stroke="white" stroke-opacity=".65" stroke-width="3" stroke-linecap="round"/></g>`;}).join('')}</g>`;}).join('')}</g><path d="M${g.left} 12V588" stroke="#555" stroke-width="2"/><g id="rainbow-picture" role="img" aria-label="Rainbow bands fill with the colors counted">${rainbow}</g><g id="circle-picture" role="img" aria-label="Pink outer circle, white middle circle, brown center">${circles}</g><g id="abacus-addition"><g data-abacus-sum-cell=""><rect data-text-panel="abacus-sum" x="${right+4}" y="226" width="${sumWidth}" height="116" rx="13" fill="none" stroke="#a97e37" stroke-width="3"/><text class="scene-caption" data-label-for="abacus-sum-heading" x="${right+4+sumWidth/2}" y="240" text-anchor="middle" dominant-baseline="central" font-size="20" font-weight="800" fill="#213b38">SUM</text><text class="scene-caption" data-label-for="abacus-sum-value" data-abacus-equation x="${right+4+sumWidth/2}" y="299" text-anchor="middle" dominant-baseline="central" font-size="${sumFont}" data-font-size="${sumFont}" data-max-width="${sumWidth-28}" font-weight="900" fill="#334d47"><tspan x="${right+4+sumWidth/2}" y="299" dominant-baseline="central">0</tspan><tspan x="${right+4+sumWidth/2}" y="320" dominant-baseline="central"></tspan></text></g><g data-abacus-total-cell=""><rect data-text-panel="abacus-total" x="${totalX}" y="226" width="${totalWidth}" height="116" rx="13" fill="none" stroke="#71935c" stroke-width="3"/><text class="scene-caption" data-label-for="abacus-total-heading" x="${totalX+totalWidth/2}" y="240" text-anchor="middle" dominant-baseline="central" font-size="20" font-weight="800" fill="#213b38" data-abacus-total-caption="">TOTAL</text><text class="scene-caption" data-label-for="abacus-total-value" data-abacus-total x="${totalX+totalWidth/2}" y="299" text-anchor="middle" dominant-baseline="central" font-size="66" font-weight="900" fill="#155c4a">${abacusTotal()}</text></g></g><g id="abacus-labels"><rect data-text-panel="abacus-colours" data-abacus-label-panel x="${right+4}" y="346" width="${rw-8}" height="241" rx="17" fill="none" stroke="#a8adb4" stroke-width="4"/>${abacusColors.map(([name,color],row)=>`<text data-color-label="${row}" x="${right+20+(rw-8)*(row<5?0:.5)}" y="${346+241*((row%5)+.5)/5}" text-anchor="start" dominant-baseline="central" fill="${color}" stroke="#111820" stroke-width="${Math.max(1.2,font*.065)}" paint-order="stroke fill" stroke-linejoin="round" font-size="${font}" font-weight="900" font-family="inherit" style="--bead-ink:${color}">${abacusLabel(row,abacusCount(row))}</text>`).join('')}</g>`;
+    scene.innerHTML=`<defs><mask id="abacus-pink-ring"><rect width="${g.width}" height="600" fill="white"/><circle cx="${circleX}" cy="${circleY}" r="${circleR*.68}" fill="black"/></mask><mask id="abacus-white-ring"><rect width="${g.width}" height="600" fill="white"/><circle cx="${circleX}" cy="${circleY}" r="${circleR*.35}" fill="black"/></mask></defs><g id="abacus-frame"><rect data-abacus-board="" x="10" y="5" width="${g.left-24}" height="586" rx="18" fill="none" stroke="#bd9666" stroke-width="14"/>${abacusColors.map(([name,color],row)=>{const y=abacusY(row),count=abacusCount(row);return `<g data-abacus-row="${row}"><rect data-row-highlight="${row}" x="20" y="${y-25}" width="${g.left-44}" height="50" rx="12" fill="none" stroke="${row===active?'#ffe17a':'transparent'}" stroke-width="3"/><text data-abacus-left="${row}" x="42" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="${font}" fill="#fff" font-weight="900">${10-count}</text><text data-abacus-right="${row}" x="${g.left-42}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="${font}" fill="#fff" font-weight="900">${count}</text><path d="M${g.start-g.r} ${y}H${g.end+g.r}" stroke="#8f795d" stroke-width="5"/><ellipse data-abacus-start="${row}" cx="${g.start}" cy="${y}" rx="${g.r+2}" ry="${g.ry+2}" fill="none" stroke="#555" stroke-width="3" stroke-dasharray="5 5"/><ellipse data-abacus-destination="${row}" cx="${g.end}" cy="${y}" rx="${g.r+2}" ry="${g.ry+2}" fill="none" stroke="#777" stroke-width="3" stroke-dasharray="5 5"/>${state.abacusRows[row].map((moved,index)=>{const p=abacusBeadPoint(row,index,g);return `<g data-bead-row="${row}" data-bead-index="${index}" data-moved="${moved}" transform="translate(${p.x} ${p.y})" role="button" aria-label="${name} bead ${index+1}" aria-disabled="false" tabindex="${index===9-count||index===10-count?'0':'-1'}"><circle data-bead-body="" r="${g.r}" transform="scale(1 ${g.ry/g.r})" fill="${color}" stroke="#ffffffb0" stroke-width="1.5"/><path d="M${-g.r*.45} ${-g.ry*.48}L${g.r*.05} ${-g.ry*.7}" stroke="white" stroke-opacity=".65" stroke-width="3" stroke-linecap="round"/></g>`;}).join('')}</g>`;}).join('')}</g><path d="M${g.left} 12V588" stroke="#555" stroke-width="2"/><g id="rainbow-picture" role="img" aria-label="Rainbow bands fill with the colors counted">${rainbow}</g><g id="circle-picture" role="img" aria-label="Pink outer circle, white middle circle, brown center">${circles}</g><g id="abacus-addition"><g data-abacus-sum-cell=""><rect data-text-panel="abacus-sum" x="${right+4}" y="226" width="${sumWidth}" height="116" rx="13" fill="none" stroke="#a97e37" stroke-width="3"/><text class="scene-caption" data-label-for="abacus-sum-heading" x="${right+4+sumWidth/2}" y="240" text-anchor="middle" dominant-baseline="central" font-size="20" font-weight="800" fill="#213b38">SUM</text><text class="scene-caption" data-label-for="abacus-sum-value" data-abacus-equation x="${right+4+sumWidth/2}" y="299" text-anchor="middle" dominant-baseline="central" font-size="${sumFont}" data-font-size="${sumFont}" data-max-width="${sumWidth-28}" font-weight="900" fill="#334d47"><tspan x="${right+4+sumWidth/2}" y="299" dominant-baseline="central">0</tspan><tspan x="${right+4+sumWidth/2}" y="320" dominant-baseline="central"></tspan></text></g><g data-abacus-total-cell=""><rect data-text-panel="abacus-total" x="${totalX}" y="226" width="${totalWidth}" height="116" rx="13" fill="none" stroke="#71935c" stroke-width="3"/><text class="scene-caption" data-label-for="abacus-total-heading" x="${totalX+totalWidth/2}" y="240" text-anchor="middle" dominant-baseline="central" font-size="20" font-weight="800" fill="#213b38" data-abacus-total-caption="">TOTAL</text><text class="scene-caption" data-label-for="abacus-total-value" data-abacus-total x="${totalX+totalWidth/2}" y="299" text-anchor="middle" dominant-baseline="central" font-size="66" font-weight="900" fill="#155c4a">${abacusTotal()}</text></g></g><g id="abacus-labels"><rect data-text-panel="abacus-colours" data-abacus-label-panel x="${right+4}" y="346" width="${rw-8}" height="241" rx="17" fill="none" stroke="#a8adb4" stroke-width="4"/>${abacusColors.map(([name,color],row)=>`<text data-color-label="${row}" x="${right+20+(rw-8)*(row<5?0:.5)}" y="${346+241*((row%5)+.5)/5}" text-anchor="start" dominant-baseline="central" fill="${color}" stroke="#111820" stroke-width="${Math.max(1.2,font*.065)}" paint-order="stroke fill" stroke-linejoin="round" font-size="${font}" font-weight="900" font-family="inherit" style="--bead-ink:${color}">${abacusLabel(row,abacusCount(row))}</text>`).join('')}</g>`;
     state.abacusElements=abacusColors.map((_,row)=>({beads:[...scene.querySelectorAll(`[data-bead-row="${row}"]`)],region:scene.querySelector(`[data-color-region="${row}"]`),label:scene.querySelector(`[data-color-label="${row}"]`),count:scene.querySelector(`[data-row-count="${row}"]`),highlight:scene.querySelector(`[data-row-highlight="${row}"]`)}));
     updateAbacusProgress();updateAbacusFeedback(active);updateAbacusAddition();restoreObjectFeedback();
   }
   function updateAbacusFeedback(row,count=abacusCount(row),reveal=false){
     const nodes=state.abacusElements[row];if(!nodes)return;
     nodes.region.setAttribute('fill',count?abacusColors[row][1]:'none');if(nodes.count)nodes.count.textContent=String(count);nodes.label.textContent=abacusLabel(row,count);
-    nodes.label.classList.toggle('abacus-pop',reveal);updateGameItemStrip();
+    const live=state.pointer?.kind==='abacus'&&state.pointer.row===row;
+    nodes.label.classList.toggle('abacus-pop',reveal);
+    if(live){const chips=[...$('item-progress-strip').children];chips.forEach((chip,i)=>chip.classList.toggle('is-current',i===row));const chip=chips[row];if(chip){chip.querySelector('[data-abacus-chip-count]').textContent=String(count);chip.classList.toggle('is-done',count>0);}}
+    else updateGameItemStrip();
     $('result-score').textContent=`${abacusColors[row][0]}: ${count} ${abacusWords[count]}`;
-    state.abacusElements.forEach((item,i)=>item.highlight.setAttribute('stroke',i===row?'#ffe17a':'transparent'));updateAbacusAddition();
+    state.abacusElements.forEach((item,i)=>item.highlight.setAttribute('stroke',i===row?'#ffe17a':'transparent'));updateAbacusAddition(row,count,live);
   }
   function restoreAbacusRow(row){const g=abacusGeometry(),count=abacusCount(row);state.abacusElements[row].beads.forEach((node,index)=>{const p=abacusBeadPoint(row,index,g);node.setAttribute('transform',`translate(${p.x} ${p.y})`);node.dataset.moved=String(index>=10-count);node.setAttribute('tabindex',index===9-count||index===10-count?'0':'-1');});}
   function updateAbacusProgress(){progress(state.abacusRows.filter((_,row)=>abacusCount(row)>0).length,10);updateGameItemStrip();}
@@ -731,12 +738,13 @@
   }
   function finishAbacusBead(row,index,toRight=true){const count=abacusCount(row);setAbacusCount(row,toRight?Math.max(count,10-index):Math.min(count,9-index));}
   function beginAbacusSlide(point,id){
-    const g=abacusGeometry(),row=Math.round((point.y-34)/56);if(row<0||row>9||Math.abs(point.y-(34+row*56))>27)return null;
+    if(objectFeedback?.kind==='bead'){clearObjectFeedback();updateGameItemStrip();$('show-me').disabled=countHolding||!gameReady();}
+    const g=abacusGeometry(),row=Math.round((point.y-40)/56);if(row<0||row>9||Math.abs(point.y-abacusY(row))>27)return null;
     const positions=Array.from({length:10},(_,index)=>abacusBeadPoint(row,index,g).x);
     let index=0;for(let i=1;i<10;i++)if(Math.abs(positions[i]-point.x)<Math.abs(positions[index]-point.x))index=i;
     if(Math.abs(positions[index]-point.x)>Math.max(24,g.pitch*.8))return null;
     state.abacusSelectedRow=row;updateAbacusFeedback(row);
-    return {id,kind:'abacus',row,index,g,matrix:scene.getScreenCTM().inverse(),x:positions[index],y:34+row*56,dx:point.x-positions[index],positions,drawn:[...positions],original:abacusCount(row),preview:abacusCount(row),right:!state.abacusRows[row][index],elements:state.abacusElements[row].beads};
+    return {id,kind:'abacus',row,index,g,matrix:scene.getScreenCTM().inverse(),x:positions[index],y:abacusY(row),dx:point.x-positions[index],positions,drawn:[...positions],original:abacusCount(row),preview:abacusCount(row),right:!state.abacusRows[row][index],elements:state.abacusElements[row].beads,feedbackFrame:0};
   }
   /** Push neighbouring beads without passing them; cache geometry and nodes for the whole gesture. */
   function moveAbacusSlide(pointer,point){
@@ -745,9 +753,9 @@
     pointer.elements.forEach((node,i)=>{const x=i>index?Math.max(pointer.positions[i],pointer.x+(i-index)*g.pitch):i<index?Math.min(pointer.positions[i],pointer.x-(index-i)*g.pitch):pointer.x;if(x!==pointer.drawn[i]){node.setAttribute('transform',`translate(${x} ${pointer.y})`);pointer.drawn[i]=x;}});
     const across=pointer.right?pointer.x>=(left+right)/2:pointer.x<=(left+right)/2;
     const count=across?(pointer.right?10-index:9-index):pointer.original;
-    if(count!==pointer.preview){pointer.preview=count;updateAbacusFeedback(pointer.row,count);}
+    if(count!==pointer.preview){pointer.preview=count;if(state.pointer===pointer&&!pointer.feedbackFrame)pointer.feedbackFrame=requestAnimationFrame(()=>{pointer.feedbackFrame=0;if(state.pointer===pointer)updateAbacusFeedback(pointer.row,pointer.preview);});}
   }
-  new ResizeObserver(refreshSceneTextTabs).observe(scene);
+  new ResizeObserver(()=>refreshSceneTextTabs()).observe(scene);
   new ResizeObserver(()=>{if(state.activity==='abacus'&&state.age===5&&state.abacusSize!==`${scene.clientWidth}/${scene.clientHeight}`){cancelGesture();renderAbacus();}}).observe(scene);
   new ResizeObserver(()=>{if(state.activity==='abacus'&&state.age===4&&state.trainSize!==`${scene.clientWidth}/${scene.clientHeight}`){stopDemo();cancelGesture();renderCountAdventure();}}).observe(scene);
   // Shared, game-specific progress strip. Never moves to a side in immersive mode.
@@ -1025,9 +1033,16 @@
   let slideAdvanceTimer=0;
   const slideTotal=()=>slideLimits[state.age]||16;
   let slideDoorAnimating=false;
+  const slideActionText=open=>open?'SLIDE TO CLOSE':'SLIDE TO OPEN';
+  const slidePeekText=open=>open?'👀 SaNa':'🙈 SaNa';
+  function setSlideCue(root,open){
+    const action=root.querySelector('[data-slide-door-action]');if(action){const font=open?23:38;action.textContent=slideActionText(open);action.setAttribute('x',open?890:500);action.setAttribute('font-size',font);action.dataset.captionFont=String(font);}
+    const peek=root.querySelector('[data-slide-peek]');if(peek){peek.setAttribute('aria-pressed',String(open));peek.setAttribute('aria-label',open?'SaNa peek-a-boo: close the door':'SaNa peek-a-boo: open the door');peek.querySelector('text').textContent=slidePeekText(open);}
+  }
   function renderSlide(){
     if(state.activity!=='slide')return;
     const item=slideObjects[state.slideIndex],opened=state.slideRevealed;
+    scene.setAttribute('viewBox','0 0 1000 480');
     scene.setAttribute('aria-label',`Cave door ${state.slideIndex+1} of ${slideTotal()}: ${item[0]}`);
     scene.innerHTML=`<defs><linearGradient id="caveDoor" x2="1" y2="1"><stop stop-color="#e7a94c"/><stop offset=".5" stop-color="#a85a24"/><stop offset="1" stop-color="#75421f"/></linearGradient><radialGradient id="glassKnob" cx=".25" cy=".2" r=".8"><stop stop-color="#fff"/><stop offset=".3" stop-color="#9de9ff"/><stop offset=".7" stop-color="#478cda"/><stop offset="1" stop-color="#284777"/></radialGradient></defs>
       <rect x="205" y="22" width="590" height="386" rx="165" fill="#35203c" stroke="#f4cf77" stroke-width="14"/>
@@ -1037,11 +1052,12 @@
         <rect x="205" y="22" width="590" height="386" rx="165" fill="url(#caveDoor)" stroke="#f8d38c" stroke-width="13"/>
         ${Array.from({length:6},(_,i)=>`<path d="M${250+i*90} 75V375" stroke="#7a401d" stroke-width="9" opacity=".55"/>`).join('')}
         <circle cx="715" cy="345" r="24" fill="url(#glassKnob)" stroke="#f5d992" stroke-width="6"/>
-        <text x="500" y="162" font-size="38" font-weight="900" text-anchor="middle" fill="#fff5d7">SLIDE TO OPEN</text>
       </g>
+      <text class="scene-caption" data-slide-door-action="" data-label-for="slide-door-action" x="${opened?890:500}" y="162" font-size="${opened?23:38}" font-weight="900" text-anchor="middle" fill="#173e35" pointer-events="none">${slideActionText(opened)}</text>
       <rect data-slide-swipe="1" x="150" y="16" width="840" height="395" fill="transparent" role="button" tabindex="0" aria-label="${opened?'Slide door closed to continue':'Slide door open to reveal '+item[0]}"/>
       <rect data-text-panel="slide-caption" x="250" y="365" width="500" height="62" rx="26" fill="none" stroke="#9c7140" stroke-width="3" pointer-events="none"/>
-      <text class="scene-caption" data-label-for="slide-caption" data-slide-caption="" x="500" y="396" text-anchor="middle" dominant-baseline="central" font-size="27" font-weight="900" fill="#214b3e" pointer-events="none">${opened?'Door OPEN · Slide left to close ←':'Door CLOSED · Slide right to open →'}</text>`;
+      <text class="scene-caption" data-label-for="slide-caption" data-slide-caption="" x="500" y="382" text-anchor="middle" dominant-baseline="central" font-size="27" font-weight="900" fill="#214b3e" pointer-events="none">${opened?'Door OPEN · Slide left to close ←':'Door CLOSED · Slide right to open →'}</text>
+      <g data-slide-peek="" role="button" tabindex="0" aria-pressed="${opened}" aria-label="SaNa peek-a-boo: ${opened?'close':'open'} the door" style="cursor:pointer"><text class="scene-caption" data-label-for="slide-peek" x="500" y="444" text-anchor="middle" dominant-baseline="central" font-size="48" fill="#173e35">${slidePeekText(opened)}</text></g>`;
     progress(state.slideIndex+(opened?1:0),slideTotal());updateGameItemStrip();
     $('activity-name').textContent=`Cave Maze · Room ${state.slideIndex+1}/${slideTotal()}`;
     if(opened)hint(`SaNa says: ${item[0].toUpperCase()}! Slide the door closed for the next picture.`);
@@ -1169,6 +1185,7 @@
     }else if(state.activity==='bubbles'){
       state.pointer={id:event.pointerId,kind:'bubble'};hitBubble(point,event.target.closest('[data-bubble]')?.dataset.bubble);
     }else if(state.activity==='slide'){
+      if(event.target.closest('[data-slide-peek]')){toggleSlide();event.preventDefault();return;}
       const door=event.target.closest('[data-slide-swipe]');if(!door)return;state.pointer={id:event.pointerId,kind:'slide',startX:point.x};
     }else if(state.paintMode){
       state.pointer=beginPaint(point,event.pointerId);if(!state.pointer)return;
@@ -1196,6 +1213,7 @@
   }
   function pointerUp(event){
     const pointer=state.pointer;if(!pointer||pointer.id!==event.pointerId)return;
+    if(pointer.kind==='abacus')cancelAnimationFrame(pointer.feedbackFrame);
     releaseHeldObject();
     state.pointer=null;
     try{if(scene.hasPointerCapture(event.pointerId))scene.releasePointerCapture(event.pointerId);}catch{/* Already released. */}
@@ -1262,7 +1280,7 @@
       event.preventDefault();const row=Number(bead.dataset.beadRow),index=Number(bead.dataset.beadIndex),right=['ArrowRight','End'].includes(event.key)||(['Enter',' '].includes(event.key)&&!state.abacusRows[row][index]);
       finishAbacusBead(row,index,right);const count=abacusCount(row),focus=right?Math.max(0,9-count):Math.min(9,10-count);state.abacusElements[row].beads[focus]?.focus();
     }
-    else if(state.activity==='slide'&&event.target.closest('[data-slide-swipe]')&&['Enter',' ','ArrowRight','ArrowLeft'].includes(event.key)){event.preventDefault();toggleSlide();}
+    else if(state.activity==='slide'&&event.target.closest('[data-slide-swipe],[data-slide-peek]')&&['Enter',' ','ArrowRight','ArrowLeft'].includes(event.key)){event.preventDefault();toggleSlide();}
     else if(handle&&['ArrowRight','ArrowLeft','Home','End'].includes(event.key)){
       event.preventDefault();const slider=state.sliders[Number(handle.dataset.sliderHandle)];const value=event.key==='End'?1:event.key==='Home'?0:slider.value+(event.key==='ArrowRight' ? .15 : -.15);slideTo(slider,slider.x+25+value*(slider.w-50));
     }else if(event.key==='Enter'||event.key===' '){
@@ -1435,6 +1453,7 @@
               const friend=backing.querySelector('g[role="img"] text');
               if(friend)await pointAt(friend,'Look! You found a friend.');
               const caption=backing.querySelector('[data-slide-caption]');if(caption)caption.textContent='Door OPEN · You found '+slideObjects[state.slideIndex][0]+'!';
+              setSlideCue(backing,true);
               refreshSceneTextTabs();
               overlay.dataset.demoDoorState='open';
               if(!await demoPause(1000,token)||!valid())return;
@@ -1442,6 +1461,7 @@
               overlay.dataset.demoDoorState='closing';
               if(!await move(715,345,null,850,48,knob,()=>door.setAttribute('transform','translate(0 0) scale(1 1)')))return;
               if(caption)caption.textContent='Door CLOSED · Well done!';
+              setSlideCue(backing,false);
               refreshSceneTextTabs();
               overlay.dataset.demoDoorState='closed';
               await success(state.slideIndex);
