@@ -29,6 +29,7 @@ let browser;
     await page.goto(base+'play.html?age='+age);
     await page.locator(`[data-age-option="${age}"]`).click();
     await page.locator('[data-activity="abacus"]').click();
+    await page.locator('#scene[data-art-state="ready"]').waitFor();
   }
   async function state() {
     return page.evaluate(() => ({text:document.getElementById('scene').textContent,
@@ -117,11 +118,11 @@ let browser;
     await page.locator('#home').click();await page.locator('[data-activity="brush"]').click();check('Paint still opens',await page.locator('#app').getAttribute('data-view')==='brush');
     await page.goto(base+'index.html');await page.waitForFunction(()=>!!navigator.serviceWorker.controller,{timeout:30000});
     await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
-    const cached=await page.evaluate(async()=>{const cache=await caches.open('sana-little-hands-beta-v128-auto-replay');return Promise.all(['app.js?v128',...['apple-tree','basket','carrot-garden','rabbit','apple','carrot'].map(name=>'count-art/'+name+'.png')].map(name=>cache.match(new URL(name,location.href)).then(Boolean)));});
+    const cached=await page.evaluate(async()=>{const cache=await caches.open('sana-little-hands-beta-v129-fullscreen-ready');return Promise.all(['app.js?v129',...['apple-tree','basket','carrot-garden','rabbit','apple','carrot'].map(name=>'count-art/'+name+'.webp')].map(name=>cache.match(new URL(name,location.href)).then(Boolean)));});
     check('The worker precaches the exact game script and every illustration',cached.every(Boolean),cached);
     if(engine==='chromium')await context.setOffline(true);else await new Promise(done=>server.close(done));
     await open(2);await drag(2);check('Offline counting retains the completed apple',(await state()).collected===1);
-    const assets=await page.evaluate(async()=>{const names=['apple-tree','basket','carrot-garden','rabbit','apple','carrot'];return Promise.all(names.map(name=>new Promise(resolve=>{const img=new Image();img.onload=()=>resolve(img.naturalWidth>0);img.onerror=()=>resolve(false);img.src='count-art/'+name+'.png';})));});
+    const assets=await page.evaluate(async()=>{const names=['apple-tree','basket','carrot-garden','rabbit','apple','carrot'];return Promise.all(names.map(name=>new Promise(resolve=>{const img=new Image();img.onload=()=>resolve(img.naturalWidth>0);img.onerror=()=>resolve(false);img.src='count-art/'+name+'.webp';})));});
     check('All six illustrations load offline',assets.every(Boolean),assets);
   }
   check('No uncaught game errors',errors.length===0,errors);

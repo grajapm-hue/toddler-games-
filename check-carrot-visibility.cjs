@@ -4,7 +4,7 @@ const engine=process.env.PLAYROOM_BROWSER||'chromium',root=path.resolve(__dirnam
 const out=process.env.CARROT_EVIDENCE||path.resolve(__dirname,'artifacts/carrot-visibility',engine);
 fs.mkdirSync(out,{recursive:true});const results=[],errors=[];
 const check=(name,pass,detail)=>{results.push({name,pass:!!pass,detail});console.log((pass?'PASS ':'FAIL ')+name);};
-const server=createServer((req,res)=>{try{const u=new URL(req.url,'http://localhost'),f=path.resolve(root,'.'+u.pathname+(u.pathname.endsWith('/')?'index.html':''));if(!f.startsWith(root+path.sep))throw Error('path');res.writeHead(200,{'Content-Type':({'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png','.svg':'image/svg+xml','.webmanifest':'application/manifest+json'})[path.extname(f)]||'application/octet-stream'}).end(fs.readFileSync(f));}catch{res.writeHead(404).end();}});
+const server=createServer((req,res)=>{try{const u=new URL(req.url,'http://localhost'),f=path.resolve(root,'.'+u.pathname+(u.pathname.endsWith('/')?'index.html':''));if(!f.startsWith(root+path.sep))throw Error('path');res.writeHead(200,{'Content-Type':({'.html':'text/html','.js':'text/javascript','.css':'text/css','.webp':'image/webp','.png':'image/png','.svg':'image/svg+xml','.webmanifest':'application/manifest+json'})[path.extname(f)]||'application/octet-stream'}).end(fs.readFileSync(f));}catch{res.writeHead(404).end();}});
 let browser;
 (async()=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));
@@ -13,10 +13,10 @@ let browser;
  const context=await browser.newContext({viewport:{width:1024,height:768},hasTouch:true,reducedMotion:'reduce'}),page=await context.newPage();
  page.on('pageerror',e=>errors.push(e.message));await page.clock.install();
  // Probe the orange root itself, rather than the sprite's transparent centre.
- async function visibleRoots(){return page.evaluate(async()=>{
-  const garden=document.querySelector('image[href="count-art/carrot-garden.png"]');
+ async function visibleRoots(){await page.locator('#scene[data-art-state="ready"]').waitFor();return page.evaluate(async()=>{
+  const garden=document.querySelector('image[href="count-art/carrot-garden.webp"]');
   const load=src=>new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=reject;image.src=src;});
-  const farm=await load(garden.getAttribute('href')),carrot=await load('count-art/carrot.png');
+  const farm=await load(garden.getAttribute('href')),carrot=await load('count-art/carrot.webp');
   const imagePoint=(el,image,u,v)=>{
    const b=el.getBBox(),scale=Math.min(b.width/image.naturalWidth,b.height/image.naturalHeight);
    return new DOMPoint(b.x+(b.width-image.naturalWidth*scale)/2+u*image.naturalWidth*scale,b.y+(b.height-image.naturalHeight*scale)/2+v*image.naturalHeight*scale).matrixTransform(el.getScreenCTM());
