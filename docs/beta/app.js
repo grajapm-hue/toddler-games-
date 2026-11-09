@@ -8,6 +8,11 @@
   };
   const colourTints=[['#f6e0dd','#b9877f'],['#f5e5d3','#b99a75'],['#f6f0d5','#baad72'],['#dfebd9','#8aa67a'],['#dcebf5','#7e9fb7'],['#e3e3f3','#9396b9'],['#ebe1f2','#a591b5'],['#f4e1eb','#b78fa3'],['#e9e0d7','#a58e79'],['#f8f5ed','#aaa699']];
   const normalSceneSizes=new Map();
+  function placeArtTools(root=app,immersive=root.classList.contains('immersive')){
+    const tools=root.querySelector('#art-tools'),mat=root.querySelector('.play-mat');
+    if(immersive)mat.insertBefore(tools,root.querySelector('#scene'));
+    else root.querySelector('#activity-view').insertBefore(tools,mat);
+  }
   function normalSceneSize(){
     const key=[app.style.getPropertyValue('--frame-w'),app.style.getPropertyValue('--frame-h'),app.dataset.view,app.dataset.age,state.paintMode,state.bubbleMode].join('/');
     if(!app.classList.contains('immersive')){const size={width:scene.clientWidth,height:scene.clientHeight};normalSceneSizes.set(key,size);return size;}
@@ -15,6 +20,7 @@
     // Measure the existing normal CSS layout without changing the live game or its state.
     const copy=app.cloneNode(true);copy.classList.remove('immersive','rotated');copy.setAttribute('aria-hidden','true');copy.inert=true;
     copy.querySelector('#game-mid-controls').append(copy.querySelector('#vibration-toggle'));
+    placeArtTools(copy,false);
     Object.assign(copy.style,{left:'-20000px',top:'0',transform:'none',visibility:'hidden',pointerEvents:'none'});document.body.appendChild(copy);
     const board=copy.querySelector('#scene'),size={width:board.clientWidth,height:board.clientHeight};copy.remove();normalSceneSizes.set(key,size);return size;
   }
@@ -36,6 +42,7 @@
   function captionTint(node){
     if(node.hasAttribute('data-color-label')){const row=Number(node.dataset.colorLabel);return row===5?['#f8f5ed',colourTints[row][1]]:['#09120d',colourTints[row][1]];}
     const key=node.dataset.labelFor||'';
+    if(key==='slide-peek')return ['#164c4a','#84c6b7'];
     if(key.startsWith('train-number-'))return [captionTints.sky,captionTints.cream,captionTints.peach,captionTints.lilac][(Number(key.slice(13))-1)%4];
     if(key.includes('total')||key==='train-target'||key==='harvest-counter'||key==='harvest-ledger-collected')return captionTints.sage;
     if(key==='train-title'||key.includes('sum')||(key==='harvest-prompt'&&node.getAttribute('font-size')==='31'))return captionTints.sky;
@@ -170,7 +177,7 @@
   if(ageProfiles.getAge()===null)ageProfiles.select(2);
   const preferences=()=>ageSettings[ageProfiles.getAge()??'common']??{};
   const initial=preferences();
-  const state={age:ageProfiles.getAge(),level:1,activity:null,done:false,pointer:null,selected:null,paintMode:false,paintColor:colors[0],strokes:[],shapes:[],bubbles:[],sliders:[],slideIndex:0,slideRevealed:false,dirt:[],sound:saved.sound===true,haptics:saved.haptics!==false};
+  const state={age:ageProfiles.getAge(),level:1,activity:null,done:false,pointer:null,selected:null,paintMode:false,paintColor:colors[0],brushColor:colors[4],strokes:[],shapes:[],bubbles:[],sliders:[],slideIndex:0,slideRevealed:false,dirt:[],sound:saved.sound===true,haptics:saved.haptics!==false};
   Object.assign(state,{brushSize:profile().brushSize,erase:false,coverage:[],bubbleMode:profile().bubbleMode,bubbleSet:initial.bubbleSet==='full'||state.age===null?'full':'starter',bubbleHits:new Map(),bubblePops:0,bubbleRecent:[],bubbleEffects:[],bubbleSerial:0,bubbleWidth:1000});
   const bubbleModes={plain:{label:'Plain',items:[]},numbers:{label:'1–20',items:Array.from({length:20},(_,i)=>String(i+1))},letters:{label:'A–Z',items:Array.from({length:26},(_,i)=>String.fromCharCode(65+i))},shapes:{label:'Shapes',items:shapes.map(shape=>shape.id)}};
   const bubbleColors=['#46b8cf','#ee6c88','#a890e5','#f5ce51','#76bc74','#f49d60'];
@@ -512,7 +519,7 @@
     $('bubble-modes').hidden=state.activity!=='bubbles';$('bubble-tracker').hidden=state.activity!=='bubbles';$('step-note').hidden=true;
     $('bubble-settings').hidden=state.activity!=='bubbles';updateBubbleSettings();
     scene.parentElement.classList.toggle('bubble-mat',state.activity==='bubbles');scene.setAttribute('viewBox','0 0 1000 440');
-    $('brush-modes').hidden=state.activity!=='brush';$('paint-tools').hidden=state.activity!=='brush'||!state.paintMode;
+    $('brush-modes').hidden=state.activity!=='brush';$('paint-tools').hidden=state.activity!=='brush';
     $('art-tools').hidden=state.activity!=='brush';
     state.erase=false;updateArtTools();
     scene.setAttribute('aria-label','Play area');
@@ -778,6 +785,28 @@
   new ResizeObserver(()=>refreshSceneTextTabs()).observe(scene);
   new ResizeObserver(()=>{if(state.activity==='abacus'&&state.age===5&&state.abacusSize!==`${scene.clientWidth}/${scene.clientHeight}`){cancelGesture();renderAbacus();}}).observe(scene);
   new ResizeObserver(()=>{if(state.activity==='abacus'&&state.age===4&&state.trainSize!==`${scene.clientWidth}/${scene.clientHeight}`){stopDemo();cancelGesture();renderCountAdventure();}}).observe(scene);
+  function shadeColor(hex,amount){
+    return '#'+[1,3,5].map(i=>{const value=parseInt(hex.slice(i,i+2),16);return Math.round(amount>0?value+(255-value)*amount:value*(1+amount)).toString(16).padStart(2,'0');}).join('');
+  }
+  let thumbGlossSerial=0;
+  function glossThumbnails(root,force=false){
+    for(const svg of root.querySelectorAll('svg')){
+      if(svg.dataset.glossyThumb&&!force)continue;
+      svg.querySelector('[data-thumb-gloss]')?.remove();
+      const defs=document.createElementNS(scene.namespaceURI,'defs'),gradients=new Map();defs.dataset.thumbGloss='';
+      for(const node of svg.querySelectorAll('[fill]')){
+        if(node.closest('defs')||node.tagName.toLowerCase()==='text'||node.querySelector('text'))continue;
+        const color=node.dataset.thumbFill||node.getAttribute('fill');if(!/^#[0-9a-f]{6}$/i.test(color))continue;
+        const channels=[1,3,5].map(i=>parseInt(color.slice(i,i+2),16)),average=channels.reduce((a,b)=>a+b,0)/3;if(average<50||average>245)continue;
+        if(!gradients.has(color)){
+          const id='thumb-gloss-'+(++thumbGlossSerial),gradient=document.createElementNS(scene.namespaceURI,'linearGradient');gradient.id=id;gradient.setAttribute('x2','.25');gradient.setAttribute('y2','1');
+          gradient.innerHTML=`<stop stop-color="${shadeColor(color,.48)}"/><stop offset=".38" stop-color="${shadeColor(color,.18)}"/><stop offset=".44" stop-color="${color}"/><stop offset="1" stop-color="${shadeColor(color,-.15)}"/>`;defs.appendChild(gradient);gradients.set(color,id);
+        }
+        node.dataset.thumbFill=color;node.setAttribute('fill',`url(#${gradients.get(color)})`);
+      }
+      if(gradients.size)svg.prepend(defs);svg.dataset.glossyThumb='true';
+    }
+  }
   // Shared, game-specific progress strip. Never moves to a side in immersive mode.
   function showItemStrip(items){
     const strip=$('item-progress-strip');if(!strip)return;
@@ -791,6 +820,7 @@
       if(state.activity==='brush')return `<button type="button" class="item-chip brush-choice ${current?'is-current':''} ${done?'is-done':''}" data-brush-choice="${i}" aria-label="Select ${safe} drawing${done?', completed':''}" aria-pressed="${current}" title="Tap to draw ${safe}">${icon||safe}</button>`;
       return `<span class="item-chip ${current?'is-current':''} ${done?'is-done':''} ${later?'is-later':''}" role="listitem" aria-label="${safe} ${done?'completed':current?'current':later?'later level':'available'}" title="${safe}">${icon||safe}</span>`;
     }).join('');
+    glossThumbnails(strip);
     strip.scrollLeft=0;
 
   }
@@ -824,7 +854,7 @@
     }else if(state.activity==='abacus'&&state.age!==5){
       showItemStrip(Array.from({length:countMax()},(_,i)=>({label:`Count ${i+1}`,icon:String(i+1),done:i<countStage,current:i===countStage,later:state.age<4&&i>countStage})));
     }else if(state.activity==='abacus'){
-      showItemStrip(abacusColors.map(([name,color],i)=>({label:name,icon:`<span class="abacus-chip-label">${name}</span><span class="abacus-chip-value"><i style="color:${color};text-shadow:0 1px #333">●</i> <b data-abacus-chip-count="">${abacusCount(i)}</b></span>`,current:i===state.abacusSelectedRow,done:abacusCount(i)>0})));
+      showItemStrip(abacusColors.map(([name,color],i)=>({label:name,icon:`<span class="abacus-chip-label">${name}</span><span class="abacus-chip-value"><i class="abacus-thumb-bead" style="--bead:${color};color:${color}" aria-hidden="true">●</i> <b data-abacus-chip-count="">${abacusCount(i)}</b></span>`,current:i===state.abacusSelectedRow,done:abacusCount(i)>0})));
     }else showItemStrip([]);
   }
   function renderDrag(){
@@ -1054,7 +1084,7 @@
   const slideTotal=()=>slideLimits[state.age]||16;
   let slideDoorAnimating=false;
   const slideActionText=open=>open?'SLIDE TO CLOSE':'SLIDE TO OPEN';
-  const slidePeekText=open=>open?'👀 SaNa':'🙈 SaNa';
+  const slidePeekText=open=>open?'🐵 SaNa':'🙈 SaNa';
   function setSlideCue(root,open){
     const action=root.querySelector('[data-slide-door-action]');if(action){const font=open?23:38;action.textContent=slideActionText(open);action.setAttribute('x',open?890:500);action.setAttribute('font-size',font);action.dataset.captionFont=String(font);}
     const peek=root.querySelector('[data-slide-peek]');if(peek){peek.setAttribute('aria-pressed',String(open));peek.setAttribute('aria-label',open?'SaNa peek-a-boo: close the door':'SaNa peek-a-boo: open the door');peek.querySelector('text').textContent=slidePeekText(open);}
@@ -1121,8 +1151,9 @@
   function insidePicture(point){return [...scene.querySelectorAll('#picture-clip > *')].some(shape=>shape.isPointInFill(new DOMPoint(point.x,point.y)));}
   function updateArtTools(){
     document.querySelectorAll('[data-brush-size]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.brushSize===state.brushSize)));
-    $('erase-paint').setAttribute('aria-pressed',String(state.erase));
-    document.querySelectorAll('[data-paint]').forEach(button=>button.setAttribute('aria-pressed',String(!state.erase&&button.dataset.paint===state.paintColor)));
+    $('erase-paint').hidden=!state.paintMode;$('erase-paint').disabled=!state.paintMode;$('erase-paint').setAttribute('aria-pressed',String(state.paintMode&&state.erase));
+    $('paint-tools').setAttribute('aria-label',state.paintMode?'Paint colour':'Brush colour');$('paint-tools').querySelector('.paint-label').textContent=state.paintMode?'Paint colour':'Brush colour';
+    document.querySelectorAll('[data-paint]').forEach((button,i)=>{button.setAttribute('aria-label',`${colorNames[i]} ${state.paintMode?'paint':'brush'}`);button.setAttribute('aria-pressed',String((!state.paintMode||!state.erase)&&button.dataset.paint===(state.paintMode?state.paintColor:state.brushColor)));});
   }
   function strokePath(color,width){
     const path=document.createElementNS('http://www.w3.org/2000/svg','path');
@@ -1171,7 +1202,7 @@
   }
   function brushCursor(point){
     let cursor=scene.querySelector('#brush-cursor');
-    if(!cursor){cursor=document.createElementNS('http://www.w3.org/2000/svg','g');cursor.id='brush-cursor';cursor.style.pointerEvents='none';cursor.innerHTML='<circle r="39" fill="#d7edf1" opacity=".25"/><g transform="translate(28 10) rotate(25)"><rect x="-8" y="-50" width="16" height="58" rx="8" fill="#6a9a83"/><rect x="-23" y="0" width="46" height="34" rx="7" fill="#f2ddb4" stroke="#c9aa7d" stroke-width="3"/><path d="M-12 23V34M0 23V34M12 23V34" stroke="#bb996f" stroke-width="3"/></g>';scene.appendChild(cursor);}
+    if(!cursor){cursor=document.createElementNS('http://www.w3.org/2000/svg','g');cursor.id='brush-cursor';cursor.style.pointerEvents='none';cursor.innerHTML=`<circle r="39" fill="${state.brushColor}" opacity=".22"/><g transform="translate(28 10) rotate(25)"><rect data-brush-handle="" x="-8" y="-50" width="16" height="58" rx="8" fill="${state.brushColor}"/><rect x="-23" y="0" width="46" height="34" rx="7" fill="${shadeColor(state.brushColor,.55)}" stroke="${shadeColor(state.brushColor,-.2)}" stroke-width="3"/><path d="M-12 23V34M0 23V34M12 23V34" stroke="${shadeColor(state.brushColor,-.3)}" stroke-width="3"/></g>`;scene.appendChild(cursor);}
     cursor.setAttribute('transform',`translate(${point.x} ${point.y}) scale(${{small:.6,medium:1,large:1.4}[state.brushSize]})`);
   }
   function localPoint(event){const matrix=scene.getScreenCTM();if(!matrix)return null;return new DOMPoint(event.clientX,event.clientY).matrixTransform(matrix.inverse());}
@@ -1380,6 +1411,7 @@
     if(!strip.hidden){
       const copy=strip.cloneNode(true),scroll=strip.scrollLeft;
       copy.removeAttribute('id');copy.dataset.demoProgress='';copy.setAttribute('aria-label','Demo progress preview only');copy.style.pointerEvents='none';
+      glossThumbnails(copy,true);
       copy.querySelectorAll('button').forEach(button=>{button.tabIndex=-1;});strip.after(copy);
       demoProgress={strip,copy,hidden:strip.hidden,scroll};strip.hidden=true;copy.scrollLeft=scroll;
     }
@@ -1540,8 +1572,8 @@
   document.querySelectorAll('[data-bubble-speed]').forEach(button=>button.addEventListener('click',()=>{state.bubbleSpeed=button.dataset.bubbleSpeed;updateBubbleSettings();save();}));
   document.querySelectorAll('[data-bubble-size]').forEach(button=>button.addEventListener('click',()=>{state.bubbleSize=button.dataset.bubbleSize;updateBubbleSettings();fitBubbleField();save();}));
   $('paint-mode').addEventListener('click',()=>{state.paintMode=true;resetRound();});$('clean-mode').addEventListener('click',()=>{state.paintMode=false;resetRound();});
-  document.querySelectorAll('[data-paint]').forEach(button=>button.addEventListener('click',()=>{cancelGesture();state.erase=false;state.paintColor=button.dataset.paint;updateArtTools();tone(620);popObject(button,'paint-color');}));
-  document.querySelectorAll('[data-brush-size]').forEach(button=>button.addEventListener('click',()=>{cancelGesture();state.brushSize=button.dataset.brushSize;updateArtTools();}));
+  document.querySelectorAll('[data-paint]').forEach(button=>button.addEventListener('click',()=>{if(demoActive)stopDemo();cancelGesture();if(state.paintMode){state.erase=false;state.paintColor=button.dataset.paint;}else state.brushColor=button.dataset.paint;updateArtTools();tone(620);popObject(button,'paint-color');}));
+  document.querySelectorAll('[data-brush-size]').forEach(button=>button.addEventListener('click',()=>{if(demoActive)stopDemo();cancelGesture();state.brushSize=button.dataset.brushSize;updateArtTools();}));
   $('erase-paint').addEventListener('click',()=>{cancelGesture();state.erase=!state.erase;updateArtTools();hint(state.erase?'Rub over the paint to erase. The picture stays safe.':`Choose a color and paint inside the ${artPicture().name}.`);});
   function soundButton(){$('sound').setAttribute('aria-pressed',String(state.sound));$('sound').setAttribute('aria-label',state.sound?'All sound on':'All sound off');$('sound').style.opacity='1';window.dispatchEvent(new CustomEvent('sana-sound-change',{detail:{enabled:state.sound}}));}
   $('sound').addEventListener('click',()=>{state.sound=!state.sound;save();soundButton();if(state.sound)tone(600);else{demoVoiceCancel?.();if(audio?.state==='running')audio.suspend().catch(()=>{});}});
@@ -1575,6 +1607,7 @@
     if(demoActive){stopDemo();hint('Your turn! Play the game.');}
     if(active&&!app.classList.contains('immersive'))normalSceneSize();
     cancelGesture();app.classList.toggle('immersive',active);
+    placeArtTools(app,active);
     if(active)app.querySelector('.play-mat').append($('vibration-toggle'));
     else if(state.activity)$('game-mid-controls').append($('vibration-toggle'));
     const button=$('fullscreen'),label=active?'Exit fullscreen':'Fullscreen';
