@@ -1,4 +1,4 @@
-// Demo starts at once, holds contact for one second, then hands back without a success delay.
+// Demo starts at once, holds contact for one second, and clears its finger before a brief result.
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{createServer}=require('node:http');
 const {chromium,webkit}=require(process.env.MM_PLAYWRIGHT||'C:/Users/jeyan/Projects/DotMd/node_modules/@playwright/test');
 const root=path.join(__dirname,'docs'),engine=process.env.PLAYROOM_BROWSER||'chromium',out=process.env.IMMEDIATE_EVIDENCE||path.join(__dirname,'artifacts/immediate-demo',engine),results=[],errors=[];let browser;
@@ -43,9 +43,9 @@ async function snapshot(page){return page.evaluate(()=>({scene:document.getEleme
   for(let i=0;i<70;i++){if(await page.evaluate(()=>!!window.__demoProbe.end))break;await page.clock.runFor(150);}
   const p=await page.evaluate(()=>window.__demoProbe);check(label+' holds each object for one second',p.contacts.length>0&&p.contacts.every(c=>c.end-c.start>=995&&c.end-c.start<=1010),p);
   check(label+' acts immediately after the one-second contact',p.action-p.first>=995&&p.action-p.first<=1020,p);
-  check(label+' clears the finger as soon as the action succeeds',p.success&&p.end-p.success<=30&&p.successFingerVisible===false,p);
+  check(label+' clears the finger at success and shows the result for one second',p.success&&p.end-p.success>=995&&p.end-p.success<=1020&&p.successFingerVisible===false,p);
   const budget=game==='slide'?3720:['drag','abacus'].includes(game)&&!(age===4&&game==='abacus')?1870:['bubbles','abacus'].includes(game)?1020:5000;
-  check(label+' finishes without narration or praise waits',p.end-p.first<=budget,p);
+  check(label+' finishes after its result without narration waits',p.end-p.first<=budget+1000,p);
   check(label+' returns to the unchanged real round',await page.locator('[data-demo-layer],[data-demo-progress]').count()===0&&JSON.stringify(await snapshot(page))===JSON.stringify(before),p);
   if(game==='slide')check(label+' still demonstrates both door directions',p.doors.includes('open')&&p.doors.includes('closed'),p);
  }
@@ -58,7 +58,7 @@ async function snapshot(page){return page.evaluate(()=>({scene:document.getEleme
    if(action==='stop')await page.locator('#show-me').click();if(action==='again')await page.locator('#again').click();if(action==='games')await page.locator('#game-home').click();if(action==='age')await page.locator('[data-age-option="3"]').click();await page.clock.runFor(20000);check(action+'/'+phase+' cancels the finger, voice and stale actions',await page.locator('[data-demo-layer],[data-demo-progress]').count()===0&&!await page.locator('#scene > [style*="visibility: hidden"]').count());
   }
   const native=await browser.newContext({viewport:{width:844,height:390},hasTouch:true,serviceWorkers:'block',reducedMotion:'no-preference'}),real=await native.newPage();real.on('pageerror',e=>errors.push(e.message));
-  for(const game of ['bubbles','drag']){await real.goto(base+'play.html?age=2');await real.locator('[data-age-option="2"]').click();await real.locator(`[data-activity="${game}"]`).click();await real.locator('#scene[data-art-state="ready"]').waitFor();if(await real.locator('#sound').getAttribute('aria-pressed')==='true')await real.locator('#sound').click();await observe(real);await real.locator('#show-me').click();await real.waitForFunction(()=>window.__demoProbe.end,{},{timeout:5000});const p=await real.evaluate(()=>window.__demoProbe);check('Native '+game+' starts at once, acts after one second and clears on success',p.first-p.tap<150&&p.action-p.first>=990&&p.action-p.first<1200&&p.end-p.success<60&&!p.successFingerVisible,p);await real.screenshot({path:path.join(out,'native-'+game+'-returned-to-play.png')});}await native.close();
+  for(const game of ['bubbles','drag']){await real.goto(base+'play.html?age=2');await real.locator('[data-age-option="2"]').click();await real.locator(`[data-activity="${game}"]`).click();await real.locator('#scene[data-art-state="ready"]').waitFor();if(await real.locator('#sound').getAttribute('aria-pressed')==='true')await real.locator('#sound').click();await observe(real);await real.locator('#show-me').click();await real.waitForFunction(()=>window.__demoProbe.end,{},{timeout:5000});const p=await real.evaluate(()=>window.__demoProbe);check('Native '+game+' acts after one second and displays the result without a finger',p.first-p.tap<150&&p.action-p.first>=990&&p.action-p.first<1200&&p.end-p.success>=990&&p.end-p.success<1200&&!p.successFingerVisible,p);await real.screenshot({path:path.join(out,'native-'+game+'-returned-to-play.png')});}await native.close();
  }
  check('No uncaught Demo errors',errors.length===0,errors);fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({engine,results,errors},null,2));console.log(JSON.stringify({checks:results.length,failed:results.filter(r=>!r.pass).length}));assert(results.every(r=>r.pass),'Immediate Demo checks failed');
 })().catch(e=>{console.error(e);fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({engine,results,errors,exception:String(e)},null,2));process.exitCode=1;}).finally(async()=>{await browser?.close();server.close();});

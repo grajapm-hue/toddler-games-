@@ -350,7 +350,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
 <script>for(const type of ['touchstart','touchmove'])document.addEventListener(type,event=>{if(event.touches.length>1)event.preventDefault();},{passive:false,capture:true});for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});</script>
-<meta name="sana-release" content="sana-little-hands-beta-v146-immediate-demo">
+<meta name="sana-release" content="sana-little-hands-beta-v147-demo-results">
 <style>
 /* Keep balloon choices together and give the travelling rows the released height. */
 #app[data-view="bubbles"] #bubble-settings{flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;gap:4px;scrollbar-width:thin}
@@ -606,9 +606,9 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 #app .play-mat>.item-progress-strip .item-chip:has(svg){padding:2px!important}
 #app[data-age="5"][data-view="abacus"] .play-mat>.item-progress-strip .item-chip{height:37px!important;min-height:37px!important;padding:2px 5px!important}
 #app .abacus-chip-label,#app .abacus-chip-value,#app .abacus-chip-value b{font-weight:700!important}
-#app #item-progress-strip .item-chip{background:var(--label-bg,#f5efdf)!important;border-color:var(--label-edge,#ad9e83)!important}
-#app[data-age="5"][data-view="abacus"] #item-progress-strip .item-chip.is-done{overflow:visible!important}
-#app[data-age="5"][data-view="abacus"] #item-progress-strip .item-chip.is-done::after{right:-5px!important;top:0!important;width:8px!important;height:8px!important;line-height:8px!important;font-size:7px!important}
+#app :is(#item-progress-strip,[data-demo-progress]) .item-chip{background:var(--label-bg,#f5efdf)!important;border-color:var(--label-edge,#ad9e83)!important}
+#app[data-age="5"][data-view="abacus"] :is(#item-progress-strip,[data-demo-progress]) .item-chip.is-done{overflow:visible!important}
+#app[data-age="5"][data-view="abacus"] :is(#item-progress-strip,[data-demo-progress]) .item-chip.is-done::after{right:-5px!important;top:0!important;width:8px!important;height:8px!important;line-height:8px!important;font-size:7px!important}
 </style>
 <style>/* v1.45: coordinated pastel roles, reviewed against AI-generated previews. */
 #activity-name{--label-bg:#dfedf6;--label-edge:#7e9fb7}
@@ -616,21 +616,21 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 #bubble-score{--label-bg:#e9e1f2;--label-edge:#a591b5}
 #game-art-status{--label-bg:#dfedf6;--label-edge:#7e9fb7}
 #hint-copy,#play-version,#sana-immersive-notice{--label-bg:#f5efdf;--label-edge:#ad9e83}
-#item-progress-strip .item-chip:nth-child(5n+1){--label-bg:#dcebdd;--label-edge:#8aa67a}
-#item-progress-strip .item-chip:nth-child(5n+2){--label-bg:#dfedf6;--label-edge:#7e9fb7}
-#item-progress-strip .item-chip:nth-child(5n+3){--label-bg:#e9e1f2;--label-edge:#a591b5}
-#item-progress-strip .item-chip:nth-child(5n+4){--label-bg:#f3dfd3;--label-edge:#b5927e}
-#item-progress-strip .item-chip:nth-child(5n){--label-bg:#f5efdf;--label-edge:#ad9e83}
-#item-progress-strip .item-chip.is-current{--label-bg:#c8e1ef;--label-edge:#497c96}
-#item-progress-strip .item-chip.is-done{--label-bg:#d7eadb;--label-edge:#5b8c68}
+:is(#item-progress-strip,[data-demo-progress]) .item-chip:nth-child(5n+1){--label-bg:#dcebdd;--label-edge:#8aa67a}
+:is(#item-progress-strip,[data-demo-progress]) .item-chip:nth-child(5n+2){--label-bg:#dfedf6;--label-edge:#7e9fb7}
+:is(#item-progress-strip,[data-demo-progress]) .item-chip:nth-child(5n+3){--label-bg:#e9e1f2;--label-edge:#a591b5}
+:is(#item-progress-strip,[data-demo-progress]) .item-chip:nth-child(5n+4){--label-bg:#f3dfd3;--label-edge:#b5927e}
+:is(#item-progress-strip,[data-demo-progress]) .item-chip:nth-child(5n){--label-bg:#f5efdf;--label-edge:#ad9e83}
+:is(#item-progress-strip,[data-demo-progress]) .item-chip.is-current{--label-bg:#c8e1ef;--label-edge:#497c96}
+:is(#item-progress-strip,[data-demo-progress]) .item-chip.is-done{--label-bg:#d7eadb;--label-edge:#5b8c68}
 </style>
 <style>/* v1.45: natural Abacus board and readable colour-matched counts. */
 #app #scene [data-color-label]{fill:var(--bead-ink)!important}
 #app #scene [data-abacus-left],#app #scene [data-abacus-right]{fill:#173e35!important}
-#app.immersive #item-progress-strip .item-chip{font-size:clamp(10px,calc((var(--frame-w) - 70px) / var(--thumb-count,1) * .6 * 1.12),20.16px)!important}
+#app.immersive :is(#item-progress-strip,[data-demo-progress]) .item-chip{font-size:clamp(10px,calc((var(--frame-w) - 70px) / var(--thumb-count,1) * .6 * 1.12),20.16px)!important}
 #app.immersive[data-age="5"][data-view="abacus"] .abacus-chip-label{font-size:clamp(10.08px,1.792vw,13.44px)!important}
 #app.immersive[data-age="5"][data-view="abacus"] .abacus-chip-value{font-size:14.56px!important}
-#app.immersive #item-progress-strip .item-index{font-size:10.08px!important}
+#app.immersive :is(#item-progress-strip,[data-demo-progress]) .item-index{font-size:10.08px!important}
 </style>
 <style>/* v1.45: bubble content tabs identify selection through their fill. */
 #app #bubble-modes [data-bubble-mode]{background:#bbe5c4!important;color:#173e35!important;border-color:#709e79!important}
@@ -641,6 +641,12 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 #app:not([data-view="brush"]) #activity-view .play-mat>.play-toolbar{display:none!important;min-height:0!important;padding:0!important;border:0!important;margin:0!important}
 #app #activity-view #brush-modes[hidden],#app #activity-view #paint-tools[hidden],#app #activity-view #art-tools[hidden]{display:none!important}
 #app:is([data-view="drag"],[data-view="slide"],[data-view="abacus"]) #activity-view{grid-template-rows:minmax(0,1fr);grid-template-areas:"board";gap:0}
+</style>
+<style>
+.demo-balloon-splash{transform-box:fill-box;transform-origin:center;animation:demo-balloon-splash .55s ease-out forwards}
+@keyframes demo-balloon-splash{from{opacity:1;transform:scale(.65)}to{opacity:0;transform:scale(1.35)}}
+@media(prefers-reduced-motion:reduce){.demo-balloon-splash{animation:none}}
+#app [data-demo-progress] .item-chip.is-demo-done{overflow:visible!important}
 </style>
 </head>
 <body>
@@ -657,7 +663,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 <div id="viewport"><div id="app" data-view="home">
 <header class="topbar has-app-update">
   <button class="icon-button" id="home" type="button" aria-label="Home"><svg aria-hidden="true"><use href="#home-icon"/></svg></button>
-  <a class="brand" href="index.html" aria-label="SaNa Beta welcome" style="color:inherit;text-decoration:none"><svg class="brand-mark" aria-hidden="true"><use href="#monkey"/></svg><div class="brand-copy"><div class="wordmark">SaNa</div><small>little hands · beta</small></div></a><button class="app-update-button" id="update-app" type="button" aria-label="Update app" aria-busy="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7V3M20 7H16M20 7A8 8 0 1 0 21 14"/></svg><span class="update-copy"><span data-update-label>Update</span><span class="update-version" data-release-version>v1.46</span></span></button>
+  <a class="brand" href="index.html" aria-label="SaNa Beta welcome" style="color:inherit;text-decoration:none"><svg class="brand-mark" aria-hidden="true"><use href="#monkey"/></svg><div class="brand-copy"><div class="wordmark">SaNa</div><small>little hands · beta</small></div></a><button class="app-update-button" id="update-app" type="button" aria-label="Update app" aria-busy="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7V3M20 7H16M20 7A8 8 0 1 0 21 14"/></svg><span class="update-copy"><span data-update-label>Update</span><span class="update-version" data-release-version>v1.47</span></span></button>
   <div class="parent-age" role="radiogroup" aria-label="Choose age"><span>Age:</span><button type="button" class="age-radio" data-age-option="2" role="radio" aria-checked="false">2</button><button type="button" class="age-radio" data-age-option="3" role="radio" aria-checked="false">3</button><button type="button" class="age-radio" data-age-option="4" role="radio" aria-checked="false">4</button><button type="button" class="age-radio" data-age-option="5" role="radio" aria-checked="false">5</button></div>
 
   <nav class="game-pages" id="game-pages" aria-label="Browse game cards"><button class="icon-button" id="previous-games" type="button" aria-label="Previous games" aria-controls="activity-grid" disabled><svg aria-hidden="true"><use href="#back-icon"/></svg></button><span class="visually-hidden" id="card-page" aria-live="polite"></span><button class="icon-button" id="next-games" type="button" aria-label="Next games" aria-controls="activity-grid"><svg viewBox="0 0 32 32" aria-hidden="true"><use href="#back-icon" transform="translate(32 0) scale(-1 1)"/></svg></button></nav>
@@ -681,7 +687,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
   <span id="step-note" hidden></span>
   <div class="bubble-settings" id="bubble-settings" hidden><div class="bubble-setting-group" role="group" aria-label="Bubble speed"><span>Speed</span><button type="button" data-bubble-speed="slow" aria-label="Slow bubble speed" aria-pressed="false">Slow</button><button type="button" data-bubble-speed="medium" aria-label="Medium bubble speed" aria-pressed="true">Medium</button><button type="button" data-bubble-speed="fast" aria-label="High bubble speed" aria-pressed="false">High</button></div><div class="bubble-setting-group" role="group" aria-label="Bubble size"><span>Size</span><button type="button" data-bubble-size="small" aria-label="Small bubbles" aria-pressed="false">Small</button><button type="button" data-bubble-size="medium" aria-label="Medium bubbles" aria-pressed="true">Medium</button><button type="button" data-bubble-size="large" aria-label="Large bubbles" aria-pressed="false">Large</button></div><button type="button" class="mode-button" id="bubble-full-set" aria-label="Full bubble collection" aria-pressed="false" hidden>Full set</button></div>
   <div class="art-tools" id="art-tools" hidden><div class="brush-sizes" role="group" aria-label="Brush size"><span class="paint-label">Brush</span><button class="art-tool" type="button" data-brush-size="small" aria-label="Small brush" aria-pressed="false">Small</button><button class="art-tool" type="button" data-brush-size="medium" aria-label="Medium brush" aria-pressed="true">Medium</button><button class="art-tool" type="button" data-brush-size="large" aria-label="Large brush" aria-pressed="false">Large</button></div><div class="paint-tools" id="paint-tools" hidden><span class="paint-label">Color</span><button class="art-tool" type="button" id="erase-paint" aria-label="Erase paint" aria-pressed="false">Eraser</button></div></div>
-  <div class="play-mat"><span id="play-version" data-release-version>v1.46</span><div id="game-status-top" class="game-status-top" aria-label="Current game status"></div><button id="exit-play" type="button" aria-label="Exit fullscreen play" title="Exit fullscreen"><svg aria-hidden="true" viewBox="0 0 32 32" width="28" height="28"><rect x="4" y="4" width="24" height="24" rx="2" fill="none" stroke="currentColor" stroke-width="2.5"/><rect x="10" y="10" width="12" height="12" rx="1" fill="none" stroke="currentColor" stroke-width="2.5"/></svg></button><div class="play-toolbar"><div id="game-results" aria-label="Game results" aria-live="polite"><h1 id="activity-name">Shape picnic</h1><span id="result-score"></span><span class="bubble-score" id="bubble-score" hidden></span></div><div id="play-options" aria-label="Sub-levels"><div class="levels" id="play-levels" role="group" aria-label="Difficulty level">
+  <div class="play-mat"><span id="play-version" data-release-version>v1.47</span><div id="game-status-top" class="game-status-top" aria-label="Current game status"></div><button id="exit-play" type="button" aria-label="Exit fullscreen play" title="Exit fullscreen"><svg aria-hidden="true" viewBox="0 0 32 32" width="28" height="28"><rect x="4" y="4" width="24" height="24" rx="2" fill="none" stroke="currentColor" stroke-width="2.5"/><rect x="10" y="10" width="12" height="12" rx="1" fill="none" stroke="currentColor" stroke-width="2.5"/></svg></button><div class="play-toolbar"><div id="game-results" aria-label="Game results" aria-live="polite"><h1 id="activity-name">Shape picnic</h1><span id="result-score"></span><span class="bubble-score" id="bubble-score" hidden></span></div><div id="play-options" aria-label="Sub-levels"><div class="levels" id="play-levels" role="group" aria-label="Difficulty level">
     <button class="level" type="button" data-level="1" aria-label="Easy level" aria-pressed="false">Easy<small>little steps</small></button>
     <button class="level" type="button" data-level="2" aria-label="Medium level" aria-pressed="true">Medium<small>guided play</small></button>
     <button class="level" type="button" data-level="3" aria-label="Challenge level" aria-pressed="false">Challenge<small>extra fun</small></button>
@@ -693,7 +699,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 (()=>{const status=document.getElementById("game-results"),slot=document.getElementById("game-status-top");if(status&&slot)slot.appendChild(status);})();
 </script>
 <script src="age-profiles.js"></script>
-<script src="app.js?v146"></script>
+<script src="app.js?v147"></script>
 <script src="pwa.js"></script>
 <script>
 /* v1.04 beta: Web Audio buffer playback avoids HTMLMediaElement media cards.
