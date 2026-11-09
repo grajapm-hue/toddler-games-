@@ -41,3 +41,28 @@
 #app.narrow[data-view="puzzle"] #item-progress-strip{gap:3px!important;padding:3px 4px!important}
 #app .activity-card[data-activity="puzzle"]{--card:#dcebdd;--edge:#91ac82}
 @media(prefers-reduced-motion:reduce){.puzzle-drag-piece,#puzzle-demo-hand{transition:none!important}}
+
+/* Picture choices use the previous title row; the summary follows the panels. */
+#app[data-view="puzzle"] #game-status-top{display:flex!important;height:44px!important;min-height:44px!important;max-height:44px!important;padding:1px 5px!important;overflow:hidden}
+#puzzle-gallery{display:flex;align-items:center;gap:5px;width:100%;min-width:0;height:42px}
+#puzzle-gallery[hidden]{display:none!important}
+.puzzle-choices{flex:1 1 auto;min-width:0;height:42px;overflow-x:auto;overflow-y:hidden;touch-action:pan-x;scrollbar-width:none;padding:2px}
+.puzzle-choices::-webkit-scrollbar{display:none}
+.puzzle-choice-track{position:relative;display:flex;justify-content:center;align-items:center;gap:4px;min-width:100%;width:max-content;height:38px}
+.puzzle-choice-track>[role="listitem"]{flex:0 0 48px;width:48px;height:38px}
+.puzzle-choice,#puzzle-remove{position:relative;width:48px;height:38px;min-width:48px;min-height:38px;padding:2px;border:1px solid #8ca58a;border-radius:7px;background:linear-gradient(145deg,#fffaf0,#dcebdd);box-shadow:inset 0 1px #fff,0 1px 2px #173e3525}
+.puzzle-choice img{display:block;object-fit:contain;width:100%;height:100%;border-radius:4px}
+.puzzle-choice[aria-pressed="true"]{border:2px solid #287c60;background:#ffe17a;box-shadow:inset 0 0 0 1px #fffaf0}
+.puzzle-choice.is-complete:after,.puzzle-choice.is-demo-complete:after{content:"✓";position:absolute;right:0;top:0;width:12px;height:12px;border-radius:50%;background:#287c60;color:#fffaf0;font:900 9px/12px system-ui;text-align:center}
+#puzzle-remove{display:flex;flex:0 0 48px;flex-direction:column;align-items:center;justify-content:center;gap:0;background:#f3dfd3;color:#173e35}
+#puzzle-remove span{font-size:18px;line-height:18px}
+#puzzle-remove small{font-size:10px;line-height:11px}
+#puzzle-remove:disabled{opacity:.45;cursor:default}
+#puzzle-caption-slot{position:absolute;left:50%;transform:translateX(-50%);width:min(150px,36%);z-index:3;pointer-events:none}
+#app[data-view="puzzle"] #puzzle-caption-slot #game-results{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:1px!important;min-width:0!important;max-width:100%!important;min-height:0!important;padding:0!important;margin:0!important;border:0!important;background:transparent!important;overflow:visible!important}
+#app[data-view="puzzle"] #puzzle-caption-slot #activity-name{font-size:12px!important;line-height:13px!important;flex:none!important;max-width:100%!important;padding:1px 4px!important;white-space:nowrap;text-shadow:none!important}
+#app[data-view="puzzle"] #puzzle-caption-slot #result-score{font-size:11px!important;line-height:12px!important;flex:none!important;max-width:100%!important;padding:1px 3px!important;white-space:nowrap;text-shadow:none!important}
+#app.narrow[data-view="puzzle"] #puzzle-caption-slot{width:min(120px,36%)}
+#app.narrow[data-view="puzzle"] #puzzle-caption-slot #activity-name{font-size:11px!important;line-height:12px!important}
+#app.narrow[data-view="puzzle"] #puzzle-caption-slot #result-score{font-size:9.5px!important;line-height:11px!important}
+#app[data-view="puzzle"] .puzzle-panel-label{margin-block:6px}
