@@ -542,6 +542,12 @@
   const countStockSize=age=>age===2?5:age===3?10:0;
   const countMax=()=>countStockSize(state.age)||20;
   const countTitle=()=>state.age===2?'Apple Basket':state.age===3?'Feed the Hungry Rabbit':'Number Train Adventure';
+  function harvestInstruction(target,age=state.age,collected=countCollected.size){
+    const apple=age===2,noun=apple?'apple':'carrot',remaining=Math.max(0,target-collected);
+    if(!remaining)return `${collected} ${noun}${collected===1?'':'s'} ${apple?'in the basket':'with the rabbit'}.`;
+    const quantity=`${remaining}${collected?' more':''} ${noun}${remaining===1?'':'s'}`;
+    return collected?`${apple?'Add':'Give'} ${quantity} to make ${target}.`:`${apple?'Put':'Give'} ${quantity} ${apple?'in the basket':'to the rabbit'}.`;
+  }
   function cancelCountAdvance(){
     clearTimeout(countTimer);countTimer=null;countHolding=false;
     $('show-me').disabled=false;
@@ -600,7 +606,7 @@
     });
     if(apple)html+=countImage('basket',635,140,330,220,'clip-path="url(#count-basket-front)" pointer-events="none"');
     if(countHolding||done)html+=countPraise(done);
-    else html+=`<rect data-text-panel="harvest-prompt" x="395" y="20" width="330" height="98" rx="26" fill="none" stroke="#b6cea1" stroke-width="3"/><text class="scene-caption" data-label-for="harvest-prompt" x="560" y="53" text-anchor="middle" dominant-baseline="central" font-size="31" font-weight="900" fill="#285d4c">Count to ${target}</text><text class="scene-caption" data-label-for="harvest-prompt" x="560" y="91" text-anchor="middle" dominant-baseline="central" font-size="21" font-weight="800" fill="#30564d">${apple?`Put ${target} apple${target===1?'':'s'} in the basket.`:`Give ${target} carrot${target===1?'':'s'} to the rabbit.`}</text>`;
+    else html+=`<rect data-text-panel="harvest-prompt" x="395" y="20" width="330" height="98" rx="26" fill="none" stroke="#b6cea1" stroke-width="3"/><text class="scene-caption" data-label-for="harvest-prompt" x="560" y="53" text-anchor="middle" dominant-baseline="central" font-size="31" font-weight="900" fill="#285d4c">Count to ${target}</text><text class="scene-caption" data-label-for="harvest-prompt" data-count-instruction="" x="560" y="91" text-anchor="middle" dominant-baseline="central" font-size="21" font-weight="800" fill="#30564d">${harvestInstruction(target,age)}</text>`;
     // Keep the physical collection and its numeral visible during the praise.
     html+=`<rect data-text-panel="harvest-counter" x="760" y="12" width="200" height="45" rx="20" fill="none" stroke="#79ab61" stroke-width="3"/><text class="scene-caption" data-label-for="harvest-counter" data-count-counter="" x="860" y="34.5" text-anchor="middle" dominant-baseline="central" font-size="32" font-weight="900" fill="#215a3e">${countPlaced} / ${target}</text>`;
     html+=countLedger(age);
@@ -634,7 +640,7 @@
     $('activity-name').textContent=countTitle();scene.setAttribute('viewBox','0 0 1000 440');
     if(age===2||age===3){
       scene.innerHTML=renderHarvestCount(target,age);
-      hint(countHolding?'Well done! Wait for the next count.':state.done?'Wonderful counting! A new round starts soon.':age===2?`Put ${target} apple${target>1?'s':''} into the basket. Drag each apple!`:`Feed the rabbit ${target} carrot${target>1?'s':''}!`);
+      hint(countHolding?'Well done! Wait for the next count.':state.done?'Wonderful counting! A new round starts soon.':harvestInstruction(target,age));
     }else{
       renderNumberTrain(target);
       hint(`Find number ${target} and tap its train carriage!`);
@@ -1301,6 +1307,7 @@
     guideTimer=setTimeout(()=>{demoResume=null;resolve(token===demoGeneration);},ms);
   });
   function stopDemo(){
+    const restoreCountHint=demoActive&&state.activity==='abacus'&&(state.age===2||state.age===3);
     demoGeneration++;demoActive=false;clearTimeout(guideTimer);
     const resume=demoResume;demoResume=null;resume?.(false);
     demoVoiceCancel?.();
@@ -1309,6 +1316,7 @@
     demoSceneNodes=[];
     if(demoProgress){const {strip,copy,hidden,scroll}=demoProgress;copy.remove();strip.hidden=hidden;strip.scrollLeft=scroll;demoProgress=null;}
     if(demoStatus){demoStatus.forEach(({node,text})=>{node.textContent=text;});demoStatus=null;}
+    if(restoreCountHint)hint(harvestInstruction(Math.min(countStage+1,countMax())));
     $('show-me').setAttribute('aria-pressed','false');
     try{speechSynthesis.cancel();}catch{}
   }
@@ -1438,6 +1446,7 @@
                 if(age===3){moving.firstElementChild.setAttribute('transform',`rotate(-90) scale(${scale})`);const p=demoBounds(image);pointHand(p.x,p.y,Math.min(p.width,p.height),image);}
                 const counter=backing.querySelector('[data-count-counter]');if(counter)counter.textContent=`${countPlaced+1} / ${target}`;
                 const left=backing.querySelector('[data-count-ledger-value="source"]'),right=backing.querySelector('[data-count-ledger-value="collected"]');if(left)left.textContent=String(countMax()-countPlaced-1);if(right)right.textContent=String(countPlaced+1);
+                const instruction=backing.querySelector('[data-count-instruction]');if(instruction)instruction.textContent=harvestInstruction(target,age,countPlaced+1);
                 refreshSceneTextTabs();
                 await success(countStage);
               }
@@ -1509,7 +1518,7 @@
         }
       }
     }catch(error){console.warn('Demo preview error',error);}
-    finally{if(valid()){stopDemo();hint('Your turn! Play the game.');}}
+    finally{if(valid()){stopDemo();if(!(activity==='abacus'&&(age===2||age===3)))hint('Your turn! Play the game.');}}
   }
 
   $('home').addEventListener('click',home);$('again').addEventListener('click',resetRound);$('show-me').addEventListener('click',showMe);
