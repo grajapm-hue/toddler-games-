@@ -4,7 +4,7 @@ A separate landscape HTML playroom with freely selectable starting sets for ages
 
 ## Installable Beta
 
-The Beta site is built into **docs/beta/**. Run `node build-beta.mjs` after editing the prototype or `beta-runtime/` sources. The original standalone game remains available for local testing.
+The maintained Beta lives directly in **docs/beta/**. Edit those files for Beta changes. The legacy `build-beta.mjs` generator predates the current Beta and must not overwrite it. The original standalone game remains available for local testing.
 
 For a local hosted trial, run `node serve.mjs 8778 docs` and open `http://127.0.0.1:8778/beta/`.
 
@@ -55,6 +55,10 @@ ArrowRight/End and ArrowLeft/Home move the selected bead and its neighbours to t
 `node check-abacus.mjs` checks all 100 beads forwards and backwards with touch/pointer gestures, grouped and single moves, actual 0–10 numerals/words, arbitrary row order, stable bead nodes, immediate movement before release, final-position-only releases, cancellation, colours/zero, keyboard support, completion/reset and five normal/fullscreen screen sizes. `ABACUS_URL` selects a hosted play page; evidence is under ignored `artifacts/abacus/`.
 
 ## Activities
+
+**Picture Puzzle:** choose a picture from the device or play with the SaNa farm picture. Ages 2, 3, 4 and 5 start with 2×2, 3×3, 4×4 and 5×5 grids. Tap or swipe a neighbouring tile into the gap; Enter, Space and direction keys also work. Look shows the whole picture without changing the round. Numbers are optional. Again or the circular shuffle control starts another solvable shuffle of the same picture. Fullscreen and rotation preserve the round, and Demo previews one helpful move without changing it.
+
+Selected images are resized locally and one is retained in this browser's IndexedDB for offline reopening. The monkey control returns to the SaNa picture and removes the saved photo. No photo is sent to a server. If optional storage is unavailable, picture selection and play still work for the session. The implementation is in `docs/beta/picture-puzzle.js` and its scoped stylesheet. Run `node check-picture-puzzle-core.cjs` for legal shuffle/movement checks and `node check-picture-puzzle.cjs` for the browser upload, input, layout and persistence checks.
 
 1. **Drag — Shape picnic:** move each shape onto its matching shadow. Tapping a shape and then its shadow also works.
 2. **Tap — Bubble garden:** choose Plain, 1–20, A–Z or Shapes. Bubbles rise continuously from random positions. Tap or sweep to splash and pop them; new bubbles enter from below. The matching number, letter or shape in the top list turns the popped bubble's exact color. Missed items return until the full set is collected, then SaNa cheers and play continues. Plain keeps a pop count and recent colors. Explore has four slower, larger bubbles; Play has six; Challenge has nine faster bubbles. Again clears the current collection.

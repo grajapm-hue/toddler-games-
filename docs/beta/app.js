@@ -98,12 +98,12 @@
     captionFrame=requestAnimationFrame(()=>{captionFrame=0;fitSceneTextTabs(nodes);});
   }
   const decodedArt=new Map();let artGeneration=0;
-  const gameReady=()=>scene.dataset.artState==='ready';
+  const gameReady=()=>scene.dataset.artState==='ready'&&(state.activity!=='puzzle'||picturePuzzle.ready());
   function artState(value){
     scene.dataset.artState=value;scene.parentElement.setAttribute('aria-busy',String(value==='loading'));
     const status=$('game-art-status');status.hidden=value==='ready';
     status.querySelector('span').textContent=value==='error'?'The pictures could not load. Try again.':'Getting your game ready…';
-    $('game-art-retry').hidden=value!=='error';$('show-me').disabled=value!=='ready'||countHolding||!!objectFeedback||(state.activity==='bubbles'&&state.bubbles.some(b=>b.popping));
+    $('game-art-retry').hidden=value!=='error';$('show-me').disabled=value!=='ready'||countHolding||!!objectFeedback||(state.activity==='puzzle'&&!picturePuzzle.ready())||(state.activity==='bubbles'&&state.bubbles.some(b=>b.popping));
   }
   function decodeArt(url){
     if(decodedArt.has(url))return decodedArt.get(url);
@@ -167,7 +167,8 @@
     bubbles:{title:'Bubble garden',label:'Pop bubbles',word:'Tap',caption:'pop a happy bubble',note:'A pop of color. A little smile.',hint:'Tap a bubble. Pop, pop, pop! You can brush across them too.'},
     slide:{title:'Peek-a-boo friends',label:'Slide to reveal',word:'Slide',caption:'find a little friend',note:'Who is hiding behind the curtains?',hint:'Slide the sunny handles along the paths. Who will you find?'},
     brush:{title:'Little art studio',label:'Brush and paint',word:'Brush & paint',caption:'wash and make colors',note:'',hint:'Brush the muddy puppy. Give him a gentle wash.'},
-    abacus:{title:'Counting adventures',label:'Counting games',word:'Count',caption:'count and play',note:'',hint:'Slide beads in any row, either way. See the number and its word change!' }
+    abacus:{title:'Counting adventures',label:'Counting games',word:'Count',caption:'count and play',note:'',hint:'Slide beads in any row, either way. See the number and its word change!' },
+    puzzle:{title:'Picture Puzzle',label:'Picture Puzzle',word:'Puzzle',caption:'make your own picture',note:'',hint:'Choose your picture. Slide a tile next to the empty space.'}
   };
   let saved={};try{const stored=JSON.parse(localStorage.getItem('sanaLittleHandsV1')||'{}');saved=stored&&typeof stored==='object'?stored:{};}catch{/* Settings are optional. */}
   const hasAgeSettings=saved.ageSettings&&typeof saved.ageSettings==='object'&&!Array.isArray(saved.ageSettings);
@@ -179,6 +180,7 @@
   const initial=preferences();
   const state={age:ageProfiles.getAge(),level:1,activity:null,done:false,pointer:null,selected:null,paintMode:false,paintColor:colors[0],brushColor:colors[4],strokes:[],shapes:[],bubbles:[],sliders:[],slideIndex:0,slideRevealed:false,dirt:[],sound:saved.sound===true,haptics:saved.haptics!==false};
   Object.assign(state,{brushSize:profile().brushSize,erase:false,coverage:[],bubbleMode:profile().bubbleMode,bubbleSet:initial.bubbleSet==='full'||state.age===null?'full':'starter',bubbleHits:new Map(),bubblePops:0,bubbleRecent:[],bubbleEffects:[],bubbleSerial:0,bubbleWidth:1000});
+  const picturePuzzle=window.SaNaPicturePuzzle.mount({app,scene,strip:$('item-progress-strip'),hint:words=>hint(words),complete:words=>{celebrate(words);applause();clearTimeout(rewardTimer);rewardTimer=setTimeout(()=>{$('celebrate').hidden=true;$('art-reward').hidden=true;},1500);},onReset:()=>{clearEffects();state.done=false;},status:words=>{$('game-results').hidden=false;$('result-score').hidden=false;$('result-score').textContent=words;$('progress').hidden=true;},readyChanged:()=>{if(state.activity==='puzzle')$('show-me').disabled=!gameReady();}});
   const bubbleModes={plain:{label:'Plain',items:[]},numbers:{label:'1–20',items:Array.from({length:20},(_,i)=>String(i+1))},letters:{label:'A–Z',items:Array.from({length:26},(_,i)=>String.fromCharCode(65+i))},shapes:{label:'Shapes',items:shapes.map(shape=>shape.id)}};
   const bubbleColors=['#46b8cf','#ee6c88','#a890e5','#f5ce51','#76bc74','#f49d60'];
   const bubbleSpeeds={slow:72,medium:136,fast:464},bubbleDiameters={small:88,medium:120,large:384};
@@ -421,6 +423,7 @@
     return `<g stroke="#5c6555" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><g fill="${outline?'none':picture.color}">${picture.region}</g><g fill="${outline?'none':'#f6d789'}">${picture.details}</g></g>`;
   }
   function preview(id){
+    if(id==='puzzle')return '<rect x="30" y="14" width="160" height="146" rx="14" fill="#88cce8" stroke="#6e8e76" stroke-width="4"/><path d="M32 105Q105 63 189 112V157H32Z" fill="#88ba72"/><circle cx="150" cy="48" r="21" fill="#ffe17a"/><path d="M57 113V73H116V113Z" fill="#fff0bd"/><path d="M48 75 86 42 126 75Z" fill="#e78e76"/><path d="M110 14V160M30 87H190" stroke="#fffaf0" stroke-width="5"/><rect x="112" y="89" width="76" height="69" rx="9" fill="#56766d"/><text x="150" y="133" text-anchor="middle" fill="#fffaf0" font-size="36">↖</text>';
     if(id==='abacus')return `<g stroke="#9b7e60" stroke-width="5"><path d="M15 22V152M113 22V152M15 30H113M15 76H113M15 122H113"/>${[0,1,2].map((row)=>[0,1,2].map(i=>`<circle cx="${31+i*23}" cy="${30+row*46}" r="10" fill="${['#ff3b30','#ff9500','#ffe500'][row]}" stroke-width="1"/>`).join('')).join('')}</g><path d="M132 110A36 36 0 0 1 204 110M143 110A25 25 0 0 1 193 110M154 110A14 14 0 0 1 182 110" fill="none" stroke="#ff3b30" stroke-width="10"/><circle cx="168" cy="140" r="17" fill="#ff8fc7"/><circle cx="168" cy="140" r="11" fill="white"/><circle cx="168" cy="140" r="6" fill="#b5794a"/>`;
     if(id==='drag')return `<g transform="translate(63 76) scale(.67)">${primitive('triangle','#ebc34e')}${face(0,12)}</g><g transform="translate(150 90) scale(.67) rotate(12)">${primitive('square','#71abc6')}${face()}</g><path d="M110 27L114 17M184 49L195 43" stroke="#76a181" stroke-width="5" stroke-linecap="round"/>`;
     if(id==='bubbles')return `<circle cx="69" cy="84" r="38" fill="#e59b9d"/><circle cx="145" cy="65" r="45" fill="#8fc7d5"/><circle cx="144" cy="65" r="36" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="3"/><path d="M121 46Q125 35 140 34M49 66Q56 56 67 56" stroke="white" stroke-width="7" stroke-linecap="round" opacity=".7"/><g transform="translate(145 65) scale(.6)">${face()}</g><path d="M56 25L53 15M188 111L197 116" stroke="#cfa834" stroke-width="5" stroke-linecap="round"/>`;
@@ -507,7 +510,7 @@
       chooseParentAge(ageOptions[next].dataset.ageOption);ageOptions[next].focus({preventScroll:true});
     });
   });
-  function home(){cancelCountAdvance();stopBubbles();cancelGesture();clearEffects();artGeneration++;artState('ready');state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('sound'),$('music-toggle'),$('vibration-toggle'));app.dataset.view='home';parentAgeControls();$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;$('item-progress-strip').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
+  function home(){picturePuzzle.leave();cancelCountAdvance();stopBubbles();cancelGesture();clearEffects();artGeneration++;artState('ready');state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('sound'),$('music-toggle'),$('vibration-toggle'));app.dataset.view='home';parentAgeControls();$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;$('item-progress-strip').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
   function levelControls(){document.querySelectorAll('[data-level]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.level)===state.level)));}
   function setLevel(level,reset=true){cancelGesture();const changed=state.level!==level;state.level=level;if(changed)state.brushSize=profile().brushSize;levelControls();save();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');if(reset&&state.activity)resetRound();else if(reset)hint(level===2?'Medium level: choose a picture and play together!':level===1?'Easy level: fewer, bigger things to try.':'Challenge level: a few more things to discover.');}
   function startActivity(id,paintMode=false){closeAgeMenu();$('game-mid-controls').append($('sound'),$('music-toggle'),$('fullscreen'),$('vibration-toggle'));state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
@@ -521,6 +524,7 @@
     scene.parentElement.classList.toggle('bubble-mat',state.activity==='bubbles');scene.setAttribute('viewBox','0 0 1000 440');
     $('brush-modes').hidden=state.activity!=='brush';$('paint-tools').hidden=state.activity!=='brush';
     $('art-tools').hidden=state.activity!=='brush';
+    if(state.activity==='puzzle')picturePuzzle.start(state.age);else picturePuzzle.leave();
     state.erase=false;updateArtTools();
     scene.setAttribute('aria-label','Play area');
     if(state.activity==='brush'){if(brushAge!==state.age){brushAge=state.age;brushIndex=0;brushFinished.clear();}$('activity-name').textContent=`Little art studio · ${artPicture().name[0].toUpperCase()+artPicture().name.slice(1)} · ${brushIndex+1}/${brushCount()}`;}
@@ -540,6 +544,8 @@
       renderDrag();
     }else if(state.activity==='bubbles'){
       renderBubbles();
+    }else if(state.activity==='puzzle'){
+      scene.replaceChildren();
     }else if(state.activity==='slide'){
       clearTimeout(slideAdvanceTimer);state.slideIndex=0;state.slideRevealed=false;state.sliders=[];renderSlide();
     }else if(state.paintMode){renderPaint();}else{
@@ -810,6 +816,7 @@
   // Shared, game-specific progress strip. Never moves to a side in immersive mode.
   function showItemStrip(items){
     const strip=$('item-progress-strip');if(!strip)return;
+    strip.setAttribute('aria-label','Available items and completion status');
     strip.hidden=!state.activity||!items.length;
     if(strip.hidden){strip.innerHTML='';return;}
 
@@ -837,6 +844,7 @@
     popObject($('item-progress-strip').querySelector(`[data-brush-choice="${index}"]`),'drawing');
   });
   function updateGameItemStrip(){
+    if(state.activity==='puzzle'){picturePuzzle.syncStrip();return;}
     if(objectFeedback)return;
     if(state.activity==='drag'){
       const limit=shapeLevelLimits[state.age]||4;
@@ -1347,6 +1355,7 @@
     guideTimer=setTimeout(()=>{demoResume=null;resolve(token===demoGeneration);},ms);
   });
   function stopDemo(){
+    picturePuzzle.stopDemo();
     const restoreCountHint=demoActive&&state.activity==='abacus'&&(state.age===2||state.age===3);
     demoGeneration++;demoActive=false;clearTimeout(guideTimer);
     const resume=demoResume;demoResume=null;resume?.(false);
@@ -1396,6 +1405,7 @@
     return{x:left+width/2,y:top+height/2,width,height};
   }
   async function showMe(){
+    if(state.activity==='puzzle'){void picturePuzzle.demo();return;}
     if(!gameReady()||objectFeedback)return;
     if(state.activity==='abacus'&&countHolding)return;
     if(demoActive){stopDemo();return;}
@@ -1604,6 +1614,7 @@
     immersiveNoticeTimer=setTimeout(()=>{notice.hidden=true;},2200);
   }
   async function immersiveMode(active){
+    picturePuzzle.stopDemo();
     if(demoActive){stopDemo();hint('Your turn! Play the game.');}
     if(active&&!app.classList.contains('immersive'))normalSceneSize();
     cancelGesture();app.classList.toggle('immersive',active);
