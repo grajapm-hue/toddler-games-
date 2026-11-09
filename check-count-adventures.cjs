@@ -27,8 +27,8 @@ let browser;
   const page = await context.newPage(); page.on('pageerror', error => errors.push(error.message));
   async function open(age) {
     await page.goto(base+'play.html?age='+age);
-    await page.locator(`[data-age-option="${age}"]`).click();
     await page.locator('[data-activity="abacus"]').click();
+    await page.locator(`[data-age-option="${age}"]`).click();
     await page.locator('#scene[data-art-state="ready"]').waitFor();
   }
   async function state() {

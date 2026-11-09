@@ -11,7 +11,7 @@ let browser;
  browser=await({chromium,webkit})[engine].launch({headless:true,...(engine==='chromium'&&process.env.MM_CHROME?{executablePath:process.env.MM_CHROME}:{})});
  const context=await browser.newContext({viewport:{width:1024,height:768},hasTouch:true,reducedMotion:'reduce'}),page=await context.newPage();
  await page.clock.install();page.on('pageerror',e=>errors.push(e.message));
- async function open(age,activity){await page.goto(base+'play.html?age='+age);await page.locator(`[data-age-option="${age}"]`).click();await page.locator(`[data-activity="${activity}"]`).click();await page.clock.runFor(100);}
+ async function open(age,activity){await page.goto(base+'play.html?age='+age);await page.locator(`[data-activity="${activity}"]`).click();await page.locator(`[data-age-option="${age}"]`).click();await page.clock.runFor(100);}
  async function layout(preview=false){return page.evaluate(preview=>{
   const strip=document.querySelector(preview?'[data-demo-progress]':'#item-progress-strip'),r=strip.getBoundingClientRect();
   const inside=(a,b)=>a.left>=b.left-1&&a.right<=b.right+1&&a.top>=b.top-1&&a.bottom<=b.bottom+1;

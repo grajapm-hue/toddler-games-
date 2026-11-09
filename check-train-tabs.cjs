@@ -16,7 +16,7 @@ async function inspect(page){return page.locator('#scene').evaluate(scene=>{
  const sizes=process.env.TABS_RED?[[844,390]]:[[480,320],[844,390],[390,844],[1024,768],[768,1024]];
  for(const [width,height] of sizes){await page.setViewportSize({width,height});let normal;
   for(const full of process.env.TABS_RED?[false]:[false,true]){
-   await page.goto(base+'play.html?age=4');await page.locator('[data-age-option="4"]').click();await page.locator('[data-activity="abacus"]').click();await page.locator('#scene[data-art-state="ready"]').waitFor();if(full){await page.locator('#fullscreen').click();await page.clock.runFor(150);}await page.clock.pauseAt(new Date(await page.evaluate(()=>Date.now()+50)));
+   await page.goto(base+'play.html?age=4');await page.locator('[data-activity="abacus"]').click();await page.locator('[data-age-option="4"]').click();await page.locator('#scene[data-art-state="ready"]').waitFor();if(full){await page.locator('#fullscreen').click();await page.clock.runFor(150);}await page.clock.pauseAt(new Date(await page.evaluate(()=>Date.now()+50)));
    for(let n=1;n<=(process.env.TABS_RED?1:20);n++){
     await page.clock.runFor(50);const state=await inspect(page),[left,right]=state.labels,label=`${width}x${height}/${full?'full':'normal'}/number ${n}`;
     check(label+' removes the bottom instruction and its tab',!state.footer,state);
