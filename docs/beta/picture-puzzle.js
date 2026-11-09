@@ -46,7 +46,7 @@
     const initial=(async()=>{
       const saved=await loadStored();
       if(saved?.src?.startsWith('data:image/')&&saved.ratio>=1&&saved.ratio<=2){try{await imageFrom(saved.src);return saved;}catch{/* A damaged saved picture uses the SaNa picture. */}}
-      return normalize('puzzle-garden.svg',false);
+      return normalize('puzzle-sana-banana.webp',false);
     })();
     // Prevent an unused-room image failure from becoming an unhandled rejection.
     initial.catch(()=>{});
@@ -87,7 +87,7 @@
       if(boardNode.children.length!==age*age){boardNode.innerHTML=board.tiles.map(value=>`<button type="button" class="puzzle-tile" data-puzzle-tile="${value}"><span>${value}</span></button>`).join('');targetNode.innerHTML=Array.from({length:age*age},(_,i)=>`<button type="button" class="puzzle-pocket" data-puzzle-target="${i+1}"><span>${i+1}</span></button>`).join('');}
       for(const node of boardNode.children){const value=Number(node.dataset.puzzleTile),position=board.tiles.indexOf(value);paintPosition(node,value,position);node.hidden=board.placed[value-1];node.classList.toggle('is-selected',selected===value);node.setAttribute('aria-pressed',String(selected===value));node.setAttribute('aria-label',`Picture piece ${value}. Move it to the picture grid.`);node.disabled=busy||done;}
       for(const node of targetNode.children){const value=Number(node.dataset.puzzleTarget),filled=board.placed[value-1];paintPosition(node,value,value-1);node.dataset.filled=String(filled);node.dataset.highlight=String(selected===value&&!filled);node.setAttribute('aria-label',filled?`Piece ${value} placed`:`Place picture piece ${value} here`);node.tabIndex=selected===value&&!filled?0:-1;node.disabled=busy||done||filled;}
-      reference.src=picture.src;reference.hidden=!(preview||won);boardNode.inert=targetNode.inert=preview||done||busy;syncStrip();fit();readyChanged();
+      reference.src=picture.src;reference.alt=picture.custom?'Your complete picture':'Curious SaNa eating a banana';reference.hidden=!(preview||won);boardNode.inert=targetNode.inert=preview||done||busy;syncStrip();fit();readyChanged();
     }
     function shuffle(){clearTimeout(winTimer);cancelDrag();onReset();won=false;preview=false;selected=null;board=create(age);boardNode.replaceChildren();targetNode.replaceChildren();render();say('Picture ready. Move the pieces on the left onto the picture grid.');}
     async function start(value){
@@ -114,7 +114,7 @@
     file.addEventListener('change',()=>{const chosen=file.files?.[0];file.value='';void choose(chosen);});
     async function useDefault(){
       stopDemo();const token=++generation;busy=true;boardNode.dataset.ready='false';readyChanged();
-      try{const next=await normalize('puzzle-garden.svg',false);if(!active||token!==generation)return;await store(null).catch(()=>{});if(!active||token!==generation)return;picture=next;busy=false;shuffle();}
+      try{const next=await normalize('puzzle-sana-banana.webp',false);if(!active||token!==generation)return;await store(null).catch(()=>{});if(!active||token!==generation)return;picture=next;busy=false;shuffle();}
       catch{if(active&&token===generation){busy=false;render();say('The SaNa picture could not load. Try again.');}}
     }
 
