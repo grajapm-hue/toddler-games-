@@ -134,7 +134,7 @@
       step(notes,'#puzzle-default','SaNa','Choose the built-in picture of SaNa eating a banana. Your added pictures stay in the thumbnail row.');
       step(notes,'#puzzle-again','Again','Reshuffle the selected picture and put all its pieces back on the left.');
       step(notes,['#puzzle-grid-label','#puzzle-placed'],'Grid and Placed','Ages 2, 3, 4 and 5 use 2×2, 3×3, 4×4 and 5×5 grids. Placed shows pieces already fitted out of the total. These two tabs report progress.');
-      step(notes,'#puzzle-remove','Remove','Remove the selected added picture from this game’s gallery. The original device image stays. The SaNa picture cannot be removed.');
+      step(notes,'#puzzle-remove','Remove','Remove the selected added picture. With SaNa open, tap Remove, then tap a photo marked ×. Cancel returns to normal choices. Remove also lets you stop a photo that is still loading. The locked Built-in label protects SaNa when no added photos remain. Original device images stay.');
     }
     const shared=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Shared controls: age, Demo, sound and navigation';shared.append(summary);common(shared);body.append(shared);
   }
