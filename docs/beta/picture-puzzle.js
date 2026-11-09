@@ -16,23 +16,36 @@
   if(typeof module==='object'&&module.exports){module.exports={core};return;}
   function mount({app,scene,strip,hint,complete,status,readyChanged,onReset}){
     const panel=document.createElement('section');panel.id='picture-puzzle';panel.hidden=true;panel.setAttribute('aria-label','Picture Puzzle');
-    panel.innerHTML='<div class="puzzle-stage"><section class="puzzle-half" aria-label="Scrambled pieces"><span class="puzzle-panel-label">Pieces</span><div class="puzzle-canvas"><div id="puzzle-board" class="puzzle-grid" data-puzzle-side="pieces" role="group" aria-label="Choose a picture piece" data-ready="false"></div></div></section><section class="puzzle-half" aria-label="Your picture"><span class="puzzle-panel-label">Your picture</span><div class="puzzle-canvas"><div id="puzzle-target-board" class="puzzle-grid" data-puzzle-side="picture" role="group" aria-label="Drop pieces here to make the picture"></div><img id="puzzle-reference" class="puzzle-reference" alt="Complete picture to help make your picture" hidden></div></section><div id="puzzle-demo-hand" hidden aria-hidden="true">☝️</div></div><span id="puzzle-message" class="visually-hidden" role="status" aria-live="polite"></span>';
+    panel.innerHTML='<div class="puzzle-stage"><div id="puzzle-caption-slot"></div><section class="puzzle-half" aria-label="Scrambled pieces"><span class="puzzle-panel-label">Pieces</span><div class="puzzle-canvas"><div id="puzzle-board" class="puzzle-grid" data-puzzle-side="pieces" role="group" aria-label="Choose a picture piece" data-ready="false"></div></div></section><section class="puzzle-half" aria-label="Your picture"><span class="puzzle-panel-label">Your picture</span><div class="puzzle-canvas"><div id="puzzle-target-board" class="puzzle-grid" data-puzzle-side="picture" role="group" aria-label="Drop pieces here to make the picture"></div><img id="puzzle-reference" class="puzzle-reference" alt="Complete picture to help make your picture" hidden></div></section><div id="puzzle-demo-hand" hidden aria-hidden="true">☝️</div></div><span id="puzzle-message" class="visually-hidden" role="status" aria-live="polite"></span>';
     scene.after(panel);
     const $=id=>panel.querySelector('#'+id),boardNode=$('puzzle-board'),targetNode=$('puzzle-target-board'),stage=panel.querySelector('.puzzle-stage'),halves=[...stage.querySelectorAll(':scope>.puzzle-half')],reference=$('puzzle-reference'),hand=$('puzzle-demo-hand'),message=$('puzzle-message');
-    const file=document.createElement('input');file.type='file';file.accept='image/*';file.id='puzzle-file';file.hidden=true;panel.append(file);
+    const file=document.createElement('input');file.type='file';file.multiple=true;file.accept='image/*';file.id='puzzle-file';file.hidden=true;panel.append(file);
     let active=false,age=2,board=null,picture=null,numbers=true,preview=false,busy=true,generation=0,demoToken=0,demoTimer=null,demoResolve=null,demoSaved=null,winTimer=null,won=false,selected=null,drag=null,ghost=null,ignoreClick=false;
+    const statusHome=document.getElementById('game-status-top'),statusNode=document.getElementById('game-results'),caption=$('puzzle-caption-slot'),statusLabel=statusHome.getAttribute('aria-label');
+    const gallery=document.createElement('div');gallery.id='puzzle-gallery';gallery.hidden=true;gallery.setAttribute('aria-label','Choose a picture to play');gallery.innerHTML='<div class="puzzle-choices"><div class="puzzle-choice-track" role="list" aria-label="Puzzle pictures"></div></div><button type="button" id="puzzle-remove" aria-label="Remove selected picture from this game" title="Remove selected picture from this game"><span aria-hidden="true">×</span><small>Remove</small></button>';statusHome.append(gallery);
+    const choices=gallery.querySelector('.puzzle-choices'),track=gallery.querySelector('.puzzle-choice-track'),removeButton=gallery.querySelector('#puzzle-remove'),rounds=new Map();
+    let pictures=[],activeImage='sana',gallerySignature='',pictureSerial=0;
     const storageName='sana-picture-puzzle',storeName='pictures';
     let database;
     function db(){
       if(database)return database;
       database=new Promise((resolve,reject)=>{try{const request=indexedDB.open(storageName,1);request.onupgradeneeded=()=>request.result.createObjectStore(storeName);request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);request.onblocked=()=>reject(Error('Storage unavailable'));}catch(e){reject(e);}});return database;
     }
-    async function store(value){
-      const database=await db();await new Promise((resolve,reject)=>{const transaction=database.transaction(storeName,'readwrite'),items=transaction.objectStore(storeName);if(value)items.put(value,'chosen');else items.delete('chosen');transaction.oncomplete=resolve;transaction.onerror=()=>reject(transaction.error);transaction.onabort=()=>reject(transaction.error);});
+    async function readKey(key){const database=await db();return new Promise((resolve,reject)=>{const request=database.transaction(storeName).objectStore(storeName).get(key);request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});}
+    async function write(action){const database=await db();return new Promise((resolve,reject)=>{const transaction=database.transaction(storeName,'readwrite');action(transaction.objectStore(storeName));transaction.oncomplete=resolve;transaction.onerror=()=>reject(transaction.error);transaction.onabort=()=>reject(transaction.error);});}
+    const validPicture=image=>typeof image?.src==='string'&&image.src.startsWith('data:image/')&&image.ratio>=1&&image.ratio<=2;
+    const newId=()=>globalThis.crypto?.randomUUID?.()||`photo-${Date.now()}-${++pictureSerial}`;
+    function legacyId(src){let hash=2166136261;for(let i=0;i<src.length;i++)hash=Math.imul(hash^src.charCodeAt(i),16777619);return 'legacy-'+(hash>>>0).toString(36);}
+    async function loadLibrary(){
+      try{
+        const [saved,legacy,chosen]=await Promise.all([readKey('gallery'),readKey('chosen'),readKey('selected')]);
+        pictures=(Array.isArray(saved?.pictures)?saved.pictures:[]).filter(validPicture).map((image,i)=>({src:image.src,ratio:image.ratio,custom:true,id:/^[a-zA-Z0-9_-]{1,80}$/.test(image.id)?image.id:'saved-'+i}));
+        if(validPicture(legacy)&&!pictures.some(image=>image.src===legacy.src))pictures.push({src:legacy.src,ratio:legacy.ratio,custom:true,id:legacyId(legacy.src)});
+        activeImage=chosen==='sana'||pictures.some(image=>image.id===chosen)?chosen:(pictures[0]?.id||'sana');
+      }catch{/* The gallery still works for this visit without optional storage. */}
     }
-    async function loadStored(){
-      try{const database=await db();return await new Promise((resolve,reject)=>{const request=database.transaction(storeName).objectStore(storeName).get('chosen');request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});}catch{return null;}
-    }
+    function storeLibrary(chosen=activeImage){const value={pictures:pictures.map(({id,src,ratio})=>({id,src,ratio,custom:true}))};return write(items=>{items.put(value,'gallery');items.put(chosen,'selected');items.delete('chosen');});}
+    const rememberSelection=id=>write(items=>items.put(id,'selected')).catch(()=>{});
     function imageFrom(src){return new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>image.naturalWidth?resolve(image):reject(Error('Empty picture'));image.onerror=()=>reject(Error('Picture unavailable'));image.src=src;});}
     function fileData(chosen){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);reader.onabort=()=>reject(Error('Picture selection cancelled'));reader.readAsDataURL(chosen);});}
     async function normalize(src,custom){
@@ -43,38 +56,48 @@
       context.drawImage(image,(canvas.width-width)/2,(canvas.height-height)/2,width,height);
       return {src:canvas.toDataURL('image/jpeg',.9),ratio,custom};
     }
-    const initial=(async()=>{
-      const saved=await loadStored();
-      if(saved?.src?.startsWith('data:image/')&&saved.ratio>=1&&saved.ratio<=2){try{await imageFrom(saved.src);return saved;}catch{/* A damaged saved picture uses the SaNa picture. */}}
-      return normalize('puzzle-sana-banana.webp',false);
-    })();
-    // Prevent an unused-room image failure from becoming an unhandled rejection.
-    initial.catch(()=>{});
+    const defaultPicture=normalize('puzzle-sana-banana.webp',false).then(image=>({...image,id:'sana'}));defaultPicture.catch(()=>{});
+    const initial=loadLibrary();initial.catch(()=>{});
     function say(text){message.textContent=text;if(active)hint(text);}
 
     const placedCount=()=>board?.placed.filter(Boolean).length||0;
     function fit(){
       if(!active||!picture)return;
-      const width=Math.max(1,Math.min((stage.clientWidth-30)/2,(stage.clientHeight-32)*picture.ratio)),height=width/picture.ratio;
+      const width=Math.max(1,Math.min((stage.clientWidth-30)/2,(stage.clientHeight-44)*picture.ratio)),height=width/picture.ratio;
       panel.style.setProperty('--puzzle-width',width+'px');panel.style.setProperty('--puzzle-height',height+'px');
+      caption.style.top=Math.max(0,halves[0].offsetTop+halves[0].querySelector('.puzzle-panel-label').offsetTop-5)+'px';
     }
     new ResizeObserver(()=>{if(panel.hasAttribute('data-puzzle-demo'))stopDemo();if(drag){cancelDrag();render();}fit();}).observe(stage);
+    function hostStatus(){caption.append(statusNode);gallery.hidden=false;statusHome.setAttribute('aria-label','Picture choices');}
+    const roundKey=(id=activeImage)=>age+'/'+id;
+    function renderGallery(){
+      if(!active)return;
+      const images=[{id:'sana',src:'puzzle-sana-banana.webp'},...pictures],signature=images.map(image=>image.id).join('/');
+      if(signature!==gallerySignature){
+        gallerySignature=signature;track.replaceChildren();
+        images.forEach((image,i)=>{const item=document.createElement('div');item.setAttribute('role','listitem');const button=document.createElement('button');button.type='button';button.className='puzzle-choice';button.dataset.puzzleChoice=image.id;button.title=i?'Choose picture '+i:'Choose SaNa';const img=document.createElement('img');img.src=image.src;img.alt='';img.loading='lazy';img.decoding='async';button.append(img);item.append(button);track.append(item);});
+      }
+      [...track.querySelectorAll('[data-puzzle-choice]')].forEach((button,i)=>{const id=button.dataset.puzzleChoice,done=!!rounds.get(roundKey(id))&&solved(rounds.get(roundKey(id)));button.disabled=busy;button.setAttribute('aria-pressed',String(id===activeImage));button.setAttribute('aria-label',(i?'Choose picture '+i:'Choose SaNa')+(done?', completed':''));button.classList.toggle('is-complete',done);button.classList.remove('is-demo-complete');});
+      removeButton.disabled=busy||activeImage==='sana';
+    }
+    function showSelectedThumbnail(){const button=[...track.querySelectorAll('[data-puzzle-choice]')].find(n=>n.dataset.puzzleChoice===activeImage),item=button?.parentElement;if(!item)return;const x=item.offsetLeft;if(x<choices.scrollLeft)choices.scrollLeft=x;else if(x+item.offsetWidth>choices.scrollLeft+choices.clientWidth)choices.scrollLeft=x+item.offsetWidth-choices.clientWidth;}
     function syncStrip(){
       if(!active)return;
       strip.hidden=false;strip.style.setProperty('--thumb-count','7');strip.setAttribute('aria-label','Picture Puzzle controls');
       if(!strip.querySelector('#puzzle-upload')){
-        strip.innerHTML='<button class="item-chip" type="button" id="puzzle-upload" aria-label="Choose your picture"><span aria-hidden="true">📷</span><small>Picture</small></button><button class="item-chip" type="button" id="puzzle-preview" aria-label="Show complete picture" aria-pressed="false"><img alt=""><small>Look</small></button><button class="item-chip" type="button" id="puzzle-numbers" aria-label="Show piece numbers" aria-pressed="true"><span>1 2 3</span><small>Numbers</small></button><button class="item-chip" type="button" id="puzzle-default" aria-label="Use SaNa picture" title="Use SaNa picture"><span aria-hidden="true">🐵</span><small>SaNa</small></button><button class="item-chip" type="button" id="puzzle-again" aria-label="Shuffle picture" title="Shuffle picture"><span aria-hidden="true">↻</span><small>Again</small></button><span class="puzzle-grid-label" id="puzzle-grid-label"></span><span class="puzzle-placed" id="puzzle-placed" aria-live="polite"></span>';
+        strip.innerHTML='<button class="item-chip" type="button" id="puzzle-upload" aria-label="Add pictures"><span aria-hidden="true">📷</span><small>Picture</small></button><button class="item-chip" type="button" id="puzzle-preview" aria-label="Show complete picture" aria-pressed="false"><img alt=""><small>Look</small></button><button class="item-chip" type="button" id="puzzle-numbers" aria-label="Show piece numbers" aria-pressed="true"><span>1 2 3</span><small>Numbers</small></button><button class="item-chip" type="button" id="puzzle-default" aria-label="Use SaNa picture" title="Use SaNa picture"><span aria-hidden="true">🐵</span><small>SaNa</small></button><button class="item-chip" type="button" id="puzzle-again" aria-label="Shuffle picture" title="Shuffle picture"><span aria-hidden="true">↻</span><small>Again</small></button><span class="puzzle-grid-label" id="puzzle-grid-label"></span><span class="puzzle-placed" id="puzzle-placed" aria-live="polite"></span>';
         strip.querySelector('#puzzle-upload').addEventListener('click',()=>{stopDemo();cancelDrag();file.click();});
         strip.querySelector('#puzzle-preview').addEventListener('click',()=>{if(!picture||busy)return;stopDemo();cancelDrag();preview=!preview;render();});
         strip.querySelector('#puzzle-numbers').addEventListener('click',()=>{stopDemo();cancelDrag();numbers=!numbers;render();});
         strip.querySelector('#puzzle-again').addEventListener('click',()=>{if(!busy&&picture){stopDemo();shuffle();}});
-        strip.querySelector('#puzzle-default').addEventListener('click',()=>{void useDefault();});
+        strip.querySelector('#puzzle-default').addEventListener('click',()=>{if(!busy)void activate('sana');});
       }
       strip.querySelector('#puzzle-grid-label').innerHTML=`<span>${age} × ${age}</span><small>Grid</small>`;
       strip.querySelector('#puzzle-placed').innerHTML=`<span>${placedCount()} / ${age*age}</span><small>Placed</small>`;
+      strip.querySelector('#puzzle-upload small').textContent=busy?'Adding…':'Picture';
       const thumbnail=strip.querySelector('#puzzle-preview');thumbnail.setAttribute('aria-pressed',String(preview||won));thumbnail.setAttribute('aria-label',preview?'Return to puzzle':'Show complete picture');thumbnail.querySelector('small').textContent=preview?'Play':'Look';thumbnail.dataset.completed=String(won);thumbnail.classList.toggle('is-done',won);
       if(picture)thumbnail.querySelector('img').src=picture.src;
-      strip.querySelector('#puzzle-numbers').setAttribute('aria-pressed',String(numbers));strip.querySelector('#puzzle-default').disabled=busy||!picture?.custom;
+      strip.querySelector('#puzzle-numbers').setAttribute('aria-pressed',String(numbers));strip.querySelector('#puzzle-default').disabled=busy||activeImage==='sana';renderGallery();
       status(`${age} × ${age} · ${placedCount()} / ${age*age} placed`);
     }
     function paintPosition(node,value,position){
@@ -82,41 +105,48 @@
     }
     function render(){
       if(!active||!board||!picture)return;
-      const done=solved(board);Object.assign(boardNode.dataset,{size:String(age),order:JSON.stringify(board.tiles),placed:JSON.stringify(board.placed),done:String(done),source:picture.custom?'custom':'default',ready:String(!busy),numbers:String(numbers)});
+      const done=solved(board);Object.assign(boardNode.dataset,{size:String(age),order:JSON.stringify(board.tiles),placed:JSON.stringify(board.placed),done:String(done),source:picture.custom?'custom':'default',image:activeImage,ready:String(!busy),numbers:String(numbers)});
       panel.dataset.numbers=String(numbers);targetNode.dataset.numbers=String(numbers);targetNode.dataset.done=String(done);panel.style.setProperty('--grid',age);panel.style.setProperty('--puzzle-image',`url("${picture.src}")`);
       if(boardNode.children.length!==age*age){boardNode.innerHTML=board.tiles.map(value=>`<button type="button" class="puzzle-tile" data-puzzle-tile="${value}"><span>${value}</span></button>`).join('');targetNode.innerHTML=Array.from({length:age*age},(_,i)=>`<button type="button" class="puzzle-pocket" data-puzzle-target="${i+1}"><span>${i+1}</span></button>`).join('');}
       for(const node of boardNode.children){const value=Number(node.dataset.puzzleTile),position=board.tiles.indexOf(value);paintPosition(node,value,position);node.hidden=board.placed[value-1];node.classList.toggle('is-selected',selected===value);node.setAttribute('aria-pressed',String(selected===value));node.setAttribute('aria-label',`Picture piece ${value}. Move it to the picture grid.`);node.disabled=busy||done;}
       for(const node of targetNode.children){const value=Number(node.dataset.puzzleTarget),filled=board.placed[value-1];paintPosition(node,value,value-1);node.dataset.filled=String(filled);node.dataset.highlight=String(selected===value&&!filled);node.setAttribute('aria-label',filled?`Piece ${value} placed`:`Place picture piece ${value} here`);node.tabIndex=selected===value&&!filled?0:-1;node.disabled=busy||done||filled;}
       reference.src=picture.src;reference.alt=picture.custom?'Your complete picture':'Curious SaNa eating a banana';reference.hidden=!(preview||won);boardNode.inert=targetNode.inert=preview||done||busy;syncStrip();fit();readyChanged();
     }
-    function shuffle(){clearTimeout(winTimer);cancelDrag();onReset();won=false;preview=false;selected=null;board=create(age);boardNode.replaceChildren();targetNode.replaceChildren();render();say('Picture ready. Move the pieces on the left onto the picture grid.');}
-    async function start(value){
-      active=true;age=[2,3,4,5].includes(value)?value:2;panel.hidden=false;busy=true;const token=++generation;stopDemo();syncStrip();boardNode.dataset.ready='false';
-      try{picture ||= await initial;if(!active||token!==generation)return;busy=false;shuffle();}
-      catch{if(active&&token===generation){busy=false;say('The SaNa picture could not load. Choose a picture from your device.');syncStrip();readyChanged();}}
-    }
-    function leave(){active=false;generation++;stopDemo();clearTimeout(winTimer);panel.hidden=true;cancelDrag();}
-    async function choose(chosen){
-      if(!chosen)return;
-      stopDemo();const token=++generation;
-      if(chosen.size>20*1024*1024){say('Choose a picture smaller than 20 MB.');return;}
-      if(!chosen.size||(!chosen.type.startsWith('image/')&&!/\.(png|jpe?g|webp|gif|avif|bmp|svg)$/i.test(chosen.name))){say('Choose a different picture, such as a JPG or PNG.');return;}
-      busy=true;boardNode.dataset.ready='false';readyChanged();
+    function shuffle(){clearTimeout(winTimer);cancelDrag();onReset();won=false;preview=false;selected=null;board=create(age);rounds.set(roundKey(),board);boardNode.replaceChildren();targetNode.replaceChildren();render();say('Picture ready. Move the pieces on the left onto the picture grid.');}
+    async function activate(id,{fresh=false,remember=true}={}){
+      if(!active||(!fresh&&id===activeImage&&picture&&board&&!busy))return;
+      stopDemo();cancelDrag();clearTimeout(winTimer);const token=++generation;busy=true;onReset();syncStrip();boardNode.dataset.ready='false';readyChanged();
       try{
-        // Read the selected file locally; no upload request is involved.
-        const next=await normalize(await fileData(chosen),true);if(!active||token!==generation)return;
-        // The photo never leaves this browser. Storage failure still permits play.
-        let saved=true;try{await store(next);}catch{saved=false;}if(!active||token!==generation)return;
-        picture=next;busy=false;shuffle();if(!saved)say('Picture ready. Choose it again next time you open the app.');
-      }catch{if(active&&token===generation){busy=false;render();say('Choose a different picture. This file could not be opened.');}}
-      finally{if(active&&token===generation){busy=false;readyChanged();}}
+        const next=id==='sana'?await defaultPicture:pictures.find(image=>image.id===id);if(!next)throw Error('Picture unavailable');await imageFrom(next.src);if(!active||token!==generation)return;
+        activeImage=id;picture=next;board=fresh?create(age):(rounds.get(roundKey())||create(age));rounds.set(roundKey(),board);won=solved(board);preview=false;selected=null;boardNode.replaceChildren();targetNode.replaceChildren();busy=false;render();showSelectedThumbnail();if(remember)void rememberSelection(id);say('Picture ready. Choose a piece for your picture.');
+      }catch{if(active&&token===generation){busy=false;if(picture&&board)render();else syncStrip();say('Choose a different picture. This picture could not be opened.');readyChanged();}}
     }
-    file.addEventListener('change',()=>{const chosen=file.files?.[0];file.value='';void choose(chosen);});
-    async function useDefault(){
-      stopDemo();const token=++generation;busy=true;boardNode.dataset.ready='false';readyChanged();
-      try{const next=await normalize('puzzle-sana-banana.webp',false);if(!active||token!==generation)return;await store(null).catch(()=>{});if(!active||token!==generation)return;picture=next;busy=false;shuffle();}
-      catch{if(active&&token===generation){busy=false;render();say('The SaNa picture could not load. Try again.');}}
+    async function start(value){
+      active=true;age=[2,3,4,5].includes(value)?value:2;panel.hidden=false;hostStatus();busy=true;const token=++generation;stopDemo();syncStrip();boardNode.dataset.ready='false';
+      await initial;if(!active||token!==generation)return;await activate(activeImage,{fresh:true,remember:false});
     }
+    function leave(){active=false;generation++;stopDemo();clearTimeout(winTimer);panel.hidden=true;cancelDrag();statusHome.append(statusNode);gallery.hidden=true;if(statusLabel===null)statusHome.removeAttribute('aria-label');else statusHome.setAttribute('aria-label',statusLabel);}
+    async function choose(files){
+      if(!files.length)return;
+      stopDemo();cancelDrag();const token=++generation;busy=true;syncStrip();boardNode.dataset.ready='false';readyChanged();await initial;
+      const nextPictures=pictures.slice();let chosen=null,rejected=0;
+      for(const [i,file] of files.entries()){
+        if(!active||token!==generation)return;say(`Adding picture ${i+1} of ${files.length}…`);
+        if(!file.size||file.size>20*1024*1024||(!file.type.startsWith('image/')&&!/\.(png|jpe?g|webp|gif|avif|bmp|svg)$/i.test(file.name))){rejected++;continue;}
+        try{const image=await normalize(await fileData(file),true);if(!active||token!==generation)return;const existing=nextPictures.find(picture=>picture.src===image.src),id=existing?.id||newId();if(!existing)nextPictures.push({...image,id});chosen ||= id;}catch{rejected++;}
+      }
+      if(!active||token!==generation)return;
+      if(!chosen){busy=false;if(picture&&board)render();say('Choose a different picture, such as a JPG or PNG under 20 MB.');readyChanged();return;}
+      pictures=nextPictures;let saved=true;try{await storeLibrary(chosen);}catch{saved=false;}if(!active||token!==generation)return;
+      await activate(chosen);if(!active)return;
+      if(!saved)say('Pictures ready. Choose them again next time you open the app.');else if(rejected)say('Pictures ready. Some files could not be opened; choose another picture for those.');else say('Pictures ready. Tap any thumbnail above to play.');
+    }
+    file.addEventListener('change',()=>{const files=Array.from(file.files||[]);file.value='';void choose(files);});
+    track.addEventListener('click',event=>{const button=event.target.closest('[data-puzzle-choice]');if(button&&!busy)void activate(button.dataset.puzzleChoice);});
+    track.addEventListener('keydown',event=>{const button=event.target.closest('[data-puzzle-choice]');if(!button||busy||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();const buttons=[...track.querySelectorAll('[data-puzzle-choice]')],index=buttons.indexOf(button),next=event.key==='Home'?0:event.key==='End'?buttons.length-1:Math.max(0,Math.min(buttons.length-1,index+(event.key==='ArrowRight'?1:-1)));buttons[next].focus({preventScroll:true});void activate(buttons[next].dataset.puzzleChoice);});
+    removeButton.addEventListener('click',async()=>{
+      if(busy||activeImage==='sana')return;stopDemo();cancelDrag();clearTimeout(winTimer);const token=++generation,id=activeImage,index=pictures.findIndex(image=>image.id===id);pictures=pictures.filter(image=>image.id!==id);for(const key of rounds.keys())if(key.endsWith('/'+id))rounds.delete(key);const next=pictures[Math.min(index,pictures.length-1)]?.id||'sana';busy=true;boardNode.dataset.ready='false';syncStrip();readyChanged();let saved=true;try{await storeLibrary(next);}catch{saved=false;}if(!active||token!==generation)return;await activate(next);if(!saved)say('Picture ready. These changes may not stay after closing the app.');
+    });
 
     function canPlay(){return active&&!busy&&!preview&&board&&!solved(board)&&!panel.hasAttribute('data-puzzle-demo');}
     function select(value,keyboard=false){if(!canPlay()||board.placed[value-1])return;selected=value;render();if(keyboard)targetNode.querySelector(`[data-puzzle-target="${value}"]`)?.focus({preventScroll:true});}
@@ -152,7 +182,7 @@
       if(!await pause(1000,token))return;
       const copy=pieceGhost(source,overlay);copy.style.left=from.x+'px';copy.style.top=from.y+'px';source.style.visibility='hidden';copy.getBoundingClientRect();const duration=matchMedia('(prefers-reduced-motion:reduce)').matches?0:850;copy.style.transition=hand.style.transition=`left ${duration}ms ease-in-out,top ${duration}ms ease-in-out`;copy.style.left=hand.style.left=to.x+'px';copy.style.top=hand.style.top=to.y+'px';panel.dataset.puzzleDemo='moving';say('Demo: Bring it to the picture grid.');
       if(!await pause(duration,token))return;
-      copy.remove();target.dataset.filled='true';target.dataset.highlight='false';hand.hidden=true;panel.dataset.puzzleDemo='success';strip.querySelector('#puzzle-placed span').textContent=`${placedCount()+1} / ${age*age}`;status(`${age} × ${age} · ${placedCount()+1} / ${age*age} placed`);if(placedCount()+1===age*age){overlay.querySelector('img').hidden=false;strip.querySelector('#puzzle-preview').classList.add('is-done');}say('Demo: The piece fits!');if(!await pause(1000,token))return;stopDemo();
+      copy.remove();target.dataset.filled='true';target.dataset.highlight='false';hand.hidden=true;panel.dataset.puzzleDemo='success';strip.querySelector('#puzzle-placed span').textContent=`${placedCount()+1} / ${age*age}`;status(`${age} × ${age} · ${placedCount()+1} / ${age*age} placed`);if(placedCount()+1===age*age){overlay.querySelector('img').hidden=false;strip.querySelector('#puzzle-preview').classList.add('is-done');[...track.querySelectorAll('[data-puzzle-choice]')].find(n=>n.dataset.puzzleChoice===activeImage)?.classList.add('is-demo-complete');}say('Demo: The piece fits!');if(!await pause(1000,token))return;stopDemo();
     }
     document.addEventListener('visibilitychange',()=>{if(document.hidden)stopDemo();});
     return {start,leave,demo,stopDemo,syncStrip,ready:()=>!busy,active:()=>active};
