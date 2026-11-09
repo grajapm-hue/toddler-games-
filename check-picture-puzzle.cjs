@@ -10,7 +10,7 @@ async function drag(page,value,target,dx=0,dy=0){const from=await page.locator(`
 (async()=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=process.env.COUNT_URL||`http://127.0.0.1:${server.address().port}/beta/`;
  browser=await({chromium,webkit})[engine].launch({headless:true,...(engine==='chromium'?{executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'}:{})});const context=await browser.newContext({viewport:{width:844,height:390},hasTouch:true,serviceWorkers:'block'}),page=await context.newPage();diagnosticPage=page;page.on('pageerror',e=>errors.push(e.message));context.on('request',r=>{if(r.method()!=='GET')uploads.push({method:r.method(),url:r.url()});});
- async function open(age){await page.goto(base+'play.html?age='+age);await page.locator(`[data-age-option="${age}"]`).click();await page.locator('#activity-grid').evaluate(n=>n.scrollLeft=n.scrollWidth);await page.locator('[data-activity="puzzle"]').click();await page.locator('#puzzle-board[data-ready="true"]').waitFor();}
+ async function open(age){await page.goto(base+'play.html?age='+age);await page.locator('#activity-grid').evaluate(n=>n.scrollLeft=n.scrollWidth);await page.locator('[data-activity="puzzle"]').click();await page.locator('#puzzle-board[data-ready="true"]').waitFor();}
  await open(2);check('All four Age 2 picture fragments are available',await page.locator('#puzzle-board [data-puzzle-tile]').count()===4);check('Picture Puzzle has two play panels',await page.locator('#puzzle-target-board').count()===1);if(!await page.locator('#puzzle-target-board').count())return;
  for(const [width,height] of (process.env.PUZZLE_FOCUS?[[844,390]]:[[480,320],[844,390],[390,844],[1024,768]])){
   await page.setViewportSize({width,height});

@@ -1,0 +1,59 @@
+#app #update-app{margin-right:0}
+#app>.topbar{min-width:0;width:100%}
+#app[data-view="home"]{grid-template-columns:minmax(0,1fr)}
+#app[data-view="home"] .welcome{min-width:0}
+#app[data-view="home"] .welcome h1{flex:none}
+#app[data-view="home"] .welcome p{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.guide-trigger{display:flex;align-items:center;justify-content:center;gap:4px;flex:none;min-height:36px;padding:5px 8px;border:2px solid #7e9fb7;border-radius:11px;background:#dfedf6;color:#173e35;font-size:13px;font-weight:900;line-height:1.1}
+.guide-trigger[aria-expanded="true"]{background:#dcebdd;border-color:#287c60}
+#age-range{display:none;flex:none;margin-right:auto;padding:6px 8px;border:2px solid #8aa67a;border-radius:10px;background:#dcebdd;font-size:13px;font-weight:900;white-space:nowrap}
+#app[data-view="home"] #age-range{display:block}
+#app[data-view="home"] .parent-age{display:none!important}
+#app:not([data-view="home"]) .parent-age{margin-left:auto}
+#how-to-play-full{display:none}
+#app.immersive #how-to-play-full{display:flex;position:absolute;left:82px;bottom:12px;z-index:35;min-height:34px;max-height:38px;font-size:12px}
+#parent-guide{position:absolute;inset:0;z-index:130;display:flex;align-items:flex-start;justify-content:flex-start;padding:var(--guide-top,50px) 8px 8px;background:#173e354d;touch-action:pan-y}
+#parent-guide[hidden]{display:none!important}
+#guide-panel{display:flex;flex-direction:column;width:min(690px,100%);max-height:100%;min-height:0;border:2px solid #8aa67a;border-radius:12px;background:#fffaf0;box-shadow:0 8px 24px #173e3555;overflow:hidden;color:#173e35}
+#guide-panel:focus{outline:none}
+.guide-header{display:flex;flex:none;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;border-bottom:1px solid #b4c9bd;background:#d9eff1}
+.guide-header small{font-size:11px;font-weight:700}
+.guide-header h2{margin:2px 0 0;font-size:17px;line-height:1.2}
+#guide-close{flex:none;min-height:32px;padding:4px 9px;border:1px solid #ad9e83;border-radius:7px;background:#f5efdf;font-size:13px;font-weight:800}
+#guide-close span{font-size:20px;vertical-align:middle}
+#guide-body{overflow:auto;min-height:0;padding:10px 12px 14px;overscroll-behavior:contain;touch-action:pan-y;font-size:14px;line-height:1.4;scrollbar-width:thin}
+.guide-lead{margin:0 0 10px;max-width:70ch}
+.guide-steps{list-style:none;padding:0;margin:0}
+.guide-step{display:grid;grid-template-columns:156px minmax(0,1fr);gap:10px;align-items:center;padding:9px 0;border-top:1px solid #d8dfd0}
+.guide-step h3{font-size:14px;line-height:1.3;margin:0 0 4px}
+.guide-step p{font-size:13px;line-height:1.4;margin:0;max-width:70ch}
+.guide-pictures{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:3px;min-width:0;min-height:40px}
+.guide-preview{display:flex;align-items:center;justify-content:center;flex:0 0 auto;max-width:100%;overflow:hidden;pointer-events:none!important}
+.guide-preview>*{flex:none}
+#guide-body details{margin-top:12px;border-top:2px solid #b4c9bd;padding-top:10px}
+#guide-body summary{cursor:pointer;font-size:14px;font-weight:900;padding:5px 0}
+#app.narrow .guide-trigger{min-height:28px;font-size:11px;padding:3px 4px;gap:2px}
+#app.narrow #age-range{font-size:11px;padding:4px}
+#app.narrow[data-view="home"] .topbar{gap:2px;padding-inline:4px}
+#app.narrow[data-view="home"] #home{display:none}
+#app.narrow[data-view="home"] .topbar .icon-button{width:28px;min-width:28px;height:30px;padding:4px}
+#app.narrow[data-view="home"] .app-update-button{min-width:65px;min-height:30px;font-size:11px;padding:3px 4px;gap:2px}
+#app.narrow[data-view="home"] .brand-mark{width:24px;height:28px}
+#app.narrow[data-view="home"] .game-pages{gap:2px}
+#app.short-play:not([data-view="home"]) .guide-trigger{width:48px;min-width:48px;min-height:26px;height:26px;font-size:10px;padding:1px 2px;gap:1px}
+#app.short-play:not([data-view="home"]) .guide-trigger{position:relative}
+#app.short-play:not([data-view="home"]) .guide-trigger>span:first-child{max-width:40px}
+#app.short-play:not([data-view="home"]) .guide-trigger>span:last-child{position:absolute;right:1px;top:1px;font-size:6px}
+#app.short-play:not([data-view="home"]) #update-app{min-width:62px;width:62px;font-size:11px;padding-inline:3px;gap:2px}
+#app.short-play:not([data-view="home"]) #update-app svg{width:13px;height:13px}
+#app.short-play:not([data-view="home"]) .age-radio{min-width:20px;padding-inline:2px}
+#app.short-play:not([data-view="home"]) .age-radio::before{display:none}
+#app.short-play:not([data-view="home"]) .parent-age{gap:2px!important}
+#app.short-play:not([data-view="home"]):not(.immersive)>.topbar{gap:2px;padding-left:4px;padding-right:140px}
+#app.short-play:not([data-view="home"]) .parent-age>span{font-size:9px!important}
+#app.short-play:not([data-view="home"]) .topbar .brand-mark{width:20px;height:24px}
+#app.short-play:not([data-view="home"]) .topbar .icon-button{width:24px;min-width:24px}
+#app.narrow .guide-header{padding:6px 8px}
+#app.narrow .guide-header h2{font-size:15px}
+#app.narrow #guide-body{padding:8px;font-size:13px}
+#app.narrow .guide-step{grid-template-columns:126px minmax(0,1fr);gap:7px}

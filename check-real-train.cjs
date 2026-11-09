@@ -11,7 +11,7 @@ const groups=[[1,2,3,4],[5,6,7,8,9],[10,11,12,13],[14,15,16],[17,18,19,20]];
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=process.env.COUNT_URL||`http://127.0.0.1:${server.address().port}/beta/`;
  browser=await({chromium,webkit})[engine].launch({headless:true,...(engine==='chromium'&&process.env.MM_CHROME?{executablePath:process.env.MM_CHROME}:{})});
  const context=await browser.newContext({viewport:{width:844,height:390},hasTouch:true,reducedMotion:'reduce'}),page=await context.newPage();await page.clock.install();page.on('pageerror',e=>errors.push(e.message));
- async function open(){await page.goto(base+'play.html?age=4');await page.locator('[data-age-option="4"]').click();await page.locator('[data-activity="abacus"]').click();await page.locator('[data-count-choice]').first().hover();await page.clock.runFor(150);}
+ async function open(){await page.goto(base+'play.html?age=4');await page.locator('[data-activity="abacus"]').click();await page.locator('[data-age-option="4"]').click();await page.locator('[data-count-choice]').first().hover();await page.clock.runFor(150);}
  const viewports=process.env.TRAIN_RED?[[844,390]]:[[480,320],[568,320],[844,390],[390,844],[1024,768],[768,1024],[1366,768]];
  async function geometry(){return page.evaluate(()=>{
   const scene=document.querySelector('#scene'),frame=scene.getBoundingClientRect();
@@ -79,7 +79,7 @@ const groups=[[1,2,3,4],[5,6,7,8,9],[10,11,12,13],[14,15,16],[17,18,19,20]];
     const decoded=await page.evaluate(async()=>Promise.all(['locomotive-colour-v126','carriage-turquoise-v126','carriage-yellow-v126','carriage-coral-v126','carriage-violet-v126','farm-sky-v126'].map(name=>new Promise(resolve=>{const i=new Image();i.onload=()=>resolve(i.naturalWidth>200);i.onerror=()=>resolve(false);i.src='train-art/'+name+'.webp';}))));check('All train and farm pictures reload from the installed cache offline',decoded.every(Boolean),decoded);
     await page.locator('[data-count-choice="1"]').click();await page.clock.runFor(300);check('The real train game advances offline',await page.locator('#item-progress-strip .is-done').count()===1);
    }
-   await page.goto(base+'play.html?age=3');await page.locator('[data-age-option="3"]').click();await page.locator('[data-activity="abacus"]').click();
+   await page.goto(base+'play.html?age=3');await page.locator('[data-activity="abacus"]').click();await page.locator('[data-age-option="3"]').click();
    check('The carrot game shares the requested countryside background',await page.locator('.play-mat').evaluate(el=>getComputedStyle(el).backgroundImage.includes('farm-sky-v126.webp')));
    await page.locator('[data-age-option="4"]').click();await page.locator('#game-home').click();await page.locator('[data-activity="drag"]').click();
    check('All Age 4 games share the requested countryside',await page.locator('.play-mat').evaluate(el=>getComputedStyle(el).backgroundImage.includes('farm-sky-v126.webp')));

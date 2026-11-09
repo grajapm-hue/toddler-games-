@@ -13,7 +13,7 @@ let browser;
  browser=await({chromium,webkit})[engine].launch({headless:true,...(engine==='chromium'&&process.env.MM_CHROME?{executablePath:process.env.MM_CHROME}:{})});
  const context=await browser.newContext({viewport:{width:844,height:390},hasTouch:true,reducedMotion:'reduce'}),page=await context.newPage();
  await page.clock.install();page.on('pageerror',e=>errors.push(e.message));
- async function open(age,activity){await page.goto(base+'play.html?age='+age);await page.locator(`[data-age-option="${age}"]`).click();await page.locator(`[data-activity="${activity}"]`).click();await page.locator('#scene[data-art-state="ready"]').waitFor();await page.clock.pauseAt(new Date(await page.evaluate(()=>Date.now()+50)));}
+ async function open(age,activity){await page.goto(base+'play.html?age='+age);await page.locator(`[data-activity="${activity}"]`).click();await page.locator(`[data-age-option="${age}"]`).click();await page.locator('#scene[data-art-state="ready"]').waitFor();await page.clock.pauseAt(new Date(await page.evaluate(()=>Date.now()+50)));}
  async function switchTo(activity){await page.locator('#game-home').click();await page.locator(`[data-activity="${activity}"]`).click();await page.locator('#scene[data-art-state="ready"]').waitFor();await page.clock.pauseAt(new Date(await page.evaluate(()=>Date.now()+50)));}
  async function point(selector,x=0,y=0){return page.locator(selector).first().evaluate((el,p)=>{const v=new DOMPoint(p.x,p.y).matrixTransform(el.getScreenCTM());return{x:v.x,y:v.y};},{x,y});}
  async function drag(selector,to){const from=await point(selector);await page.mouse.move(from.x,from.y);await page.mouse.down();await page.mouse.move(to.x,to.y,{steps:8});await page.mouse.up();}

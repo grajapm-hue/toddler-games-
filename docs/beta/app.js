@@ -1669,6 +1669,7 @@
   window.addEventListener('resize',fitFrame);window.visualViewport?.addEventListener('resize',fitFrame);window.addEventListener('orientationchange',fitFrame);
   document.addEventListener('visibilitychange',()=>{if(document.hidden){stopBubbles();cancelGesture();if(audio?.state==='running')audio.suspend().catch(()=>{});}else if(state.activity==='bubbles'&&bubbleFrame===null)bubbleFrame=requestAnimationFrame(bubbleTick);});
   window.addEventListener('pagehide',()=>{stopBubbles();cancelGesture();clearEffects();if(audio?.state==='running')audio.suspend().catch(()=>{});});
+  app.addEventListener('sana-guide-open',()=>{picturePuzzle.stopDemo();if(demoActive)stopDemo();cancelGesture();});
   levelControls();soundButton();home();fitFrame();
   // Installed phones may support orientation preferences without native fullscreen.
   if((navigator.userAgentData?.mobile===true||/iPhone|iPod|Android.*Mobile/i.test(navigator.userAgent)||(matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<600))&&(navigator.standalone||matchMedia('(display-mode:standalone)').matches)){

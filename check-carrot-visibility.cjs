@@ -34,7 +34,7 @@ let browser;
    return{id:Number(node.dataset.countFruit),probes};
   });
  });}
- async function open(){await page.goto(base+'play.html?age=3');await page.locator('[data-age-option="3"]').click();await page.locator('[data-activity="abacus"]').click();}
+ async function open(){await page.goto(base+'play.html?age=3');await page.locator('[data-activity="abacus"]').click();await page.locator('[data-age-option="3"]').click();}
  const viewports=process.env.CARROT_RED?[[1024,768]]:[[1024,768],[844,390],[390,844],[320,568],[768,1024],[1366,768]];
  for(const [width,height] of viewports){
   await page.setViewportSize({width,height});
