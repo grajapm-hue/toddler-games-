@@ -65,7 +65,7 @@
     const notes=list(parent);
     if(home){
       step(notes,'[data-activity="drag"]','1. Choose a game','Tap any game picture. All six games are open.');
-      step(notes,['#previous-games','#next-games','#more-games'],'2. Find more games','Tap Go for new games below the sound controls, swipe the picture row, or use the arrows to find Count and Picture Puzzle. All games shown means you have reached the end.');
+      step(notes,['#first-games','#previous-games','#next-games','#more-games'],'2. Browse the games','Tap Go for new games to reveal more cards. Back to first game returns directly to the beginning. You can also swipe the row or use the small arrows. All games shown means you have reached the end.');
       step(notes,'#age-range','3. Choose an age inside a game','Age 2 to 5 is the shared age range. Open a game, then choose 2, 3, 4 or 5 in its header.');
     }else{
       if(app.classList.contains('immersive'))step(notes,'#exit-play','Return to all controls','Tap the square to leave fullscreen and reach age, Demo, Again, Back, Front and Games. Your current play stays.');

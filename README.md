@@ -85,7 +85,7 @@ The installed prototype serves its versioned files from cache. Increment the cac
 
 The game-choice header shows one **Age 2 to 5** label and a **How to Play** dropdown beside Update. Its common notes explain choosing games, browsing the cards and shared settings. Choose a specific age after entering a game; changing age still begins that age's round.
 
-**Go for new games** with a forward arrow sits below the sound controls in the menu's tips row. Tap it to reveal more game cards. It shares the existing carousel navigation and shows **All games shown** at the end; the previous arrow or a swipe returns to earlier games. The cue is hidden during play.
+**Back to first game** and **Go for new games** sit together below the sound controls in the menu's tips row. Back returns directly to the first card and is disabled at the beginning. Forward reveals more cards and shows **All games shown** at the end. The small arrows and swiping still work. Both labelled controls are hidden during play. On narrow menus the pair uses the tips space to preserve card sizes.
 
 Each game opens its own parent cheat sheet, with visual copies of the actual controls and short instructions. Count follows the selected age, and the art guide follows Brush clean or Finger paint. Fullscreen has its own How to Play button in the reserved bottom control space. The guide ends any Demo, blocks background input while open, traps keyboard focus, and returns focus when closed. Existing play progress stays in place. The guide files are available offline with the rest of the game. Run `node check-parent-guide.cjs` for responsive, focus, context and progress checks.
 
