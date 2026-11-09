@@ -1,34 +1,26 @@
 (function(root){
   'use strict';
-  const neighbours=(gap,size)=>[gap-size,gap+size,gap-1,gap+1].filter(p=>p>=0&&p<size*size&&Math.abs(Math.floor(p/size)-Math.floor(gap/size))+Math.abs(p%size-gap%size)===1);
-  const solved=board=>board.tiles.every((value,i)=>value===(i===board.tiles.length-1?0:i+1));
-  function slide(board,position){
-    const gap=board.tiles.indexOf(0);
-    if(!Number.isInteger(position)||!neighbours(gap,board.size).includes(position))return false;
-    [board.tiles[gap],board.tiles[position]]=[board.tiles[position],0];
-    if(board.trail.at(-1)===position)board.trail.pop();else board.trail.push(gap);
-    board.moves++;return true;
-  }
-  function create(size,steps,random=Math.random){
+  const solved=board=>board.placed.every(Boolean);
+  function create(size,random=Math.random){
     if(![2,3,4,5].includes(size))throw new RangeError('Grid must be 2 to 5');
-    const board={size,tiles:Array.from({length:size*size},(_,i)=>(i+1)%(size*size)),trail:[],moves:0};let previous=-1;
-    for(let i=0;i<Math.max(1,steps||size*2);i++){
-      const gap=board.tiles.indexOf(0),choices=neighbours(gap,size).filter(p=>p!==previous),position=choices[Math.min(choices.length-1,Math.floor(random()*choices.length))];
-      slide(board,position);previous=gap;
-    }
-    if(solved(board))slide(board,neighbours(board.tiles.indexOf(0),size)[0]);
-    board.moves=0;return board;
+    const tiles=Array.from({length:size*size},(_,i)=>i+1);
+    for(let i=tiles.length-1;i>0;i--){const j=Math.min(i,Math.floor(random()*(i+1)));[tiles[i],tiles[j]]=[tiles[j],tiles[i]];}
+    if(tiles.every((value,i)=>value===i+1))[tiles[0],tiles[1]]=[tiles[1],tiles[0]];
+    return {size,tiles,placed:Array(size*size).fill(false)};
   }
-  const core={neighbours,solved,slide,create};
+  function place(board,value){
+    if(!Number.isInteger(value)||value<1||value>board.size*board.size||board.placed[value-1])return false;
+    board.placed[value-1]=true;return true;
+  }
+  const core={solved,create,place};
   if(typeof module==='object'&&module.exports){module.exports={core};return;}
-
   function mount({app,scene,strip,hint,complete,status,readyChanged,onReset}){
     const panel=document.createElement('section');panel.id='picture-puzzle';panel.hidden=true;panel.setAttribute('aria-label','Picture Puzzle');
-    panel.innerHTML='<div class="puzzle-stage"><div id="puzzle-board" role="group" aria-label="Sliding picture puzzle" data-ready="false"></div><img id="puzzle-reference" alt="Complete picture to help solve the puzzle" hidden><div id="puzzle-demo-hand" hidden aria-hidden="true">☝️</div></div><span id="puzzle-message" class="visually-hidden" role="status" aria-live="polite"></span>';
+    panel.innerHTML='<div class="puzzle-stage"><section class="puzzle-half" aria-label="Scrambled pieces"><span class="puzzle-panel-label">Pieces</span><div class="puzzle-canvas"><div id="puzzle-board" class="puzzle-grid" data-puzzle-side="pieces" role="group" aria-label="Choose a picture piece" data-ready="false"></div></div></section><section class="puzzle-half" aria-label="Your picture"><span class="puzzle-panel-label">Your picture</span><div class="puzzle-canvas"><div id="puzzle-target-board" class="puzzle-grid" data-puzzle-side="picture" role="group" aria-label="Drop pieces here to make the picture"></div><img id="puzzle-reference" class="puzzle-reference" alt="Complete picture to help make your picture" hidden></div></section><div id="puzzle-demo-hand" hidden aria-hidden="true">☝️</div></div><span id="puzzle-message" class="visually-hidden" role="status" aria-live="polite"></span>';
     scene.after(panel);
-    const $=id=>panel.querySelector('#'+id),boardNode=$('puzzle-board'),stage=panel.querySelector('.puzzle-stage'),reference=$('puzzle-reference'),hand=$('puzzle-demo-hand'),message=$('puzzle-message');
+    const $=id=>panel.querySelector('#'+id),boardNode=$('puzzle-board'),targetNode=$('puzzle-target-board'),stage=panel.querySelector('.puzzle-stage'),halves=[...stage.querySelectorAll(':scope>.puzzle-half')],reference=$('puzzle-reference'),hand=$('puzzle-demo-hand'),message=$('puzzle-message');
     const file=document.createElement('input');file.type='file';file.accept='image/*';file.id='puzzle-file';file.hidden=true;panel.append(file);
-    let active=false,age=2,board=null,picture=null,numbers=true,preview=false,busy=true,generation=0,demoToken=0,demoTimer=null,demoResolve=null,winTimer=null,won=false,swipe=null,ignoreClick=false;
+    let active=false,age=2,board=null,picture=null,numbers=true,preview=false,busy=true,generation=0,demoToken=0,demoTimer=null,demoResolve=null,demoSaved=null,winTimer=null,won=false,selected=null,drag=null,ghost=null,ignoreClick=false;
     const storageName='sana-picture-puzzle',storeName='pictures';
     let database;
     function db(){
@@ -59,55 +51,51 @@
     // Prevent an unused-room image failure from becoming an unhandled rejection.
     initial.catch(()=>{});
     function say(text){message.textContent=text;if(active)hint(text);}
+
+    const placedCount=()=>board?.placed.filter(Boolean).length||0;
     function fit(){
       if(!active||!picture)return;
-      const width=Math.max(1,Math.min(stage.clientWidth-12,(stage.clientHeight-8)*picture.ratio)),height=width/picture.ratio;
+      const width=Math.max(1,Math.min((stage.clientWidth-30)/2,(stage.clientHeight-32)*picture.ratio)),height=width/picture.ratio;
       panel.style.setProperty('--puzzle-width',width+'px');panel.style.setProperty('--puzzle-height',height+'px');
     }
-    new ResizeObserver(()=>{if(panel.hasAttribute('data-puzzle-demo'))stopDemo();if(swipe){swipe=null;ignoreClick=true;}fit();}).observe(stage);
+    new ResizeObserver(()=>{if(panel.hasAttribute('data-puzzle-demo'))stopDemo();if(drag){cancelDrag();render();}fit();}).observe(stage);
     function syncStrip(){
       if(!active)return;
-      strip.hidden=false;strip.setAttribute('aria-label','Picture Puzzle controls');
+      strip.hidden=false;strip.style.setProperty('--thumb-count','7');strip.setAttribute('aria-label','Picture Puzzle controls');
       if(!strip.querySelector('#puzzle-upload')){
-        strip.innerHTML='<button class="item-chip" type="button" id="puzzle-upload" aria-label="Choose your picture">📷 <span>Choose picture</span></button><button class="item-chip" type="button" id="puzzle-preview" aria-label="Show complete picture" aria-pressed="false"><img alt=""><span>Look</span></button><button class="item-chip" type="button" id="puzzle-numbers" aria-label="Show tile numbers" aria-pressed="true">1 2 3</button><button class="item-chip" type="button" id="puzzle-default" aria-label="Use SaNa picture" title="Use SaNa picture">🐵</button><button class="item-chip" type="button" id="puzzle-again" aria-label="Shuffle picture" title="Shuffle picture">↻</button><span class="puzzle-grid-label" id="puzzle-grid-label"></span><span class="puzzle-moves" id="puzzle-moves" aria-live="polite"></span>';
-        strip.querySelector('#puzzle-upload').addEventListener('click',()=>{stopDemo();file.click();});
-        strip.querySelector('#puzzle-preview').addEventListener('click',()=>{if(!picture||busy)return;stopDemo();preview=!preview;render();});
-        strip.querySelector('#puzzle-numbers').addEventListener('click',()=>{stopDemo();numbers=!numbers;render();});
+        strip.innerHTML='<button class="item-chip" type="button" id="puzzle-upload" aria-label="Choose your picture"><span aria-hidden="true">📷</span><small>Picture</small></button><button class="item-chip" type="button" id="puzzle-preview" aria-label="Show complete picture" aria-pressed="false"><img alt=""><small>Look</small></button><button class="item-chip" type="button" id="puzzle-numbers" aria-label="Show piece numbers" aria-pressed="true"><span>1 2 3</span><small>Numbers</small></button><button class="item-chip" type="button" id="puzzle-default" aria-label="Use SaNa picture" title="Use SaNa picture"><span aria-hidden="true">🐵</span><small>SaNa</small></button><button class="item-chip" type="button" id="puzzle-again" aria-label="Shuffle picture" title="Shuffle picture"><span aria-hidden="true">↻</span><small>Again</small></button><span class="puzzle-grid-label" id="puzzle-grid-label"></span><span class="puzzle-placed" id="puzzle-placed" aria-live="polite"></span>';
+        strip.querySelector('#puzzle-upload').addEventListener('click',()=>{stopDemo();cancelDrag();file.click();});
+        strip.querySelector('#puzzle-preview').addEventListener('click',()=>{if(!picture||busy)return;stopDemo();cancelDrag();preview=!preview;render();});
+        strip.querySelector('#puzzle-numbers').addEventListener('click',()=>{stopDemo();cancelDrag();numbers=!numbers;render();});
         strip.querySelector('#puzzle-again').addEventListener('click',()=>{if(!busy&&picture){stopDemo();shuffle();}});
         strip.querySelector('#puzzle-default').addEventListener('click',()=>{void useDefault();});
       }
-      strip.querySelector('#puzzle-grid-label').textContent=`${age} × ${age}`;
-      strip.querySelector('#puzzle-moves').textContent=`Moves: ${board?.moves||0}`;
-      const thumbnail=strip.querySelector('#puzzle-preview');thumbnail.setAttribute('aria-pressed',String(preview||!!board&&solved(board)));thumbnail.setAttribute('aria-label',preview?'Return to puzzle':'Show complete picture');thumbnail.dataset.completed=String(won);thumbnail.classList.toggle('is-done',won);
+      strip.querySelector('#puzzle-grid-label').innerHTML=`<span>${age} × ${age}</span><small>Grid</small>`;
+      strip.querySelector('#puzzle-placed').innerHTML=`<span>${placedCount()} / ${age*age}</span><small>Placed</small>`;
+      const thumbnail=strip.querySelector('#puzzle-preview');thumbnail.setAttribute('aria-pressed',String(preview||won));thumbnail.setAttribute('aria-label',preview?'Return to puzzle':'Show complete picture');thumbnail.querySelector('small').textContent=preview?'Play':'Look';thumbnail.dataset.completed=String(won);thumbnail.classList.toggle('is-done',won);
       if(picture)thumbnail.querySelector('img').src=picture.src;
-      strip.querySelector('#puzzle-numbers').setAttribute('aria-pressed',String(numbers));
-      strip.querySelector('#puzzle-default').disabled=busy||!picture?.custom;
-      status(`${age} × ${age} · ${board?.moves||0} moves`);
+      strip.querySelector('#puzzle-numbers').setAttribute('aria-pressed',String(numbers));strip.querySelector('#puzzle-default').disabled=busy||!picture?.custom;
+      status(`${age} × ${age} · ${placedCount()} / ${age*age} placed`);
+    }
+    function paintPosition(node,value,position){
+      const source=value-1;node.style.setProperty('--tile-x',position%age);node.style.setProperty('--tile-y',Math.floor(position/age));node.style.backgroundPosition=`${source%age/(age-1)*100}% ${Math.floor(source/age)/(age-1)*100}%`;
     }
     function render(){
       if(!active||!board||!picture)return;
-      const done=solved(board);Object.assign(boardNode.dataset,{size:String(age),order:JSON.stringify(board.tiles),moves:String(board.moves),done:String(done),source:picture.custom?'custom':'default',ready:String(!busy),numbers:String(numbers)});
-      boardNode.style.setProperty('--grid',age);boardNode.style.setProperty('--puzzle-image',`url("${picture.src}")`);
-      if(boardNode.children.length!==age*age-1){
-        boardNode.innerHTML=Array.from({length:age*age-1},(_,i)=>`<button type="button" class="puzzle-tile" data-puzzle-tile="${i+1}" aria-label="Tile ${i+1}"><span>${i+1}</span></button>`).join('');
-      }
-      for(const node of boardNode.children){
-        const value=Number(node.dataset.puzzleTile),position=board.tiles.indexOf(value),source=value-1;
-        node.style.setProperty('--tile-x',position%age);node.style.setProperty('--tile-y',Math.floor(position/age));node.style.backgroundPosition=`${source%age/(age-1)*100}% ${Math.floor(source/age)/(age-1)*100}%`;node.dataset.position=String(position);
-        const movable=neighbours(board.tiles.indexOf(0),age).includes(position)&&!done&&!busy;node.dataset.movable=String(movable);node.tabIndex=movable?0:-1;node.setAttribute('aria-disabled',String(!movable));node.setAttribute('aria-label',`Tile ${value}, row ${Math.floor(position/age)+1}, column ${position%age+1}${movable?', slide into the empty space':''}`);
-      }
-      reference.src=picture.src;reference.hidden=!(preview||won);boardNode.inert=preview||done||busy;
-      syncStrip();fit();readyChanged();
+      const done=solved(board);Object.assign(boardNode.dataset,{size:String(age),order:JSON.stringify(board.tiles),placed:JSON.stringify(board.placed),done:String(done),source:picture.custom?'custom':'default',ready:String(!busy),numbers:String(numbers)});
+      panel.dataset.numbers=String(numbers);targetNode.dataset.numbers=String(numbers);targetNode.dataset.done=String(done);panel.style.setProperty('--grid',age);panel.style.setProperty('--puzzle-image',`url("${picture.src}")`);
+      if(boardNode.children.length!==age*age){boardNode.innerHTML=board.tiles.map(value=>`<button type="button" class="puzzle-tile" data-puzzle-tile="${value}"><span>${value}</span></button>`).join('');targetNode.innerHTML=Array.from({length:age*age},(_,i)=>`<button type="button" class="puzzle-pocket" data-puzzle-target="${i+1}"><span>${i+1}</span></button>`).join('');}
+      for(const node of boardNode.children){const value=Number(node.dataset.puzzleTile),position=board.tiles.indexOf(value);paintPosition(node,value,position);node.hidden=board.placed[value-1];node.classList.toggle('is-selected',selected===value);node.setAttribute('aria-pressed',String(selected===value));node.setAttribute('aria-label',`Picture piece ${value}. Move it to the picture grid.`);node.disabled=busy||done;}
+      for(const node of targetNode.children){const value=Number(node.dataset.puzzleTarget),filled=board.placed[value-1];paintPosition(node,value,value-1);node.dataset.filled=String(filled);node.dataset.highlight=String(selected===value&&!filled);node.setAttribute('aria-label',filled?`Piece ${value} placed`:`Place picture piece ${value} here`);node.tabIndex=selected===value&&!filled?0:-1;node.disabled=busy||done||filled;}
+      reference.src=picture.src;reference.hidden=!(preview||won);boardNode.inert=targetNode.inert=preview||done||busy;syncStrip();fit();readyChanged();
     }
-    function shuffle(){
-      clearTimeout(winTimer);onReset();won=false;preview=false;board=create(age,{2:1,3:5,4:8,5:12}[age]);boardNode.replaceChildren();render();say('Picture ready. Slide a tile next to the empty space.');
-    }
+    function shuffle(){clearTimeout(winTimer);cancelDrag();onReset();won=false;preview=false;selected=null;board=create(age);boardNode.replaceChildren();targetNode.replaceChildren();render();say('Picture ready. Move the pieces on the left onto the picture grid.');}
     async function start(value){
       active=true;age=[2,3,4,5].includes(value)?value:2;panel.hidden=false;busy=true;const token=++generation;stopDemo();syncStrip();boardNode.dataset.ready='false';
       try{picture ||= await initial;if(!active||token!==generation)return;busy=false;shuffle();}
       catch{if(active&&token===generation){busy=false;say('The SaNa picture could not load. Choose a picture from your device.');syncStrip();readyChanged();}}
     }
-    function leave(){active=false;generation++;stopDemo();clearTimeout(winTimer);panel.hidden=true;swipe=null;}
+    function leave(){active=false;generation++;stopDemo();clearTimeout(winTimer);panel.hidden=true;cancelDrag();}
     async function choose(chosen){
       if(!chosen)return;
       stopDemo();const token=++generation;
@@ -129,50 +117,42 @@
       try{const next=await normalize('puzzle-garden.svg',false);if(!active||token!==generation)return;await store(null).catch(()=>{});if(!active||token!==generation)return;picture=next;busy=false;shuffle();}
       catch{if(active&&token===generation){busy=false;render();say('The SaNa picture could not load. Try again.');}}
     }
-    function play(value){
-      if(!active||busy||preview||!board||solved(board)||panel.hasAttribute('data-puzzle-demo'))return;
-      if(!slide(board,board.tiles.indexOf(value))){say('Choose a tile next to the empty space.');return;}
-      render();
+
+    function canPlay(){return active&&!busy&&!preview&&board&&!solved(board)&&!panel.hasAttribute('data-puzzle-demo');}
+    function select(value,keyboard=false){if(!canPlay()||board.placed[value-1])return;selected=value;render();if(keyboard)targetNode.querySelector(`[data-puzzle-target="${value}"]`)?.focus({preventScroll:true});}
+    function put(value){
+      if(!canPlay()||!place(board,value))return;
+      cancelDrag();selected=null;render();
       if(solved(board)){const token=generation;winTimer=setTimeout(()=>{if(!active||token!==generation)return;won=true;render();complete('You made the whole picture! Well done!');},matchMedia('(prefers-reduced-motion:reduce)').matches?0:220);}
-      else say('Good slide! Find the next tile beside the empty space.');
+      else say('Lovely! Choose another piece for your picture.');
     }
-    boardNode.addEventListener('click',event=>{const tile=event.target.closest('[data-puzzle-tile]'),skip=ignoreClick&&event.detail>0;ignoreClick=false;if(tile&&!skip)play(Number(tile.dataset.puzzleTile));});
-    boardNode.addEventListener('keydown',event=>{
-      const tile=event.target.closest('[data-puzzle-tile]');if(!tile||!board)return;
-      const directions={ArrowLeft:-1,ArrowRight:1,ArrowUp:-age,ArrowDown:age};if(!(event.key in directions))return;event.preventDefault();
-      const position=board.tiles.indexOf(Number(tile.dataset.puzzleTile));if(position+directions[event.key]===board.tiles.indexOf(0))play(Number(tile.dataset.puzzleTile));
-    });
-    boardNode.addEventListener('pointerdown',event=>{
-      ignoreClick=false;
-      const tile=event.target.closest('[data-puzzle-tile]');if(!tile||event.button>0||event.isPrimary===false||busy||preview||panel.hasAttribute('data-puzzle-demo'))return;
-      swipe={id:event.pointerId,tile,x:event.clientX,y:event.clientY};try{tile.setPointerCapture(event.pointerId);}catch{}
-    });
-    boardNode.addEventListener('pointerup',event=>{
-      if(!swipe||swipe.id!==event.pointerId)return;const start=swipe;swipe=null;
-      const dx=event.clientX-start.x,dy=event.clientY-start.y;if(Math.hypot(dx,dy)<10)return;ignoreClick=true;
-      // Compare screen-space vectors so a portrait phone's rotated frame works too.
-      const bounds=boardNode.getBoundingClientRect(),tileBounds=start.tile.getBoundingClientRect(),gap=board.tiles.indexOf(0),rotated=app.classList.contains('rotated'),x=(gap%age+.5)/age,y=(Math.floor(gap/age)+.5)/age;
-      const targetX=bounds.left+(rotated?1-y:x)*bounds.width,targetY=bounds.top+(rotated?x:y)*bounds.height;
-      if(dx*(targetX-(tileBounds.left+tileBounds.width/2))+dy*(targetY-(tileBounds.top+tileBounds.height/2))>0)play(Number(start.tile.dataset.puzzleTile));
-    });
-    boardNode.addEventListener('pointercancel',()=>{swipe=null;});
+    function localPoint(event){const r=stage.getBoundingClientRect();return app.classList.contains('rotated')?{x:(event.clientY-r.top)/r.height*stage.clientWidth,y:(r.right-event.clientX)/r.width*stage.clientHeight}:{x:(event.clientX-r.left)/r.width*stage.clientWidth,y:(event.clientY-r.top)/r.height*stage.clientHeight};}
+    function centre(node){const r=node.getBoundingClientRect();return localPoint({clientX:r.left+r.width/2,clientY:r.top+r.height/2});}
+    function cancelDrag(resetSelection=true){if(drag){drag=null;ignoreClick=true;}ghost?.remove();ghost=null;boardNode.querySelector('.is-dragging')?.classList.remove('is-dragging');if(resetSelection)selected=null;}
+    function pieceGhost(node,container=stage){const copy=node.cloneNode(true);copy.removeAttribute('data-puzzle-tile');copy.removeAttribute('id');copy.className='puzzle-drag-piece';copy.setAttribute('aria-hidden','true');copy.tabIndex=-1;copy.inert=true;container.append(copy);return copy;}
+    boardNode.addEventListener('click',event=>{const node=event.target.closest('[data-puzzle-tile]'),skip=ignoreClick&&event.detail>0;ignoreClick=false;if(node&&!skip)select(Number(node.dataset.puzzleTile),event.detail===0);});
+    targetNode.addEventListener('click',()=>{if(selected!==null)put(selected);});
+    boardNode.addEventListener('keydown',event=>{const node=event.target.closest('[data-puzzle-tile]'),directions={ArrowLeft:-1,ArrowRight:1,ArrowUp:-age,ArrowDown:age};if(!node||!(event.key in directions))return;event.preventDefault();const nodes=[...boardNode.children],index=nodes.indexOf(node);let next=index+directions[event.key];while(next>=0&&next<nodes.length&&nodes[next].hidden)next+=directions[event.key];nodes[next]?.focus({preventScroll:true});});
+    boardNode.addEventListener('pointerdown',event=>{ignoreClick=false;const node=event.target.closest('[data-puzzle-tile]');if(!node||event.button>0||event.isPrimary===false||!canPlay())return;const value=Number(node.dataset.puzzleTile);select(value);drag={id:event.pointerId,node,value,start:localPoint(event),moving:false};try{node.setPointerCapture(event.pointerId);}catch{}event.preventDefault();});
+    boardNode.addEventListener('pointermove',event=>{if(!drag||drag.id!==event.pointerId)return;const point=localPoint(event);if(!drag.moving&&Math.hypot(point.x-drag.start.x,point.y-drag.start.y)<5)return;event.preventDefault();if(!ghost){ghost=pieceGhost(drag.node);drag.node.classList.add('is-dragging');}drag.moving=true;ghost.style.left=point.x+'px';ghost.style.top=(point.y-10)+'px';});
+    boardNode.addEventListener('pointerup',event=>{if(!drag||drag.id!==event.pointerId)return;const current=drag;drag=null;if(!current.moving)return;ignoreClick=true;const r=targetNode.getBoundingClientRect(),inside=event.clientX>=r.left-6&&event.clientX<=r.right+6&&event.clientY>=r.top-6&&event.clientY<=r.bottom+6;cancelDrag(false);if(inside)put(current.value);else{render();say('Bring the piece onto the picture grid.');}});
+    boardNode.addEventListener('pointercancel',()=>{cancelDrag();render();});
     function pause(ms,token){return new Promise(resolve=>{demoResolve=resolve;demoTimer=setTimeout(()=>{demoResolve=null;resolve(token===demoToken&&active);},ms);});}
     function stopDemo(){
-      if(swipe){swipe=null;ignoreClick=true;}
-      const running=panel.hasAttribute('data-puzzle-demo');demoToken++;clearTimeout(demoTimer);const resolve=demoResolve;demoResolve=null;resolve?.(false);panel.removeAttribute('data-puzzle-demo');hand.hidden=true;panel.querySelector('.puzzle-demo-board')?.remove();
-      boardNode.style.visibility='';document.getElementById('show-me').setAttribute('aria-pressed','false');if(running&&active){render();say('Your turn! Slide a tile beside the empty space.');}
+      cancelDrag(false);const running=panel.hasAttribute('data-puzzle-demo');demoToken++;clearTimeout(demoTimer);const resolve=demoResolve;demoResolve=null;resolve?.(false);panel.removeAttribute('data-puzzle-demo');hand.hidden=true;stage.querySelector('.puzzle-demo-pair')?.remove();halves.forEach(node=>node.style.visibility='');document.getElementById('show-me').setAttribute('aria-pressed','false');
+      if(running&&active){if(demoSaved){selected=demoSaved.selected;preview=demoSaved.preview;}demoSaved=null;render();say('Your turn! Move a piece onto the picture grid.');}
     }
     async function demo(){
-      if(panel.hasAttribute('data-puzzle-demo')){stopDemo();return;}
-      if(!board||busy||solved(board))return;preview=false;render();
-      const token=++demoToken,copy=boardNode.cloneNode(true),model={size:age,tiles:board.tiles.slice(),trail:board.trail.slice(),moves:board.moves};copy.removeAttribute('id');copy.classList.add('puzzle-demo-board');copy.setAttribute('aria-hidden','true');copy.inert=true;stage.append(copy);boardNode.style.visibility='hidden';
-      const position=model.trail.at(-1)??neighbours(model.tiles.indexOf(0),age)[0],tile=copy.querySelector(`[data-puzzle-tile="${model.tiles[position]}"]`),gap=model.tiles.indexOf(0);
-      const pointHand=position=>{const width=parseFloat(panel.style.getPropertyValue('--puzzle-width')),height=parseFloat(panel.style.getPropertyValue('--puzzle-height'));hand.style.left=((stage.clientWidth-width)/2+(position%age+.5)/age*width)+'px';hand.style.top=((stage.clientHeight-height)/2+(Math.floor(position/age)+.5)/age*height)+'px';};
-      panel.dataset.puzzleDemo='holding';document.getElementById('show-me').setAttribute('aria-pressed','true');hand.hidden=false;pointHand(position);say('Demo: Touch this tile.');
+      if(panel.hasAttribute('data-puzzle-demo')){stopDemo();return;}if(!board||busy||solved(board))return;
+      cancelDrag(false);demoSaved={selected,preview};preview=false;render();
+      const token=++demoToken,overlay=document.createElement('div');overlay.className='puzzle-demo-pair';overlay.setAttribute('aria-hidden','true');overlay.inert=true;
+      halves.forEach(node=>{const copy=node.cloneNode(true);copy.querySelectorAll('[id]').forEach(n=>n.removeAttribute('id'));overlay.append(copy);node.style.visibility='hidden';});stage.append(overlay);
+      const value=board.tiles.find(value=>!board.placed[value-1]),source=overlay.querySelector(`[data-puzzle-tile="${value}"]`),target=overlay.querySelector(`[data-puzzle-target="${value}"]`),from=centre(source),to=centre(target);
+      target.dataset.highlight='true';panel.dataset.puzzleDemo='holding';document.getElementById('show-me').setAttribute('aria-pressed','true');hand.style.transition='none';hand.style.left=from.x+'px';hand.style.top=from.y+'px';hand.hidden=false;say('Demo: Touch this piece.');
       if(!await pause(1000,token))return;
-      panel.dataset.puzzleDemo='moving';tile.style.setProperty('--tile-x',gap%age);tile.style.setProperty('--tile-y',Math.floor(gap/age));pointHand(gap);slide(model,position);
-      if(!await pause(matchMedia('(prefers-reduced-motion:reduce)').matches?0:220,token))return;
-      hand.hidden=true;panel.dataset.puzzleDemo='success';if(solved(model)){copy.dataset.done='true';const thumb=strip.querySelector('#puzzle-preview');thumb.classList.add('is-done');}say('Demo: The tile slides into the empty space.');if(!await pause(1000,token))return;stopDemo();
+      const copy=pieceGhost(source,overlay);copy.style.left=from.x+'px';copy.style.top=from.y+'px';source.style.visibility='hidden';copy.getBoundingClientRect();const duration=matchMedia('(prefers-reduced-motion:reduce)').matches?0:850;copy.style.transition=hand.style.transition=`left ${duration}ms ease-in-out,top ${duration}ms ease-in-out`;copy.style.left=hand.style.left=to.x+'px';copy.style.top=hand.style.top=to.y+'px';panel.dataset.puzzleDemo='moving';say('Demo: Bring it to the picture grid.');
+      if(!await pause(duration,token))return;
+      copy.remove();target.dataset.filled='true';target.dataset.highlight='false';hand.hidden=true;panel.dataset.puzzleDemo='success';strip.querySelector('#puzzle-placed span').textContent=`${placedCount()+1} / ${age*age}`;status(`${age} × ${age} · ${placedCount()+1} / ${age*age} placed`);if(placedCount()+1===age*age){overlay.querySelector('img').hidden=false;strip.querySelector('#puzzle-preview').classList.add('is-done');}say('Demo: The piece fits!');if(!await pause(1000,token))return;stopDemo();
     }
     document.addEventListener('visibilitychange',()=>{if(document.hidden)stopDemo();});
     return {start,leave,demo,stopDemo,syncStrip,ready:()=>!busy,active:()=>active};
