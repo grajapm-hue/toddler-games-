@@ -44,7 +44,7 @@ const groups=[[1,2,3,4],[5,6,7,8,9],[10,11,12,13],[14,15,16],[17,18,19,20]];
   const values=await page.locator('[data-count-choice]').evaluateAll(nodes=>nodes.map(n=>Number(n.dataset.countChoice)));
   check('Count '+n+' keeps the complete current group available',JSON.stringify(values)===JSON.stringify(groups.find(g=>g.includes(n))),values);
   if(n===5){
-   await page.locator('#show-me').click();await page.clock.runFor(1000);
+   await page.locator('#show-me').click();await page.clock.runFor(500);
    const pointer=await page.locator('[data-demo-hand]').evaluate(el=>{const target=document.querySelector('[data-demo-target]'),p=new DOMPoint(0,0).matrixTransform(el.getScreenCTM()),b=target.getBoundingClientRect();return Math.hypot(p.x-b.x-b.width/2,p.y-b.y-b.height/2);});
    check('Five-carriage Demo points at the current number',pointer<1.5,pointer);
    for(let t=0;t<100;t++){if(await page.locator('[data-demo-progress] .is-demo-done').count())break;await page.clock.runFor(250);}
@@ -59,7 +59,7 @@ const groups=[[1,2,3,4],[5,6,7,8,9],[10,11,12,13],[14,15,16],[17,18,19,20]];
  }
  check('All twenty counts finish',await page.locator('#item-progress-strip .is-done').count()===20);
  await page.clock.runFor(1600);check('Finishing twenty starts a fresh fixed 1-4 group',await page.locator('#item-progress-strip .is-done').count()===0&&JSON.stringify(await page.locator('[data-count-choice]').evaluateAll(nodes=>nodes.map(n=>Number(n.dataset.countChoice))))===JSON.stringify([1,2,3,4]));
- await open();await page.locator('#show-me').click();await page.clock.runFor(1000);
+ await open();await page.locator('#show-me').click();await page.clock.runFor(500);
  const pointing=await page.locator('[data-demo-hand]').evaluate(el=>{const target=document.querySelector('[data-demo-target]'),p=new DOMPoint(0,0).matrixTransform(el.getScreenCTM()),b=target.getBoundingClientRect();return{visible:getComputedStyle(el).visibility==='visible',error:Math.hypot(p.x-b.x-b.width/2,p.y-b.y-b.height/2)};});
  check('Demo finger starts on the real carriage number',pointing.visible&&pointing.error<1.5,pointing);
  for(let n=0;n<100;n++){if(await page.locator('[data-demo-progress] .is-demo-done').count())break;await page.clock.runFor(250);}

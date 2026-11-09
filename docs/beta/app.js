@@ -23,7 +23,7 @@
     if(state.activity==='abacus'&&state.age===4){
       width=1000;height=Math.max(140,Math.min(440,width*size.height/Math.max(1,size.width)));
       const compact=height<280,unit=1000/Math.max(1,size.width),key=node.dataset.labelFor||'';
-      font=key==='train-title'?Math.max(compact?23:32,14*unit):key==='train-target'?Math.max(compact?30:44,18*unit):key.startsWith('train-number-')?Math.max(24,15*unit):node.hasAttribute('data-train-engine')?Math.max(compact?17:24,12*unit):Math.max(compact?24:36,14*unit);
+      font=key==='train-title'||key==='train-target'?Math.max(compact?23:32,14*unit):key.startsWith('train-number-')?Math.max(24,15*unit):node.hasAttribute('data-train-engine')?Math.max(compact?17:24,12*unit):Math.max(compact?24:36,14*unit);
     }else if(state.activity==='abacus'&&state.age===5){
       width=Math.max(1000,600*size.width/Math.max(1,size.height));height=600;
       const scale=600/Math.max(1,size.height);
@@ -74,6 +74,15 @@
       if(node.closest('[data-slide-peek]')){tab.setAttribute('pointer-events','all');tab.style.cursor='pointer';const m=scene.getScreenCTM(),target=32/Math.hypot(m.a,m.b);let hit=node.parentElement.querySelector('[data-peek-hit]');if(!hit){hit=document.createElementNS(scene.namespaceURI,'rect');hit.setAttribute('data-peek-hit','');hit.setAttribute('fill','transparent');hit.setAttribute('pointer-events','all');hit.setAttribute('aria-hidden','true');tab.before(hit);}const width=Math.max(box.width+px*2,target),height=Math.max(box.height+py*2,target);Object.entries({x:box.x+box.width/2-width/2,y:box.y+box.height/2-height/2,width,height}).forEach(([key,value])=>hit.setAttribute(key,value));}
       Object.entries({x:box.x-px,y:box.y-py,width:box.width+px*2,height:box.height+py*2,rx:Math.min(8,font*.22),fill,stroke,'stroke-width':1,'vector-effect':'non-scaling-stroke'}).forEach(([key,value])=>tab.setAttribute(key,value));
     });
+    if(state.activity==='abacus'&&state.age===4)for(const title of scene.querySelectorAll('[data-label-for="train-title"]')){
+      const target=[...title.parentElement.children].find(node=>node.dataset.labelFor==='train-target'),reference=title.previousElementSibling,tab=target?.previousElementSibling;
+      if(!reference?.hasAttribute('data-caption-tab')||!tab?.hasAttribute('data-caption-tab'))continue;
+      // The title is the size reference for the pair, including after font fitting.
+      target.setAttribute('font-size',title.getAttribute('font-size'));
+      const box=glyphBox(target);if(!box)continue;
+      const width=Number(reference.getAttribute('width'));
+      Object.entries({x:box.x+box.width/2-width/2,y:reference.getAttribute('y'),width,height:reference.getAttribute('height'),rx:reference.getAttribute('rx')}).forEach(([key,value])=>tab.setAttribute(key,value));
+    }
   }
   let captionFrame=0;
   function refreshSceneTextTabs(nodes=null){
@@ -620,11 +629,11 @@
     const g=numberTrainLayout(),h=g.height,base=g.baseline,compact=g.compact;
     scene.setAttribute('viewBox',`0 0 1000 ${h}`);
     state.trainSize=`${scene.clientWidth}/${scene.clientHeight}`;
-    const titleFont=Math.max(compact?23:32,14*g.unit),targetFont=Math.max(compact?30:44,18*g.unit),numberFont=Math.max(24,15*g.unit),plateW=Math.max(54,numberFont*1.4),plateH=Math.max(36,numberFont*1.1);
+    const titleFont=Math.max(compact?23:32,14*g.unit),targetFont=titleFont,numberFont=Math.max(24,15*g.unit),plateW=Math.max(54,numberFont*1.4),plateH=Math.max(36,numberFont*1.1);
     const headingH=Math.max(titleFont,targetFont)*1.4+12;
-    let html=`<rect data-train-panel="" x="6" y="4" width="988" height="${h-8}" rx="18" fill="none" stroke="#7aaa4b" stroke-width="5"/><rect data-text-panel="train-title" x="16" y="4" width="470" height="${headingH}" rx="12" fill="none"/><rect data-text-panel="train-target" x="575" y="4" width="409" height="${headingH}" rx="12" fill="none"/><text class="scene-caption" data-label-for="train-title" x="251" y="${4+headingH/2}" text-anchor="middle" dominant-baseline="central" font-size="${titleFont}" font-weight="900" fill="#30564d">${countTitle()}</text><text class="scene-caption" data-label-for="train-target" x="779.5" y="${4+headingH/2}" text-anchor="middle" dominant-baseline="central" font-size="${targetFont}" font-weight="900" fill="#30564d">Find number: ${target}</text>`;
+    let html=`<rect data-train-panel="" x="6" y="4" width="988" height="${h-8}" rx="18" fill="none" stroke="#7aaa4b" stroke-width="5"/><rect data-text-panel="train-title" x="16" y="4" width="470" height="${headingH}" rx="12" fill="none"/><rect data-text-panel="train-target" x="514" y="4" width="470" height="${headingH}" rx="12" fill="none"/><text class="scene-caption" data-label-for="train-title" x="251" y="${4+headingH/2}" text-anchor="middle" dominant-baseline="central" font-size="${titleFont}" font-weight="900" fill="#30564d">${countTitle()}</text><text class="scene-caption" data-label-for="train-target" x="749" y="${4+headingH/2}" text-anchor="middle" dominant-baseline="central" font-size="${targetFont}" font-weight="900" fill="#30564d">Find number: ${target}</text>`;
     for(let x=0;x<=1000;x+=24)html+=`<path d="M${x} ${base-4}v10" stroke="#9a795a" stroke-width="7"/>`;
-    html+=`<path data-train-track="" d="M0 ${base-5}H1000M0 ${base+2}H1000" stroke="#64747a" stroke-width="3"/><image data-train-art="engine" href="train-art/locomotive-colour-v126.webp" x="20" y="${base-100}" width="190" height="100" preserveAspectRatio="xMidYMax meet"/><text data-train-engine="" x="115" y="${base+24}" text-anchor="middle" font-size="${Math.max(compact?17:24,12*g.unit)}" font-weight="900" fill="#30564d" stroke="#fffce8" stroke-width="3" paint-order="stroke fill">Train Engine</text>`;
+    html+=`<path data-train-track="" d="M0 ${base-5}H1000M0 ${base+2}H1000" stroke="#64747a" stroke-width="3"/><image data-train-art="engine" href="train-art/locomotive-colour-v126.webp" x="20" y="${base-100}" width="190" height="100" preserveAspectRatio="xMidYMax meet"/><text data-train-engine="" x="115" y="${base+24}" text-anchor="middle" font-size="${Math.max(compact?17:24,12*g.unit)}" font-weight="900" fill="#30564d" stroke="#fffce8" stroke-width="3" paint-order="stroke fill">SaNa Express</text>`;
     const [first,last]=[[1,4],[5,9],[10,13],[14,16],[17,20]].find(([,end])=>target<=end);
     const coachCount=last-first+1,step=760/Math.max(4,coachCount),coachWidth=step-5,coachScale=coachWidth/185;
     const coachColours=['turquoise','yellow','coral','violet'];
@@ -632,7 +641,7 @@
       const n=first+i,x=210+i*step,cx=x+coachWidth/2,cy=base-27*coachScale;
       html+=`<g data-count-choice="${n}" role="button" tabindex="0" aria-label="Choose carriage ${n}" style="cursor:pointer"><rect x="${x+2}" y="${base-78*coachScale}" width="${coachWidth-4}" height="${85*coachScale}" rx="10" fill="transparent"/><image data-train-art="carriage" href="train-art/carriage-${coachColours[i%coachColours.length]}-v126.webp" x="${x}" y="${base-100*coachScale}" width="${coachWidth}" height="${100*coachScale}" preserveAspectRatio="xMidYMax meet"/><rect data-text-panel="train-number-${n}" x="${cx-plateW/2}" y="${cy-plateH/2}" width="${plateW}" height="${plateH}" rx="7" fill="none" stroke="#42616d" stroke-width="2"/><text class="scene-caption" data-label-for="train-number-${n}" x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central" font-size="${numberFont}" font-weight="900" fill="#173e49">${n}</text></g>`;
     }
-    scene.innerHTML=html+`<text data-train-instruction="" x="500" y="${h-9}" text-anchor="middle" font-size="${Math.max(compact?24:36,14*g.unit)}" font-weight="900" fill="#30564d" stroke="#fffce8" stroke-width="4" stroke-linejoin="round" paint-order="stroke fill">Tap the carriage showing ${target}</text>`;
+    scene.innerHTML=html;
   }
   function renderCountAdventure(){
     if(state.activity!=='abacus'||state.age===5)return;
