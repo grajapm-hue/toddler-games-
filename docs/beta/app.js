@@ -558,30 +558,31 @@
   }
   function countSourcePoint(index,age=state.age){
     // Stagger the two carrot rows on the dark soil, clear of the orange boards.
-    return age===2?[[110,99],[225,77],[310,117],[150,187],[260,192]][index]:[155+(index%5)*70-(index>=5?35:0),index<5?172:210];
+    return age===2?[[110,99],[225,77],[310,117],[150,187],[260,192]][index]:[155+(index%5)*70-(index>=5?35:0),index<5?223:261];
   }
-  function countCollectedPoint(index,age=state.age){return age===2?[[715,229],[780,229],[845,229],[747,186],[812,186]][index]:[640+(index%5)*62+(index>=5?25:0),306+Math.floor(index/5)*38];}
-  function countDestination(age=state.age){return age===2?{x:800,y:240,rx:175,ry:110}:{x:810,y:215,rx:170,ry:135};}
+  function countCollectedPoint(index,age=state.age){return age===2?[[715,229],[780,229],[845,229],[747,186],[812,186]][index]:index<5?[[625,682,739,905,960][index],340]:[700+(index-5)*55,370];}
+  function countDestination(age=state.age){return age===2?{x:800,y:240,rx:175,ry:110}:{x:810,y:285,rx:220,ry:115};}
   function countPraise(final=false){
     const message=countHolding&&!final?'Wait for the next count.':'Let’s count again!';
     return `<g data-count-praise="" role="status" aria-live="polite"><rect data-text-panel="harvest-prompt" x="395" y="20" width="330" height="98" rx="26" fill="none" stroke="#75a460" stroke-width="4"/><circle cx="425" cy="56" r="22" fill="#ffe385"/><text x="425" y="66" text-anchor="middle" font-size="28" aria-hidden="true">🐒</text><text class="scene-caption" data-label-for="harvest-prompt" x="560" y="53" text-anchor="middle" dominant-baseline="central" font-size="28" font-weight="900" fill="#216144">Well done!</text><text class="scene-caption" data-label-for="harvest-prompt" x="560" y="91" text-anchor="middle" dominant-baseline="central" font-size="21" font-weight="800" fill="#30564d">${message}</text></g>`;
   }
   function countLedger(age){
-    const apple=age===2,total=countStockSize(age),collected=countCollected.size,left=total-collected;
+    const apple=age===2,total=countStockSize(age),collected=countCollected.size,left=total-collected,baseline=apple?396:411;
     return `<g data-count-ledger="" role="group" aria-label="${total} total; ${left} left; ${collected} collected">`+
-      [[apple?'Apples in tree':'Carrots in farm',left,'source',30,apple?330:510],[apple?'Apples in basket':'Carrots with rabbit',collected,'collected',apple?640:600,apple?330:370]].map(([title,n,key,x,w])=>`<g data-count-ledger-item="${key}"><rect data-text-panel="harvest-ledger-${key}" x="${x}" y="369" width="${w}" height="54" rx="13" fill="none" stroke="#71935c" stroke-width="2"/><text class="scene-caption" data-label-for="harvest-ledger-${key}" x="${x+w/2}" y="396" text-anchor="middle" dominant-baseline="central" font-size="20" font-weight="800" fill="#33533b">${title}: <tspan data-count-ledger-value="${key}" dominant-baseline="central" font-size="32" font-weight="900" fill="#174d36">${n}</tspan></text></g>`).join('')+'</g>';
+      [[apple?'Apples in tree':'Carrots in farm',left,'source',30,apple?330:510],[apple?'Apples in basket':'Carrots with rabbit',collected,'collected',apple?640:600,apple?330:370]].map(([title,n,key,x,w])=>`<g data-count-ledger-item="${key}"><rect data-text-panel="harvest-ledger-${key}" x="${x}" y="${baseline-27}" width="${w}" height="54" rx="13" fill="none" stroke="#71935c" stroke-width="2"/><text class="scene-caption" data-label-for="harvest-ledger-${key}" x="${x+w/2}" y="${baseline}" text-anchor="middle" dominant-baseline="central" font-size="20" font-weight="800" fill="#33533b">${title}: <tspan data-count-ledger-value="${key}" dominant-baseline="central" font-size="32" font-weight="900" fill="#174d36">${n}</tspan></text></g>`).join('')+'</g>';
   }
   function renderHarvestCount(target,age){
     const apple=age===2,kind=apple?'apple':'carrot',max=countStockSize(age);
     const done=state.done&&countStage>=max;
-    let html=`<defs><clipPath id="count-basket-front"><rect x="635" y="267" width="330" height="93"/></clipPath></defs><rect x="10" y="12" width="980" height="415" rx="30" fill="none" stroke="#b6cea1" stroke-width="6"/>`;
+    let html=`<defs><clipPath id="count-basket-front"><rect x="635" y="267" width="330" height="93"/></clipPath></defs><rect x="10" y="12" width="980" height="${apple?415:425}" rx="30" fill="none" stroke="#b6cea1" stroke-width="6"/>`;
     if(apple){
       html+=countImage('apple-tree',20,12,360,350,'aria-label="Apple tree"');
       html+=`<g data-count-drop="basket" role="img" aria-label="Basket for the apples">${countImage('basket',635,140,330,220)}<rect x="635" y="140" width="330" height="220" fill="transparent" pointer-events="none"/></g>`;
     }else{
-      html+=countImage('carrot-garden',20,100,540,235,'aria-label="Carrot garden"');
-      html+=`<g data-count-drop="rabbit" role="img" aria-label="Rabbit waiting for carrots">${countImage('rabbit',695,65,260,260)}<rect x="650" y="100" width="310" height="245" fill="transparent" pointer-events="none"/></g>`;
-      html+='<ellipse cx="780" cy="327" rx="190" ry="38" fill="#b1ca78" fill-opacity=".45" pointer-events="none"/>';
+      // Match the apple room's ground line; shadows sit beneath the feet and bed.
+      html+='<g data-count-ground="" fill="#354c24" pointer-events="none"><ellipse cx="290" cy="360" rx="230" ry="9" fill-opacity=".16"/><ellipse cx="825" cy="359" rx="76" ry="10" fill-opacity=".2"/></g>';
+      html+=countImage('carrot-garden',20,151,540,235,'aria-label="Carrot garden"');
+      html+=`<g data-count-drop="rabbit" role="img" aria-label="Rabbit waiting for carrots">${countImage('rabbit',695,100,260,260)}<rect x="590" y="135" width="400" height="260" fill="transparent" pointer-events="none"/></g>`;
     }
     for(let i=0;i<max;i++){
       if(countCollected.has(i))continue;
@@ -591,7 +592,8 @@
     }
     const slots=Array.from({length:max},(_,index)=>countCollectedPoint(index,age));
     [...countCollected].map((id,index)=>({id,index})).sort((a,b)=>slots[a.index][1]-slots[b.index][1]).forEach(({id,index})=>{
-      const [x,y]=slots[index];html+=`<g data-count-collected="${id}" role="img" aria-label="${kind} ${index+1} ${apple?'in the basket':'on the ground beside the rabbit'}"${apple?'':` transform="translate(${x} ${y}) rotate(-90)"`}>${countIcon(apple?x:0,apple?y:0,kind,apple?1:.6)}</g>`;
+      const [x,y]=slots[index];if(!apple)html+=`<ellipse cx="${x-2}" cy="${y+14}" rx="24" ry="4" fill="#354c24" fill-opacity=".18" pointer-events="none"/>`;
+      html+=`<g data-count-collected="${id}" role="img" aria-label="${kind} ${index+1} ${apple?'in the basket':'on the ground beside the rabbit'}"${apple?'':` transform="translate(${x} ${y}) rotate(-90)"`}>${countIcon(apple?x:0,apple?y:0,kind,apple?1:.6)}</g>`;
     });
     if(apple)html+=countImage('basket',635,140,330,220,'clip-path="url(#count-basket-front)" pointer-events="none"');
     if(countHolding||done)html+=countPraise(done);
@@ -1396,16 +1398,28 @@
     };
     const move=async(x,y,words,ms=450,span=60,node=null,action=null)=>{
       if(!valid())return false;
-      // Point as speech starts; keep drag actions at their source until it ends.
-      if(words){
-        if(!positioned||!action)pointHand(x,y,span,node);
+      // Explain before contact. During a drag, speak alongside the motion so
+      // narration cannot extend the one-second hold at the source.
+      let speech=null;
+      if(words&&action&&positioned){
+        hint('Demo: '+words);speech=demoSpeak(words,token);
+      }else if(words){
+        hand.setAttribute('visibility','hidden');
         if(!await narrate(words))return false;
       }
       action?.();pointHand(x,y,span,node,ms);
-      return await demoPause(ms,token)&&valid();
+      if(!await demoPause(ms,token)||!valid())return false;
+      if(speech){await speech;if(!valid()||!await demoPause(500,token))return false;}
+      return valid();
     };
     const pointAt=async(node,words,ms=400,action=null)=>{const p=demoBounds(node);return move(p.x,p.y,words,ms,Math.min(p.width,p.height),node,action);};
-    const touch=async(node,words)=>await pointAt(node,words)&&await demoPause(1000,token)&&valid();
+    const touch=async(node,words)=>{
+      if(!await pointAt(node,words,0))return false;
+      overlay.dataset.demoContact='holding';
+      const held=await demoPause(1000,token)&&valid();
+      delete overlay.dataset.demoContact;
+      return held;
+    };
     const success=async index=>{
       if(!valid())return;
       overlay.dataset.demoPhase='hold';
@@ -1457,7 +1471,7 @@
               refreshSceneTextTabs();
               overlay.dataset.demoDoorState='open';
               if(!await demoPause(1000,token)||!valid())return;
-              if(!await pointAt(knob,'Now slide the door closed.',250))return;
+              if(!await touch(knob,'Now slide the door closed.'))return;
               overlay.dataset.demoDoorState='closing';
               if(!await move(715,345,null,850,48,knob,()=>door.setAttribute('transform','translate(0 0) scale(1 1)')))return;
               if(caption)caption.textContent='Door CLOSED · Well done!';
