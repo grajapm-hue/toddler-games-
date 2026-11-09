@@ -37,16 +37,16 @@ let browser;
  await open(2,'abacus');const before=await realState();await page.locator('#show-me').click();await advance(2200);
  let spoken=await lines();check('The first instruction is allowed to finish',spoken.length===1&&!spoken[0].cancelled&&!spoken[0].end,spoken);
  check('The voice pace is midway between original and slow, with Indian English preferred',spoken[0]?.rate>=.73&&spoken[0]?.rate<=.75&&spoken[0]?.voice==='en-IN',spoken);
- check('The finger is already pointing at the target when speech starts',spoken[0]?.fingerVisible&&spoken[0]?.tipError<1.5,spoken);
+ check('The picking explanation finishes before the finger contacts the object',!spoken[0]?.fingerVisible,spoken);
  check('SaNa keeps the complete instruction visible while speaking',(await page.locator('#hint').textContent()).includes('Pick an apple.'),spoken);
  check('No item moves while the picking instruction is spoken',await page.locator('[data-demo-moving]').count()===0);
  await page.screenshot({path:path.join(out,'first-finger-and-voice.png')});
  await finish();spoken=await lines();
  check('Every instruction finishes without being interrupted',spoken.length>=3&&spoken.every(l=>l.end&&!l.cancelled),spoken);
- check('The finger stays visible throughout all spoken steps',spoken.every(l=>l.fingerVisible),spoken);
+ check('The finger stays visible during the moving and praise instructions',spoken.slice(1).every(l=>l.fingerVisible),spoken);
  check('Instructions have a clear gap instead of overlapping',spoken.slice(1).every((l,i)=>l.start-spoken[i].end>=490),spoken);
  check('The demo returns the child to exactly the same progress and settings',JSON.stringify(await realState())===JSON.stringify(before));
- // Check that the demonstrated object also waits, not only the pointing hand.
+ // Drag narration accompanies the action after the one-second contact hold.
  for(const fixture of [
   {age:2,game:'abacus',line:'Put it in the basket',selector:'[data-demo-moving]',attribute:'transform',expected:'translate(110 99)'},
   {age:2,game:'drag',line:'Slide it into its shadow',selector:'[data-piece]',attribute:'transform'},
@@ -58,7 +58,7 @@ let browser;
   await page.locator('#show-me').click();
   const original=fixture.selector==='polyline'||fixture.selector==='[data-demo-moving]'?null:await page.locator('[data-demo-layer] '+fixture.selector).first().getAttribute(fixture.attribute);
   const found=await waitLine(fixture.line);
-  if(found&&await page.locator('[data-demo-layer] '+fixture.selector).count()){await advance(1000);const value=await page.locator('[data-demo-layer] '+fixture.selector).first().getAttribute(fixture.attribute);check(fixture.game+' object waits for its spoken action instruction',value===(Object.hasOwn(fixture,'expected')?fixture.expected:original),{value,expected:fixture.expected??original});}
+  if(found&&await page.locator('[data-demo-layer] '+fixture.selector).count()){await advance(1000);const value=await page.locator('[data-demo-layer] '+fixture.selector).first().getAttribute(fixture.attribute),initial=Object.hasOwn(fixture,'expected')?fixture.expected:original;check(fixture.game+(fixture.paint?' explains before starting the painting stroke':' moves during its spoken action instruction'),fixture.paint?value===initial:value!==initial,{value,initial});}
   else check('The action instruction is spoken: '+fixture.line,false,await lines());
   await page.locator('#show-me').click();
  }
