@@ -24,7 +24,7 @@
     const statusHome=document.getElementById('game-status-top'),statusNode=document.getElementById('game-results'),caption=$('puzzle-caption-slot'),statusLabel=statusHome.getAttribute('aria-label');
     const gallery=document.createElement('div');gallery.id='puzzle-gallery';gallery.hidden=true;gallery.setAttribute('aria-label','Choose a picture to play');gallery.innerHTML='<div class="puzzle-choices"><div class="puzzle-choice-track" role="list" aria-label="Puzzle pictures"></div></div><button type="button" id="puzzle-remove" aria-label="Remove selected picture from this game" title="Remove selected picture from this game"><span aria-hidden="true">×</span><small>Remove</small></button>';statusHome.append(gallery);
     const choices=gallery.querySelector('.puzzle-choices'),track=gallery.querySelector('.puzzle-choice-track'),removeButton=gallery.querySelector('#puzzle-remove'),rounds=new Map();
-    let pictures=[],activeImage='sana',gallerySignature='',pictureSerial=0;
+    let pictures=[],activeImage='sana',gallerySignature='',pictureSerial=0,removing=false,deleting=false;
     const storageName='sana-picture-puzzle',storeName='pictures';
     let database;
     function db(){
@@ -72,23 +72,25 @@
     const roundKey=(id=activeImage)=>age+'/'+id;
     function renderGallery(){
       if(!active)return;
+      if(!pictures.length)removing=false;gallery.dataset.removing=String(removing);
       const images=[{id:'sana',src:'puzzle-sana-banana.webp'},...pictures],signature=images.map(image=>image.id).join('/');
       if(signature!==gallerySignature){
         gallerySignature=signature;track.replaceChildren();
         images.forEach((image,i)=>{const item=document.createElement('div');item.setAttribute('role','listitem');const button=document.createElement('button');button.type='button';button.className='puzzle-choice';button.dataset.puzzleChoice=image.id;button.title=i?'Choose picture '+i:'Choose SaNa';const img=document.createElement('img');img.src=image.src;img.alt='';img.loading='lazy';img.decoding='async';button.append(img);item.append(button);track.append(item);});
       }
-      [...track.querySelectorAll('[data-puzzle-choice]')].forEach((button,i)=>{const id=button.dataset.puzzleChoice,done=!!rounds.get(roundKey(id))&&solved(rounds.get(roundKey(id)));button.disabled=busy;button.setAttribute('aria-pressed',String(id===activeImage));button.setAttribute('aria-label',(i?'Choose picture '+i:'Choose SaNa')+(done?', completed':''));button.classList.toggle('is-complete',done);button.classList.remove('is-demo-complete');});
-      removeButton.disabled=busy||activeImage==='sana';
+      [...track.querySelectorAll('[data-puzzle-choice]')].forEach((button,i)=>{const id=button.dataset.puzzleChoice,done=!!rounds.get(roundKey(id))&&solved(rounds.get(roundKey(id)));button.disabled=busy||(removing&&id==='sana');button.setAttribute('aria-pressed',String(id===activeImage));button.setAttribute('aria-label',(i?(removing?'Remove picture ':'Choose picture ')+i:'Choose SaNa')+(done?', completed':''));button.classList.toggle('is-complete',done);button.classList.remove('is-demo-complete');});
+      removeButton.disabled=deleting||!pictures.length;removeButton.querySelector('span').textContent=!pictures.length?'🔒':removing?'↩':'×';removeButton.querySelector('small').textContent=!pictures.length?'Built-in':removing?'Cancel':'Remove';
+      const removalLabel=!pictures.length?'SaNa is the built-in picture. Add your own pictures with Picture.':removing?'Cancel removing pictures':busy?'Stop loading and choose a picture to remove':activeImage==='sana'?'Choose a saved picture to remove':'Remove selected picture from this game';removeButton.setAttribute('aria-label',removalLabel);removeButton.title=removalLabel;
     }
-    function showSelectedThumbnail(){const button=[...track.querySelectorAll('[data-puzzle-choice]')].find(n=>n.dataset.puzzleChoice===activeImage),item=button?.parentElement;if(!item)return;const x=item.offsetLeft;if(x<choices.scrollLeft)choices.scrollLeft=x;else if(x+item.offsetWidth>choices.scrollLeft+choices.clientWidth)choices.scrollLeft=x+item.offsetWidth-choices.clientWidth;}
+    function showSelectedThumbnail(id=activeImage){const button=[...track.querySelectorAll('[data-puzzle-choice]')].find(n=>n.dataset.puzzleChoice===id),item=button?.parentElement;if(!item)return;const x=item.offsetLeft;if(x<choices.scrollLeft)choices.scrollLeft=x;else if(x+item.offsetWidth>choices.scrollLeft+choices.clientWidth)choices.scrollLeft=x+item.offsetWidth-choices.clientWidth;}
     function syncStrip(){
       if(!active)return;
       strip.hidden=false;strip.style.setProperty('--thumb-count','7');strip.setAttribute('aria-label','Picture Puzzle controls');
       if(!strip.querySelector('#puzzle-upload')){
         strip.innerHTML='<button class="item-chip" type="button" id="puzzle-upload" aria-label="Add pictures"><span aria-hidden="true">📷</span><small>Picture</small></button><button class="item-chip" type="button" id="puzzle-preview" aria-label="Show complete picture" aria-pressed="false"><img alt=""><small>Look</small></button><button class="item-chip" type="button" id="puzzle-numbers" aria-label="Show piece numbers" aria-pressed="true"><span>1 2 3</span><small>Numbers</small></button><button class="item-chip" type="button" id="puzzle-default" aria-label="Use SaNa picture" title="Use SaNa picture"><span aria-hidden="true">🐵</span><small>SaNa</small></button><button class="item-chip" type="button" id="puzzle-again" aria-label="Shuffle picture" title="Shuffle picture"><span aria-hidden="true">↻</span><small>Again</small></button><span class="puzzle-grid-label" id="puzzle-grid-label"></span><span class="puzzle-placed" id="puzzle-placed" aria-live="polite"></span>';
-        strip.querySelector('#puzzle-upload').addEventListener('click',()=>{stopDemo();cancelDrag();file.click();});
-        strip.querySelector('#puzzle-preview').addEventListener('click',()=>{if(!picture||busy)return;stopDemo();cancelDrag();preview=!preview;render();});
-        strip.querySelector('#puzzle-numbers').addEventListener('click',()=>{stopDemo();cancelDrag();numbers=!numbers;render();});
+        strip.querySelector('#puzzle-upload').addEventListener('click',()=>{removing=false;renderGallery();stopDemo();cancelDrag();file.click();});
+        strip.querySelector('#puzzle-preview').addEventListener('click',()=>{if(!picture||busy)return;removing=false;stopDemo();cancelDrag();preview=!preview;render();});
+        strip.querySelector('#puzzle-numbers').addEventListener('click',()=>{removing=false;stopDemo();cancelDrag();numbers=!numbers;render();});
         strip.querySelector('#puzzle-again').addEventListener('click',()=>{if(!busy&&picture){stopDemo();shuffle();}});
         strip.querySelector('#puzzle-default').addEventListener('click',()=>{if(!busy)void activate('sana');});
       }
@@ -112,23 +114,23 @@
       for(const node of targetNode.children){const value=Number(node.dataset.puzzleTarget),filled=board.placed[value-1];paintPosition(node,value,value-1);node.dataset.filled=String(filled);node.dataset.highlight=String(selected===value&&!filled);node.setAttribute('aria-label',filled?`Piece ${value} placed`:`Place picture piece ${value} here`);node.tabIndex=selected===value&&!filled?0:-1;node.disabled=busy||done||filled;}
       reference.src=picture.src;reference.alt=picture.custom?'Your complete picture':'Curious SaNa eating a banana';reference.hidden=!(preview||won);boardNode.inert=targetNode.inert=preview||done||busy;syncStrip();fit();readyChanged();
     }
-    function shuffle(){clearTimeout(winTimer);cancelDrag();onReset();won=false;preview=false;selected=null;board=create(age);rounds.set(roundKey(),board);boardNode.replaceChildren();targetNode.replaceChildren();render();say('Picture ready. Move the pieces on the left onto the picture grid.');}
+    function shuffle(){removing=false;clearTimeout(winTimer);cancelDrag();onReset();won=false;preview=false;selected=null;board=create(age);rounds.set(roundKey(),board);boardNode.replaceChildren();targetNode.replaceChildren();render();say('Picture ready. Move the pieces on the left onto the picture grid.');}
     async function activate(id,{fresh=false,remember=true}={}){
       if(!active||(!fresh&&id===activeImage&&picture&&board&&!busy))return;
-      stopDemo();cancelDrag();clearTimeout(winTimer);const token=++generation;busy=true;onReset();syncStrip();boardNode.dataset.ready='false';readyChanged();
+      removing=false;stopDemo();cancelDrag();clearTimeout(winTimer);const token=++generation;busy=true;onReset();syncStrip();boardNode.dataset.ready='false';readyChanged();
       try{
         const next=id==='sana'?await defaultPicture:pictures.find(image=>image.id===id);if(!next)throw Error('Picture unavailable');await imageFrom(next.src);if(!active||token!==generation)return;
         activeImage=id;picture=next;board=fresh?create(age):(rounds.get(roundKey())||create(age));rounds.set(roundKey(),board);won=solved(board);preview=false;selected=null;boardNode.replaceChildren();targetNode.replaceChildren();busy=false;render();showSelectedThumbnail();if(remember)void rememberSelection(id);say('Picture ready. Choose a piece for your picture.');
       }catch{if(active&&token===generation){busy=false;if(picture&&board)render();else syncStrip();say('Choose a different picture. This picture could not be opened.');readyChanged();}}
     }
     async function start(value){
-      active=true;age=[2,3,4,5].includes(value)?value:2;panel.hidden=false;hostStatus();busy=true;const token=++generation;stopDemo();syncStrip();boardNode.dataset.ready='false';
+      removing=false;deleting=false;active=true;age=[2,3,4,5].includes(value)?value:2;panel.hidden=false;hostStatus();busy=true;const token=++generation;stopDemo();syncStrip();boardNode.dataset.ready='false';
       await initial;if(!active||token!==generation)return;await activate(activeImage,{fresh:true,remember:false});
     }
-    function leave(){active=false;generation++;stopDemo();clearTimeout(winTimer);panel.hidden=true;cancelDrag();statusHome.append(statusNode);gallery.hidden=true;if(statusLabel===null)statusHome.removeAttribute('aria-label');else statusHome.setAttribute('aria-label',statusLabel);}
+    function leave(){removing=false;deleting=false;active=false;generation++;stopDemo();clearTimeout(winTimer);panel.hidden=true;cancelDrag();statusHome.append(statusNode);gallery.hidden=true;if(statusLabel===null)statusHome.removeAttribute('aria-label');else statusHome.setAttribute('aria-label',statusLabel);}
     async function choose(files){
       if(!files.length)return;
-      stopDemo();cancelDrag();const token=++generation;busy=true;syncStrip();boardNode.dataset.ready='false';readyChanged();await initial;
+      removing=false;stopDemo();cancelDrag();const token=++generation;busy=true;syncStrip();boardNode.dataset.ready='false';readyChanged();await initial;
       const nextPictures=pictures.slice();let chosen=null,rejected=0;
       for(const [i,file] of files.entries()){
         if(!active||token!==generation)return;say(`Adding picture ${i+1} of ${files.length}…`);
@@ -142,10 +144,21 @@
       if(!saved)say('Pictures ready. Choose them again next time you open the app.');else if(rejected)say('Pictures ready. Some files could not be opened; choose another picture for those.');else say('Pictures ready. Tap any thumbnail above to play.');
     }
     file.addEventListener('change',()=>{const files=Array.from(file.files||[]);file.value='';void choose(files);});
-    track.addEventListener('click',event=>{const button=event.target.closest('[data-puzzle-choice]');if(button&&!busy)void activate(button.dataset.puzzleChoice);});
-    track.addEventListener('keydown',async event=>{const button=event.target.closest('[data-puzzle-choice]');if(!button||busy||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();const buttons=[...track.querySelectorAll('[data-puzzle-choice]')],index=buttons.indexOf(button),next=event.key==='Home'?0:event.key==='End'?buttons.length-1:Math.max(0,Math.min(buttons.length-1,index+(event.key==='ArrowRight'?1:-1))),target=buttons[next];await activate(target.dataset.puzzleChoice);if(active&&!busy&&target.isConnected&&activeImage===target.dataset.puzzleChoice)target.focus({preventScroll:true});});
-    removeButton.addEventListener('click',async()=>{
-      if(busy||activeImage==='sana')return;stopDemo();cancelDrag();clearTimeout(winTimer);const token=++generation,id=activeImage,index=pictures.findIndex(image=>image.id===id);pictures=pictures.filter(image=>image.id!==id);for(const key of rounds.keys())if(key.endsWith('/'+id))rounds.delete(key);const next=pictures[Math.min(index,pictures.length-1)]?.id||'sana';busy=true;boardNode.dataset.ready='false';syncStrip();readyChanged();let saved=true;try{await storeLibrary(next);}catch{saved=false;}if(!active||token!==generation)return;await activate(next);if(!saved)say('Picture ready. These changes may not stay after closing the app.');
+    async function removePicture(id){
+      if(busy||deleting||id==='sana')return false;const index=pictures.findIndex(image=>image.id===id);if(index<0)return false;
+      stopDemo();cancelDrag();const isCurrent=id===activeImage,token=isCurrent?++generation:generation;if(isCurrent)clearTimeout(winTimer);
+      pictures=pictures.filter(image=>image.id!==id);for(const key of rounds.keys())if(key.endsWith('/'+id))rounds.delete(key);const next=isCurrent?(pictures[Math.min(index,pictures.length-1)]?.id||'sana'):activeImage;
+      deleting=true;busy=true;boardNode.dataset.ready='false';syncStrip();readyChanged();let saved=true;try{await storeLibrary(next);}catch{saved=false;}if(!active||token!==generation)return false;
+      deleting=false;if(isCurrent){removing=false;await activate(next);if(active&&activeImage===id&&next!=='sana')await activate('sana');}else{busy=false;render();}
+      if(!saved)say('Picture ready. These changes may not stay after closing the app.');else say(removing?'Picture removed. Choose another photo to remove, or Cancel.':'Picture removed. Your puzzle is ready.');return active;
+    }
+    track.addEventListener('click',async event=>{const button=event.target.closest('[data-puzzle-choice]');if(!button||busy)return;if(removing){if(await removePicture(button.dataset.puzzleChoice))(removeButton.disabled?track.querySelector('[data-puzzle-choice="sana"]'):removeButton)?.focus({preventScroll:true});}else void activate(button.dataset.puzzleChoice);});
+    track.addEventListener('keydown',async event=>{const button=event.target.closest('[data-puzzle-choice]');if(!button||busy||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();const buttons=[...track.querySelectorAll('[data-puzzle-choice]')].filter(node=>!node.disabled),index=buttons.indexOf(button),next=event.key==='Home'?0:event.key==='End'?buttons.length-1:Math.max(0,Math.min(buttons.length-1,index+(event.key==='ArrowRight'?1:-1))),target=buttons[next];if(!target)return;if(removing){showSelectedThumbnail(target.dataset.puzzleChoice);target.focus({preventScroll:true});return;}await activate(target.dataset.puzzleChoice);if(active&&!busy&&target.isConnected&&activeImage===target.dataset.puzzleChoice)target.focus({preventScroll:true});});
+    removeButton.addEventListener('click',()=>{
+      if(deleting||!pictures.length)return;if(removing){removing=false;renderGallery();say('Choose a picture to play.');return;}
+      const loading=busy;if(loading){generation++;busy=false;if(board)won=solved(board);void rememberSelection(activeImage);}
+      if(activeImage!=='sana'&&!loading&&pictures.some(image=>image.id===activeImage)){void removePicture(activeImage);return;}
+      stopDemo();cancelDrag();removing=true;if(picture&&board)render();else{syncStrip();readyChanged();}say('Tap a photo marked × to remove it, or Cancel. The SaNa picture stays.');
     });
 
     function canPlay(){return active&&!busy&&!preview&&board&&!solved(board)&&!panel.hasAttribute('data-puzzle-demo');}
@@ -173,6 +186,7 @@
       if(running&&active){if(demoSaved){selected=demoSaved.selected;preview=demoSaved.preview;}demoSaved=null;render();say('Your turn! Move a piece onto the picture grid.');}
     }
     async function demo(){
+      if(removing){removing=false;renderGallery();}
       if(panel.hasAttribute('data-puzzle-demo')){stopDemo();return;}if(!board||busy||solved(board))return;
       cancelDrag(false);demoSaved={selected,preview};preview=false;render();
       const token=++demoToken,overlay=document.createElement('div');overlay.className='puzzle-demo-pair';overlay.setAttribute('aria-hidden','true');overlay.inert=true;

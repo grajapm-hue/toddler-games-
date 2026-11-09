@@ -58,6 +58,9 @@
 #puzzle-remove span{font-size:18px;line-height:18px}
 #puzzle-remove small{font-size:10px;line-height:11px}
 #puzzle-remove:disabled{opacity:.45;cursor:default}
+#puzzle-gallery[data-removing="true"] .puzzle-choice:not([data-puzzle-choice="sana"]){border-color:#a44e45;background:#f6e0dd}
+#puzzle-gallery[data-removing="true"] .puzzle-choice:not([data-puzzle-choice="sana"]):after{content:"×";position:absolute;right:0;top:0;width:20px;height:20px;border-radius:50%;background:#a44e45;color:#fffaf0;font:900 17px/19px system-ui;text-align:center}
+#puzzle-gallery[data-removing="true"] [data-puzzle-choice="sana"]{opacity:.45}
 #puzzle-caption-slot{position:absolute;left:50%;transform:translateX(-50%);width:min(150px,36%);z-index:3;pointer-events:none}
 #app[data-view="puzzle"] #puzzle-caption-slot #game-results{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:1px!important;min-width:0!important;max-width:100%!important;min-height:0!important;padding:0!important;margin:0!important;border:0!important;background:transparent!important;overflow:visible!important}
 #app[data-view="puzzle"] #puzzle-caption-slot #activity-name{font-size:12px!important;line-height:13px!important;flex:none!important;max-width:100%!important;padding:1px 4px!important;white-space:nowrap;text-shadow:none!important}
