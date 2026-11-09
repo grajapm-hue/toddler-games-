@@ -438,12 +438,14 @@
   function updateCardNavigation(){
     const max=Math.max(0,cardGrid.scrollWidth-cardGrid.clientWidth);
     $('previous-games').disabled=cardGrid.scrollLeft<2;$('next-games').disabled=cardGrid.scrollLeft>=max-2;
+    $('more-games').disabled=$('next-games').disabled;$('more-games-label').textContent=$('more-games').disabled?'All games shown':'Go for new games';
     const first=Math.round(cardGrid.scrollLeft/cardStep())+1,total=cardGrid.children.length;
     $('card-page').textContent=`Games ${first} to ${Math.min(total,first+4)} of ${total}`;
   }
   function scrollCards(left){cardGrid.scrollTo({left:Math.max(0,Math.min(left,cardGrid.scrollWidth-cardGrid.clientWidth)),behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});}
   $('previous-games').addEventListener('click',()=>scrollCards(cardGrid.scrollLeft-cardGrid.clientWidth));
   $('next-games').addEventListener('click',()=>scrollCards(cardGrid.scrollLeft+cardGrid.clientWidth));
+  $('more-games').addEventListener('click',()=>$('next-games').click());
   cardGrid.addEventListener('scroll',updateCardNavigation,{passive:true});
   new ResizeObserver(updateCardNavigation).observe(cardGrid);
   new MutationObserver(updateCardNavigation).observe(cardGrid,{childList:true});

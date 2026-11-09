@@ -57,3 +57,12 @@
 #app.narrow .guide-header h2{font-size:15px}
 #app.narrow #guide-body{padding:8px;font-size:13px}
 #app.narrow .guide-step{grid-template-columns:126px minmax(0,1fr);gap:7px}
+
+/* Keep the extra-games cue below the sound controls, in the existing tips row. */
+#more-games{display:none;flex:none;align-items:center;justify-content:center;gap:4px;width:166px;min-height:34px;padding:4px 6px;border:2px solid #8aa67a;border-radius:10px;background:#dcebdd;color:#173e35;font-size:13px;font-weight:900;line-height:1.15;white-space:nowrap}
+#app[data-view="home"] #more-games{display:flex}
+#more-games svg{width:18px;height:18px;flex:none;color:#173e35}
+#more-games span{display:block;min-width:0}
+#more-games:disabled{background:#e6ece2;color:#52664e;border-color:#b2c1aa;cursor:default}
+#more-games:disabled svg{opacity:.45}
+#app.compact #more-games{width:150px;min-height:30px;font-size:12px}
