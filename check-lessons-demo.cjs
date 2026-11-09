@@ -8,6 +8,18 @@ fs.mkdirSync(out,{recursive:true});const results=[],errors=[];
 const check=(name,pass,detail)=>{results.push({name,pass:!!pass,detail});console.log((pass?'PASS ':'FAIL ')+name);};
 const server=createServer((req,res)=>{try{const u=new URL(req.url,'http://localhost'),f=path.resolve(root,'.'+u.pathname+(u.pathname.endsWith('/')?'index.html':''));if(!f.startsWith(root+path.sep))throw Error('path');res.writeHead(200,{'Content-Type':({'.html':'text/html','.js':'text/javascript','.css':'text/css','.webp':'image/webp','.png':'image/png','.svg':'image/svg+xml','.webmanifest':'application/manifest+json'})[path.extname(f)]||'application/octet-stream'}).end(fs.readFileSync(f));}catch{res.writeHead(404).end();}});
 let browser;
+async function trackDemo(page){await page.evaluate(()=>{
+ window.__lessonPreview={};let previous;
+ const observer=new MutationObserver(()=>{
+  const p=window.__lessonPreview,layer=document.querySelector('[data-demo-layer]'),hand=layer?.querySelector('[data-demo-hand]'),target=layer?.querySelector('[data-demo-target]');
+  if(layer&&!p.start)p.start=performance.now();
+  if(hand&&target&&!p.geometry&&getComputedStyle(hand).visibility==='visible'){const h=hand.getBoundingClientRect(),t=target.getBoundingClientRect(),tip=new DOMPoint(0,0).matrixTransform(hand.getScreenCTM()),zone=target.closest('[data-count-choice]')?.querySelector('rect')?.getBoundingClientRect()||t;p.geometry={offset:Math.hypot(tip.x-t.x-t.width/2,tip.y-t.y-t.height/2),hand:[h.width,h.height],target:[zone.width,zone.height]};p.first=performance.now();}
+  if(layer?.dataset.demoContact==='holding'&&!p.contact)p.contact=performance.now();
+  if(p.contact&&layer?.dataset.demoContact!=='holding'&&!p.release)p.release=performance.now();
+  if(layer?.dataset.demoPhase==='success'&&!p.success){p.success=performance.now();const chip=document.querySelector('[data-demo-progress] .is-demo-done');p.ticked=!!chip;p.tick=chip?.textContent;p.hidden=getComputedStyle(hand).visibility==='hidden';}
+  if(previous&&!layer){p.end=performance.now();observer.disconnect();}previous=layer;
+ });observer.observe(document.querySelector('.play-mat'),{subtree:true,childList:true,attributes:true});
+ });}
 (async()=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=process.env.COUNT_URL||`http://127.0.0.1:${server.address().port}/beta/`;
  browser=await({chromium,webkit})[engine].launch({headless:true,...(engine==='chromium'&&process.env.MM_CHROME?{executablePath:process.env.MM_CHROME}:{})});
@@ -23,17 +35,17 @@ let browser;
   await page.locator('#show-me').click();await page.clock.runFor(1200);check('Demo has an accurately positioned, adaptive finger',await page.locator('[data-demo-hand]').count()===1);
  }else{
   async function demo(label){
-   const before=await snapshot();await page.locator('#show-me').click();
-   for(let i=0;i<80;i++){if(await page.locator('[data-demo-layer][data-demo-phase="hold"]').count())break;await page.clock.runFor(500);}
-   const holding=await page.locator('[data-demo-layer][data-demo-phase="hold"]').count();
-   check(label+' reaches a successful virtual action',holding===1);
-   if(!holding)throw Error('Demo never held: '+label);
-   const geometry=await page.evaluate(()=>{const hand=document.querySelector('[data-demo-hand]'),target=document.querySelector('[data-demo-target]'),h=hand.getBoundingClientRect(),t=target.getBoundingClientRect(),tip=new DOMPoint(0,0).matrixTransform(hand.getScreenCTM());return{offset:Math.hypot(tip.x-(t.x+t.width/2),tip.y-(t.y+t.height/2)),hand:[h.width,h.height],target:[...(target.closest('[data-count-choice]')?.querySelector('rect')?.getBoundingClientRect()?(()=>{const zone=target.closest('[data-count-choice]').querySelector('rect').getBoundingClientRect();return[zone.width,zone.height];})():[t.width,t.height])],tick:document.querySelector('[data-demo-progress]')?.getAttribute('data-success-index')};});
+   const before=await snapshot();await trackDemo(page);await page.locator('#show-me').click();
+   for(let i=0;i<35;i++){if(await page.evaluate(()=>!!window.__lessonPreview.end))break;await page.clock.runFor(250);}
+   const preview=await page.evaluate(()=>window.__lessonPreview),geometry=preview.geometry;
+   check(label+' reaches a successful virtual action',!!preview.success);
+   if(!geometry||!preview.end)throw Error('Demo did not finish: '+label);
    check(label+' fingertip points to the target centre',geometry.offset<1.5,geometry);
    check(label+' finger is smaller than its touch target',Math.max(...geometry.hand)<Math.min(...geometry.target)+1,geometry);
-   await page.clock.runFor(550);check(label+' waits before ticking',await page.locator('[data-demo-layer][data-demo-phase="hold"]').count()===1);
-   await page.clock.runFor(3600);if(label.startsWith('Abacus colour')){const chip=await page.locator('[data-demo-progress] .is-demo-done').textContent();check(label+' preview number agrees with its bead',chip.includes('1'),chip);}check(label+' ticks its preview thumbnail',await page.locator('[data-demo-progress][data-success-index] .is-demo-done').count()===1);
-   await page.clock.runFor(2200);const after=await snapshot(),remaining=await page.locator('[data-demo-layer],[data-demo-progress]').count();check(label+' restores the real game',remaining===0&&await page.locator('#scene > [style*="visibility: hidden"]').count()===0&&JSON.stringify(after)===JSON.stringify(before));
+   check(label+' points immediately and clears the finger on success',preview.first-preview.start<=50&&preview.hidden&&preview.end-preview.success<=30,preview);
+   if(label.startsWith('Abacus colour'))check(label+' preview number agrees with its bead',preview.tick?.includes('1'),preview);
+   check(label+' ticks its preview thumbnail at success',preview.ticked,preview);
+   const after=await snapshot(),remaining=await page.locator('[data-demo-layer],[data-demo-progress]').count();check(label+' restores the real game',remaining===0&&await page.locator('#scene > [style*="visibility: hidden"]').count()===0&&JSON.stringify(after)===JSON.stringify(before));
   }
   for(const age of (process.env.DEMO_FOCUS?[]:[2,3])){await open(age,'abacus');const total=age===2?5:10;for(let n=0;n<total;n++){await demo(`Age ${age} count ${n+1}`);await harvestDrag();const ledger=await page.locator('[data-count-ledger-value]').evaluateAll(nodes=>nodes.map(n=>Number(n.textContent)));check(`Age ${age} collection ${n+1} balances`,ledger[0]===total-n-1&&ledger[1]===n+1,ledger);await page.clock.runFor(1600);check(`Age ${age} keeps all ${n+1} collected items`,await page.locator('[data-count-collected]').count()===n+1&&await page.locator('[data-count-fruit]').count()===total-n-1);}await page.locator('#again').click();check('Again refills age '+age,await page.locator('[data-count-fruit]').count()===total&&await page.locator('[data-count-collected]').count()===0);}
   await open(4,'abacus');for(let n=1;n<=(process.env.DEMO_FOCUS?0:20);n++){await demo('Train carriage '+n);if(n<20){await page.locator(`[data-count-choice="${n}"]`).press('Enter');await page.clock.runFor(300);}}
@@ -51,13 +63,10 @@ let browser;
  }
  if(!process.env.DEMO_RED){
   const native=await browser.newContext({viewport:{width:844,height:390},hasTouch:true,reducedMotion:'no-preference'}),real=await native.newPage();real.on('pageerror',e=>errors.push(e.message));
-  await real.goto(base+'play.html?age=4');await real.locator('[data-age-option="4"]').click();await real.locator('[data-activity="abacus"]').click();await real.evaluate(()=>{window.__lessonTiming={};new MutationObserver(()=>{const layer=document.querySelector('[data-demo-layer]');if(layer?.dataset.demoPhase==='hold'&&!window.__lessonTiming.start){window.__lessonTiming.start=performance.now();setTimeout(()=>{window.__lessonTiming.midUnticked=!document.querySelector('[data-demo-progress][data-success-index]');},650);}if(layer?.dataset.demoPhase==='success'&&!window.__lessonTiming.end)window.__lessonTiming.end=performance.now();}).observe(document.getElementById('scene'),{subtree:true,attributes:true,attributeFilter:['data-demo-phase']});});await real.locator('#show-me').click();
-  await real.locator('[data-demo-layer][data-demo-phase="hold"]').waitFor();
-  const aim=await real.evaluate(()=>{const hand=document.querySelector('[data-demo-hand]'),target=document.querySelector('[data-demo-target]'),h=hand.getBoundingClientRect(),t=target.getBoundingClientRect(),p=new DOMPoint(0,0).matrixTransform(hand.getScreenCTM());return{error:Math.hypot(p.x-t.x-t.width/2,p.y-t.y-t.height/2),hand:Math.max(h.width,h.height),target:Math.min(...(()=>{const zone=target.closest('[data-count-choice]')?.querySelector('rect')?.getBoundingClientRect()||t;return[zone.width,zone.height];})())};});
-  check('Normal animation points the contrasting finger at the train numeral',aim.error<2&&aim.hand<aim.target,aim);
-  await real.screenshot({path:path.join(out,'train-demo-calm-praise-hold.png')});
-  await real.locator('[data-demo-progress][data-success-index="0"]').waitFor({timeout:7000});const timing=await real.evaluate(()=>window.__lessonTiming);check('Real-time Demo keeps the thumbnail unticked during the pause',timing.midUnticked,timing);check('Real-time Demo holds praise before the tick',timing.end-timing.start>=3450,timing);
-  await real.locator('#show-me').click();check('Stopping the real-time preview restores Count 1',await real.locator('[data-demo-layer],[data-demo-progress]').count()===0&&await real.locator('#item-progress-strip .is-done').count()===0);await native.close();
+  await real.goto(base+'play.html?age=4');await real.locator('[data-age-option="4"]').click();await real.locator('[data-activity="abacus"]').click();await trackDemo(real);await real.locator('#show-me').click();await real.locator('[data-demo-contact="holding"]').waitFor();
+  const aim=await real.evaluate(()=>window.__lessonPreview.geometry);check('Normal animation points the contrasting finger at the train numeral',aim.offset<2&&Math.max(...aim.hand)<Math.min(...aim.target),aim);
+  await real.screenshot({path:path.join(out,'train-demo-one-second-contact.png')});await real.waitForFunction(()=>window.__lessonPreview.end);const timing=await real.evaluate(()=>window.__lessonPreview);check('Real-time Demo holds contact for one second',timing.release-timing.contact>=990&&timing.release-timing.contact<1200,timing);check('Real-time Demo returns immediately after the click animation',timing.end-timing.success<60&&timing.hidden,timing);
+  check('Finishing the real-time preview restores Count 1',await real.locator('[data-demo-layer],[data-demo-progress]').count()===0&&await real.locator('#item-progress-strip .is-done').count()===0);await native.close();
  }
  check('No uncaught lesson or demo errors',errors.length===0,errors);fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({engine,results,errors},null,2));assert(results.every(r=>r.pass),'Lesson/demo checks failed');
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{await browser?.close();server.close();});

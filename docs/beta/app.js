@@ -1368,23 +1368,11 @@
     overlay.appendChild(hand);scene.appendChild(overlay);
     const shape=hand.firstElementChild,reduced=matchMedia('(prefers-reduced-motion:reduce)').matches;
     const valid=()=>token===demoGeneration&&serial===roundSerial&&activity===state.activity&&age===state.age&&overlay.isConnected;
-    const narrate=async(words,pause=1200)=>{
-      if(!valid())return false;
-      hint('Demo: '+words);overlay.dataset.demoSpeech='reading';
-      const phrases=words.match(/[^.!?;,]+[.!?;,]?/g)?.map(p=>p.trim()).filter(Boolean)||[words];
-      for(const [index,phrase] of phrases.entries()){
-        overlay.dataset.demoSpeech='speaking';
-        const spoken=await demoSpeak(phrase,token);
-        if(!valid())return false;
-        if(!spoken){
-          overlay.dataset.demoSpeech='reading';
-          if(!await demoPause(Math.max(1500,phrase.split(/\s+/).length*350),token)||!valid())return false;
-        }
-        if(index<phrases.length-1&&(!await demoPause(500,token)||!valid()))return false;
-      }
-      overlay.dataset.demoSpeech='pause';
-      if(!await demoPause(pause,token)||!valid())return false;
-      delete overlay.dataset.demoSpeech;return true;
+    const announce=words=>{
+      if(!valid()||!words)return;
+      hint('Demo: '+words);
+      // Speech accompanies the finger; it never gates contact, motion or handoff.
+      demoVoiceCancel?.();void demoSpeak(words,token);
     };
     let positioned=false;
     const pointHand=(x,y,span,node,ms=0)=>{
@@ -1398,19 +1386,9 @@
     };
     const move=async(x,y,words,ms=450,span=60,node=null,action=null)=>{
       if(!valid())return false;
-      // Explain before contact. During a drag, speak alongside the motion so
-      // narration cannot extend the one-second hold at the source.
-      let speech=null;
-      if(words&&action&&positioned){
-        hint('Demo: '+words);speech=demoSpeak(words,token);
-      }else if(words){
-        hand.setAttribute('visibility','hidden');
-        if(!await narrate(words))return false;
-      }
       action?.();pointHand(x,y,span,node,ms);
-      if(!await demoPause(ms,token)||!valid())return false;
-      if(speech){await speech;if(!valid()||!await demoPause(500,token))return false;}
-      return valid();
+      announce(words);
+      return !ms?valid():await demoPause(ms,token)&&valid();
     };
     const pointAt=async(node,words,ms=400,action=null)=>{const p=demoBounds(node);return move(p.x,p.y,words,ms,Math.min(p.width,p.height),node,action);};
     const touch=async(node,words)=>{
@@ -1422,12 +1400,10 @@
     };
     const success=async index=>{
       if(!valid())return;
-      overlay.dataset.demoPhase='hold';
-      if(!await narrate('Well done!',2000))return;
+      hand.setAttribute('visibility','hidden');
       const copy=demoProgress?.copy,chip=copy?.children[index];
       if(chip){chip.classList.remove('is-current','is-later');chip.classList.add('is-done','is-demo-done');chip.setAttribute('aria-label','Demo completed: '+chip.title);copy.dataset.successIndex=String(index);copy.scrollLeft=0;}
       overlay.dataset.demoPhase='success';hint('Demo: Success! Now it is your turn.');
-      await demoPause(2000,token);
     };
     try{
       if(activity==='drag'){
@@ -1441,7 +1417,7 @@
         const target=Math.min(countStage+1,countMax());
         if(age===4){
           const choice=backing.querySelector(`[data-count-choice="${target}"]`),number=choice?.querySelector('text');
-          if(number&&await touch(number,`Tap the carriage showing ${target}.`)){const b=number.getBBox(),coach=choice.querySelector('image').getBBox(),s=Math.min(coach.width/b.width,coach.height/b.height)*.9,cx=b.x+b.width/2,cy=b.y+b.height/2;number.setAttribute('transform',`translate(${cx} ${cy}) scale(${s}) translate(${-cx} ${-cy})`);await success(countStage);}
+          if(number&&await touch(number,`Tap the carriage showing ${target}.`)){const b=number.getBBox(),coach=choice.querySelector('image').getBBox(),s=Math.min(coach.width/b.width,coach.height/b.height)*.9,cx=b.x+b.width/2,cy=b.y+b.height/2;number.style.transition=reduced?'none':'transform 180ms ease-out';number.setAttribute('transform',`translate(${cx} ${cy}) scale(${s}) translate(${-cx} ${-cy})`);if(!await demoPause(reduced?0:180,token)||!valid())return;await success(countStage);}
         }else{
           const source=backing.querySelector('[data-count-fruit]');
           if(source){const [x,y]=countSourcePoint(Number(source.dataset.countFruit),age),[destX,destY]=countCollectedPoint(countPlaced,age),scale=age===2?1:.6;
@@ -1464,13 +1440,10 @@
         if(door){door.setAttribute('transform','translate(0 0) scale(1 1)');const knob=door.querySelector('circle');
           if(await touch(knob,'Touch the door handle.')){
             if(await move(720+715*.34,345,'Slide to open.',850,48*.34,knob,()=>{door.style.transition=reduced?'none':'transform 850ms ease-in-out';door.setAttribute('transform','translate(720 0) scale(.34 1)');})){
-              const friend=backing.querySelector('g[role="img"] text');
-              if(friend)await pointAt(friend,'Look! You found a friend.');
               const caption=backing.querySelector('[data-slide-caption]');if(caption)caption.textContent='Door OPEN · You found '+slideObjects[state.slideIndex][0]+'!';
               setSlideCue(backing,true);
               refreshSceneTextTabs();
               overlay.dataset.demoDoorState='open';
-              if(!await demoPause(1000,token)||!valid())return;
               if(!await touch(knob,'Now slide the door closed.'))return;
               overlay.dataset.demoDoorState='closing';
               if(!await move(715,345,null,850,48,knob,()=>door.setAttribute('transform','translate(0 0) scale(1 1)')))return;
@@ -1492,20 +1465,22 @@
         }
         if(bubble&&await touch(bubble,'Touch the bubble.')){
           const index=state.bubbleMode==='plain'?state.bubblePops:bubbleItems().indexOf(bubble.dataset.token);
-          // Keep an invisible target for the fingertip while the bubble pops.
+          bubble.style.transition=reduced?'none':'transform 180ms ease-out';
+          bubble.setAttribute('transform',bubble.getAttribute('transform')+' scale(1.15)');
+          if(!await demoPause(reduced?0:180,token)||!valid())return;
           bubble.setAttribute('opacity','0');await success(Math.max(0,index));
         }
       }else if(activity==='brush'){
         const picture=backing.querySelector('g[stroke="#536b5b"]'),dirt=[...backing.querySelectorAll('[data-dirt]')];
         const trail=document.createElementNS(ns,'polyline');trail.setAttribute('fill','none');trail.setAttribute('stroke',state.paintMode?state.paintColor:'#c7eeee');trail.setAttribute('stroke-width','30');trail.setAttribute('stroke-linecap','round');trail.setAttribute('stroke-linejoin','round');if(state.paintMode)trail.setAttribute('clip-path','url(#picture-clip)');backing.appendChild(trail);
         if(!state.paintMode&&dirt.length){
-          if(await touch(dirt[0],'Brush over the muddy marks.'))for(const patch of dirt){if(!valid())break;const p=demoBounds(patch);if(!await move(p.x,p.y,null,230,Math.min(p.width,p.height),patch))break;patch.setAttribute('opacity','0');}
+          if(await touch(dirt[0],'Brush over the muddy marks.')){dirt[0].setAttribute('opacity','0');for(const patch of dirt.slice(1)){if(!valid())break;const p=demoBounds(patch);if(!await move(p.x,p.y,null,230,Math.min(p.width,p.height),patch))break;patch.setAttribute('opacity','0');}}
         }else if(picture){
           const b=demoBounds(picture),coords=[];
           for(const fy of [.3,.5,.7])for(const fx of [.3,.5,.7]){const point={x:b.x-b.width/2+b.width*fx,y:b.y-b.height/2+b.height*fy};if(insidePicture(point))coords.push(point);}
-          for(const [i,p] of coords.slice(0,6).entries()){if(!await move(p.x,p.y,i===0?'Move the finger to paint inside the picture.':null,230,50,picture,()=>trail.setAttribute('points',coords.slice(0,i+1).map(p=>p.x+','+p.y).join(' '))))break;}
+          if(await touch(picture,'Paint inside the picture.'))for(const [i,p] of coords.slice(0,6).entries()){if(!await move(p.x,p.y,null,230,50,picture,()=>trail.setAttribute('points',coords.slice(0,i+1).map(p=>p.x+','+p.y).join(' '))))break;}
         }
-        if(valid()&&picture){trail.remove();dirt.forEach(n=>n.setAttribute('opacity','0'));picture.setAttribute('fill',state.paintMode?state.paintColor:brushThumbColor(artPicture().name));await pointAt(picture,'A finished picture!');await success(brushIndex);}
+        if(valid()&&picture){trail.remove();dirt.forEach(n=>n.setAttribute('opacity','0'));picture.setAttribute('fill',state.paintMode?state.paintColor:brushThumbColor(artPicture().name));await success(brushIndex);}
       }else if(activity==='abacus'){
         const row=activeAbacusRow(),count=abacusCount(row),g=abacusGeometry(),right=count<10,index=right?9-count:0,bead=backing.querySelector(`[data-bead-row="${row}"][data-bead-index="${index}"]`);
         if(bead&&await touch(bead,'Touch one bead.')){
