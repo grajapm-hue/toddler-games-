@@ -42,7 +42,7 @@ async function trackDemo(page){await page.evaluate(()=>{
    if(!geometry||!preview.end)throw Error('Demo did not finish: '+label);
    check(label+' fingertip points to the target centre',geometry.offset<1.5,geometry);
    check(label+' finger is smaller than its touch target',Math.max(...geometry.hand)<Math.min(...geometry.target)+1,geometry);
-   check(label+' points immediately and clears the finger on success',preview.first-preview.start<=50&&preview.hidden&&preview.end-preview.success<=30,preview);
+   check(label+' points immediately and shows its result without the finger',preview.first-preview.start<=50&&preview.hidden&&preview.end-preview.success>=995&&preview.end-preview.success<=1020,preview);
    if(label.startsWith('Abacus colour'))check(label+' preview number agrees with its bead',preview.tick?.includes('1'),preview);
    check(label+' ticks its preview thumbnail at success',preview.ticked,preview);
    const after=await snapshot(),remaining=await page.locator('[data-demo-layer],[data-demo-progress]').count();check(label+' restores the real game',remaining===0&&await page.locator('#scene > [style*="visibility: hidden"]').count()===0&&JSON.stringify(after)===JSON.stringify(before));
@@ -65,7 +65,7 @@ async function trackDemo(page){await page.evaluate(()=>{
   const native=await browser.newContext({viewport:{width:844,height:390},hasTouch:true,reducedMotion:'no-preference'}),real=await native.newPage();real.on('pageerror',e=>errors.push(e.message));
   await real.goto(base+'play.html?age=4');await real.locator('[data-age-option="4"]').click();await real.locator('[data-activity="abacus"]').click();await trackDemo(real);await real.locator('#show-me').click();await real.locator('[data-demo-contact="holding"]').waitFor();
   const aim=await real.evaluate(()=>window.__lessonPreview.geometry);check('Normal animation points the contrasting finger at the train numeral',aim.offset<2&&Math.max(...aim.hand)<Math.min(...aim.target),aim);
-  await real.screenshot({path:path.join(out,'train-demo-one-second-contact.png')});await real.waitForFunction(()=>window.__lessonPreview.end);const timing=await real.evaluate(()=>window.__lessonPreview);check('Real-time Demo holds contact for one second',timing.release-timing.contact>=990&&timing.release-timing.contact<1200,timing);check('Real-time Demo returns immediately after the click animation',timing.end-timing.success<60&&timing.hidden,timing);
+  await real.screenshot({path:path.join(out,'train-demo-one-second-contact.png')});await real.waitForFunction(()=>window.__lessonPreview.end);const timing=await real.evaluate(()=>window.__lessonPreview);check('Real-time Demo holds contact for one second',timing.release-timing.contact>=990&&timing.release-timing.contact<1200,timing);check('Real-time Demo shows the clicked result for one second without the finger',timing.end-timing.success>=990&&timing.end-timing.success<1200&&timing.hidden,timing);
   check('Finishing the real-time preview restores Count 1',await real.locator('[data-demo-layer],[data-demo-progress]').count()===0&&await real.locator('#item-progress-strip .is-done').count()===0);await native.close();
  }
  check('No uncaught lesson or demo errors',errors.length===0,errors);fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify({engine,results,errors},null,2));assert(results.every(r=>r.pass),'Lesson/demo checks failed');

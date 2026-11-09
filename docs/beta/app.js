@@ -556,12 +556,15 @@
     const carrot=kind==='carrot';
     return `<g transform="translate(${x} ${y}) scale(${scale})">${countImage(carrot?'carrot':'apple',carrot?-28:-32,carrot?-48:-37,carrot?56:64,carrot?88:74,'pointer-events="none"')}</g>`;
   }
+  const collectedCarrotScale=.84;
   function countSourcePoint(index,age=state.age){
     // Stagger the two carrot rows on the dark soil, clear of the orange boards.
     return age===2?[[110,99],[225,77],[310,117],[150,187],[260,192]][index]:[155+(index%5)*70-(index>=5?35:0),index<5?223:261];
   }
-  function countCollectedPoint(index,age=state.age){return age===2?[[715,229],[780,229],[845,229],[747,186],[812,186]][index]:index<5?[[625,682,739,905,960][index],340]:[700+(index-5)*55,370];}
-  function countDestination(age=state.age){return age===2?{x:800,y:240,rx:175,ry:110}:{x:810,y:285,rx:220,ry:115};}
+  function countCollectedPoint(index,age=state.age){
+    return age===2?[[715,229],[780,229],[845,229],[747,186],[812,186]][index]:[[784,354],[862,354],[940,354],[706,354],[628,354],[550,354],[956,300],[716,300],[638,300],[560,300]][index];
+  }
+  function countDestination(age=state.age){return age===2?{x:800,y:240,rx:175,ry:110}:{x:810,y:285,rx:300,ry:160};}
   function countPraise(final=false){
     const message=countHolding&&!final?'Wait for the next count.':'Let’s count again!';
     return `<g data-count-praise="" role="status" aria-live="polite"><rect data-text-panel="harvest-prompt" x="395" y="20" width="330" height="98" rx="26" fill="none" stroke="#75a460" stroke-width="4"/><circle cx="425" cy="56" r="22" fill="#ffe385"/><text x="425" y="66" text-anchor="middle" font-size="28" aria-hidden="true">🐒</text><text class="scene-caption" data-label-for="harvest-prompt" x="560" y="53" text-anchor="middle" dominant-baseline="central" font-size="28" font-weight="900" fill="#216144">Well done!</text><text class="scene-caption" data-label-for="harvest-prompt" x="560" y="91" text-anchor="middle" dominant-baseline="central" font-size="21" font-weight="800" fill="#30564d">${message}</text></g>`;
@@ -592,8 +595,8 @@
     }
     const slots=Array.from({length:max},(_,index)=>countCollectedPoint(index,age));
     [...countCollected].map((id,index)=>({id,index})).sort((a,b)=>slots[a.index][1]-slots[b.index][1]).forEach(({id,index})=>{
-      const [x,y]=slots[index];if(!apple)html+=`<ellipse cx="${x-2}" cy="${y+14}" rx="24" ry="4" fill="#354c24" fill-opacity=".18" pointer-events="none"/>`;
-      html+=`<g data-count-collected="${id}" role="img" aria-label="${kind} ${index+1} ${apple?'in the basket':'on the ground beside the rabbit'}"${apple?'':` transform="translate(${x} ${y}) rotate(-90)"`}>${countIcon(apple?x:0,apple?y:0,kind,apple?1:.6)}</g>`;
+      const [x,y]=slots[index];if(!apple)html+=`<ellipse cx="${x-2}" cy="${y+18}" rx="33" ry="4.5" fill="#354c24" fill-opacity=".18" pointer-events="none"/>`;
+      html+=`<g data-count-collected="${id}" role="img" aria-label="${kind} ${index+1} ${apple?'in the basket':'on the ground beside the rabbit'}"${apple?'':` transform="translate(${x} ${y}) rotate(-90)"`}>${countIcon(apple?x:0,apple?y:0,kind,apple?1:collectedCarrotScale)}</g>`;
     });
     if(apple)html+=countImage('basket',635,140,330,220,'clip-path="url(#count-basket-front)" pointer-events="none"');
     if(countHolding||done)html+=countPraise(done);
@@ -681,13 +684,13 @@
   const abacusCount=row=>state.abacusRows[row].filter(Boolean).length;
   const activeAbacusRow=()=>state.abacusSelectedRow??0;
   const abacusTotal=()=>state.abacusRows.reduce((sum,_,row)=>sum+abacusCount(row),0);
-  function updateAbacusAddition(previewRow=-1,previewCount=0,live=false){
+  function updateAbacusAddition(previewRow=-1,previewCount=0,live=false,root=scene){
     if(state.activity!=='abacus'||!state.abacusRows)return;
     const read=row=>row===previewRow?previewCount:abacusCount(row),total=state.abacusRows.reduce((sum,_,row)=>sum+read(row),0);
-    scene.querySelectorAll('[data-abacus-left]').forEach(node=>{const row=Number(node.dataset.abacusLeft),value=String(10-read(row));if(node.textContent!==value)node.textContent=value;});
-    scene.querySelectorAll('[data-abacus-right]').forEach(node=>{const row=Number(node.dataset.abacusRight),value=String(read(row));if(node.textContent!==value)node.textContent=value;});
-    const box=scene.querySelector('[data-abacus-total]');if(box)box.textContent=String(total);
-    const equation=scene.querySelector('[data-abacus-equation]');
+    root.querySelectorAll('[data-abacus-left]').forEach(node=>{const row=Number(node.dataset.abacusLeft),value=String(10-read(row));if(node.textContent!==value)node.textContent=value;});
+    root.querySelectorAll('[data-abacus-right]').forEach(node=>{const row=Number(node.dataset.abacusRight),value=String(read(row));if(node.textContent!==value)node.textContent=value;});
+    const box=root.querySelector('[data-abacus-total]');if(box)box.textContent=String(total);
+    const equation=root.querySelector('[data-abacus-equation]');
     if(equation){
       const counts=state.abacusRows.map((_,row)=>read(row)).filter(n=>n>0),lines=equation.querySelectorAll('tspan');
       lines[0].textContent=counts.slice(0,5).join(' + ')||'0';lines[1].textContent=counts.length>5?'+ '+counts.slice(5).join(' + '):'';
@@ -1292,7 +1295,7 @@
     }
   });
   // Demonstrate one success on copies; keep the child's real round untouched.
-  let demoGeneration=0,demoActive=false,demoResume=null,demoSceneNodes=[],demoProgress=null,demoVoiceCancel=null;
+  let demoGeneration=0,demoActive=false,demoResume=null,demoSceneNodes=[],demoProgress=null,demoStatus=null,demoVoiceCancel=null;
   const demoPause=(ms,token)=>new Promise(resolve=>{
     demoResume=resolve;
     guideTimer=setTimeout(()=>{demoResume=null;resolve(token===demoGeneration);},ms);
@@ -1305,6 +1308,7 @@
     demoSceneNodes.forEach(({node,style})=>{if(style===null)node.removeAttribute('style');else node.setAttribute('style',style);});
     demoSceneNodes=[];
     if(demoProgress){const {strip,copy,hidden,scroll}=demoProgress;copy.remove();strip.hidden=hidden;strip.scrollLeft=scroll;demoProgress=null;}
+    if(demoStatus){demoStatus.forEach(({node,text})=>{node.textContent=text;});demoStatus=null;}
     $('show-me').setAttribute('aria-pressed','false');
     try{speechSynthesis.cancel();}catch{}
   }
@@ -1348,6 +1352,7 @@
     if(state.activity==='abacus'&&countHolding)return;
     if(demoActive){stopDemo();return;}
     cancelGesture();stopDemo();demoActive=true;$('show-me').setAttribute('aria-pressed','true');
+    demoStatus=[$('result-score'),$('bubble-score')].map(node=>({node,text:node.textContent}));
     const token=demoGeneration,serial=roundSerial,activity=state.activity,age=state.age;
     const ns='http://www.w3.org/2000/svg',overlay=document.createElementNS(ns,'g'),backing=document.createElementNS(ns,'g');
     overlay.dataset.demoLayer='';overlay.dataset.demoPhase='action';overlay.style.pointerEvents='all';
@@ -1400,10 +1405,14 @@
     };
     const success=async index=>{
       if(!valid())return;
-      hand.setAttribute('visibility','hidden');
+      hand.setAttribute('visibility','hidden');demoVoiceCancel?.();
       const copy=demoProgress?.copy,chip=copy?.children[index];
-      if(chip){chip.classList.remove('is-current','is-later');chip.classList.add('is-done','is-demo-done');chip.setAttribute('aria-label','Demo completed: '+chip.title);copy.dataset.successIndex=String(index);copy.scrollLeft=0;}
-      overlay.dataset.demoPhase='success';hint('Demo: Success! Now it is your turn.');
+      if(chip){chip.classList.remove('is-current','is-later');chip.classList.add('is-done','is-demo-done');chip.setAttribute('aria-label','Demo completed: '+chip.title);copy.dataset.successIndex=String(index);copy.scrollLeft=Math.max(0,chip.offsetLeft-copy.clientWidth/2+chip.offsetWidth/2);}
+      if(copy&&!(activity==='abacus'&&age===5)){const score=$(activity==='bubbles'?'bubble-score':'result-score');score.textContent=score.textContent.replace(/\d+(?=\s*\/)/,String(copy.querySelectorAll('.is-done').length));}
+      overlay.dataset.demoPhase='success';hint('Demo: Well done! Look at the result.');
+      // Keep the completed picture and tick on screen, with the finger cleared.
+      // Immediate teardown would remove them before the browser could paint.
+      await demoPause(1000,token);
     };
     try{
       if(activity==='drag'){
@@ -1420,7 +1429,7 @@
           if(number&&await touch(number,`Tap the carriage showing ${target}.`)){const b=number.getBBox(),coach=choice.querySelector('image').getBBox(),s=Math.min(coach.width/b.width,coach.height/b.height)*.9,cx=b.x+b.width/2,cy=b.y+b.height/2;number.style.transition=reduced?'none':'transform 180ms ease-out';number.setAttribute('transform',`translate(${cx} ${cy}) scale(${s}) translate(${-cx} ${-cy})`);if(!await demoPause(reduced?0:180,token)||!valid())return;await success(countStage);}
         }else{
           const source=backing.querySelector('[data-count-fruit]');
-          if(source){const [x,y]=countSourcePoint(Number(source.dataset.countFruit),age),[destX,destY]=countCollectedPoint(countPlaced,age),scale=age===2?1:.6;
+          if(source){const [x,y]=countSourcePoint(Number(source.dataset.countFruit),age),[destX,destY]=countCollectedPoint(countPlaced,age),scale=age===2?1:collectedCarrotScale;
             if(await touch(source,age===2?'Pick an apple.':'Pick a carrot.')){
               source.setAttribute('visibility','hidden');const moving=document.createElementNS(ns,'g');moving.dataset.demoMoving='';moving.innerHTML=countIcon(0,0,age===2?'apple':'carrot',scale);moving.setAttribute('transform',`translate(${x} ${y})`);backing.appendChild(moving);
               moving.getBoundingClientRect();
@@ -1468,7 +1477,10 @@
           bubble.style.transition=reduced?'none':'transform 180ms ease-out';
           bubble.setAttribute('transform',bubble.getAttribute('transform')+' scale(1.15)');
           if(!await demoPause(reduced?0:180,token)||!valid())return;
-          bubble.setAttribute('opacity','0');await success(Math.max(0,index));
+          const p=demoBounds(bubble.querySelector('[data-balloon-body]')||bubble),radius=Math.min(p.width,p.height)*.42,color=state.bubbles.find(b=>b.id===Number(bubble.dataset.bubble))?.color||'#46baf2';
+          const splash=document.createElementNS(ns,'g');splash.dataset.demoSplash='';splash.setAttribute('transform',`translate(${p.x} ${p.y})`);splash.setAttribute('fill',color);splash.setAttribute('pointer-events','none');
+          splash.innerHTML=`<g class="demo-balloon-splash">${Array.from({length:8},(_,i)=>{const angle=i*Math.PI/4;return `<circle cx="${Math.cos(angle)*radius}" cy="${Math.sin(angle)*radius}" r="${Math.max(2.5,Math.min(10,radius*.12))}" stroke="#fff" stroke-width="1.5"/>`;}).join('')}</g>`;
+          backing.appendChild(splash);bubble.setAttribute('opacity','0');await success(Math.max(0,index));
         }
       }else if(activity==='brush'){
         const picture=backing.querySelector('g[stroke="#536b5b"]'),dirt=[...backing.querySelectorAll('[data-dirt]')];
@@ -1484,14 +1496,13 @@
       }else if(activity==='abacus'){
         const row=activeAbacusRow(),count=abacusCount(row),g=abacusGeometry(),right=count<10,index=right?9-count:0,bead=backing.querySelector(`[data-bead-row="${row}"][data-bead-index="${index}"]`);
         if(bead&&await touch(bead,'Touch one bead.')){
-          const dest=right?g.end-count*g.pitch:g.start,y=34+row*56,next=count+(right?1:-1);
+          const dest=right?g.end-count*g.pitch:g.start,y=abacusY(row),next=count+(right?1:-1);
           if(await move(dest,y,'Slide the bead.',850,g.r*2,bead.querySelector('circle'),()=>{bead.style.transition=reduced?'none':'transform 850ms ease-in-out';bead.setAttribute('transform',`translate(${dest} ${y})`);})){
             const label=backing.querySelector(`[data-color-label="${row}"]`);if(label)label.textContent=abacusLabel(row,next);
-            refreshSceneTextTabs();
-            const left=backing.querySelector(`[data-abacus-left="${row}"]`),end=backing.querySelector(`[data-abacus-right="${row}"]`);if(left)left.textContent=String(10-next);if(end)end.textContent=String(next);
+            $('result-score').textContent=`${abacusColors[row][0]}: ${next} ${abacusWords[next]}`;
+            bead.dataset.moved=String(right);
             const region=backing.querySelector(`[data-color-region="${row}"]`);if(region)region.setAttribute('fill',next?abacusColors[row][1]:'none');
-            const total=backing.querySelector('[data-abacus-total]');if(total)total.textContent=String(abacusTotal()+next-count);
-            const equation=backing.querySelector('[data-abacus-equation]');if(equation)equation.textContent=abacusColors.map((_,i)=>i===row?next:abacusCount(i)).filter(Boolean).join(' + ')||'0';
+            updateAbacusAddition(row,next,false,backing);
             const chip=demoProgress?.copy.children[row];if(chip){chip.title=abacusColors[row][0]+' '+next;const value=chip.querySelector('[data-abacus-chip-count]');if(value)value.textContent=String(next);}
             await success(row);
           }
