@@ -33,7 +33,9 @@ async function drag(page,value,target,dx=0,dy=0){const from=await page.locator(`
  if(engine==='chromium'){
   const touch=await context.newCDPSession(page);
   for(const [width,height,full] of [[844,390,false],[844,390,true],[390,844,true]]){
-   await page.setViewportSize({width,height});await open(3);if(full)await page.locator('#fullscreen').click();const before=await board(page),value=before.tiles[0],a=await page.locator(`[data-puzzle-tile="${value}"]`).boundingBox(),b=await page.locator('#puzzle-target-board').boundingBox();
+   await page.setViewportSize({width,height});await open(3);if(full)await page.locator('#fullscreen').click();const before=await board(page),value=before.tiles[0],source=page.locator(`[data-puzzle-tile="${value}"]`);
+   // Raw CDP input uses pixels; apply the same stability checks as a real locator action.
+   await source.click({trial:true});await page.locator('#puzzle-target-board').click({trial:true});const a=await source.boundingBox(),b=await page.locator('#puzzle-target-board').boundingBox();
    const start={x:a.x+a.width/2,y:a.y+a.height/2,id:7},end={x:b.x+b.width/2,y:b.y+b.height/2,id:7};
    await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[start]});await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[end]});check(`${width}/${full} real touch dragging shows the picked fragment`,await page.locator('.puzzle-drag-piece').isVisible());await touch.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});check(`${width}/${full} a cancelled touch returns the fragment safely`,JSON.stringify(await board(page))===JSON.stringify(before)&&await page.locator('.puzzle-drag-piece').count()===0);
    await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[start]});await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[end]});await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await page.waitForTimeout(240);const after=await board(page);check(`${width}/${full} a real touch drag places exactly one fragment`,after.placed[value-1]&&after.placed.filter(Boolean).length===1,after);
