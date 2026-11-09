@@ -6,6 +6,7 @@
 #app[data-view="puzzle"] #item-progress-strip small{font:700 11px/12px "Trebuchet MS",system-ui,sans-serif!important;white-space:nowrap;max-width:100%}
 #app[data-view="puzzle"] #item-progress-strip .item-chip>span{font-size:17px;line-height:18px}
 #app[data-view="puzzle"] #puzzle-upload{background:#ffe17a!important;border-color:#ad9250!important}
+#puzzle-upload .puzzle-gallery-icon{display:block;flex:none;width:24px;height:20px}
 #app[data-view="puzzle"] #puzzle-preview{background:#dfedf6!important;border-color:#7e9fb7!important}
 #app[data-view="puzzle"] #puzzle-numbers{background:#e9e1f2!important;border-color:#a591b5!important}
 #app[data-view="puzzle"] #puzzle-numbers[aria-pressed="true"]{box-shadow:inset 0 0 0 2px #287c60!important}
