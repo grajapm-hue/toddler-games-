@@ -64,8 +64,8 @@
   function common(parent,home=false){
     const notes=list(parent);
     if(home){
-      step(notes,'[data-activity="drag"]','1. Choose a game','Tap any game picture. All six games are open.');
-      step(notes,['#first-games','#previous-games','#next-games','#more-games'],'2. Browse the games','Tap Go for new games to reveal more cards. Back to first game returns directly to the beginning. You can also swipe the row or use the small arrows. All games shown means you have reached the end.');
+      step(notes,'[data-activity="drag"]','1. Choose a game','Tap any game picture. The first six games appear together; Glossy Blocks is on the More games page.');
+      step(notes,['#first-games','#more-games'],'2. Browse the games','Tap More games to open Glossy Blocks. Back to first game returns to the six original games. The Games control returns to the page that contains your current game.');
       step(notes,'#age-range','3. Choose an age inside a game','Age 2 to 5 is the shared age range. Open a game, then choose 2, 3, 4 or 5 in its header.');
     }else{
       if(app.classList.contains('immersive'))step(notes,'#exit-play','Return to all controls','Tap the square to leave fullscreen and reach age, Demo, Again, Back, Front and Games. Your current play stays.');
@@ -84,7 +84,7 @@
   }
   function content(){
     body.replaceChildren();const game=app.dataset.view,age=Number(app.dataset.age),paint=document.getElementById('paint-mode').getAttribute('aria-pressed')==='true';
-    const titles={home:'Choose a game',drag:'Drag shapes',bubbles:'Pop bubbles',slide:'Slide to reveal',brush:paint?'Finger paint':'Brush clean',abacus:age===2?'Count apples':age===3?'Count carrots':age===4?'Number train':'Count with the abacus',puzzle:'Picture Puzzle'};
+    const titles={home:'Choose a game',drag:'Drag shapes',bubbles:'Pop bubbles',slide:'Slide to reveal',brush:paint?'Finger paint':'Brush clean',abacus:age===2?'Count apples':age===3?'Count carrots':age===4?'Number train':'Count with the abacus',puzzle:'Picture Puzzle',glossy:'Glossy Blocks'};
     shade.dataset.guideFor=game==='abacus'?({2:'count-apples',3:'count-carrots',4:'count-train',5:'count-beads'}[age]||'count-beads'):game;shade.dataset.guideMode=game==='brush'?(paint?'paint':'clean'):'';
     document.getElementById('guide-title').textContent='How to Play · '+titles[game];
     const lead=document.createElement('p');lead.className='guide-lead';lead.textContent=game==='home'?'Play together at your child’s pace. These notes match the controls on this page.':'Follow these steps together. The pictures below show the controls in this game.';body.append(lead);
@@ -125,6 +125,11 @@
       step(notes,['[data-abacus-left]','[data-abacus-right]'],'2. Count both sides','The two ends show how many beads are on each side. Every row has ten beads in total.');
       step(notes,['[data-color-label]','[data-abacus-total]'],'3. Watch the monitor','The matching color, number word, sums and total update as beads move to the counted side. Move them back to subtract.');
       step(notes,'#item-progress-strip .item-chip','4. Enjoy the rainbow','A color lights up when that row has counted beads. The rainbow is a monitor; you can keep sliding after it is full.');
+    }else if(game==='glossy'){
+      step(notes,'#glossy-category','1. Choose blocks','Choose a category. Ages 2–5 offer expanding collections. The arrows beside the shelf show more choices without clearing your building.');
+      step(notes,'[data-glossy-item]','2. Build together','Drag a block onto the board, or tap a block and then an empty place. Edges snap together. With a keyboard, Enter on a shelf block adds it to an empty spot; arrow keys move a focused board block.');
+      step(notes,['#glossy-colour','#glossy-remove'],'3. Change your idea','Select a placed block to recolour or remove it. Open Colour for named swatches or a custom colour. Colour-word blocks update their name to match the chosen colour. Clear and Again start a fresh board. Categories, settings and rotation keep your construction.');
+      step(notes,['#glossy-pattern','#glossy-finish'],'4. Try a pattern or finish','Choose a faint pattern to copy, or build freely. Finished celebrates and starts a fresh round after the same short pause as other games. Demo shows a separate example without changing your work.');
     }else if(game==='puzzle'){
       step(notes,'#puzzle-upload','1. Add your pictures','Tap Picture and choose one or several images from the device. They stay in this browser; they are not uploaded.');
       step(notes,'#puzzle-gallery [data-puzzle-choice]','2. Choose a thumbnail','Tap any picture in the top row. Swipe the row for more. Switching pictures keeps their placed pieces during this play session.');
