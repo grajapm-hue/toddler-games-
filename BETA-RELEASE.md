@@ -128,7 +128,7 @@ The app does not send invitations automatically or collect group feedback. Membe
 
 ## Publish
 
-1. Run `node build-beta.mjs` and the local checks below.
+1. Edit the maintained files directly in `docs/beta/`, increment its release identifiers and `docs/beta/sw.js` cache, then run the relevant local checks. Do not run `build-beta.mjs`: it is a legacy prototype generator and refuses to overwrite maintained Beta.
 2. Push the repository to `https://github.com/grajapm-hue/toddler-games-`.
 3. In repository Settings → Pages, select **Deploy from a branch**, **main**, **/docs**, and Save. No custom GitHub Actions build/test workflow is included.
 4. After Pages finishes publishing, open `https://grajapm-hue.github.io/toddler-games-/beta/` and verify the deployed version and offline launch. This URL is the intended destination; the local preparation alone does not make it live.
@@ -143,7 +143,7 @@ Open the Beta URL online once and wait for **Ready for offline play**.
 - iPhone/iPad: open in Safari, choose Share → Add to Home Screen → Add.
 - Laptop Chrome/Edge: use Install app or the install icon in the address bar.
 
-Launch **SaNa Beta** from the home screen/app list. Try Tap to play and all four activity cards. Then close it, turn off the network and reopen it to check offline play. Portrait viewports retain a rotated landscape frame. Physical-device installation and native orientation behavior still need a hands-on trial.
+Launch **SaNa Beta** from the home screen/app list. Try Tap to play and all six activity cards. Then close it, turn off the network and reopen it to check offline play. Welcome, chooser and games adapt upright to portrait and landscape without requesting an orientation lock. Physical-device installation and native orientation behavior still need a hands-on trial.
 
 Clearing browser/site data can remove the offline cache. Reopen online once to prepare it again.
 
@@ -162,4 +162,6 @@ The Beta build adds branding, a welcome link, and common PWA registration. The p
 
 ## Future updates
 
-Keep the manifest `id` and scope stable for this Beta. Increment the cache version in `beta-runtime/sw.js` whenever shipped assets change, rebuild, then publish. Version 0.4 uses `sana-little-hands-beta-v4`. Cache cleanup deletes only old `sana-little-hands-beta-*` caches. The SW precaches the welcome page, play page, game script, install and share scripts, sharing stylesheet, manifest and icons before reporting readiness. Existing installed copies may need a refresh after loading online to display an update.
+Keep the manifest `id`, start URL, scope, storage keys and Beta URL stable. Change shipped code directly in `docs/beta/`; never regenerate it from root prototype or `beta-runtime/`. Increment the cache in `docs/beta/sw.js`, the `sana-release` metadata, visible version labels and versioned app query together. Add new runtime files to that worker's precache. Run the relevant local checks, including `node check-responsive-beta.cjs`, before publishing main to Pages /docs. Do not dispatch an Actions build/test workflow.
+
+After publication verify the Pages source commit, served files, a real previous-worker update with saved settings/gallery intact, and offline reopening. The manifest uses `orientation: any`; older installed Android launch settings may take a platform-managed manifest refresh. Actual installed-device rotation still needs a hands-on trial. Cache cleanup is limited to `sana-little-hands-beta-*`.
