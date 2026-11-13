@@ -173,7 +173,8 @@
     slide:{title:'Peek-a-boo friends',label:'Slide to reveal',word:'Slide',caption:'find a little friend',note:'Who is hiding behind the curtains?',hint:'Slide the sunny handles along the paths. Who will you find?'},
     brush:{title:'Little art studio',label:'Brush and paint',word:'Brush & paint',caption:'wash and make colors',note:'',hint:'Brush the muddy puppy. Give him a gentle wash.'},
     abacus:{title:'Counting adventures',label:'Counting games',word:'Count',caption:'count and play',note:'',hint:'Slide beads in any row, either way. See the number and its word change!' },
-    puzzle:{title:'Picture Puzzle',label:'Picture Puzzle',word:'Puzzle',caption:'make your own picture',note:'',hint:'Move the pieces on the left onto the picture grid.'}
+    puzzle:{title:'Picture Puzzle',label:'Picture Puzzle',word:'Puzzle',caption:'make your own picture',note:'',hint:'Move the pieces on the left onto the picture grid.'},
+    glossy:{title:'Glossy Blocks',label:'Glossy Blocks',word:'Blocks',caption:'build, count and create',note:'',hint:'Choose a block, then tap or drag it onto the building area.'}
   };
   let saved={};try{const stored=JSON.parse(localStorage.getItem('sanaLittleHandsV1')||'{}');saved=stored&&typeof stored==='object'?stored:{};}catch{/* Settings are optional. */}
   const hasAgeSettings=saved.ageSettings&&typeof saved.ageSettings==='object'&&!Array.isArray(saved.ageSettings);
@@ -186,6 +187,7 @@
   const state={age:ageProfiles.getAge(),level:1,activity:null,done:false,pointer:null,selected:null,paintMode:false,paintColor:colors[0],brushColor:colors[4],strokes:[],shapes:[],bubbles:[],sliders:[],slideIndex:0,slideRevealed:false,dirt:[],sound:saved.sound===true,haptics:saved.haptics!==false};
   Object.assign(state,{brushSize:profile().brushSize,erase:false,coverage:[],bubbleMode:profile().bubbleMode,bubbleSet:initial.bubbleSet==='full'||state.age===null?'full':'starter',bubbleHits:new Map(),bubblePops:0,bubbleRecent:[],bubbleEffects:[],bubbleSerial:0,bubbleWidth:1000});
   const picturePuzzle=window.SaNaPicturePuzzle.mount({app,scene,strip:$('item-progress-strip'),hint:words=>hint(words),complete:words=>{celebrate(words);applause();clearTimeout(rewardTimer);rewardTimer=setTimeout(()=>{$('celebrate').hidden=true;$('art-reward').hidden=true;},1500);},onReset:()=>{clearEffects();state.done=false;},status:words=>{$('game-results').hidden=false;$('result-score').hidden=false;$('result-score').textContent=words;$('progress').hidden=true;},readyChanged:()=>{if(state.activity==='puzzle')$('show-me').disabled=!gameReady();}});
+  const glossy=window.SaNaGlossyBlocks.mount({app,scene,hint:words=>hint(words),feedback:()=>{tone(580);haptic(25,0);},complete:words=>{celebrate(words);applause();scheduleNextRound();},onReset:()=>{clearEffects();state.done=false;}});
   const bubbleModes={plain:{label:'Plain',items:[]},numbers:{label:'1–20',items:Array.from({length:20},(_,i)=>String(i+1))},letters:{label:'A–Z',items:Array.from({length:26},(_,i)=>String.fromCharCode(65+i))},shapes:{label:'Shapes',items:shapes.map(shape=>shape.id)}};
   const bubbleColors=['#46b8cf','#ee6c88','#a890e5','#f5ce51','#76bc74','#f49d60'];
   const bubbleSpeeds={slow:72,medium:136,fast:464},bubbleDiameters={small:88,medium:120,large:384};
@@ -428,6 +430,7 @@
     return `<g stroke="#5c6555" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><g fill="${outline?'none':picture.color}">${picture.region}</g><g fill="${outline?'none':'#f6d789'}">${picture.details}</g></g>`;
   }
   function preview(id){
+    if(id==='glossy')return '<rect x="23" y="82" width="72" height="72" rx="8" fill="#ed7b75" stroke="#527e62" stroke-width="3"/><rect x="99" y="82" width="72" height="72" rx="8" fill="#73bde0" stroke="#527e62" stroke-width="3"/><rect x="61" y="7" width="72" height="72" rx="8" fill="#f5c84d" stroke="#527e62" stroke-width="3"/><path d="M34 111V96H80M110 111V96H156M72 36V21H118" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="6" stroke-linecap="round"/>' ;
     if(id==='puzzle')return '<rect x="13" y="35" width="78" height="104" rx="9" fill="#b4deec" stroke="#6e8e76" stroke-width="3"/><path d="M15 90H89V137H15Z" fill="#8cbb79"/><path d="M52 36V138M14 87H90" stroke="#fffaf0" stroke-width="4"/><path d="M23 76L40 55L57 76Z" fill="#e78e76"/><circle cx="72" cy="57" r="11" fill="#ffe17a"/><rect x="130" y="35" width="78" height="104" rx="9" fill="#f3f5e9" stroke="#8aa67a" stroke-width="3"/><path d="M169 37V137M132 87H206" stroke="#9bb18e" stroke-width="2" stroke-dasharray="4 3"/><path d="M98 87H122M113 78L123 87L113 96" fill="none" stroke="#287c60" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>';
     if(id==='abacus')return `<g stroke="#9b7e60" stroke-width="5"><path d="M15 22V152M113 22V152M15 30H113M15 76H113M15 122H113"/>${[0,1,2].map((row)=>[0,1,2].map(i=>`<circle cx="${31+i*23}" cy="${30+row*46}" r="10" fill="${['#ff3b30','#ff9500','#ffe500'][row]}" stroke-width="1"/>`).join('')).join('')}</g><path d="M132 110A36 36 0 0 1 204 110M143 110A25 25 0 0 1 193 110M154 110A14 14 0 0 1 182 110" fill="none" stroke="#ff3b30" stroke-width="10"/><circle cx="168" cy="140" r="17" fill="#ff8fc7"/><circle cx="168" cy="140" r="11" fill="white"/><circle cx="168" cy="140" r="6" fill="#b5794a"/>`;
     if(id==='drag')return `<g transform="translate(63 76) scale(.67)">${primitive('triangle','#ebc34e')}${face(0,12)}</g><g transform="translate(150 90) scale(.67) rotate(12)">${primitive('square','#71abc6')}${face()}</g><path d="M110 27L114 17M184 49L195 43" stroke="#76a181" stroke-width="5" stroke-linecap="round"/>`;
@@ -437,52 +440,25 @@
   }
   $('activity-grid').innerHTML=Object.entries(activities).map(([id,a])=>`<button class="activity-card" type="button" data-activity="${id}" aria-label="${a.label}"><span class="card-arrow" aria-hidden="true">↗</span><svg class="card-art" viewBox="0 0 220 180" aria-hidden="true">${preview(id)}</svg><b>${a.word}</b><small>${a.caption}</small></button>`).join('');
   const cardGrid=$('activity-grid');
-  cardGrid.insertAdjacentHTML('beforeend','<div class="activity-card upcoming-card" role="group" aria-label="More games coming"><svg class="card-art" viewBox="0 0 220 180" aria-hidden="true"><circle cx="110" cy="85" r="52" fill="#fff6d6" stroke="currentColor" stroke-width="4"/><path d="M110 60V110M85 85H135" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round"/><path d="M40 42L44 52L54 56L44 60L40 70L36 60L26 56L36 52ZM177 115L180 122L188 125L180 128L177 136L174 128L166 125L174 122Z" fill="#e0b83b"/></svg><b>More games</b><small>Coming soon</small></div>');
-  let cardSwipe=null,ignoreCardClick=false;
-  const cardStep=()=>Math.max(1,(cardGrid.firstElementChild?.offsetWidth||0)+(parseFloat(getComputedStyle(cardGrid).columnGap)||0));
-  function updateCardNavigation(){
-    const max=Math.max(0,cardGrid.scrollWidth-cardGrid.clientWidth);
-    $('previous-games').disabled=cardGrid.scrollLeft<2;$('next-games').disabled=cardGrid.scrollLeft>=max-2;
-    $('more-games').disabled=$('next-games').disabled;$('more-games-label').textContent=$('more-games').disabled?'All games shown':'Go for new games';
-    $('first-games').disabled=$('previous-games').disabled;
-    const first=Math.round(cardGrid.scrollLeft/cardStep())+1,total=cardGrid.children.length;
-    $('card-page').textContent=`Games ${first} to ${Math.min(total,first+4)} of ${total}`;
+  let chooserPage=0;
+  const welcomeRow=app.querySelector('#home-view .welcome');
+  welcomeRow.append($('first-games'),$('more-games'));
+  function setChooserPage(page){
+    chooserPage=page===1?1:0;
+    for(const card of cardGrid.querySelectorAll('[data-activity]'))card.hidden=(card.dataset.activity==='glossy')!==(chooserPage===1);
+    cardGrid.classList.toggle('extra-games',chooserPage===1);
+    cardGrid.setAttribute('aria-label',chooserPage?'More games: Glossy Blocks':'Choose from six games');
+    $('more-games').hidden=chooserPage===1;$('more-games').disabled=false;$('more-games').title='Open more games';$('more-games-label').textContent='More games';
+    $('first-games').hidden=chooserPage===0;$('first-games').disabled=false;$('first-games').title='Back to first games';
+    $('card-page').textContent=chooserPage?'More games':'First six games';
   }
-  function scrollCards(left){cardGrid.scrollTo({left:Math.max(0,Math.min(left,cardGrid.scrollWidth-cardGrid.clientWidth)),behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});}
-  $('previous-games').addEventListener('click',()=>scrollCards(cardGrid.scrollLeft-cardGrid.clientWidth));
-  $('next-games').addEventListener('click',()=>scrollCards(cardGrid.scrollLeft+cardGrid.clientWidth));
-  $('more-games').addEventListener('click',()=>$('next-games').click());
-  $('first-games').addEventListener('click',()=>scrollCards(0));
-  cardGrid.addEventListener('scroll',updateCardNavigation,{passive:true});
-  new ResizeObserver(updateCardNavigation).observe(cardGrid);
-  new MutationObserver(updateCardNavigation).observe(cardGrid,{childList:true});
-  // Map the swipe into the play frame, including its portrait-device rotation.
-  cardGrid.addEventListener('pointerdown',event=>{
-    if(!event.isPrimary||event.button!==0)return;
-    ignoreCardClick=false;cardSwipe={id:event.pointerId,start:app.classList.contains('rotated')?event.clientY:event.clientX,left:cardGrid.scrollLeft,dragging:false};
-  });
-  cardGrid.addEventListener('pointermove',event=>{
-    if(cardSwipe?.id!==event.pointerId)return;
-    const distance=(app.classList.contains('rotated')?event.clientY:event.clientX)-cardSwipe.start;
-    if(!cardSwipe.dragging&&Math.abs(distance)>8){cardSwipe.dragging=true;cardGrid.dataset.dragging='true';cardGrid.setPointerCapture(event.pointerId);}
-    if(cardSwipe.dragging){event.preventDefault();cardGrid.scrollLeft=cardSwipe.left-distance;}
-  });
-  function finishCardSwipe(event){
-    if(cardSwipe?.id!==event.pointerId)return;
-    const dragged=cardSwipe.dragging;cardSwipe=null;delete cardGrid.dataset.dragging;
-    if(cardGrid.hasPointerCapture(event.pointerId))cardGrid.releasePointerCapture(event.pointerId);
-    if(dragged){ignoreCardClick=true;scrollCards(Math.round(cardGrid.scrollLeft/cardStep())*cardStep());}
-  }
-  cardGrid.addEventListener('pointerup',finishCardSwipe);cardGrid.addEventListener('pointercancel',finishCardSwipe);
-  cardGrid.addEventListener('lostpointercapture',event=>{if(event.target===cardGrid)finishCardSwipe(event);});
-  cardGrid.addEventListener('click',event=>{if(ignoreCardClick&&event.detail!==0){ignoreCardClick=false;event.preventDefault();event.stopImmediatePropagation();}},{capture:true});
-  cardGrid.addEventListener('keydown',event=>{
-    if(event.target!==cardGrid||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
-    event.preventDefault();scrollCards(event.key==='Home'?0:event.key==='End'?cardGrid.scrollWidth:cardGrid.scrollLeft+(event.key==='ArrowRight'?cardStep():-cardStep()));
-  });
+  $('more-games').addEventListener('click',()=>{setChooserPage(1);cardGrid.querySelector('[data-activity="glossy"]').focus({preventScroll:true});});
+  $('first-games').addEventListener('click',()=>{setChooserPage(0);cardGrid.querySelector('[data-activity]').focus({preventScroll:true});});
+  setChooserPage(0);
   $('paint-tools').insertAdjacentHTML('beforeend',colors.map((color,i)=>`<button class="paint-color" type="button" data-paint="${color}" style="--paint:${color}" aria-label="${colorNames[i]} paint" aria-pressed="${i===0}"></button>`).join(''));
-  function clearEffects(){clearObjectFeedback();stopDemo();clearTimeout(nextRoundTimer);nextRoundTimer=null;clearTimeout(rewardTimer);clearTimeout(guideTimer);$('celebrate').hidden=true;$('art-reward').hidden=true;scene.querySelector('[data-guide]')?.remove();}
+  function clearEffects(){glossy.cancel();clearObjectFeedback();stopDemo();clearTimeout(nextRoundTimer);nextRoundTimer=null;clearTimeout(rewardTimer);clearTimeout(guideTimer);$('celebrate').hidden=true;$('art-reward').hidden=true;scene.querySelector('[data-guide]')?.remove();}
   function cancelGesture(){
+    glossy.cancel();
     releaseHeldObject();
     const pointer=state.pointer;state.pointer=null;
     if(pointer?.kind==='abacus')cancelAnimationFrame(pointer.feedbackFrame);
@@ -519,10 +495,10 @@
       chooseParentAge(ageOptions[next].dataset.ageOption);ageOptions[next].focus({preventScroll:true});
     });
   });
-  function home(){playSettings.open=false;picturePuzzle.leave();cancelCountAdvance();stopBubbles();cancelGesture();clearEffects();artGeneration++;artState('ready');state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('sound'),$('music-toggle'),$('vibration-toggle'));app.dataset.view='home';parentAgeControls();$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;$('item-progress-strip').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
+  function home(){playSettings.open=false;glossy.leave();picturePuzzle.leave();cancelCountAdvance();stopBubbles();cancelGesture();clearEffects();artGeneration++;artState('ready');state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('sound'),$('music-toggle'),$('vibration-toggle'));app.dataset.view='home';parentAgeControls();$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;$('item-progress-strip').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
   function levelControls(){document.querySelectorAll('[data-level]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.level)===state.level)));}
   function setLevel(level,reset=true){cancelGesture();const changed=state.level!==level;state.level=level;if(changed)state.brushSize=profile().brushSize;levelControls();save();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');if(reset&&state.activity)resetRound();else if(reset)hint(level===2?'Medium level: choose a picture and play together!':level===1?'Easy level: fewer, bigger things to try.':'Challenge level: a few more things to discover.');}
-  function startActivity(id,paintMode=false){closeAgeMenu();playSettings.open=false;$('play-settings-panel').append($('sound'),$('music-toggle'),$('vibration-toggle'));$('game-mid-controls').insertBefore($('fullscreen'),playSettings);state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
+  function startActivity(id,paintMode=false){setChooserPage(id==='glossy'?1:0);closeAgeMenu();playSettings.open=false;$('play-settings-panel').append($('sound'),$('music-toggle'),$('vibration-toggle'));$('game-mid-controls').insertBefore($('fullscreen'),playSettings);state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
   function resetRound(){
     roundSerial++;
     clearTimeout(slideAdvanceTimer);slideDoorAnimating=false;cancelCountAdvance();$('art-reward').hidden=true;stopBubbles();cancelGesture();clearEffects();state.done=false;state.selected=null;state.strokes=[];
@@ -533,6 +509,7 @@
     scene.parentElement.classList.toggle('bubble-mat',state.activity==='bubbles');scene.setAttribute('viewBox','0 0 1000 440');
     $('brush-modes').hidden=state.activity!=='brush';$('paint-tools').hidden=state.activity!=='brush';
     $('art-tools').hidden=state.activity!=='brush';
+    if(state.activity!=='glossy')glossy.leave();
     if(state.activity==='puzzle')picturePuzzle.start(state.age);else picturePuzzle.leave();
     state.erase=false;updateArtTools();
     scene.setAttribute('aria-label','Play area');
@@ -540,7 +517,8 @@
     updateBrushThumbnails();
     $('clean-mode').setAttribute('aria-pressed',String(!state.paintMode));$('paint-mode').setAttribute('aria-pressed',String(state.paintMode));
     scene.style.background='transparent';
-    if(state.activity==='abacus'){if(state.age===5){state.abacusRows=abacusColors.map(()=>Array(10).fill(false));state.abacusSelectedRow=0;renderAbacus();}else resetCountAdventure();}
+    if(state.activity==='glossy'){scene.replaceChildren();glossy.start(state.age,state.level);}
+    else if(state.activity==='abacus'){if(state.age===5){state.abacusRows=abacusColors.map(()=>Array(10).fill(false));state.abacusSelectedRow=0;renderAbacus();}else resetCountAdventure();}
     else if(state.activity==='drag'){
       if(shapeAge!==state.age){shapeAge=state.age;shapeRound=0;shapeCompleted=0;}
       const pool=shapes.slice(0,shapeLevelLimits[state.age]||4);
@@ -565,7 +543,7 @@
     updateGameNavigation();
     if(state.activity==='abacus'&&state.age===5)abacusHint();
     if(state.activity==='bubbles')hint(state.bubbleMode==='plain'?'Tap the rising bubbles. Splash, pop! They keep coming.':'Pop a bubble to color its matching item above. Find them all!');
-    prepareSceneArt();
+    if(state.activity==='glossy')artState('ready');else prepareSceneArt();
   }
   // Ages 2/3 keep the completed collection visible before marking its thumbnail.
   let countStage=0,countPlaced=0,countTimer=null,countHolding=false;
@@ -1414,6 +1392,7 @@
     return{x:left+width/2,y:top+height/2,width,height};
   }
   async function showMe(){
+    if(state.activity==='glossy'){glossy.demo();return;}
     if(state.activity==='puzzle'){void picturePuzzle.demo();return;}
     if(!gameReady()||objectFeedback)return;
     if(state.activity==='abacus'&&countHolding)return;

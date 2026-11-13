@@ -4,9 +4,9 @@ A separate landscape HTML playroom with freely selectable starting sets for ages
 
 ## Installable Beta
 
-Beta v1.62 uses an upright responsive layout in portrait and landscape on phones, tablets and laptops. All six games appear together. Safe-area insets protect controls; the former fixed camera gutter and forced rotated frame apply only to the legacy standalone prototype. The welcome and game pages release orientation locks and the Beta manifest permits either orientation. Rotation keeps the current round.
+Beta v1.63 uses an upright responsive layout in portrait and landscape on phones, tablets and laptops. All six games appear together. Safe-area insets protect controls; the former fixed camera gutter and forced rotated frame apply only to the legacy standalone prototype. The welcome and game pages release orientation locks and the Beta manifest permits either orientation. Rotation keeps the current round.
 
-The v1.62 trial checks a normal update from the working v1.61 installation. The manifest, orientation setting, install identity, game code and saved-data keys stay unchanged.
+The first page keeps the six existing games. **More games → Blocks** opens Glossy Blocks with nine categories, expanded age 2–5 collections, tap/drag/keyboard building, colours, patterns and the shared Demo, Again, settings and navigation. Rotation keeps the construction. Local SVG illustrations work consistently offline. The install manifest and existing saved-data keys remain unchanged.
 
 The maintained Beta lives directly in **docs/beta/**. Edit those files for Beta changes. The legacy `build-beta.mjs` generator predates the current Beta and must not overwrite it. The original standalone game remains available for local testing.
 
