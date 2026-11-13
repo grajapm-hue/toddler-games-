@@ -1,0 +1,89 @@
+/* Shared upright screen fit. Physical safe areas replace the old camera gutter. */
+#viewport{padding:var(--device-safe-top) var(--device-safe-right) var(--device-safe-bottom) var(--device-safe-left);background:#fffaf0}
+#app:not(.immersive){grid-template-rows:auto auto minmax(0,1fr);border-radius:0}
+#app[data-view="home"]{grid-template-rows:auto minmax(0,1fr)}
+#app[data-view="home"]>.companion-bar{display:none!important}
+#app[data-view="brush"] #activity-view .play-mat>.play-toolbar{display:none!important}
+#app[data-view="brush"] #art-tools #brush-modes{flex:none;margin:0}
+#app[data-view="brush"] #art-tools{flex-wrap:wrap;justify-content:center}
+#app>.topbar{flex-wrap:wrap;min-height:52px;gap:6px;padding:5px 8px}
+#app .game-pages,#app #first-games,#app #more-games,#app .upcoming-card{display:none!important}
+#app #home-view{gap:8px;padding:6px 10px 12px}
+#app .welcome{white-space:normal;justify-content:center;flex-wrap:wrap;text-align:center}
+#app .activity-grid{display:grid;grid-auto-flow:row;grid-auto-columns:auto;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:12px;overflow:hidden;touch-action:manipulation;scroll-snap-type:none;padding:0 0 6px;margin:0}
+#app .activity-card{justify-content:center;gap:3px;padding:8px;box-shadow:0 4px 0 var(--edge)}
+#app .activity-card .card-art{height:55%;max-height:180px;max-width:220px;flex:0 1 auto}
+#app .activity-card b{font-size:clamp(18px,2.5vw,28px);margin:0;line-height:1.15}
+#app .activity-card small{font-size:clamp(12px,1.4vw,16px);margin:0;line-height:1.2}
+#app #puzzle-retry{align-self:center;flex:none;min-height:44px;padding:8px 16px;margin:5px;border:2px solid #527e62;border-radius:12px;background:#ffe17a;font-weight:900;color:#173e35}
+#app.portrait:not(.immersive)>.topbar{justify-content:center}
+#app.portrait .topbar .brand-mark{width:32px;height:32px}
+#app.portrait .topbar .icon-button{min-width:40px;width:40px;height:40px;padding:6px}
+#app.portrait #home-view .welcome p{display:none}
+@media(max-width:699px){#app.portrait .activity-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr))}}
+#app.portrait .companion-bar{display:grid;grid-template-columns:32px minmax(0,1fr) auto auto;padding:5px 6px;gap:5px}
+#app.portrait #hint{font-size:13px;line-height:1.25}
+#app.portrait .companion-bar .progress{display:none}
+#app.portrait .companion-bar .soft-button{font-size:13px;padding:4px 6px;gap:3px}
+#app.portrait .companion-bar :is(#show-me,#again){min-height:38px}
+#app.portrait:not(.immersive) .bubble-settings{flex-wrap:wrap;gap:4px;padding:3px}
+#app.portrait .bubble-setting-group{flex:1;justify-content:center}
+#app.portrait .play-toolbar{flex-wrap:wrap;justify-content:center;padding:3px}
+#app.portrait #play-options{margin:0 auto;justify-content:center}
+#app.portrait[data-view="brush"] #art-tools{flex-wrap:wrap}
+#app.portrait[data-view="brush"] #paint-tools{flex-wrap:wrap;justify-content:center}
+#app.portrait .play-navigation{flex-wrap:nowrap;gap:4px;justify-content:space-between;padding:5px}
+#app.portrait #game-mid-controls{order:0;width:auto;justify-content:center;flex-wrap:nowrap}
+#app.portrait .parent-age{flex-wrap:wrap;justify-content:center}
+#app.narrow[data-view="home"] .topbar .icon-button{width:44px;min-width:44px;height:44px;padding:7px}
+#app.narrow[data-view="home"] .topbar .app-update-button{min-height:44px;font-size:14px;padding:5px 8px}
+#app.portrait .guide-trigger{min-height:44px;font-size:12px;padding:5px}
+#app.portrait[data-view="puzzle"] #activity-view .play-mat>#item-progress-strip{grid-template-rows:44px!important;height:50px!important;min-height:50px!important;max-height:50px!important}
+#app.portrait[data-view="puzzle"] #item-progress-strip>:is(.item-chip,.puzzle-grid-label,.puzzle-placed){height:44px!important;min-height:44px!important;max-height:44px!important}
+#app.portrait[data-view="puzzle"] .puzzle-stage,#app.portrait[data-view="puzzle"] .puzzle-demo-pair{padding-top:28px}
+#app.portrait[data-view="puzzle"] #puzzle-caption-slot{width:90%}
+#app[data-view="puzzle"] #picture-puzzle.stacked .puzzle-stage{flex-direction:column;gap:4px;padding-top:28px}
+#app[data-view="puzzle"] #picture-puzzle.stacked #puzzle-caption-slot{top:0;width:90%}
+#app[data-view="puzzle"] #picture-puzzle.stacked .puzzle-half+.puzzle-half:before{display:none}
+#app[data-view="puzzle"] #picture-puzzle.stacked .puzzle-demo-pair{flex-direction:column;gap:4px;padding-top:28px}
+#play-settings{position:relative;flex:none}
+#play-settings>summary{display:grid;place-items:center;list-style:none;cursor:pointer;width:44px;height:44px;border:2px solid #8aa67a;border-radius:10px;background:#dcebdd;font:900 24px/1 system-ui;color:#173e35}
+#play-settings>summary::-webkit-details-marker{display:none}
+#play-settings-panel{position:absolute;right:0;bottom:calc(100% + 8px);z-index:125;display:flex;gap:6px;padding:8px;border:2px solid #527e62;border-radius:12px;background:#fffaf0;box-shadow:0 3px 12px #173e3540}
+#app #play-settings-panel .icon-button{width:44px;min-width:44px;height:44px}
+#app:not(.immersive) .play-navigation .soft-button{min-height:44px}
+#app:not(.immersive) .play-navigation #fullscreen{width:44px;min-width:44px;height:44px}
+#frame .tagline{color:#fff8e9;text-shadow:0 2px 4px #37245e}
+@media(max-height:450px){
+ #app .activity-card{flex-direction:row;flex-wrap:wrap;align-content:center;gap:4px;padding:4px}
+ #app .activity-card .card-art{width:52px;height:52px;flex:none}
+ #app .activity-card b{font-size:18px}
+ #app .activity-card small{width:100%;font-size:12px}
+ #app .welcome{font-size:14px;padding:0}
+ #app>.topbar{min-height:44px;padding:2px 6px}
+ #app .companion-bar{min-height:32px}
+ #app.compact .companion-bar .sana-badge small{display:none}
+ #app[data-view="brush"] #paint-tools .paint-label{display:none}
+ #app[data-view="brush"] #paint-tools .paint-color{width:26px;height:26px}
+ #app[data-view="brush"] #art-tools #brush-modes button{font-size:12px;padding:3px 6px;min-height:32px}
+ #app.compact[data-view="brush"] #art-tools{padding-block:2px}
+ #app.compact #activity-view .game-status-top{height:28px!important;min-height:28px!important;max-height:28px!important;padding:1px 4px}
+ #app.compact #activity-view .game-status-top #game-results{min-height:24px;padding:1px 4px}
+ #app.compact[data-view="brush"] #item-progress-strip{height:48px!important;min-height:48px!important;max-height:48px!important}
+ #app.compact[data-view="brush"] #item-progress-strip .item-chip{min-height:40px!important;height:40px!important}
+}
+@media(max-width:420px){
+ #app .topbar .brand{display:none}
+ #app[data-view="home"] #age-range{display:none}
+ #app .activity-card .card-art{max-height:105px}
+ #app .activity-card small{font-size:12px}
+}
+@media(max-width:599px){
+ #app.portrait .play-navigation :is(#game-back,#game-front)>span{display:none}
+ #app.portrait .play-navigation :is(#game-back,#game-front){min-width:44px;width:44px;padding:4px}
+ #app.portrait #game-mid-controls{gap:3px}
+ #app.portrait #game-home{padding:4px 5px;font-size:13px}
+}
+@media(max-width:359px){
+ #app.portrait[data-view="puzzle"] #activity-view .play-mat>#item-progress-strip{grid-template-columns:repeat(4,minmax(0,1fr))!important;grid-template-rows:repeat(2,44px)!important;height:98px!important;min-height:98px!important;max-height:98px!important}
+}

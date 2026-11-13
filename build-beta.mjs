@@ -2,6 +2,9 @@ import {readFile,writeFile,mkdir,copyFile} from 'node:fs/promises';
 import {resolve,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 const root=dirname(fileURLToPath(import.meta.url)),out=resolve(root,'docs','beta');
+// Current Beta is maintained directly. Never regenerate over a published app.
+const maintained=await readFile(resolve(out,'index.html'),'utf8').catch(error=>{if(error.code==='ENOENT')return null;throw error;});
+if(maintained!==null)throw new Error('Legacy generator cannot overwrite maintained Beta. Edit docs/beta directly; see BETA-RELEASE.md.');
 await mkdir(out,{recursive:true});
 const release=(await readFile(resolve(root,'beta-runtime','sw.js'),'utf8')).match(/const CACHE='([^']+)'/)?.[1];
 if(!release)throw new Error('Beta worker must identify its release');

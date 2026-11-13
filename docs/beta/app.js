@@ -2,6 +2,11 @@
   'use strict';
   const $=id=>document.getElementById(id);
   const app=$('app'),scene=$('scene');
+  // Keep art settings together rather than taking a second row from the board.
+  $('art-tools').append($('brush-modes'));
+  const playSettings=document.createElement('details');playSettings.id='play-settings';
+  playSettings.innerHTML='<summary aria-label="Play settings" title="Play settings">⚙</summary><div id="play-settings-panel" role="group" aria-label="Sound and vibration settings"></div>';
+  $('game-mid-controls').append(playSettings);
   const captionTints={
     cream:['#f5efdf','#ad9e83'],sky:['#dfedf6','#7e9fb7'],sage:['#dcebdd','#8aa67a'],
     lilac:['#e9e1f2','#a591b5'],peach:['#f3dfd3','#b5927e']
@@ -19,7 +24,7 @@
     if(normalSceneSizes.has(key))return normalSceneSizes.get(key);
     // Measure the existing normal CSS layout without changing the live game or its state.
     const copy=app.cloneNode(true);copy.classList.remove('immersive','rotated');copy.setAttribute('aria-hidden','true');copy.inert=true;
-    copy.querySelector('#game-mid-controls').append(copy.querySelector('#vibration-toggle'));
+    copy.querySelector('#play-settings-panel').append(copy.querySelector('#vibration-toggle'));
     placeArtTools(copy,false);
     Object.assign(copy.style,{left:'-20000px',top:'0',transform:'none',visibility:'hidden',pointerEvents:'none'});document.body.appendChild(copy);
     const board=copy.querySelector('#scene'),size={width:board.clientWidth,height:board.clientHeight};copy.remove();normalSceneSizes.set(key,size);return size;
@@ -514,10 +519,10 @@
       chooseParentAge(ageOptions[next].dataset.ageOption);ageOptions[next].focus({preventScroll:true});
     });
   });
-  function home(){picturePuzzle.leave();cancelCountAdvance();stopBubbles();cancelGesture();clearEffects();artGeneration++;artState('ready');state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('sound'),$('music-toggle'),$('vibration-toggle'));app.dataset.view='home';parentAgeControls();$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;$('item-progress-strip').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
+  function home(){playSettings.open=false;picturePuzzle.leave();cancelCountAdvance();stopBubbles();cancelGesture();clearEffects();artGeneration++;artState('ready');state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('sound'),$('music-toggle'),$('vibration-toggle'));app.dataset.view='home';parentAgeControls();$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;$('item-progress-strip').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
   function levelControls(){document.querySelectorAll('[data-level]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.level)===state.level)));}
   function setLevel(level,reset=true){cancelGesture();const changed=state.level!==level;state.level=level;if(changed)state.brushSize=profile().brushSize;levelControls();save();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');if(reset&&state.activity)resetRound();else if(reset)hint(level===2?'Medium level: choose a picture and play together!':level===1?'Easy level: fewer, bigger things to try.':'Challenge level: a few more things to discover.');}
-  function startActivity(id,paintMode=false){closeAgeMenu();$('game-mid-controls').append($('sound'),$('music-toggle'),$('fullscreen'),$('vibration-toggle'));state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
+  function startActivity(id,paintMode=false){closeAgeMenu();playSettings.open=false;$('play-settings-panel').append($('sound'),$('music-toggle'),$('vibration-toggle'));$('game-mid-controls').insertBefore($('fullscreen'),playSettings);state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
   function resetRound(){
     roundSerial++;
     clearTimeout(slideAdvanceTimer);slideDoorAnimating=false;cancelCountAdvance();$('art-reward').hidden=true;stopBubbles();cancelGesture();clearEffects();state.done=false;state.selected=null;state.strokes=[];
@@ -1592,14 +1597,14 @@
   function soundButton(){$('sound').setAttribute('aria-pressed',String(state.sound));$('sound').setAttribute('aria-label',state.sound?'All sound on':'All sound off');$('sound').style.opacity='1';window.dispatchEvent(new CustomEvent('sana-sound-change',{detail:{enabled:state.sound}}));}
   $('sound').addEventListener('click',()=>{state.sound=!state.sound;save();soundButton();if(state.sound)tone(600);else{demoVoiceCancel?.();if(audio?.state==='running')audio.suspend().catch(()=>{});}});
   function fitFrame(){
-    const visual=window.visualViewport,w=visual?.width||innerWidth,h=visual?.height||innerHeight,rotated=w<h;
+    const visual=window.visualViewport,w=Math.min(visual?.width||innerWidth,innerWidth),h=Math.min(visual?.height||innerHeight,innerHeight);
     if(visual&&Math.abs(visual.scale-1)>.01)return;
     closeAgeMenu();
-    // Read physical screen insets before rotating the landscape play frame.
+    // Use the visible viewport and physical safe areas without rotating content.
     const padding=getComputedStyle($('viewport')),left=parseFloat(padding.paddingLeft)||0,right=parseFloat(padding.paddingRight)||0,top=parseFloat(padding.paddingTop)||0,bottom=parseFloat(padding.paddingBottom)||0;
-    const availableW=Math.max(1,w-left-right),availableH=Math.max(1,h-top-bottom),width=rotated?availableH:availableW,height=rotated?availableW:availableH;
+    const availableW=Math.max(1,w-left-right),availableH=Math.max(1,h-top-bottom),width=availableW,height=availableH;
     app.style.left=`${(visual?.offsetLeft||0)+left+availableW/2}px`;app.style.top=`${(visual?.offsetTop||0)+top+availableH/2}px`;
-    cancelGesture();app.style.setProperty('--frame-w',`${width}px`);app.style.setProperty('--frame-h',`${height}px`);app.classList.toggle('rotated',rotated);app.classList.toggle('compact',height<530);app.classList.toggle('narrow',width<740);app.classList.toggle('short-play',height<350);
+    cancelGesture();app.style.setProperty('--frame-w',`${width}px`);app.style.setProperty('--frame-h',`${height}px`);app.classList.remove('rotated');app.classList.toggle('portrait',width<height);app.classList.toggle('compact',height<530);app.classList.toggle('narrow',width<740);app.classList.toggle('short-play',height<350);
   }
   // Use SaNa's in-page immersive layout without requesting browser fullscreen.
   // Android/Chrome owns the origin-labelled fullscreen security banner; web apps
@@ -1624,7 +1629,8 @@
     cancelGesture();app.classList.toggle('immersive',active);
     placeArtTools(app,active);
     if(active)app.querySelector('.play-mat').append($('vibration-toggle'));
-    else if(state.activity)$('game-mid-controls').append($('vibration-toggle'));
+    else if(state.activity)$('play-settings-panel').append($('vibration-toggle'));
+    playSettings.open=false;
     const button=$('fullscreen'),label=active?'Exit fullscreen':'Fullscreen';
     button.setAttribute('aria-label',label);button.setAttribute('aria-pressed',String(active));button.title=label;
     button.querySelector('use').setAttribute('href',active?'#exit-fullscreen-icon':'#fullscreen-icon');
@@ -1669,14 +1675,13 @@
 
   document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&app.classList.contains('immersive')){app.classList.remove('immersive');$('fullscreen').setAttribute('aria-pressed','false');fitFrame();}});
   document.addEventListener('fullscreenchange',fitFrame);
-  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&app.classList.contains('immersive'))immersiveMode(false);});
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&app.classList.contains('immersive'))immersiveMode(false);else if(event.key==='Escape'&&playSettings.open){playSettings.open=false;playSettings.querySelector('summary').focus({preventScroll:true});}});
   window.addEventListener('resize',fitFrame);window.visualViewport?.addEventListener('resize',fitFrame);window.addEventListener('orientationchange',fitFrame);
+  window.addEventListener('pageshow',fitFrame);document.addEventListener('visibilitychange',()=>{if(!document.hidden)fitFrame();});
   document.addEventListener('visibilitychange',()=>{if(document.hidden){stopBubbles();cancelGesture();if(audio?.state==='running')audio.suspend().catch(()=>{});}else if(state.activity==='bubbles'&&bubbleFrame===null)bubbleFrame=requestAnimationFrame(bubbleTick);});
   window.addEventListener('pagehide',()=>{stopBubbles();cancelGesture();clearEffects();if(audio?.state==='running')audio.suspend().catch(()=>{});});
   app.addEventListener('sana-guide-open',()=>{picturePuzzle.stopDemo();if(demoActive)stopDemo();cancelGesture();});
   levelControls();soundButton();home();fitFrame();
-  // Installed phones may support orientation preferences without native fullscreen.
-  if((navigator.userAgentData?.mobile===true||/iPhone|iPod|Android.*Mobile/i.test(navigator.userAgent)||(matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<600))&&(navigator.standalone||matchMedia('(display-mode:standalone)').matches)){
-    try{Promise.resolve(screen.orientation?.lock?.('landscape')).catch(()=>{});}catch{/* The existing landscape frame is the fallback. */}
-  }
+  // Release a previous document's lock when the platform exposes it.
+  try{screen.orientation?.unlock?.();}catch{/* Native rotation remains device controlled. */}
 })();

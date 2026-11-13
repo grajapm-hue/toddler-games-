@@ -4,6 +4,8 @@ A separate landscape HTML playroom with freely selectable starting sets for ages
 
 ## Installable Beta
 
+Beta v1.61 uses an upright responsive layout in portrait and landscape on phones, tablets and laptops. All six games appear together. Safe-area insets protect controls; the former fixed camera gutter and forced rotated frame apply only to the legacy standalone prototype. The welcome and game pages release orientation locks and the Beta manifest permits either orientation. Rotation keeps the current round.
+
 The maintained Beta lives directly in **docs/beta/**. Edit those files for Beta changes. The legacy `build-beta.mjs` generator predates the current Beta and must not overwrite it. The original standalone game remains available for local testing.
 
 For a local hosted trial, run `node serve.mjs 8778 docs` and open `http://127.0.0.1:8778/beta/`.

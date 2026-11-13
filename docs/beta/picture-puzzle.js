@@ -56,16 +56,24 @@
       context.drawImage(image,(canvas.width-width)/2,(canvas.height-height)/2,width,height);
       return {src:canvas.toDataURL('image/jpeg',.9),ratio,custom};
     }
-    const defaultPicture=normalize('puzzle-sana-banana.webp',false).then(image=>({...image,id:'sana'}));defaultPicture.catch(()=>{});
+    let defaultPicture;
+    function loadDefaultPicture(){
+      if(!defaultPicture)defaultPicture=normalize('puzzle-sana-banana.webp',false).then(image=>({...image,id:'sana'})).catch(error=>{defaultPicture=null;throw error;});
+      return defaultPicture;
+    }
+    loadDefaultPicture().catch(()=>{});
+    const retry=document.createElement('button');retry.id='puzzle-retry';retry.type='button';retry.hidden=true;retry.textContent='Try picture again';retry.addEventListener('click',()=>{void activate(retry.dataset.image,{retryLoad:true});});panel.prepend(retry);
     const initial=loadLibrary();initial.catch(()=>{});
     function say(text){message.textContent=text;if(active)hint(text);}
 
     const placedCount=()=>board?.placed.filter(Boolean).length||0;
     function fit(){
       if(!active||!picture)return;
-      const width=Math.max(1,Math.min((stage.clientWidth-30)/2,(stage.clientHeight-44)*picture.ratio)),height=width/picture.ratio;
+      const portrait=app.classList.contains('portrait'),stacked=portrait&&stage.clientHeight>=360;
+      panel.classList.toggle('stacked',stacked);
+      const width=Math.max(1,stacked?Math.min(stage.clientWidth-24,(stage.clientHeight-108)/2*picture.ratio):Math.min((stage.clientWidth-30)/2,(stage.clientHeight-(portrait?72:44))*picture.ratio)),height=width/picture.ratio;
       panel.style.setProperty('--puzzle-width',width+'px');panel.style.setProperty('--puzzle-height',height+'px');
-      caption.style.top=Math.max(0,halves[0].offsetTop+halves[0].querySelector('.puzzle-panel-label').offsetTop-5)+'px';
+      caption.style.top=portrait?'0px':Math.max(0,halves[0].offsetTop+halves[0].querySelector('.puzzle-panel-label').offsetTop-5)+'px';
     }
     new ResizeObserver(()=>{if(panel.hasAttribute('data-puzzle-demo'))stopDemo();if(drag){cancelDrag();render();}fit();}).observe(stage);
     function hostStatus(){caption.append(statusNode);gallery.hidden=false;statusHome.setAttribute('aria-label','Picture choices');}
@@ -99,7 +107,7 @@
       strip.querySelector('#puzzle-upload small').textContent=busy?'Adding…':'Picture';
       const thumbnail=strip.querySelector('#puzzle-preview');thumbnail.setAttribute('aria-pressed',String(preview||won));thumbnail.setAttribute('aria-label',preview?'Return to puzzle':'Show complete picture');thumbnail.querySelector('small').textContent=preview?'Play':'Look';thumbnail.dataset.completed=String(won);thumbnail.classList.toggle('is-done',won);
       if(picture)thumbnail.querySelector('img').src=picture.src;
-      strip.querySelector('#puzzle-numbers').setAttribute('aria-pressed',String(numbers));strip.querySelector('#puzzle-default').disabled=busy||activeImage==='sana';renderGallery();
+      strip.querySelector('#puzzle-numbers').setAttribute('aria-pressed',String(numbers));strip.querySelector('#puzzle-default').disabled=busy||(activeImage==='sana'&&!!picture);renderGallery();
       status(`${age} × ${age} · ${placedCount()} / ${age*age} placed`);
     }
     function paintPosition(node,value,position){
@@ -115,13 +123,13 @@
       reference.src=picture.src;reference.alt=picture.custom?'Your complete picture':'Curious SaNa eating a banana';reference.hidden=!(preview||won);boardNode.inert=targetNode.inert=preview||done||busy;syncStrip();fit();readyChanged();
     }
     function shuffle(){removing=false;clearTimeout(winTimer);cancelDrag();onReset();won=false;preview=false;selected=null;board=create(age);rounds.set(roundKey(),board);boardNode.replaceChildren();targetNode.replaceChildren();render();say('Picture ready. Move the pieces on the left onto the picture grid.');}
-    async function activate(id,{fresh=false,remember=true}={}){
-      if(!active||(!fresh&&id===activeImage&&picture&&board&&!busy))return;
-      removing=false;stopDemo();cancelDrag();clearTimeout(winTimer);const token=++generation;busy=true;onReset();syncStrip();boardNode.dataset.ready='false';readyChanged();
+    async function activate(id,{fresh=false,remember=true,retryLoad=false}={}){
+      if(!active||(!fresh&&!retryLoad&&id===activeImage&&picture&&board&&!busy))return;
+      removing=false;retry.hidden=true;stopDemo();cancelDrag();clearTimeout(winTimer);const token=++generation;busy=true;onReset();syncStrip();boardNode.dataset.ready='false';readyChanged();
       try{
-        const next=id==='sana'?await defaultPicture:pictures.find(image=>image.id===id);if(!next)throw Error('Picture unavailable');await imageFrom(next.src);if(!active||token!==generation)return;
+        const next=id==='sana'?await loadDefaultPicture():pictures.find(image=>image.id===id);if(!next)throw Error('Picture unavailable');await imageFrom(next.src);if(!active||token!==generation)return;
         activeImage=id;picture=next;board=fresh?create(age):(rounds.get(roundKey())||create(age));rounds.set(roundKey(),board);won=solved(board);preview=false;selected=null;boardNode.replaceChildren();targetNode.replaceChildren();busy=false;render();showSelectedThumbnail();if(remember)void rememberSelection(id);say('Picture ready. Choose a piece for your picture.');
-      }catch{if(active&&token===generation){busy=false;if(picture&&board)render();else syncStrip();say('Choose a different picture. This picture could not be opened.');readyChanged();}}
+      }catch{if(active&&token===generation){busy=false;retry.dataset.image=id;retry.hidden=false;if(picture&&board)render();else syncStrip();say('This picture could not be opened. Try picture again or choose another.');readyChanged();}}
     }
     async function start(value){
       removing=false;deleting=false;active=true;age=[2,3,4,5].includes(value)?value:2;panel.hidden=false;hostStatus();busy=true;const token=++generation;stopDemo();syncStrip();boardNode.dataset.ready='false';
