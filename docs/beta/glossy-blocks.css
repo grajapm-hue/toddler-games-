@@ -7,7 +7,7 @@
 #app #activity-grid.extra-games .activity-card{--card:#e9e1f2;--edge:#a591b5}
 #app[data-view="glossy"] #activity-view{grid-template-rows:minmax(0,1fr);grid-template-areas:"board";gap:0}
 #app[data-view="glossy"] .play-mat>:is(#scene,.play-toolbar,.game-status-top){display:none!important}
-#glossy-room{order:0;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"actions" "workspace";flex:1 1 0;min-height:0;min-width:0;padding:6px;gap:6px;overflow:hidden;color:#173e35;font-family:system-ui,sans-serif}
+#glossy-room{order:0;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"workspace";flex:1 1 0;min-height:0;min-width:0;padding:6px;gap:6px;overflow:hidden;color:#173e35;font-family:system-ui,sans-serif}
 #glossy-room[hidden]{display:none!important}
 .glossy-tools{display:none}
 .glossy-tools label{display:flex;align-items:center;gap:5px;font-size:14px;font-weight:800;min-width:0;background:#fffaf0e8;border:1px solid #8aa67a;border-radius:10px;padding:2px 6px}
@@ -48,7 +48,7 @@
 .glossy-compact .glossy-tools{gap:4px}.glossy-compact .glossy-tools label{font-size:12px;padding:2px 4px;gap:3px}.glossy-compact .glossy-tools select{font-size:13px;max-width:112px}
 .glossy-compact .glossy-tools .glossy-actions button{font-size:13px;padding:4px 8px}
 #app:not(.portrait) #glossy-room.glossy-compact{padding:2px;gap:4px}
-#app.portrait #glossy-room{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"workspace" "actions"}
+#app.portrait #glossy-room{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"workspace"}
 #app.portrait .glossy-workspace{grid-template-columns:minmax(0,1fr);grid-template-rows:repeat(2,minmax(0,1fr))}
 #app.portrait .glossy-shelf{flex-direction:column;align-items:stretch;gap:5px}
 #app.portrait .glossy-shelf-heading{width:auto;flex-wrap:nowrap;justify-content:space-between;gap:5px}
@@ -74,7 +74,7 @@
 
 .glossy-shelf-heading h2,.glossy-build-heading h2{font:800 16px/1.15 system-ui,sans-serif;margin:0;min-width:0}
 .glossy-paging{display:flex;align-items:center;gap:5px}
-.glossy-build-heading{align-items:center;justify-content:flex-start;gap:5px;flex:none;flex-wrap:wrap}
+.glossy-build-heading{align-items:center;justify-content:flex-start;gap:5px;flex:none;flex-wrap:wrap;align-content:center}
 #glossy-grid{min-width:54px;min-height:44px;padding:3px 9px;font-size:14px}
 #glossy-grid[aria-pressed="true"]{background:#a9e4b9;border-color:#527e62}
 #glossy-board [data-glossy-grid]{pointer-events:none}
@@ -107,11 +107,11 @@
 @media(max-width:699px){.glossy-build-heading{gap:4px}.glossy-build-heading h2{font-size:14px}.glossy-blocks-label{font-size:12px}.glossy-blocks-label select{max-width:100px;min-width:68px;font-size:12px}.glossy-build-heading #glossy-rotate{min-width:54px;width:auto;font-size:12px;padding:3px 5px}.glossy-build-heading #glossy-grid{min-width:44px;padding:3px 6px;font-size:12px}.glossy-build-heading .glossy-palette>summary{min-height:44px;padding:2px 5px;font-size:12px}}
 @media(max-width:359px){.glossy-build-heading{column-gap:3px}.glossy-blocks-label select{max-width:82px}.glossy-build-heading h2{font-size:13px}}
 
-/* Landscape: give Stores only the width its block grid needs and reserve the
-   larger share of the play area for building. The same split applies in the
-   normal room and immersive fullscreen room. */
-#app:not(.portrait) #glossy-room{grid-template-rows:minmax(48px,auto) minmax(0,1fr);grid-template-areas:"actions" "workspace"}
-#app:not(.portrait) #glossy-room>.glossy-actions{grid-area:actions;grid-row:1;position:relative;z-index:1}
-#app:not(.portrait) .glossy-workspace{grid-area:workspace;grid-row:2;grid-template-columns:minmax(220px,34fr) minmax(0,66fr);width:100%;min-width:0;align-items:stretch}
+/* Landscape: keep tools in the Assemble header and let both work panes use
+   the freed toolbar row. Stores gets enough width for the tile grid; Assemble
+   gets the larger canvas in both normal and immersive fullscreen play. */
+#app:not(.portrait) .glossy-workspace{grid-template-columns:minmax(220px,34fr) minmax(0,66fr);width:100%;min-width:0;align-items:stretch}
 #app:not(.portrait) .glossy-shelf,#app:not(.portrait) .glossy-build{min-width:0;overflow:hidden}
-#app:not(.portrait) .glossy-build-heading{max-width:100%;row-gap:4px}
+#app:not(.portrait) .glossy-build-heading{max-width:100%;row-gap:4px;flex-wrap:wrap}
+.glossy-build-heading>.glossy-actions{display:contents}
+#glossy-room #glossy-count{font-size:13px;font-weight:800;background:#fffaf0e8;border-radius:8px;padding:5px;white-space:nowrap}
