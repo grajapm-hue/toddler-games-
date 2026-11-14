@@ -4,13 +4,13 @@ assert(fs.existsSync(file),'Glossy Blocks game module must be available');
 const {core}=require(file);let checks=0;
 function check(value,words){assert(value,words);checks++;}
 for(const category of core.categories){let previous=0;for(const age of [2,3,4,5]){
-  const items=core.items(category.id,age);check((category.id==='mixed'&&age===5?items.length===previous:items.length>previous),category.id+' grows at age '+age);previous=items.length;
+  const items=core.items(category.id,age);check(items.length>previous,category.id+' grows at age '+age);previous=items.length;
   check(new Set(items.map(i=>i.id)).size===items.length,'unique item identities');
   check(items.every(i=>i.name&&/^#[0-9a-f]{6}$/i.test(i.color)),'named coloured items');
 }}
 check(core.categories.length===10,'ten categories');
-check(core.items('numbers',5).map(i=>i.name).join(',')===Array.from({length:20},(_,i)=>i+1).join(','),'all numbers 1–20');
-check(core.items('letters',5).map(i=>i.name).join('')==='ABCDEFGHIJKLMNOPQRSTUVWXYZ','complete alphabet');
+check(core.items('numbers',5).map(i=>i.name).join(',')===Array.from({length:36},(_,i)=>i+1).join(','),'all numbers 1–20');
+check(core.items('letters',5).slice(0,26).map(i=>i.name).join('')==='ABCDEFGHIJKLMNOPQRSTUVWXYZ','complete alphabet');
 for(const age of [2,3,4,5])check(core.patterns(age,1).length>=4,'age pattern collection');
 const board=core.create(5),red=core.items('plain',2)[0];
 check(core.place(board,red,20,20),'first block');

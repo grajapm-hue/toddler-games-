@@ -94,3 +94,11 @@
 #app:not(.portrait) .glossy-canvas,#app:not(.portrait) .glossy-store-canvas{overflow:hidden}
 
 #glossy-rotate{min-width:62px;min-height:44px;padding:3px 6px;font-size:13px;white-space:nowrap}
+
+#glossy-size-toggle{width:44px;min-width:44px;min-height:44px;padding:3px;font-size:13px}
+#glossy-size-panel{position:absolute;z-index:180;box-sizing:border-box;width:232px;padding:8px;border:2px solid #527e62;border-radius:12px;background:#fffaf0;box-shadow:0 3px 12px #173e3540;color:#173e35;font:800 13px system-ui,sans-serif}
+#glossy-size-panel[hidden]{display:none!important}.glossy-size-row{display:flex;gap:6px;align-items:center}
+#glossy-axis{flex:1;min-width:0;min-height:44px;font:800 14px system-ui,sans-serif;background:#fff1bb;color:#173e35;border:1px solid #8aa67a;border-radius:8px}
+#glossy-size-panel button{width:44px;min-width:44px;min-height:44px;padding:0;font-size:26px}#glossy-size-note{display:block;margin-top:6px;font-size:11px;line-height:1.25}
+#glossy-size-panel button:disabled{opacity:.45}.glossy-build-heading{gap:3px}#glossy-pan-hint{font-size:16px}
+@media(max-width:359px){.glossy-build-heading h2{font-size:14px}}
