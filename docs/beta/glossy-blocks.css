@@ -7,9 +7,9 @@
 #app #activity-grid.extra-games .activity-card{--card:#e9e1f2;--edge:#a591b5}
 #app[data-view="glossy"] #activity-view{grid-template-rows:minmax(0,1fr);grid-template-areas:"board";gap:0}
 #app[data-view="glossy"] .play-mat>:is(#scene,.play-toolbar,.game-status-top){display:none!important}
-#glossy-room{order:0;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr);grid-template-areas:"tools actions" "workspace workspace";flex:1 1 0;min-height:0;min-width:0;padding:6px;gap:6px;overflow:hidden;color:#173e35;font-family:system-ui,sans-serif}
+#glossy-room{order:0;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"actions" "workspace";flex:1 1 0;min-height:0;min-width:0;padding:6px;gap:6px;overflow:hidden;color:#173e35;font-family:system-ui,sans-serif}
 #glossy-room[hidden]{display:none!important}
-.glossy-tools{grid-area:tools;display:flex;justify-content:center;gap:8px;flex:none;align-items:center;min-width:0}
+.glossy-tools{display:none}
 .glossy-tools label{display:flex;align-items:center;gap:5px;font-size:14px;font-weight:800;min-width:0;background:#fffaf0e8;border:1px solid #8aa67a;border-radius:10px;padding:2px 6px}
 .glossy-tools select{font:800 14px system-ui,sans-serif;color:#173e35;background:#fff1bb;border:0;min-width:0;max-width:155px;min-height:38px;border-radius:7px}
 #glossy-colour{width:46px;height:38px;padding:2px;border:0;background:transparent}
@@ -38,23 +38,23 @@
 #glossy-board [data-glossy-placed]{touch-action:none;cursor:grab;outline:none}
 #glossy-board [data-glossy-placed-focus]{visibility:hidden}
 #glossy-board [data-glossy-placed][aria-pressed="true"] [data-glossy-placed-focus],#glossy-board [data-glossy-placed]:focus-visible [data-glossy-placed-focus]{visibility:visible}
-.glossy-actions{grid-area:actions;display:flex;align-items:center;justify-content:center;gap:6px;flex:none;flex-wrap:nowrap}
+.glossy-actions{grid-area:actions;display:flex;align-items:center;justify-content:flex-end;gap:6px;flex:none;flex-wrap:nowrap}
 #glossy-room .glossy-actions button{min-height:44px;font-size:14px;padding:4px 12px;white-space:nowrap}
 #glossy-count{font-size:13px;font-weight:800;background:#fffaf0e8;border-radius:8px;padding:5px;white-space:nowrap}
 #glossy-finish{background:#a9e4b9}
 #glossy-room button:disabled{opacity:.55;cursor:default}
-#glossy-room[data-demo="true"] .glossy-tools,#glossy-room[data-demo="true"] .glossy-shelf{pointer-events:none;opacity:.6}
+#glossy-room[data-demo="true"] .glossy-build-heading,#glossy-room[data-demo="true"] .glossy-shelf{pointer-events:none;opacity:.6}
 .glossy-compact .glossy-workspace{grid-template-columns:repeat(2,minmax(0,1fr))}
 .glossy-compact .glossy-tools{gap:4px}.glossy-compact .glossy-tools label{font-size:12px;padding:2px 4px;gap:3px}.glossy-compact .glossy-tools select{font-size:13px;max-width:112px}
 .glossy-compact .glossy-tools .glossy-actions button{font-size:13px;padding:4px 8px}
 #app:not(.portrait) #glossy-room.glossy-compact{padding:2px;gap:4px}
-#app.portrait #glossy-room{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"tools" "workspace" "actions"}
+#app.portrait #glossy-room{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"workspace" "actions"}
 #app.portrait .glossy-workspace{grid-template-columns:minmax(0,1fr);grid-template-rows:repeat(2,minmax(0,1fr))}
 #app.portrait .glossy-shelf{flex-direction:column;align-items:stretch;gap:5px}
 #app.portrait .glossy-shelf-heading{width:auto;flex-wrap:nowrap;justify-content:space-between;gap:5px}
 #app.portrait #glossy-room .glossy-shelf-heading button{width:44px;min-width:44px;min-height:44px;height:44px}
 #app.portrait #glossy-inventory{font-size:12px}
-#app.immersive[data-view="glossy"] #glossy-room{padding-top:54px}
+#app.immersive[data-view="glossy"] #glossy-room{padding-top:2px}
 @media(max-width:699px){
  #app #activity-grid.extra-games{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr))}
  .glossy-tools{gap:3px;justify-content:space-between}.glossy-tools label{gap:2px;padding:1px 3px;font-size:11px;flex-direction:column;flex:1}
@@ -74,7 +74,7 @@
 
 .glossy-shelf-heading h2,.glossy-build-heading h2{font:800 16px/1.15 system-ui,sans-serif;margin:0;min-width:0}
 .glossy-paging{display:flex;align-items:center;gap:5px}
-.glossy-build-heading{align-items:center;justify-content:space-between;gap:5px;flex:none}
+.glossy-build-heading{align-items:center;justify-content:flex-start;gap:5px;flex:none;flex-wrap:wrap}
 #glossy-grid{min-width:54px;min-height:44px;padding:3px 9px;font-size:14px}
 #glossy-grid[aria-pressed="true"]{background:#a9e4b9;border-color:#527e62}
 #glossy-board [data-glossy-grid]{pointer-events:none}
@@ -102,3 +102,7 @@
 #glossy-size-panel button{width:44px;min-width:44px;min-height:44px;padding:0;font-size:26px}#glossy-size-note{display:block;margin-top:6px;font-size:11px;line-height:1.25}
 #glossy-size-panel button:disabled{opacity:.45}.glossy-build-heading{gap:3px}#glossy-pan-hint{font-size:16px}
 @media(max-width:359px){.glossy-build-heading h2{font-size:14px}}
+
+.glossy-blocks-label{display:flex;align-items:center;gap:3px;min-width:0;padding:2px 4px;border:1px solid #8aa67a;border-radius:9px;background:#fffaf0e8;font:800 14px system-ui,sans-serif;white-space:nowrap}.glossy-blocks-label select{min-width:72px;max-width:130px;min-height:40px;padding:2px 5px;border:0;border-radius:7px;background:#fff1bb;color:#173e35;font:800 14px system-ui,sans-serif}.glossy-build-heading .glossy-palette{flex:none}.glossy-build-heading #glossy-grid{min-width:48px;width:auto}.glossy-build-heading #glossy-snapshot{width:44px;min-width:44px;height:44px;padding:8px}.glossy-build-heading #glossy-snapshot svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.glossy-build-heading #glossy-snapshot:not(:disabled){background:#a9e4b9}
+@media(max-width:699px){.glossy-build-heading{gap:4px}.glossy-build-heading h2{font-size:14px}.glossy-blocks-label{font-size:12px}.glossy-blocks-label select{max-width:100px;min-width:68px;font-size:12px}.glossy-build-heading #glossy-rotate{min-width:54px;width:auto;font-size:12px;padding:3px 5px}.glossy-build-heading #glossy-grid{min-width:44px;padding:3px 6px;font-size:12px}.glossy-build-heading .glossy-palette>summary{min-height:44px;padding:2px 5px;font-size:12px}}
+@media(max-width:359px){.glossy-build-heading{column-gap:3px}.glossy-blocks-label select{max-width:82px}.glossy-build-heading h2{font-size:13px}}
