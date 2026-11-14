@@ -1,6 +1,12 @@
-# SaNa Little Hands Beta v0.30
+# SaNa Little Hands Beta release guide
 
-The Beta site is published using GitHub Pages from `main` → `/docs`. Version 0.30 adds flexible family starting sets for ages 2, 3, 4 and 5 using the existing five games. The accepted portrait welcome and landscape game rooms remain. The phone's status bar may remain at the side of portrait content. Verify the Pages build commit and run the live checks after publishing each update.
+## Current release: v1.69
+
+The maintained installable Beta is in `docs/beta/`. Its starting sets cover ages 2–5; every game and level remains open for family play. The repository description still says ages 1–3 and should be updated to match the app.
+
+GitHub Actions now validates pull requests and deploys `docs/` when changes reach `main`. The Pages source is GitHub Actions. The deployment workflow and the separate Pages build both passed after PR #87 merged. The live Beta is at <https://grajapm-hue.github.io/toddler-games-/beta/>.
+
+Edit the maintained files in `docs/beta/` directly. Do not run `build-beta.mjs`; it is a legacy generator that refuses to overwrite the maintained Beta. The historical notes below begin with the v0.30 age-profile release and are retained as project history.
 
 ## Flexible family starting sets
 
@@ -162,6 +168,6 @@ The Beta build adds branding, a welcome link, and common PWA registration. The p
 
 ## Future updates
 
-Keep the manifest `id`, start URL, scope, storage keys and Beta URL stable. Change shipped code directly in `docs/beta/`; never regenerate it from root prototype or `beta-runtime/`. Increment the cache in `docs/beta/sw.js`, the `sana-release` metadata, visible version labels and versioned app query together. Add new runtime files to that worker's precache. Run the relevant local checks, including `node check-responsive-beta.cjs`, before publishing main to Pages /docs. Do not dispatch an Actions build/test workflow.
+Keep the manifest `id`, start URL, scope, storage keys and Beta URL stable. Change shipped code directly in `docs/beta/`; never regenerate it from root prototype or `beta-runtime/`. Increment the cache in `docs/beta/sw.js`, the `sana-release` metadata, visible version labels and versioned app query together. Add new runtime files to that worker's precache. Run relevant local checks, including `node check-responsive-beta.cjs`, before opening a pull request. The Pages workflow validates the maintained site, and a merge to `main` triggers deployment automatically.
 
 After publication verify the Pages source commit, served files, a real previous-worker update with saved settings/gallery intact, and offline reopening. The manifest uses `orientation: any`; older installed Android launch settings may take a platform-managed manifest refresh. Actual installed-device rotation still needs a hands-on trial. Cache cleanup is limited to `sana-little-hands-beta-*`.
