@@ -114,4 +114,16 @@
 #app:not(.portrait) .glossy-shelf,#app:not(.portrait) .glossy-build{min-width:0;overflow:hidden}
 #app:not(.portrait) .glossy-build-heading{max-width:100%;row-gap:4px;flex-wrap:wrap}
 .glossy-build-heading>.glossy-actions{display:contents}
-#glossy-room #glossy-count{font-size:13px;font-weight:800;background:#fffaf0e8;border-radius:8px;padding:5px;white-space:nowrap}
+#glossy-room .glossy-build-heading>:is(button,#glossy-count){box-sizing:border-box;height:44px;min-height:44px;width:auto;min-width:0;flex:0 0 auto;font:800 14px/1.1 system-ui,sans-serif;white-space:nowrap}
+#glossy-room .glossy-build-heading>button{padding:4px 8px}
+#glossy-room .glossy-build-heading #glossy-size-toggle{padding:4px 8px}
+#glossy-room .glossy-build-heading #glossy-rotate{min-width:0;padding:4px 8px;font-size:14px}
+#glossy-room .glossy-build-heading #glossy-grid{min-width:0;padding:4px 8px;font-size:14px}
+#glossy-room .glossy-build-heading #glossy-snapshot{width:44px;min-width:44px;height:44px;padding:8px}
+#glossy-room .glossy-build-heading .glossy-blocks-label{height:44px;min-height:44px;padding:2px 5px;font-size:14px}
+#glossy-room .glossy-build-heading .glossy-blocks-label select{min-height:38px;font-size:14px}
+#glossy-room .glossy-build-heading .glossy-palette{height:44px;box-sizing:border-box}
+#glossy-room .glossy-build-heading .glossy-palette>summary{height:42px;min-height:42px;font-size:14px;padding:2px 7px}
+#glossy-room #glossy-count,#glossy-room #glossy-inventory{display:inline-flex;align-items:center;justify-content:center;height:44px;min-height:44px;box-sizing:border-box;padding:4px 8px;border-radius:10px;background:#fffaf0e8;font:800 14px/1.1 system-ui,sans-serif;white-space:nowrap}
+#glossy-room .glossy-build-heading{column-gap:3px;row-gap:2px}
+@media(max-width:699px){#glossy-room .glossy-build-heading>:is(button,#glossy-count){font-size:14px}#glossy-room .glossy-build-heading #glossy-rotate,#glossy-room .glossy-build-heading #glossy-grid{font-size:14px}}
