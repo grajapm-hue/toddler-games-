@@ -66,8 +66,8 @@
  #glossy-room{gap:4px;padding:4px}
 }
 @media(max-width:359px){
- .glossy-palette>summary{font-size:11px;gap:0;min-width:44px;padding:2px 6px}
- #glossy-colour-preview{display:none}
+ .glossy-palette>summary{font-size:11px;gap:2px;flex-direction:column;min-width:44px;padding:2px 4px;line-height:1.1}
+ #glossy-colour-preview{display:block;width:12px;height:12px;border-width:1px}
  #app.portrait .glossy-tools label{font-size:11px}
  #app.portrait .glossy-tools select{font-size:12px}
 }
@@ -92,3 +92,5 @@
 /* Landscape shows every age row at once; both panes use the same SVG scale. */
 #app:not(.portrait) #glossy-board,#app:not(.portrait) #glossy-store{min-width:0;min-height:0;touch-action:none}
 #app:not(.portrait) .glossy-canvas,#app:not(.portrait) .glossy-store-canvas{overflow:hidden}
+
+#glossy-rotate{min-width:62px;min-height:44px;padding:3px 6px;font-size:13px;white-space:nowrap}
