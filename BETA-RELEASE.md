@@ -1,6 +1,6 @@
 # SaNa Little Hands Beta release guide
 
-## Current release: v1.71
+## Current release: v1.72
 
 The maintained installable Beta is in `docs/beta/`. Its starting sets cover ages 2–5; every game and level remains open for family play. The Blocks room keeps its controls beside the Assemble heading, removes the Pattern control and hides Plain, Shapes and Colours from the category menu. Done preserves the design and clears selection; the camera button saves a PNG snapshot through the browser download flow. In landscape, Stores uses about one third of the work area and Assemble receives the rest, in normal and fullscreen views. Assemble controls sit in its top row; the count stays visible when paging arrows are inactive. The repository description still says ages 1–3 and should be updated to match the app.
 
