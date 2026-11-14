@@ -351,7 +351,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 </style>
 <script>if(!window.sanaTouchGuardReady){for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});window.sanaTouchGuardReady=true;}</script>
 <script>for(const type of ['touchstart','touchmove'])document.addEventListener(type,event=>{if(event.touches.length>1)event.preventDefault();},{passive:false,capture:true});for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});</script>
-<meta name="sana-release" content="sana-little-hands-beta-v169-unique-ai-size">
+<meta name="sana-release" content="sana-little-hands-beta-v170-snapshot-tabs">
 <style>
 /* Keep balloon choices together and give the travelling rows the released height. */
 #app[data-view="bubbles"] #bubble-settings{flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;gap:4px;scrollbar-width:thin}
@@ -730,7 +730,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior:none}
 <script src="shape-library.js"></script>
 <script src="glossy-catalogue.js"></script>
 <script src="glossy-blocks.js"></script>
-<script src="app.js?v169"></script>
+<script src="app.js?v170"></script>
 <script src="parent-guide.js"></script>
 <script src="pwa.js"></script>
 <script>

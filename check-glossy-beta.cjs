@@ -9,6 +9,7 @@ const enter=async()=>{await p.locator('#more-games').click();await p.locator('[d
 const blocks=()=>p.locator('#glossy-board').getAttribute('data-blocks');
 const tapAt=async(x,y)=>{const pt=await p.locator('#glossy-board').evaluate((el,point)=>{const p=new DOMPoint(...point).matrixTransform(el.getScreenCTM());return{x:p.x,y:p.y};},[x,y]);await p.mouse.click(pt.x,pt.y);};
 await p.goto(base+'play.html?age=5');await enter();
+check(await p.locator('#glossy-category option').evaluateAll(ns=>ns.map(n=>n.value).join(','))==='mixed,numbers,letters,animals,fruits,vegetables,utensils','Blocks menu keeps only requested collections');check(await p.locator('#glossy-pattern').count()===0,'Pattern control is removed');
 await p.locator('[data-glossy-item]').first().click();await tapAt(150,150);check(await p.locator('[data-glossy-placed]').count()===1,'tap shelf then board adds a block');
 await p.locator('#glossy-category').selectOption('animals');check(await p.locator('[data-glossy-placed]').count()===1,'category changes keep the construction');
 await p.locator('[data-glossy-item]').first().press('Enter');check(await p.locator('[data-glossy-placed]').count()===2,'keyboard adds a block');
@@ -19,7 +20,7 @@ const from=await p.locator('[data-glossy-item]').first().boundingBox(),to=await 
 await p.mouse.move(from.x+from.width/2,from.y+from.height/2);await p.mouse.down();await p.mouse.move(to.x,to.y,{steps:12});await p.mouse.up();check(await p.locator('[data-glossy-placed]').count()===3,'real pointer drag adds a block');
 const beforeCancel=await blocks();await p.mouse.move(from.x+from.width/2,from.y+from.height/2);await p.mouse.down();await p.mouse.move(to.x,to.y,{steps:4});await p.evaluate(()=>window.dispatchEvent(new PointerEvent('pointercancel',{pointerId:1})));await p.mouse.up();check(await blocks()===beforeCancel,'cancelled pointer does not commit a block');
 await p.locator('#glossy-clear').click();check(await p.locator('[data-glossy-placed]').count()===0,'Clear removes the construction');
-await p.locator('[data-glossy-item]').first().press('Enter');await p.locator('#glossy-finish').click();await p.locator('#game-home').click();await p.waitForTimeout(1650);check(await p.locator('#app').getAttribute('data-view')==='home'&&await p.locator('[data-activity="glossy"]').isVisible(),'Finished replay is cancelled by Games and returns to More games');
+await p.locator('[data-glossy-item]').first().press('Enter');const beforeDone=await blocks();await p.locator('#glossy-finish').click();check(await blocks()===beforeDone&&await p.locator('[data-glossy-placed][aria-pressed="true"]').count()===0,'Done preserves the design and clears the selection outline');const [snapshot]=await Promise.all([p.waitForEvent('download'),p.locator('#glossy-snapshot').click()]);check(snapshot.suggestedFilename().endsWith('.png'),'camera saves a PNG snapshot');await p.locator('#game-home').click();await p.waitForTimeout(1650);check(await p.locator('#app').getAttribute('data-view')==='home'&&await p.locator('[data-activity="glossy"]').isVisible(),'Games returns to More games after snapshot');
 await p.locator('#first-games').click();check(await p.locator('[data-activity]:visible').count()===6,'all original six games stay on the first page');
 for(const [width,height] of [[320,568],[393,852],[852,393],[740,360],[800,1280],[1280,800],[1366,768]]){
  await p.setViewportSize({width,height});await p.goto(base+'play.html?age=5');await enter();await p.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
@@ -33,15 +34,14 @@ for(const [width,height] of [[320,568],[393,852],[852,393],[740,360],[800,1280],
 }
 await p.setViewportSize({width:393,height:852});
 for(const age of [2,3,4,5]){await p.goto(base+'play.html?age='+age);await enter();
- for(const category of ['plain','mixed','numbers','letters','shapes','animals','fruits','vegetables','utensils','colors']){
+ for(const category of ['mixed','numbers','letters','animals','fruits','vegetables','utensils']){
   await p.locator('#glossy-category').selectOption(category);const total=Number((await p.locator('#glossy-inventory').getAttribute('aria-label')).match(/(\d+) choices/)[1]);
-  const expected=(category==='mixed'?[4,18,32,36]:['numbers','letters'].includes(category)?[8,18,32,36]:['plain','colors'].includes(category)?[8,9,16,36]:[4,9,16,36])[age-2],baseCount=expected;
+  const expected=(category==='mixed'?[4,18,32,36]:['numbers','letters'].includes(category)?[8,18,32,36]:[4,9,16,36])[age-2],baseCount=expected;
   check(total===expected,`age ${age} ${category} has ${expected} choices`);
   if(category==='letters'){const seen=new Set();for(;;){for(const id of await p.locator('[data-glossy-item]').evaluateAll(ns=>ns.map(n=>n.dataset.glossyItem)))seen.add(id);if(!await p.locator('#glossy-next').isEnabled())break;await p.locator('#glossy-next').click();}check(seen.size===total&&seen.has('letters-'+(baseCount-1)),`age ${age} final letter is reachable`);}
  }
  await p.locator('#glossy-category').selectOption('animals');await p.locator('[data-glossy-item]').first().press('Enter');
  await p.locator('#glossy-colour').evaluate(el=>{el.value='#405f76';el.dispatchEvent(new Event('input',{bubbles:true}));});check(JSON.parse(await blocks())[0].color==='#405f76',`age ${age} selected block recolours`);
- await p.locator('#glossy-pattern').selectOption('3');check(await p.locator('#glossy-board g[aria-hidden="true"] rect').count()===4,`age ${age} square pattern has four guide blocks`);
  await p.locator('#glossy-remove').click();check(await p.locator('[data-glossy-placed]').count()===0,`age ${age} selected block removes`);
 }
 if(engine==='chromium'){

@@ -11,10 +11,10 @@ try{for(const [name,run] of [
   }
  }],
  ['colour words and next block stay correct',async p=>{
-  await p.locator('#glossy-category').selectOption('colors');await p.locator('[data-glossy-item]').first().press('Enter');
+  await p.locator('#glossy-category').selectOption('mixed');await p.locator('[data-glossy-item]').first().press('Enter');
   await p.locator('#glossy-colour').evaluate(n=>{n.value='#405f76';n.dispatchEvent(new Event('input',{bubbles:true}));});
-  let blocks=JSON.parse(await p.locator('#glossy-board').getAttribute('data-blocks'));assert.equal(blocks[0].name,'Navy','word reflects the actual recolour');
-  await p.locator('[data-glossy-item]').nth(1).press('Enter');blocks=JSON.parse(await p.locator('#glossy-board').getAttribute('data-blocks'));assert.equal(blocks[1].name,'Yellow');assert.equal(blocks[1].color,'#f5c84d','next shelf block keeps its displayed colour');
+  let blocks=JSON.parse(await p.locator('#glossy-board').getAttribute('data-blocks'));assert.equal(blocks[0].color,'#405f76','palette recolours a selected block');
+  await p.locator('[data-glossy-item]').nth(1).press('Enter');blocks=JSON.parse(await p.locator('#glossy-board').getAttribute('data-blocks'));assert.equal(blocks[1].color,'#f5c84d','next shelf block keeps its displayed colour');
   await p.locator('#again').click();assert.equal(await p.locator('#glossy-colour').inputValue(),'#ed7b75','Again resets colour UI');
  }],
  ['Escape and window blur cancel drags',async p=>{
