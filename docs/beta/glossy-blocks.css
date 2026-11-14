@@ -106,3 +106,12 @@
 .glossy-blocks-label{display:flex;align-items:center;gap:3px;min-width:0;padding:2px 4px;border:1px solid #8aa67a;border-radius:9px;background:#fffaf0e8;font:800 14px system-ui,sans-serif;white-space:nowrap}.glossy-blocks-label select{min-width:72px;max-width:130px;min-height:40px;padding:2px 5px;border:0;border-radius:7px;background:#fff1bb;color:#173e35;font:800 14px system-ui,sans-serif}.glossy-build-heading .glossy-palette{flex:none}.glossy-build-heading #glossy-grid{min-width:48px;width:auto}.glossy-build-heading #glossy-snapshot{width:44px;min-width:44px;height:44px;padding:8px}.glossy-build-heading #glossy-snapshot svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.glossy-build-heading #glossy-snapshot:not(:disabled){background:#a9e4b9}
 @media(max-width:699px){.glossy-build-heading{gap:4px}.glossy-build-heading h2{font-size:14px}.glossy-blocks-label{font-size:12px}.glossy-blocks-label select{max-width:100px;min-width:68px;font-size:12px}.glossy-build-heading #glossy-rotate{min-width:54px;width:auto;font-size:12px;padding:3px 5px}.glossy-build-heading #glossy-grid{min-width:44px;padding:3px 6px;font-size:12px}.glossy-build-heading .glossy-palette>summary{min-height:44px;padding:2px 5px;font-size:12px}}
 @media(max-width:359px){.glossy-build-heading{column-gap:3px}.glossy-blocks-label select{max-width:82px}.glossy-build-heading h2{font-size:13px}}
+
+/* Landscape: give Stores only the width its block grid needs and reserve the
+   larger share of the play area for building. The same split applies in the
+   normal room and immersive fullscreen room. */
+#app:not(.portrait) #glossy-room{grid-template-rows:minmax(48px,auto) minmax(0,1fr);grid-template-areas:"actions" "workspace"}
+#app:not(.portrait) #glossy-room>.glossy-actions{grid-area:actions;grid-row:1;position:relative;z-index:1}
+#app:not(.portrait) .glossy-workspace{grid-area:workspace;grid-row:2;grid-template-columns:minmax(220px,34fr) minmax(0,66fr);width:100%;min-width:0;align-items:stretch}
+#app:not(.portrait) .glossy-shelf,#app:not(.portrait) .glossy-build{min-width:0;overflow:hidden}
+#app:not(.portrait) .glossy-build-heading{max-width:100%;row-gap:4px}
