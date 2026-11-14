@@ -88,3 +88,7 @@
 #app[data-view="glossy"]>.companion-bar{height:56px;min-height:56px;max-height:56px}
 #app[data-view="glossy"] #hint-copy{max-height:44px;overflow-y:auto;scrollbar-width:thin}
 #glossy-store-pan-hint{width:44px;min-width:44px;height:44px;padding:0;font-size:20px}
+
+/* Landscape shows every age row at once; both panes use the same SVG scale. */
+#app:not(.portrait) #glossy-board,#app:not(.portrait) #glossy-store{min-width:0;min-height:0;touch-action:none}
+#app:not(.portrait) .glossy-canvas,#app:not(.portrait) .glossy-store-canvas{overflow:hidden}
