@@ -122,7 +122,8 @@
 #glossy-room .glossy-build-heading #glossy-snapshot{width:44px;min-width:44px;height:44px;padding:8px}
 #glossy-room .glossy-build-heading .glossy-blocks-label{height:44px;min-height:44px;padding:2px 5px;font-size:14px}
 #glossy-room .glossy-build-heading .glossy-blocks-label select{min-height:38px;font-size:14px}
-#glossy-room .glossy-build-heading .glossy-palette>summary{height:44px;min-height:44px;font-size:14px;padding:2px 7px}
+#glossy-room .glossy-build-heading .glossy-palette{height:44px;box-sizing:border-box}
+#glossy-room .glossy-build-heading .glossy-palette>summary{height:42px;min-height:42px;font-size:14px;padding:2px 7px}
 #glossy-room #glossy-count,#glossy-room #glossy-inventory{display:inline-flex;align-items:center;justify-content:center;height:44px;min-height:44px;box-sizing:border-box;padding:4px 8px;border-radius:10px;background:#fffaf0e8;font:800 14px/1.1 system-ui,sans-serif;white-space:nowrap}
 #glossy-room .glossy-build-heading{column-gap:3px;row-gap:2px}
 @media(max-width:699px){#glossy-room .glossy-build-heading>:is(button,#glossy-count){font-size:14px}#glossy-room .glossy-build-heading #glossy-rotate,#glossy-room .glossy-build-heading #glossy-grid{font-size:14px}}
