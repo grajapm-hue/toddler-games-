@@ -15,6 +15,15 @@
   function patterns(age,level=1){if(ageIndex(age)===0)return [{name:'Row',cells:[[0,0],[1,0]]},{name:'Tower',cells:[[0,0],[0,1]]},patternList[2],patternList[3]];return patternList.slice(0,Math.min(8,[4,5,7,8][ageIndex(age)]+Math.max(0,level-1)));}
   const SIZE=180;
   const gridSize=age=>({2:2,3:3,4:4,5:6}[age]||2);
+  function stores(category,age){
+    const original=items(category,age),stock=[...original],slots=gridSize(age)**2,target=Math.ceil(original.length/slots)*slots;
+    // Every cell is a distinct design. Extra spaces use visibly different SVG
+    // sizes/proportions rather than wrapping back to an identical choice.
+    for(const [variant,sizeX,sizeY] of [['Small',.72,.72],['Wide',.96,.58],['Tall',.58,.96]]){
+      for(const item of original){if(stock.length===target)return stock;stock.push({...item,id:item.id+'--'+variant.toLowerCase(),content:item.name,name:variant+' '+item.name,variant,sizeX,sizeY});}
+    }
+    return stock;
+  }
   const create=(age=2)=>{const n=gridSize(age);return{blocks:[],columns:n,rows:n};};
   const validColor=value=>typeof value==='string'&&/^#[0-9a-f]{6}$/i.test(value);
   const overlap=(a,b)=>a.x<b.x+SIZE-1&&a.x+SIZE>b.x+1&&a.y<b.y+SIZE-1&&a.y+SIZE>b.y+1;
@@ -41,10 +50,10 @@
     const luminance=color=>{const c=[1,3,5].map(i=>{const v=parseInt(color.slice(i,i+2),16)/255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;});return c[0]*.2126+c[1]*.7152+c[2]*.0722;};
     const value=luminance(hex);if((value+.05)/(luminance('#173e35')+.05)>=4.5)return '#173e35';return value<=.179?'#ffffff':'#000000';
   }
-  const core={categories,items,patterns,create,place,rotate,remove,ink};
+  const core={categories,items,stores,patterns,create,place,rotate,remove,ink};
   const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function art(item){
-    const n=item.name,k=item.kind,stroke='stroke="#294f43" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"';
+    const n=item.content||item.name,k=item.kind,stroke='stroke="#294f43" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"';
     if(k==='numbers'||k==='letters')return `<text x="0" y="22" text-anchor="middle" font-size="77" font-weight="900" fill="${ink(item.color)}">${esc(n)}</text>`;
     if(k==='plain'||k==='colors')return '';
     if(k==='shapes'){
@@ -69,7 +78,23 @@
     return `<g fill="#a7d6df" ${stroke}>${forms[n]||''}</g>`;
   }
   const effects=scope=>`<defs><linearGradient id="glossy-${scope}-sheen" x1="0" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".67"/><stop offset=".45" stop-color="#fff" stop-opacity=".06"/><stop offset="1" stop-color="#152a24" stop-opacity=".2"/></linearGradient></defs>`;
-  function tile(source,scope='board'){const item={...source,color:validColor(source.color)?source.color:'#ed7b75'};if(item.kind==='mixed')return `<rect width="180" height="180" fill="transparent" pointer-events="${scope==='store'?'all':'none'}"/><g data-glossy-shape="${esc(item.shapeId)}" transform="translate(90 90) scale(1.35)">${shapeLibrary.primitive(item.shapeId,item.color,'#274b44')}<g opacity=".45" pointer-events="none">${shapeLibrary.primitive(item.shapeId,`url(#glossy-${scope}-sheen)`,'none')}</g></g>`;return `<rect x="2.5" y="2.5" width="175" height="175" rx="3" fill="${item.color}" stroke="#527e62" stroke-width="5"/><path d="M20 48Q20 20 48 20H143" fill="none" stroke="#fff" stroke-opacity=".65" stroke-width="10" stroke-linecap="round"/><g transform="translate(90 77) scale(.82)">${art(item)}</g><text x="90" y="157" text-anchor="middle" font-family="system-ui,sans-serif" font-size="${item.name.length>9?18:22}" font-weight="800" fill="${ink(item.color)}">${item.kind==='plain'?'':esc(item.name)}</text>`;}
+  let shineSequence=0;
+  const shapeShines={triangle:'M-23 8L-2-29',cone:'M-24 14L-3-29',diamond:'M-28-2L-4-28',cross:'M-8-32V-39Q-8-45-2-45H7',heart:'M-38-18Q-38-38-20-35',crescent:'M-26-27Q-42-4-27 17',cube:'M-33-30L-4-46',cylinder:'M-30-5V-14Q-30-22-22-22H8',semicircle:'M-27 18Q-19-1 4-3',arrow:'M-45-11H1',star:'M-5-27L0-43'};
+  function tileArt(source,scope='board'){
+    const sx=source.sizeX||1,sy=source.sizeY||1,fit=Math.min(sx,sy),ax=fit/sx,ay=fit/sy;
+    const item={...source,color:validColor(source.color)?source.color:'#ed7b75'},label=item.content||item.name;
+    const light=[1,3,5].reduce((sum,i)=>sum+parseInt(item.color.slice(i,i+2),16),0)>720;
+    if(item.kind==='mixed'){
+      const clip=`glossy-${scope}-shine-${++shineSequence}`,shine=shapeShines[item.shapeId]||'M-25-20Q-25-31-12-31H12';
+      return `<rect width="180" height="180" fill="transparent" pointer-events="${scope==='store'?'all':'none'}"/><g data-glossy-shape="${esc(item.shapeId)}" transform="translate(90 90) scale(1.35)"><defs><clipPath id="${clip}" clipPathUnits="userSpaceOnUse">${shapeLibrary.primitive(item.shapeId,'#fff','none')}</clipPath></defs>${shapeLibrary.primitive(item.shapeId,item.color,'#274b44')}<g opacity=".45" pointer-events="none">${shapeLibrary.primitive(item.shapeId,`url(#glossy-${scope}-sheen)`,'none')}</g><g clip-path="url(#${clip})" pointer-events="none">${light?`<path d="${shine}" fill="none" stroke="#8aa67a" stroke-opacity=".45" stroke-width="8" stroke-linecap="round"/>`:''}<path d="${shine}" fill="none" stroke="#fff" stroke-opacity=".76" stroke-width="5" stroke-linecap="round"/></g></g>`;
+    }
+    const font=Math.min(label.length>9?18:22,160*sx/Math.max(1,label.length*.6));
+    return `<rect x="2.5" y="2.5" width="175" height="175" rx="3" fill="${item.color}" stroke="#527e62" stroke-width="5"/>${light?'<path d="M20 48Q20 20 48 20H143" fill="none" stroke="#8aa67a" stroke-opacity=".45" stroke-width="14" stroke-linecap="round"/>':''}<path d="M20 48Q20 20 48 20H143" fill="none" stroke="#fff" stroke-opacity=".65" stroke-width="10" stroke-linecap="round"/><g transform="translate(90 77) scale(${.82*ax} ${.82*ay})">${art(item)}</g><text x="90" y="157" transform="translate(90 157) scale(${1/sx} ${1/sy}) translate(-90 -157)" text-anchor="middle" font-family="system-ui,sans-serif" font-size="${font}" font-weight="800" fill="${ink(item.color)}">${item.kind==='plain'?'':esc(label)}</text>`;
+  }
+  function tile(source,scope='board'){
+    const artwork=tileArt(source,scope);if(!source.variant)return artwork;
+    return `<rect data-glossy-source-hit="" width="180" height="180" fill="transparent" pointer-events="${scope==='store'?'all':'none'}"/><g data-glossy-size="${esc(source.variant)}" transform="translate(90 90) scale(${source.sizeX} ${source.sizeY}) translate(-90 -90)">${artwork}</g>`;
+  }
   function turned(item,content){const angle=angleOf(item);if(!angle)return content;return `<g data-glossy-rotation="${angle}" transform="translate(90 90) rotate(${angle}) scale(${item.cellFit?1/turnSpan(item):1}) translate(-90 -90)">${content}</g>`;}
   function mount({app,scene,hint,feedback,complete,onReset}){
     const room=document.createElement('section');room.id='glossy-room';room.hidden=true;room.setAttribute('aria-label','Glossy Blocks playroom');
@@ -77,7 +102,7 @@
     scene.before(room);const $=id=>room.querySelector('#glossy-'+id),svg=$('board'),shelf=room.querySelector('.glossy-shelf-grid');
     let board=create(2),age=2,level=1,active=false,page=0,pageSize=4,selected=-1,picked=null,pickedKey=null,pointer=null,demoTimer=null,demoBoard=null,done=false,grid=false,layoutFrame=0;
     let W=360,H=360,drawingKey='';
-    const stock=()=>items($('category').value,age),current=()=>demoBoard||board;
+    const stock=()=>stores($('category').value,age),current=()=>demoBoard||board;
     function dimensions(){drawingKey='';const n=gridSize(age);W=H=n*SIZE;pageSize=n*n;svg.setAttribute('viewBox',`0 0 ${W} ${H}`);shelf.setAttribute('viewBox',`0 0 ${W} ${H}`);room.style.setProperty('--glossy-canvas-min',`${n*45}px`);}
     // The SVG camera fills the complete pane. The source and board share a scale;
     // a viewport change also fits existing free-positioned pieces without moving them.
@@ -110,13 +135,13 @@
     function setColour(color){
       if(!validColor(color)){$('colour').setAttribute('aria-invalid','true');hint('Choose a named colour, or a full colour value.');return;}
       if(done||demoBoard)return;
-      const recolour=item=>({...item,color,...(item.kind==='colors'?{name:palette.find(entry=>entry[1].toLowerCase()===color.toLowerCase())?.[0]||'Custom colour'}:{})});
+      const recolour=item=>{const name=palette.find(entry=>entry[1].toLowerCase()===color.toLowerCase())?.[0]||'Custom colour';return {...item,color,...(item.kind==='colors'?{content:name,name:(item.variant?item.variant+' ':'')+name}:{})};};
       if(selected>=0)board.blocks[selected]=recolour(board.blocks[selected]);else if(picked)picked=recolour(picked);else{syncColour();hint('Select a block first, then choose its colour.');return;}
       render();hint('Colour changed. Keep creating!');
     }
     function renderShelf(){
       const all=stock(),pages=Math.ceil(all.length/pageSize);page=Math.max(0,Math.min(page,pages-1));const columns=W/SIZE;
-      shelf.innerHTML=effects('store')+Array.from({length:pageSize},(_,slot)=>{const item=all[(page*pageSize+slot)%all.length],key=page+'/'+slot;return `<g transform="translate(${slot%columns*SIZE} ${Math.floor(slot/columns)*SIZE})" data-glossy-item="${item.id}" data-glossy-key="${key}" data-glossy-kind="${item.kind}" role="button" tabindex="0" aria-label="${esc(item.name)} block" aria-pressed="${pickedKey===key}"><title>${esc(item.name)}</title>${tile(pickedKey===key&&picked?picked:item,'store')}<rect data-glossy-source-focus="" x="10" y="10" width="160" height="160" rx="8" fill="none" stroke="#173e35" stroke-width="6" stroke-dasharray="14 7" pointer-events="none"/></g>`;}).join('');
+      shelf.innerHTML=effects('store')+all.slice(page*pageSize,(page+1)*pageSize).map((item,slot)=>{const key=page+'/'+slot,shown=pickedKey===key&&picked?picked:item;return `<g transform="translate(${slot%columns*SIZE} ${Math.floor(slot/columns)*SIZE})" data-glossy-item="${item.id}" data-glossy-key="${key}" data-glossy-kind="${item.kind}" role="button" tabindex="0" aria-label="${esc(shown.name)} block" aria-pressed="${pickedKey===key}"><title>${esc(shown.name)}</title>${tile(shown,'store')}<rect data-glossy-source-focus="" x="10" y="10" width="160" height="160" rx="8" fill="none" stroke="#173e35" stroke-width="6" stroke-dasharray="14 7" pointer-events="none"/></g>`;}).join('');
       $('inventory').textContent=pageSize+' blocks';$('inventory').setAttribute('aria-label',`${pageSize} blocks. Page ${page+1} of ${pages}. ${all.length} choices available.`);$('previous').disabled=page===0;$('next').disabled=page===pages-1;
     }
     function updatePanHint(){if(!active)return;const canvas=room.querySelector('.glossy-canvas'),store=room.querySelector('.glossy-store-canvas');$('pan-hint').hidden=canvas.scrollHeight<=canvas.clientHeight+1;$('store-pan-hint').hidden=store.scrollHeight<=store.clientHeight+1;}
@@ -141,7 +166,7 @@
     function added(item,x,y,index=-1){
       const block={...item};
       if(!place(board,block,x,y,index,{grid})){hint('That space is full. Try an empty spot.');renderBoard();return false;}
-      selected=index<0?board.blocks.length-1:index;picked=null;pickedKey=null;for(const button of shelf.querySelectorAll('[data-glossy-item]'))button.setAttribute('aria-pressed','false');renderBoard();feedback();hint('Block placed! Keep building.');return true;
+      selected=index<0?board.blocks.length-1:index;picked=null;pickedKey=null;renderShelf();renderBoard();feedback();hint('Block placed! Keep building.');return true;
     }
     function autoAdd(item){for(let y=0;y<=H-SIZE;y+=SIZE)for(let x=0;x<=W-SIZE;x+=SIZE)if(!board.blocks.some(b=>overlap({x,y},b))){added(item,x,y);svg.querySelector(`[data-glossy-placed="${selected}"]`)?.focus({preventScroll:true});return;}added(item,(W-SIZE)/2,(H-SIZE)/2);}
     function point(event){const matrix=svg.getScreenCTM();return matrix?new DOMPoint(event.clientX,event.clientY).matrixTransform(matrix.inverse()):null;}
