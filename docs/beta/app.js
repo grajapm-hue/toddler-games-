@@ -1582,8 +1582,17 @@
     // Use the visible viewport and physical safe areas without rotating content.
     const padding=getComputedStyle($('viewport')),left=parseFloat(padding.paddingLeft)||0,right=parseFloat(padding.paddingRight)||0,top=parseFloat(padding.paddingTop)||0,bottom=parseFloat(padding.paddingBottom)||0;
     const availableW=Math.max(1,w-left-right),availableH=Math.max(1,h-top-bottom),width=availableW,height=availableH;
-    app.style.left=`${(visual?.offsetLeft||0)+left+availableW/2}px`;app.style.top=`${(visual?.offsetTop||0)+top+availableH/2}px`;
-    cancelGesture();app.style.setProperty('--frame-w',`${width}px`);app.style.setProperty('--frame-h',`${height}px`);app.classList.remove('rotated');app.classList.toggle('portrait',width<height);app.classList.toggle('compact',height<530);app.classList.toggle('narrow',width<740);app.classList.toggle('short-play',height<350);
+    const nextLeft=`${(visual?.offsetLeft||0)+left+availableW/2}px`,nextTop=`${(visual?.offsetTop||0)+top+availableH/2}px`,nextWidth=`${width}px`,nextHeight=`${height}px`;
+    if(app.style.left===nextLeft&&app.style.top===nextTop&&app.style.getPropertyValue('--frame-w')===nextWidth&&app.style.getPropertyValue('--frame-h')===nextHeight)return;
+    cancelGesture();app.style.left=nextLeft;app.style.top=nextTop;app.style.setProperty('--frame-w',nextWidth);app.style.setProperty('--frame-h',nextHeight);app.classList.remove('rotated');app.classList.toggle('portrait',width<height);app.classList.toggle('compact',height<530);app.classList.toggle('narrow',width<740);app.classList.toggle('short-play',height<350);
+  }
+  let fitRequest=0,fitSettleTimer=null;
+  function scheduleFrameFit(){
+    // Native pointer capture must end before any rotation or viewport reflow.
+    cancelGesture();cancelAnimationFrame(fitRequest);clearTimeout(fitSettleTimer);
+    fitRequest=requestAnimationFrame(()=>{fitRequest=0;fitFrame();});
+    // Orientation and visible viewport dimensions can settle on different frames.
+    fitSettleTimer=setTimeout(()=>{fitFrame();fitRequest=requestAnimationFrame(()=>{fitRequest=0;fitFrame();});},180);
   }
   // Use SaNa's in-page immersive layout without requesting browser fullscreen.
   // Android/Chrome owns the origin-labelled fullscreen security banner; web apps
@@ -1655,8 +1664,8 @@
   document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&app.classList.contains('immersive')){app.classList.remove('immersive');$('fullscreen').setAttribute('aria-pressed','false');fitFrame();}});
   document.addEventListener('fullscreenchange',fitFrame);
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&app.classList.contains('immersive'))immersiveMode(false);else if(event.key==='Escape'&&playSettings.open){playSettings.open=false;playSettings.querySelector('summary').focus({preventScroll:true});}});
-  window.addEventListener('resize',fitFrame);window.visualViewport?.addEventListener('resize',fitFrame);window.addEventListener('orientationchange',fitFrame);
-  window.addEventListener('pageshow',fitFrame);document.addEventListener('visibilitychange',()=>{if(!document.hidden)fitFrame();});
+  window.addEventListener('resize',scheduleFrameFit);window.visualViewport?.addEventListener('resize',scheduleFrameFit);window.addEventListener('orientationchange',scheduleFrameFit);
+  window.addEventListener('pageshow',scheduleFrameFit);document.addEventListener('visibilitychange',()=>{if(!document.hidden)scheduleFrameFit();});
   document.addEventListener('visibilitychange',()=>{if(document.hidden){stopBubbles();cancelGesture();if(audio?.state==='running')audio.suspend().catch(()=>{});}else if(state.activity==='bubbles'&&bubbleFrame===null)bubbleFrame=requestAnimationFrame(bubbleTick);});
   window.addEventListener('pagehide',()=>{stopBubbles();cancelGesture();clearEffects();if(audio?.state==='running')audio.suspend().catch(()=>{});});
   app.addEventListener('sana-guide-open',()=>{picturePuzzle.stopDemo();if(demoActive)stopDemo();cancelGesture();});

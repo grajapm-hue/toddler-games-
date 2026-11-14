@@ -11,18 +11,20 @@
     return Array.from({length:count},(_,i)=>({id:category+'-'+i,kind:category,name:category==='numbers'?String(i+1):category==='letters'?String.fromCharCode(65+i):['plain','colors'].includes(category)?palette[i][0]:(names[category]||names.shapes)[i],color:palette[i%palette.length][1]}));
   }
   function patterns(age,level=1){return patternList.slice(0,Math.min(8,[4,5,7,8][ageIndex(age)]+Math.max(0,level-1)));}
-  const SIZE=180,W=1000,H=600;
+  const SIZE=180,W=900,H=540;
   const create=()=>({blocks:[]});
   const validColor=value=>typeof value==='string'&&/^#[0-9a-f]{6}$/i.test(value);
   const overlap=(a,b)=>a.x<b.x+SIZE-1&&a.x+SIZE>b.x+1&&a.y<b.y+SIZE-1&&a.y+SIZE>b.y+1;
-  function place(board,item,x,y,index=-1){
+  function place(board,item,x,y,index=-1,{grid=false,tolerance=54}={}){
     if(!item||!validColor(item.color)||![x,y].every(Number.isFinite)||!Number.isInteger(index)||index< -1||index>=board.blocks.length)return false;
     const bound=p=>({x:Math.max(0,Math.min(W-SIZE,p.x)),y:Math.max(0,Math.min(H-SIZE,p.y))});
     const point=bound({x,y}),others=board.blocks.filter((_,i)=>i!==index),candidates=[];
+    if(grid){const cell=bound({x:Math.round(point.x/SIZE)*SIZE,y:Math.round(point.y/SIZE)*SIZE});if(others.some(b=>overlap(cell,b)))return false;const block={...item,...cell};if(index<0)board.blocks.push(block);else board.blocks[index]=block;return true;}
+    const reach=Math.max(1,Math.min(100,Number.isFinite(tolerance)?tolerance:54));
     for(const b of others)for(const p of [{x:b.x+SIZE,y:point.y},{x:b.x-SIZE,y:point.y},{x:point.x,y:b.y+SIZE},{x:point.x,y:b.y-SIZE}]){
-      if(Math.abs(p.x-b.x)<32)p.x=b.x;if(Math.abs(p.y-b.y)<32)p.y=b.y;
+      if(Math.abs(p.x-b.x)<=reach)p.x=b.x;if(Math.abs(p.y-b.y)<=reach)p.y=b.y;
       const distance=Math.hypot(p.x-point.x,p.y-point.y);
-      if(distance<=32&&p.x>=0&&p.x<=W-SIZE&&p.y>=0&&p.y<=H-SIZE)candidates.push({...p,distance});
+      if(distance<=reach*Math.SQRT2&&p.x>=0&&p.x<=W-SIZE&&p.y>=0&&p.y<=H-SIZE)candidates.push({...p,distance});
     }
     candidates.sort((a,b)=>a.distance-b.distance);candidates.push(point);
     const spot=candidates.find(p=>!others.some(b=>overlap(p,b)));if(!spot)return false;
@@ -61,18 +63,19 @@
     const forms={Cup:'<path d="M-35-29H25V38H-35Z"/><path d="M25-21H42Q65 5 25 15" fill="none"/>',Spoon:'<ellipse cy="-26" rx="24" ry="31"/><rect x="-7" y="2" width="14" height="56" rx="6"/>',Plate:'<circle r="49"/><circle r="34" fill="#fffaf0"/>',Fork:'<path d="M-23-53V-14Q0 8 23-14V-53M0-53V53M-22-22H22" fill="none" stroke-width="12"/>',Bowl:'<path d="M-49-21H49Q43 44 0 44Q-43 44-49-21Z"/><ellipse cy="-21" rx="49" ry="12" fill="#fffaf0"/>',Jug:'<path d="M-29-46H22V-13Q54 52-31 48L-29-46L-48-40Z"/><path d="M24-22Q75-28 37 25" fill="none"/>',Pan:'<ellipse cx="-12" cy="6" rx="39" ry="29"/><path d="M26 6H69" stroke-width="15"/>',Pot:'<path d="M-39-22H39V36Q0 59-39 36Z"/><path d="M-48-25H48M-10-38H10M-39-6H-58M39-6H58" fill="none"/>',Teapot:'<ellipse cy="10" rx="38" ry="36"/><path d="M-31 0L-59-22L-48 26L-26 28M35-13Q81-28 46 32M-23-29H23M0-44V-30" fill="none"/>',Bottle:'<path d="M-12-52H12V-24L26-7V49H-26V-7L-12-24Z"/><path d="M-12-40H12M-23 3H23V28H-23Z" fill="#fffaf0"/>'};
     return `<g fill="#a7d6df" ${stroke}>${forms[n]||''}</g>`;
   }
-  function tile(source){const item={...source,color:validColor(source.color)?source.color:'#ed7b75'};return `<rect x="3" y="3" width="174" height="174" rx="12" fill="${item.color}" stroke="#527e62" stroke-width="5"/><path d="M20 48Q20 20 48 20H143" fill="none" stroke="#fff" stroke-opacity=".65" stroke-width="10" stroke-linecap="round"/><g transform="translate(90 77) scale(.82)">${art(item)}</g><text x="90" y="157" text-anchor="middle" font-family="system-ui,sans-serif" font-size="${item.name.length>9?18:22}" font-weight="800" fill="${ink(item.color)}">${item.kind==='plain'?'':esc(item.name)}</text>`;}
+  function tile(source){const item={...source,color:validColor(source.color)?source.color:'#ed7b75'};return `<rect x="2.5" y="2.5" width="175" height="175" rx="3" fill="${item.color}" stroke="#527e62" stroke-width="5"/><path d="M20 48Q20 20 48 20H143" fill="none" stroke="#fff" stroke-opacity=".65" stroke-width="10" stroke-linecap="round"/><g transform="translate(90 77) scale(.82)">${art(item)}</g><text x="90" y="157" text-anchor="middle" font-family="system-ui,sans-serif" font-size="${item.name.length>9?18:22}" font-weight="800" fill="${ink(item.color)}">${item.kind==='plain'?'':esc(item.name)}</text>`;}
   function mount({app,scene,hint,feedback,complete,onReset}){
     const room=document.createElement('section');room.id='glossy-room';room.hidden=true;room.setAttribute('aria-label','Glossy Blocks playroom');
-    room.innerHTML=`<div class="glossy-tools"><label>Blocks <select id="glossy-category">${categories.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select></label><details id="glossy-colours" class="glossy-palette"><summary id="glossy-colour-toggle" aria-label="Block colours">Colour <span id="glossy-colour-preview" aria-hidden="true"></span></summary><div class="glossy-palette-panel"><div class="glossy-swatches" role="group" aria-label="Block colours">${palette.map(([name,color])=>`<button type="button" data-glossy-colour="${color}" aria-label="${name} block colour" aria-pressed="false" style="--swatch:${color}"></button>`).join('')}</div><label>Custom <input id="glossy-colour" type="color" value="#ed7b75" maxlength="7" pattern="#[0-9a-fA-F]{6}" aria-label="Custom block colour" aria-invalid="false"></label></div></details><label>Pattern <select id="glossy-pattern"><option value="">Free build</option></select></label></div><div class="glossy-workspace"><section class="glossy-shelf" aria-label="Block shelf"><div class="glossy-shelf-heading"><button id="glossy-previous" class="soft-button" aria-label="Previous blocks" type="button">‹</button><output id="glossy-inventory"></output><button id="glossy-next" class="soft-button" aria-label="Next blocks" type="button">›</button></div><div class="glossy-shelf-grid"></div></section><div class="glossy-build"><div class="glossy-canvas"><svg id="glossy-board" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet" role="group" aria-label="Building area" tabindex="0"></svg></div><div class="glossy-actions"><output id="glossy-count" aria-live="polite">0 blocks</output><button id="glossy-remove" class="soft-button secondary" type="button">Remove</button><button id="glossy-clear" class="soft-button secondary" type="button">Clear</button><button id="glossy-finish" class="soft-button" type="button">Finished</button></div></div></div>`;
+    room.innerHTML=`<div class="glossy-tools"><label>Blocks <select id="glossy-category">${categories.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select></label><details id="glossy-colours" class="glossy-palette"><summary id="glossy-colour-toggle" aria-label="Block colours">Colour <span id="glossy-colour-preview" aria-hidden="true"></span></summary><div class="glossy-palette-panel"><div class="glossy-swatches" role="group" aria-label="Block colours">${palette.map(([name,color])=>`<button type="button" data-glossy-colour="${color}" aria-label="${name} block colour" aria-pressed="false" style="--swatch:${color}"></button>`).join('')}</div><label>Custom <input id="glossy-colour" type="color" value="#ed7b75" maxlength="7" pattern="#[0-9a-fA-F]{6}" aria-label="Custom block colour" aria-invalid="false"></label></div></details><label>Pattern <select id="glossy-pattern"><option value="">Free build</option></select></label></div><div class="glossy-workspace"><section class="glossy-shelf" aria-label="Block shelf"><div class="glossy-shelf-heading"><h2>Stores</h2><div class="glossy-paging"><button id="glossy-previous" class="soft-button" aria-label="Previous blocks" type="button">‹</button><output id="glossy-inventory"></output><button id="glossy-next" class="soft-button" aria-label="Next blocks" type="button">›</button></div></div><div class="glossy-shelf-grid"></div></section><section class="glossy-build" aria-label="Assemble"><div class="glossy-build-heading"><h2>Assemble</h2><span id="glossy-pan-hint" hidden>Swipe ↕</span><button id="glossy-grid" class="soft-button" type="button" aria-pressed="true">Grid</button></div><div class="glossy-canvas"><svg id="glossy-board" viewBox="0 0 900 540" preserveAspectRatio="xMidYMid meet" role="group" aria-label="Building area" tabindex="0"></svg></div></section></div><div class="glossy-actions"><output id="glossy-count" aria-live="polite">0 blocks</output><button id="glossy-remove" class="soft-button secondary" type="button">Remove</button><button id="glossy-clear" class="soft-button secondary" type="button">Clear</button><button id="glossy-finish" class="soft-button" type="button">Finished</button></div>`;
     scene.before(room);const $=id=>room.querySelector('#glossy-'+id),svg=$('board'),shelf=room.querySelector('.glossy-shelf-grid');
-    let board=create(),age=2,level=1,active=false,page=0,pageSize=6,selected=-1,picked=null,pointer=null,demoTimer=null,demoBoard=null,done=false;
+    let board=create(),age=2,level=1,active=false,page=0,pageSize=6,selected=-1,picked=null,pointer=null,demoTimer=null,demoBoard=null,done=false,grid=true,layoutFrame=0;
     const stock=()=>items($('category').value,age),current=()=>demoBoard||board;
-    function stopDemo(){clearTimeout(demoTimer);demoTimer=null;demoBoard=null;room.dataset.demo='false';document.getElementById('show-me').setAttribute('aria-pressed','false');}
-    function cancel(){pointer=null;stopDemo();if(active)renderBoard();}
+    function stopDemo(){const showing=!!demoBoard;clearTimeout(demoTimer);demoTimer=null;demoBoard=null;if(showing){room.dataset.demo='false';document.getElementById('show-me').setAttribute('aria-pressed','false');}}
+    function releasePointer(){const held=pointer;pointer=null;if(held&&room.hasPointerCapture?.(held.id)){try{room.releasePointerCapture(held.id);}catch{/* The browser may already have cancelled this pointer. */}}return !!held;}
+    function cancel(){const dragging=releasePointer(),showing=!!demoBoard;stopDemo();if(active&&(dragging||showing))renderBoard();}
     function renderBoard(){
       const guide=patterns(age,level)[Number($('pattern').value)];
-      svg.innerHTML='<rect x="2" y="2" width="996" height="596" rx="14" fill="#fffaf0" stroke="#8aa67a" stroke-width="4"/>'+(!demoBoard&&$('pattern').value!==''&&guide?`<g aria-hidden="true" opacity=".2" fill="#78aabc" stroke="#527e62" stroke-width="3">${guide.cells.map(([x,y])=>`<rect x="${220+x*SIZE}" y="${20+y*SIZE}" width="${SIZE}" height="${SIZE}" rx="10"/>`).join('')}</g>`:'')+current().blocks.map((item,i)=>`<g transform="translate(${item.x} ${item.y})" data-glossy-placed="${i}" role="button" tabindex="0" aria-label="${esc(item.name)} block ${i+1}${i===selected?', selected':''}" aria-pressed="${i===selected}">${tile(item)}${i===selected&&!demoBoard?'<rect x="5" y="5" width="170" height="170" rx="11" fill="none" stroke="#173e35" stroke-width="8" stroke-dasharray="14 7"/>':''}</g>`).join('');
+      svg.innerHTML='<rect x="2" y="2" width="896" height="536" rx="14" fill="#fffaf0" stroke="#8aa67a" stroke-width="4"/>'+(grid?`<g data-glossy-grid="" aria-hidden="true" fill="none" stroke="#9bb18f" stroke-width="1" vector-effect="non-scaling-stroke">${Array.from({length:6},(_,i)=>`<path d="M${i*SIZE} 0V${H}"/>`).join('')}${Array.from({length:4},(_,i)=>`<path d="M0 ${i*SIZE}H${W}"/>`).join('')}</g>`:'')+(!demoBoard&&$('pattern').value!==''&&guide?`<g aria-hidden="true" opacity=".2" fill="#78aabc" stroke="#527e62" stroke-width="3">${guide.cells.map(([x,y])=>`<rect x="${180+x*SIZE}" y="${y*SIZE}" width="${SIZE}" height="${SIZE}" rx="10"/>`).join('')}</g>`:'')+current().blocks.map((item,i)=>`<g transform="translate(${item.x} ${item.y})" data-glossy-placed="${i}" role="button" tabindex="0" aria-label="${esc(item.name)} block ${i+1}${i===selected?', selected':''}" aria-pressed="${i===selected}">${tile(item)}${i===selected&&!demoBoard?'<rect x="5" y="5" width="170" height="170" rx="11" fill="none" stroke="#173e35" stroke-width="8" stroke-dasharray="14 7"/>':''}</g>`).join('');
       syncColour();svg.dataset.blocks=JSON.stringify(board.blocks);$('count').textContent=board.blocks.length+' block'+(board.blocks.length===1?'':'s');$('remove').disabled=selected<0||done||!!demoBoard;$('clear').disabled=board.blocks.length===0||!!demoBoard;$('finish').disabled=board.blocks.length===0||done||!!demoBoard;
     }
     function syncColour(){
@@ -92,19 +95,28 @@
       shelf.innerHTML=all.slice(first,first+pageSize).map(item=>`<button type="button" data-glossy-item="${item.id}" data-glossy-kind="${item.kind}" aria-label="${esc(item.name)} block" aria-pressed="${picked?.id===item.id}" title="Select or drag ${esc(item.name)}"><svg viewBox="0 0 180 180" aria-hidden="true">${tile(picked?.id===item.id?picked:item)}</svg><span>${esc(item.name)}</span></button>`).join('');
       $('inventory').textContent=`${first+1}–${Math.min(all.length,first+pageSize)} of ${all.length}`;$('previous').disabled=page===0;$('next').disabled=first+pageSize>=all.length;
     }
-    function render(){renderShelf();renderBoard();}
-    function reset(){cancel();onReset();done=false;board=create();selected=-1;picked=null;$('colours').open=false;render();}
+    function updatePanHint(){if(!active)return;const canvas=room.querySelector('.glossy-canvas');$('pan-hint').hidden=canvas.scrollHeight<=canvas.clientHeight+1;}
+    room.querySelector('.glossy-canvas').addEventListener('scroll',updatePanHint,{passive:true});
+    function render(){renderShelf();renderBoard();requestAnimationFrame(updatePanHint);}
+    function reset(){cancel();onReset();done=false;board=create();selected=-1;picked=null;$('colours').open=false;render();room.querySelector('.glossy-canvas').scrollTop=0;}
     function start(nextAge,nextLevel){active=true;age=nextAge;level=nextLevel;room.hidden=false;page=0;$('category').value='plain';$('pattern').innerHTML='<option value="">Free build</option>'+patterns(age,level).map((p,i)=>`<option value="${i}">${p.name}</option>`).join('');reset();layout();}
     function leave(){cancel();$('colours').open=false;active=false;room.hidden=true;}
-    function layout(){if(!active)return;cancel();const rect=room.getBoundingClientRect(),small=rect.width<700||rect.height<300;room.classList.toggle('glossy-compact',rect.height<300);const actions=room.querySelector('.glossy-actions'),parent=room.querySelector(app.classList.contains('portrait')?'.glossy-build':'.glossy-tools');if(actions.parentElement!==parent)parent.append(actions);const count=small?3:6;if(count!==pageSize){pageSize=count;page=0;renderShelf();}}
-    new ResizeObserver(layout).observe(room);
+    function layout(){
+      layoutFrame=0;if(!active)return;
+      const rect=room.getBoundingClientRect(),pane=room.querySelector('.glossy-shelf').getBoundingClientRect(),compact=rect.height<300;
+      if(room.classList.contains('glossy-compact')!==compact)room.classList.toggle('glossy-compact',compact);
+      const count=pane.height<245||pane.width<400?3:6;
+      if(count!==pageSize){pageSize=count;page=0;renderShelf();}updatePanHint();
+    }
+    new ResizeObserver(()=>{cancelAnimationFrame(layoutFrame);layoutFrame=requestAnimationFrame(layout);}).observe(room);
     function finish(){if(done||!board.blocks.length||demoBoard)return;cancel();done=true;renderBoard();complete('Wonderful building! Let’s make another one.');}
     function added(item,x,y,index=-1){
       const block={...item};
-      if(!place(board,block,x,y,index)){hint('That space is full. Try an empty spot.');renderBoard();return false;}
+      const matrix=svg.getScreenCTM(),scale=matrix?Math.hypot(matrix.a,matrix.b):1;
+      if(!place(board,block,x,y,index,{grid,tolerance:Math.max(32,Math.min(100,18/Math.max(.001,scale)))})){hint('That space is full. Try an empty spot.');renderBoard();return false;}
       selected=index<0?board.blocks.length-1:index;renderBoard();feedback();hint('Block fitted! Keep building.');return true;
     }
-    function autoAdd(item){for(let y=10;y<=420;y+=190)for(let x=10;x<=820;x+=190)if(!board.blocks.some(b=>overlap({x,y},b))){added(item,x,y);svg.querySelector(`[data-glossy-placed="${selected}"]`)?.focus({preventScroll:true});return;}hint('Your board is full. Move or remove a block.');}
+    function autoAdd(item){for(let y=0;y<=H-SIZE;y+=SIZE)for(let x=0;x<=W-SIZE;x+=SIZE)if(!board.blocks.some(b=>overlap({x,y},b))){added(item,x,y);svg.querySelector(`[data-glossy-placed="${selected}"]`)?.focus({preventScroll:true});return;}hint('Your board is full. Move or remove a block.');}
     function point(event){const matrix=svg.getScreenCTM();return matrix?new DOMPoint(event.clientX,event.clientY).matrixTransform(matrix.inverse()):null;}
     function down(event){
       if(!active||done||demoBoard||event.button!==0||event.isPrimary===false||pointer)return;
@@ -112,20 +124,20 @@
       if(!itemNode&&!onBoard)return;const p=point(event);if(!p)return;
       event.preventDefault();const index=placedNode?Number(placedNode.dataset.glossyPlaced):-1,item=itemNode?stock().find(i=>i.id===itemNode.dataset.glossyItem):index>=0?board.blocks[index]:picked;
       if(!item)return;pointer={id:event.pointerId,item,index,start:p,point:p,moved:false,kind:itemNode?'shelf':index>=0?'placed':'board'};
-      if(itemNode){picked=item;selected=-1;renderShelf();}else if(index>=0)selected=index;
-      room.setPointerCapture?.(event.pointerId);
+      if(itemNode){picked=item;selected=-1;for(const button of shelf.querySelectorAll('[data-glossy-item]'))button.setAttribute('aria-pressed',String(button.dataset.glossyItem===picked.id));}else if(index>=0)selected=index;
+      try{room.setPointerCapture?.(event.pointerId);}catch{/* Window listeners still finish the gesture when capture is unavailable. */}
     }
     function move(event){if(!pointer||pointer.id!==event.pointerId)return;const p=point(event);if(!p)return;pointer.point=p;if(Math.hypot(p.x-pointer.start.x,p.y-pointer.start.y)>8)pointer.moved=true;if(!pointer.moved)return;
       let preview=svg.querySelector('[data-glossy-drag]');if(!preview){preview=document.createElementNS('http://www.w3.org/2000/svg','g');preview.dataset.glossyDrag='';preview.setAttribute('opacity','.8');preview.setAttribute('pointer-events','none');preview.innerHTML=tile(pointer.item);svg.append(preview);if(pointer.index>=0)svg.querySelector(`[data-glossy-placed="${pointer.index}"]`).setAttribute('visibility','hidden');}preview.setAttribute('transform',`translate(${p.x-SIZE/2} ${p.y-SIZE/2})`);
     }
-    function up(event){if(!pointer||pointer.id!==event.pointerId)return;const action=pointer,p=point(event);pointer=null;
+    function up(event){if(!pointer||pointer.id!==event.pointerId)return;const action=pointer,p=point(event);releasePointer();
       if(event.type==='pointercancel'||!p){renderBoard();return;}
       const inside=p.x>=0&&p.y>=0&&p.x<=W&&p.y<=H;
       if((action.moved||action.kind==='board')&&inside)added(action.item,p.x-SIZE/2,p.y-SIZE/2,action.index);
       else{if(action.kind==='placed'){selected=action.index;$('colour').value=action.item.color;hint('Block selected. Change its colour or drag it.');}else if(action.kind==='shelf')hint('Now tap an empty place on the board.');renderBoard();}
     }
     room.addEventListener('pointerdown',down);window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);
-    room.addEventListener('lostpointercapture',()=>{if(pointer){pointer=null;renderBoard();}});
+    room.addEventListener('lostpointercapture',()=>{if(pointer)cancel();});
     shelf.addEventListener('click',event=>{const node=event.target.closest('[data-glossy-item]');if(node&&event.detail===0&&!done&&!demoBoard)autoAdd(stock().find(item=>item.id===node.dataset.glossyItem));});
     svg.addEventListener('keydown',event=>{
       if(done||demoBoard)return;const target=event.target.closest('[data-glossy-placed]'),index=target?Number(target.dataset.glossyPlaced):-1;
@@ -138,14 +150,15 @@
     $('category').addEventListener('change',()=>{cancel();page=0;picked=null;selected=-1;render();hint('Choose a block. Your building stays here.');});
     $('colour').addEventListener('input',event=>setColour(event.target.value));
     room.querySelector('.glossy-swatches').addEventListener('click',event=>{const button=event.target.closest('[data-glossy-colour]');if(button){setColour(button.dataset.glossyColour);$('colours').open=false;$('colour-toggle').focus({preventScroll:true});}});
+    $('grid').addEventListener('click',()=>{cancel();grid=!grid;$('grid').setAttribute('aria-pressed',String(grid));renderBoard();hint(grid?'Grid on. Each space fits one block.':'Grid off. Join blocks freely by their edges.');});
     $('pattern').addEventListener('change',()=>{cancel();renderBoard();hint($('pattern').value===''?'Free build. Make anything you like!':'Follow the faint blocks, or build your own idea.');});
     for(const [id,delta] of [['previous',-1],['next',1]])$(id).addEventListener('click',()=>{cancel();page+=delta;renderShelf();});
     $('remove').addEventListener('click',()=>{if(done||demoBoard)return;remove(board,selected);selected=-1;renderBoard();hint('Block removed. Keep creating!');});
     $('clear').addEventListener('click',()=>{reset();hint('A fresh board. Choose any block.');});$('finish').addEventListener('click',finish);
-    function demo(){if(!active||done)return;if(demoBoard){cancel();hint('Your turn! Your building is still here.');return;}cancel();demoBoard=create();room.dataset.demo='true';document.getElementById('show-me').setAttribute('aria-pressed','true');let step=0;const sample=items('plain',age);const tick=()=>{if(!active||!demoBoard)return;if(step===3){stopDemo();render();hint('Your turn! Select a block, then tap or drag it onto the board.');return;}place(demoBoard,sample[step],200+step*SIZE,210);step++;renderBoard();hint('Demo: put blocks beside each other.');demoTimer=setTimeout(tick,650);};tick();}
+    function demo(){if(!active||done)return;if(demoBoard){cancel();hint('Your turn! Your building is still here.');return;}cancel();demoBoard=create();room.dataset.demo='true';document.getElementById('show-me').setAttribute('aria-pressed','true');let step=0;const sample=items('plain',age);const tick=()=>{if(!active||!demoBoard)return;if(step===3){stopDemo();render();hint('Your turn! Select a block, then tap or drag it onto the board.');return;}place(demoBoard,sample[step],180+step*SIZE,180,-1,{grid:true});step++;renderBoard();hint('Demo: put blocks beside each other.');demoTimer=setTimeout(tick,650);};tick();}
     window.addEventListener('keydown',event=>{if(active&&event.key==='Escape'){cancel();$('colours').open=false;hint('Your building stays here. Choose a block to continue.');}},{capture:true});
     window.addEventListener('blur',()=>{if(active)cancel();});
-    window.addEventListener('resize',()=>{if(active)cancel();});window.addEventListener('pagehide',cancel);document.addEventListener('visibilitychange',()=>{if(document.hidden)cancel();});
+    window.addEventListener('orientationchange',()=>{if(active)cancel();});window.addEventListener('pagehide',cancel);document.addEventListener('visibilitychange',()=>{if(document.hidden)cancel();});
     return {start,leave,reset,demo,cancel};
   }
   return {core,mount};

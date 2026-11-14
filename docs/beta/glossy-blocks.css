@@ -1,19 +1,20 @@
 /* New room reuses the existing app shell and button theme. */
 #app[data-view="home"] .welcome{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px}
-#app[data-view="home"] :is(#more-games,#first-games):not([hidden]){display:inline-flex!important;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:5px 12px;font:800 15px/1.15 system-ui;color:#173e35;background:#ffe17a;border:2px solid #b49c50;border-radius:12px;box-shadow:0 3px 0 #b49c50}
+#app[data-view="home"] :is(#more-games,#first-games):not([hidden]){display:inline-flex!important;align-items:center;justify-content:center;gap:6px;width:max-content!important;max-width:100%;flex:0 0 auto;white-space:nowrap;min-height:44px;padding:5px 12px;font:800 15px/1.15 system-ui,sans-serif;color:#173e35;background:#ffe17a;border:2px solid #b49c50;border-radius:12px;box-shadow:0 3px 0 #b49c50}
 #app[data-view="home"] :is(#more-games,#first-games) svg{width:22px;height:22px}
+#app[data-view="home"] :is(#more-games,#first-games) span{flex:none;min-width:max-content}
 #app #activity-grid.extra-games{grid-template-rows:minmax(0,1fr);grid-template-columns:repeat(3,minmax(0,1fr))}
 #app #activity-grid.extra-games .activity-card{--card:#e9e1f2;--edge:#a591b5}
 #app[data-view="glossy"] #activity-view{grid-template-rows:minmax(0,1fr);grid-template-areas:"board";gap:0}
 #app[data-view="glossy"] .play-mat>:is(#scene,.play-toolbar,.game-status-top){display:none!important}
-#glossy-room{order:0;display:flex;flex-direction:column;flex:1 1 0;min-height:0;min-width:0;padding:6px;gap:6px;overflow:hidden;color:#173e35;font-family:system-ui,sans-serif}
+#glossy-room{order:0;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr);grid-template-areas:"tools actions" "workspace workspace";flex:1 1 0;min-height:0;min-width:0;padding:6px;gap:6px;overflow:hidden;color:#173e35;font-family:system-ui,sans-serif}
 #glossy-room[hidden]{display:none!important}
-.glossy-tools{display:flex;justify-content:center;gap:8px;flex:none;align-items:center;min-width:0}
+.glossy-tools{grid-area:tools;display:flex;justify-content:center;gap:8px;flex:none;align-items:center;min-width:0}
 .glossy-tools label{display:flex;align-items:center;gap:5px;font-size:14px;font-weight:800;min-width:0;background:#fffaf0e8;border:1px solid #8aa67a;border-radius:10px;padding:2px 6px}
-.glossy-tools select{font:800 14px system-ui;color:#173e35;background:#fff1bb;border:0;min-width:0;max-width:155px;min-height:38px;border-radius:7px}
+.glossy-tools select{font:800 14px system-ui,sans-serif;color:#173e35;background:#fff1bb;border:0;min-width:0;max-width:155px;min-height:38px;border-radius:7px}
 #glossy-colour{width:46px;height:38px;padding:2px;border:0;background:transparent}
 .glossy-palette{position:relative;flex:none;background:#fffaf0e8;border:1px solid #8aa67a;border-radius:10px}
-.glossy-palette>summary{display:flex;align-items:center;justify-content:center;gap:5px;list-style:none;cursor:pointer;min-height:44px;padding:2px 7px;font:800 14px system-ui}
+.glossy-palette>summary{display:flex;align-items:center;justify-content:center;gap:5px;list-style:none;cursor:pointer;min-height:44px;padding:2px 7px;font:800 14px system-ui,sans-serif}
 .glossy-palette>summary::-webkit-details-marker{display:none}
 #glossy-colour-preview{display:block;width:29px;height:29px;border:2px solid #527e62;border-radius:6px}
 .glossy-palette-panel{position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);z-index:90;width:212px;padding:8px;border:2px solid #527e62;border-radius:12px;background:#fffaf0;box-shadow:0 3px 12px #173e3540}
@@ -21,43 +22,44 @@
 .glossy-swatches button{width:44px;height:44px;min-width:44px;min-height:44px;border:2px solid #527e62;border-radius:9px;background:var(--swatch);cursor:pointer}
 .glossy-swatches button[aria-pressed="true"]{outline:3px solid #173e35;outline-offset:1px}
 .glossy-palette-panel label{margin-top:8px;justify-content:center;font-size:13px!important;flex-direction:row!important}
-.glossy-palette-panel #glossy-colour{font:700 14px system-ui;width:110px;min-width:0;height:36px;border:1px solid #8aa67a}
+.glossy-palette-panel #glossy-colour{font:700 14px system-ui,sans-serif;width:110px;min-width:0;height:36px;border:1px solid #8aa67a}
 #glossy-colour[aria-invalid="true"]{outline:2px solid #9e3e34}
-.glossy-workspace{display:grid;grid-template-columns:minmax(150px,220px) minmax(0,1fr);gap:8px;min-height:0;flex:1}
+.glossy-workspace{grid-area:workspace;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-height:0;flex:1}
 .glossy-shelf{display:flex;flex-direction:column;min-height:0;min-width:0;background:#e4efdfed;border:2px solid #8aa67a;border-radius:14px;padding:5px;gap:5px}
-.glossy-shelf-heading{display:flex;align-items:center;justify-content:space-between;gap:4px;flex:none}
+.glossy-shelf-heading,.glossy-build-heading{display:flex;min-height:44px;align-items:center;justify-content:space-between;gap:4px;flex:none}
 #glossy-room .glossy-shelf-heading button{min-width:44px;width:44px;min-height:44px;padding:0;font-size:25px}
 #glossy-inventory{text-align:center;font-size:13px;font-weight:800}
-.glossy-shelf-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:5px;min-height:0;flex:1}
+.glossy-shelf-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:minmax(44px,1fr);gap:5px;min-height:0;flex:1}
 .glossy-shelf-grid button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:0;min-height:44px;overflow:hidden;border:2px solid transparent;border-radius:10px;background:transparent;touch-action:none;cursor:grab;padding:2px;color:#173e35}
 .glossy-shelf-grid button[aria-pressed="true"]{border-color:#173e35;background:#fff0ac}
-.glossy-shelf-grid svg{width:100%;min-height:0;max-height:110px;flex:1}
+.glossy-shelf-grid svg{width:100%;min-height:0;max-height:160px;flex:1}
 .glossy-shelf-grid span{font-size:12px;line-height:1.1;font-weight:800;flex:none}
 .glossy-shelf-grid :is([data-glossy-kind="numbers"],[data-glossy-kind="letters"],[data-glossy-kind="colors"])>span{display:none}
-.glossy-build{display:flex;flex-direction:column;min-width:0;min-height:0;gap:5px}
-.glossy-canvas{min-width:0;min-height:0;flex:1;display:flex;align-items:center;justify-content:center;background:#fffaf0de;border:2px solid #8aa67a;border-radius:14px;overflow:hidden}
-#glossy-board{display:block;width:100%;height:100%;min-height:0;touch-action:none;user-select:none;outline-offset:-4px}
-#glossy-board [data-glossy-placed]{cursor:grab;outline:none}
+.glossy-build{display:flex;flex-direction:column;min-width:0;min-height:0;gap:5px;background:#e4efdfed;border:2px solid #8aa67a;border-radius:14px;padding:5px}
+.glossy-canvas{min-width:0;min-height:0;flex:1;display:block;background:#fffaf0de;border:2px solid #8aa67a;border-radius:14px;overflow:auto;overscroll-behavior:contain}
+#glossy-board{display:block;width:100%;height:100%;min-width:225px;min-height:135px;touch-action:pan-y;user-select:none;outline-offset:-4px}
+#glossy-board [data-glossy-placed]{touch-action:none;cursor:grab;outline:none}
 #glossy-board [data-glossy-placed]:focus>rect:first-child{stroke:#173e35;stroke-width:10}
-.glossy-actions{display:flex;align-items:center;justify-content:center;gap:6px;flex:none;flex-wrap:nowrap}
+.glossy-actions{grid-area:actions;display:flex;align-items:center;justify-content:center;gap:6px;flex:none;flex-wrap:nowrap}
 #glossy-room .glossy-actions button{min-height:44px;font-size:14px;padding:4px 12px;white-space:nowrap}
 #glossy-count{font-size:13px;font-weight:800;background:#fffaf0e8;border-radius:8px;padding:5px;white-space:nowrap}
 #glossy-finish{background:#a9e4b9}
 #glossy-room button:disabled{opacity:.55;cursor:default}
 #glossy-room[data-demo="true"] .glossy-tools,#glossy-room[data-demo="true"] .glossy-shelf{pointer-events:none;opacity:.6}
 .glossy-compact .glossy-shelf-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
-.glossy-compact .glossy-workspace{grid-template-columns:minmax(150px,190px) minmax(0,1fr)}
+.glossy-compact .glossy-workspace{grid-template-columns:repeat(2,minmax(0,1fr))}
 .glossy-compact .glossy-tools{gap:4px}.glossy-compact .glossy-tools label{font-size:12px;padding:2px 4px;gap:3px}.glossy-compact .glossy-tools select{font-size:13px;max-width:112px}
 .glossy-compact .glossy-tools .glossy-actions button{font-size:13px;padding:4px 8px}
 #app:not(.portrait) #glossy-room.glossy-compact{padding:2px;gap:4px}
-#app.portrait .glossy-workspace{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
-#app.portrait .glossy-shelf{flex-direction:row;align-items:stretch;gap:5px}
-#app.portrait .glossy-shelf-heading{width:82px;flex-wrap:wrap;justify-content:center;align-content:center;gap:0}
-#app.portrait #glossy-room .glossy-shelf-heading button{width:38px;min-width:38px;min-height:36px;height:36px}
-#app.portrait #glossy-inventory{order:-1;width:100%;font-size:12px}
-#app.portrait .glossy-shelf-grid{grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:80px}
-#app.portrait .glossy-shelf-grid svg{height:60px}
-#app.portrait:not(.narrow) .glossy-shelf-grid{grid-template-columns:repeat(6,minmax(0,1fr))}
+#app.portrait #glossy-room{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"tools" "workspace" "actions"}
+#app.portrait .glossy-workspace{grid-template-columns:minmax(0,1fr);grid-template-rows:repeat(2,minmax(0,1fr))}
+#app.portrait .glossy-shelf{flex-direction:column;align-items:stretch;gap:5px}
+#app.portrait .glossy-shelf-heading{width:auto;flex-wrap:nowrap;justify-content:space-between;gap:5px}
+#app.portrait #glossy-room .glossy-shelf-heading button{width:44px;min-width:44px;min-height:44px;height:44px}
+#app.portrait #glossy-inventory{font-size:12px}
+#app.portrait .glossy-shelf-grid{grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:minmax(44px,1fr)}
+#app.portrait .glossy-shelf-grid svg{height:100%;max-height:160px}
+#app.portrait:not(.narrow) .glossy-shelf-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 #app.immersive[data-view="glossy"] #glossy-room{padding-top:54px}
 @media(max-width:699px){
  #app #activity-grid.extra-games{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr))}
@@ -66,7 +68,23 @@
  #glossy-room .glossy-actions button{padding:3px 7px;font-size:13px}.glossy-actions{gap:4px}#glossy-count{font-size:11px;padding:3px}
 }
 @media(max-width:699px) and (max-height:650px){
- #app.portrait .glossy-shelf-grid{grid-auto-rows:56px}#app.portrait .glossy-shelf-grid svg{height:45px}
+ #app.portrait .glossy-shelf-grid{grid-auto-rows:minmax(44px,1fr)}#app.portrait .glossy-shelf-grid svg{height:100%}
  #app.portrait .glossy-tools label{font-size:0}#app.portrait .glossy-tools select{font-size:13px}
  #glossy-room{gap:4px;padding:4px}
 }
+@media(max-width:359px){
+ .glossy-palette>summary{font-size:11px;gap:0;min-width:44px;padding:2px 6px}
+ #glossy-colour-preview{display:none}
+ #app.portrait .glossy-tools label{font-size:11px}
+ #app.portrait .glossy-tools select{font-size:12px}
+}
+
+.glossy-shelf-heading h2,.glossy-build-heading h2{font:800 16px/1.15 system-ui,sans-serif;margin:0;min-width:0}
+.glossy-paging{display:flex;align-items:center;gap:5px}
+.glossy-build-heading{align-items:center;justify-content:space-between;gap:5px;flex:none}
+#glossy-grid{min-width:54px;min-height:44px;padding:3px 9px;font-size:14px}
+#glossy-grid[aria-pressed="true"]{background:#a9e4b9;border-color:#527e62}
+#glossy-board [data-glossy-grid]{pointer-events:none}
+
+#glossy-pan-hint{font:800 12px/1.2 system-ui,sans-serif;white-space:nowrap;color:#173e35}
+#app[data-view="glossy"] #hint-copy{display:inline-block;max-width:100%;vertical-align:middle;line-height:1.3;box-decoration-break:slice;-webkit-box-decoration-break:slice}
