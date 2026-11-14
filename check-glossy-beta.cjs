@@ -35,9 +35,10 @@ await p.setViewportSize({width:393,height:852});
 for(const age of [2,3,4,5]){await p.goto(base+'play.html?age='+age);await enter();
  for(const category of ['plain','mixed','numbers','letters','shapes','animals','fruits','vegetables','utensils','colors']){
   await p.locator('#glossy-category').selectOption(category);const total=Number((await p.locator('#glossy-inventory').getAttribute('aria-label')).match(/(\d+) choices/)[1]);
-  const expected=category==='mixed'?[4,12,20,20][age-2]:category==='numbers'?[5,10,15,20][age-2]:category==='letters'?[6,12,20,26][age-2]:['plain','colors'].includes(category)?[6,8,10,12][age-2]:[4,6,8,10][age-2];
+  const baseCount=category==='mixed'?[4,12,20,20][age-2]:category==='numbers'?[5,10,15,20][age-2]:category==='letters'?[6,12,20,26][age-2]:['plain','colors'].includes(category)?[6,8,10,12][age-2]:[4,6,8,10][age-2];
+  const slots=(age===5?6:age)**2,expected=Math.ceil(baseCount/slots)*slots;
   check(total===expected,`age ${age} ${category} has ${expected} choices`);
-  if(category==='letters'){const seen=new Set();for(;;){for(const id of await p.locator('[data-glossy-item]').evaluateAll(ns=>ns.map(n=>n.dataset.glossyItem)))seen.add(id);if(!await p.locator('#glossy-next').isEnabled())break;await p.locator('#glossy-next').click();}check(seen.size===total&&seen.has('letters-'+(total-1)),`age ${age} final letter is reachable`);}
+  if(category==='letters'){const seen=new Set();for(;;){for(const id of await p.locator('[data-glossy-item]').evaluateAll(ns=>ns.map(n=>n.dataset.glossyItem)))seen.add(id);if(!await p.locator('#glossy-next').isEnabled())break;await p.locator('#glossy-next').click();}check(seen.size===total&&seen.has('letters-'+(baseCount-1)),`age ${age} final letter is reachable`);}
  }
  await p.locator('#glossy-category').selectOption('animals');await p.locator('[data-glossy-item]').first().press('Enter');
  await p.locator('#glossy-colour').evaluate(el=>{el.value='#405f76';el.dispatchEvent(new Event('input',{bubbles:true}));});check(JSON.parse(await blocks())[0].color==='#405f76',`age ${age} selected block recolours`);
