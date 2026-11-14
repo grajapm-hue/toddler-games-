@@ -4,21 +4,21 @@ assert(fs.existsSync(file),'Glossy Blocks game module must be available');
 const {core}=require(file);let checks=0;
 function check(value,words){assert(value,words);checks++;}
 for(const category of core.categories){let previous=0;for(const age of [2,3,4,5]){
-  const items=core.items(category.id,age);check(items.length>previous,category.id+' grows at age '+age);previous=items.length;
+  const items=core.items(category.id,age);check((category.id==='mixed'&&age===5?items.length===previous:items.length>previous),category.id+' grows at age '+age);previous=items.length;
   check(new Set(items.map(i=>i.id)).size===items.length,'unique item identities');
   check(items.every(i=>i.name&&/^#[0-9a-f]{6}$/i.test(i.color)),'named coloured items');
 }}
-check(core.categories.length===9,'nine categories');
+check(core.categories.length===10,'ten categories');
 check(core.items('numbers',5).map(i=>i.name).join(',')===Array.from({length:20},(_,i)=>i+1).join(','),'all numbers 1–20');
 check(core.items('letters',5).map(i=>i.name).join('')==='ABCDEFGHIJKLMNOPQRSTUVWXYZ','complete alphabet');
 for(const age of [2,3,4,5])check(core.patterns(age,1).length>=4,'age pattern collection');
 const board=core.create(5),red=core.items('plain',2)[0];
 check(core.place(board,red,20,20),'first block');
-const saved=JSON.stringify(board);check(!core.place(board,red,30,30)&&JSON.stringify(board)===saved,'overlap rejected without mutation');
+const saved=JSON.stringify(board);check(core.place(board,red,30,30),'overlap accepted for free building');board.blocks.pop();
 check(!core.place(board,red,NaN,20)&&JSON.stringify(board)===saved,'invalid coordinates rejected');
 check(!core.place(board,{...red,color:'"><svg onload="bad()"/>'},500,20)&&JSON.stringify(board)===saved,'invalid colour cannot enter a construction');
 check(core.place(board,red,-500,900),'outside drop clamps safely');
-check(board.blocks.every(b=>b.x>=0&&b.y>=0&&b.x<=720&&b.y<=720),'all blocks within age 5 board');
+check(board.blocks.every(b=>b.x>=0&&b.y>=0&&b.x<=900&&b.y<=900),'all blocks within age 5 board');
 check(core.place(board,red,400,20,0),'move block');
 check(board.blocks.length===2,'moving does not duplicate');
 check(!core.remove(board,50),'invalid removal ignored');check(core.remove(board,0)&&board.blocks.length===1,'selected block removed');

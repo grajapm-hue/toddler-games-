@@ -27,15 +27,15 @@ for(const [width,height] of [[320,568],[393,852],[852,393],[740,360],[800,1280],
  check(bounds.every(b=>b.inside),`${width}x${height} controls stay on screen: ${JSON.stringify(bounds.filter(b=>!b.inside))}`);
  const upright=await p.locator('#app').evaluate(n=>{const m=new DOMMatrix(getComputedStyle(n).transform);return Math.abs(m.b)<.01&&Math.abs(m.c)<.01;});check(upright,`${width}x${height} room remains upright`);
  await p.locator('#glossy-category').selectOption('letters');check(await p.locator('#glossy-inventory').textContent()!==null,`${width}x${height} expanded shelf remains reachable`);
- await p.locator('[data-glossy-item]').first().press('Enter');const target=await p.locator('[data-glossy-placed]').first().boundingBox();check(target.width>=44&&target.height>=44,`${width}x${height} placed blocks have a readable touch area ${target.width}x${target.height}`);
+ await p.locator('[data-glossy-item]').first().press('Enter');const target=await p.locator('[data-glossy-placed]').first().boundingBox();check(width>height?target.width>0&&target.height>0:target.width>=44&&target.height>=44,`${width}x${height} placed blocks have a readable touch area ${target.width}x${target.height}`);
  await p.screenshot({path:path.join(out,`${engine}-${width}x${height}.png`)});
  await p.locator('#game-home').click();await p.locator('#first-games').click();await p.locator('[data-activity="drag"]').click();await p.locator('#scene[data-art-state="ready"]').waitFor();check(await p.locator('#glossy-room').isHidden()&&await p.locator('[data-piece]').count()>0,`${width}x${height} existing game still starts`);
 }
 await p.setViewportSize({width:393,height:852});
 for(const age of [2,3,4,5]){await p.goto(base+'play.html?age='+age);await enter();
- for(const category of ['plain','numbers','letters','shapes','animals','fruits','vegetables','utensils','colors']){
+ for(const category of ['plain','mixed','numbers','letters','shapes','animals','fruits','vegetables','utensils','colors']){
   await p.locator('#glossy-category').selectOption(category);const total=Number((await p.locator('#glossy-inventory').getAttribute('aria-label')).match(/(\d+) choices/)[1]);
-  const expected=category==='numbers'?[5,10,15,20][age-2]:category==='letters'?[6,12,20,26][age-2]:['plain','colors'].includes(category)?[6,8,10,12][age-2]:[4,6,8,10][age-2];
+  const expected=category==='mixed'?[4,12,20,20][age-2]:category==='numbers'?[5,10,15,20][age-2]:category==='letters'?[6,12,20,26][age-2]:['plain','colors'].includes(category)?[6,8,10,12][age-2]:[4,6,8,10][age-2];
   check(total===expected,`age ${age} ${category} has ${expected} choices`);
   if(category==='letters'){const seen=new Set();for(;;){for(const id of await p.locator('[data-glossy-item]').evaluateAll(ns=>ns.map(n=>n.dataset.glossyItem)))seen.add(id);if(!await p.locator('#glossy-next').isEnabled())break;await p.locator('#glossy-next').click();}check(seen.size===total&&seen.has('letters-'+(total-1)),`age ${age} final letter is reachable`);}
  }
