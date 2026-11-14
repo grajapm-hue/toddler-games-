@@ -174,7 +174,7 @@
     brush:{title:'Little art studio',label:'Brush and paint',word:'Brush & paint',caption:'wash and make colors',note:'',hint:'Brush the muddy puppy. Give him a gentle wash.'},
     abacus:{title:'Counting adventures',label:'Counting games',word:'Count',caption:'count and play',note:'',hint:'Slide beads in any row, either way. See the number and its word change!' },
     puzzle:{title:'Picture Puzzle',label:'Picture Puzzle',word:'Puzzle',caption:'make your own picture',note:'',hint:'Move the pieces on the left onto the picture grid.'},
-    glossy:{title:'Glossy Blocks',label:'Glossy Blocks',word:'Blocks',caption:'build, count and create',note:'',hint:'Choose a block, then tap or drag it onto the building area.'}
+    glossy:{title:'Glossy Blocks',label:'Glossy Blocks',word:'Blocks',caption:'build, count and create',note:'',hint:'Pick a block to build.'}
   };
   let saved={};try{const stored=JSON.parse(localStorage.getItem('sanaLittleHandsV1')||'{}');saved=stored&&typeof stored==='object'?stored:{};}catch{/* Settings are optional. */}
   const hasAgeSettings=saved.ageSettings&&typeof saved.ageSettings==='object'&&!Array.isArray(saved.ageSettings);
