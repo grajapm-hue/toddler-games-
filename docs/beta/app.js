@@ -1234,9 +1234,9 @@
     if(pointer.kind==='slide'){const pt=localPoint(event);const dx=(pt?pt.x:pointer.lastX??pointer.startX)-pointer.startX;if(!slideDoorAnimating&&((!state.slideRevealed&&dx>55)||(state.slideRevealed&&dx< -55)))toggleSlide();}
     if(pointer.kind==='abacus'){moveAbacusSlide(pointer,new DOMPoint(event.clientX,event.clientY).matrixTransform(pointer.matrix));setAbacusCount(pointer.row,pointer.preview);}
     else if(pointer.kind==='drag'){
-      const distance=Math.hypot(pointer.x-pointer.shape.tx,pointer.y-pointer.shape.ty);
-      if(distance<profile().snapDistance)matchShape(pointer.shape.id);
-      else{renderDrag();hint('This shape has a little home. Try its matching shadow.');}
+      const shadow=scene.querySelector(`[data-target="${pointer.shape.id}"] > g`),bounds=shadow?.getBoundingClientRect(),inside=!!bounds&&event.clientX>=bounds.left&&event.clientX<=bounds.right&&event.clientY>=bounds.top&&event.clientY<=bounds.bottom;
+      if(inside)matchShape(pointer.shape.id);
+      else{renderDrag();hint('Drop the shape inside its matching shadow.');}
     }else if(pointer.kind==='paint'&&!state.done)hint(pointer.erase?'All tidy! Choose a color to paint again.':`Lovely colors! Keep coloring the ${artPicture().name}. SaNa is watching!`);
     scene.querySelector('#brush-cursor')?.remove();
   }

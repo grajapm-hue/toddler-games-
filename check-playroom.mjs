@@ -40,6 +40,7 @@ try{
     await page.screenshot({path:resolve(output,`${name}-home.png`)});checks++;
     await page.getByRole('button',{name:'Drag shapes',exact:true}).click();
     const pieces=page.locator('[data-piece]');await expect(pieces).toHaveCount(4);
+    const circlePiece=page.locator('[data-piece="circle"]'),circleShadow=page.locator('[data-target="circle"] > g'),shadowBox=await circleShadow.boundingBox(),outside={x:shadowBox.x+shadowBox.width+12,y:shadowBox.y+shadowBox.height/2};await drag(page,await center(circlePiece),outside);check('A Drag Shapes piece stays loose when released just outside its matching shadow',await page.locator('[data-piece="circle"]').count()===1&&await page.locator('[data-pocket-filled="circle"]').count()===0);
     for(const shape of ['circle','triangle','square','star']){
       await drag(page,await center(page.locator(`[data-piece="${shape}"]`)),await center(page.locator(`[data-target="${shape}"]`)));
     }

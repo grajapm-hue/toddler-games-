@@ -92,7 +92,7 @@
     const notes=list(body);
     if(game==='drag'){
       step(notes,'[data-piece]','1. Pick a shape','Touch and drag a shape toward the matching shadow.');
-      step(notes,'[data-target]','2. Fit it into its pocket','Release near the matching shadow and the shape fits. You can also tap a shape, then its shadow.');
+      step(notes,'[data-target]','2. Fit it into its pocket','Release inside the matching shadow and the shape fits. You can also tap a shape, then its shadow.');
       step(notes,'#item-progress-strip .item-chip','3. Follow the picture row','The matching picture ticks when it is fitted. More shapes appear as the set is finished.');
     }else if(game==='bubbles'){
       step(notes,['[data-bubble-mode="plain"]','[data-bubble-mode="numbers"]','[data-bubble-mode="letters"]','[data-bubble-mode="shapes"]'],'1. Choose what to pop','Plain gives free popping. 1–20, A–Z and Shapes collect the matching items. Choosing a mode starts a fresh collection.');
