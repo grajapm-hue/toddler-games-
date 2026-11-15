@@ -1,6 +1,6 @@
 # SaNa Little Hands Beta release guide
 
-## Current release: v1.77
+## Current release: v1.78
 
 The maintained installable Beta is in `docs/beta/`. Its starting sets cover ages 2–5; every game and level remains open for family play. The Blocks room labels its mixed shape collection “Shapes” and places its available-block count beside the selector; the assembled-block count stays with Assemble. Both landscape work panes align to the same height. In ordinary landscape, Remove, Clear and Done join the SaNa activity row before Demo and Again, leaving more room in both work panes. Portrait and immersive fullscreen keep those actions in the Assemble header. Tabs share a consistent height and fit their text or icon width without extra blank space. Demo shows a finger touching a Stores shape, dragging it into Assemble and dropping it before moving to the next piece. The separate Plain, Shapes and Colours choices and Pattern control are removed. Done preserves the design and clears selection; the camera button saves a PNG snapshot through the browser download flow. Stores and assembled block counts use capitalized “Blocks”; paging arrows hide only when inactive. Age 5 Abacus uses Sum and Total heading text at least as large as the Results text on phones, while preserving the larger tablet/laptop size. Its ten lower color/count tabs and ten top count tabs use equal widths in normal and fullscreen modes, from zero through maximum counts.
 
