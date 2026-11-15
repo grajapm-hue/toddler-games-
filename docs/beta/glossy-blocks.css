@@ -147,4 +147,14 @@
 #app .glossy-quick-actions button{box-sizing:border-box;width:max-content;min-width:0;height:44px;min-height:44px;padding:4px 8px;border-radius:10px;font:800 14px/1.1 system-ui,sans-serif;white-space:nowrap}
 #app.compact .companion-bar .glossy-quick-actions button{height:44px;min-height:44px;font-size:14px;padding:4px 8px}
 #app.portrait .glossy-quick-actions{display:none!important}
+.glossy-demo-guide{position:fixed;z-index:500;left:0;top:0;width:68px;height:68px;pointer-events:none;will-change:left,top;filter:drop-shadow(0 2px 2px #183f3540)}
+.glossy-demo-piece{position:absolute;inset:0;width:68px;height:68px;overflow:visible}
+.glossy-demo-finger{position:absolute;width:27px;height:27px;right:-2px;bottom:-5px;color:#173e35;filter:drop-shadow(0 1px 0 #fff)}
+.glossy-demo-touch{position:absolute;inset:18px;border:3px solid #f0a921;border-radius:50%;opacity:0;transform:scale(.65)}
+.glossy-demo-guide[data-phase="touch"] .glossy-demo-touch{animation:glossyDemoTouch .36s ease-out both}
+.glossy-demo-guide[data-phase="drag"] .glossy-demo-finger{transform:scale(.9)}
+.glossy-demo-guide[data-phase="hold"] .glossy-demo-touch{opacity:.9;transform:scale(1)}
+.glossy-demo-guide[data-phase="drop"]{animation:glossyDemoDrop .24s ease-in both}
+@keyframes glossyDemoTouch{0%{opacity:0;transform:scale(.55)}45%{opacity:1;transform:scale(1)}100%{opacity:.55;transform:scale(.8)}}
+@keyframes glossyDemoDrop{0%{transform:scale(1)}55%{transform:scale(.82)}100%{transform:scale(.55);opacity:0}}
 @media(max-width:900px){#app:not(.portrait) #glossy-room .glossy-shelf-heading{gap:2px}#app:not(.portrait) #glossy-room .glossy-shelf-heading h2{font-size:15px}#app:not(.portrait) #glossy-room .glossy-blocks-label{font-size:12px}#app:not(.portrait) #glossy-room .glossy-blocks-label select{width:78px;max-width:78px;min-width:54px;font-size:12px;padding-left:3px;padding-right:3px}}
