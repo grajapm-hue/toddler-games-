@@ -182,11 +182,17 @@
     function cancelDrag(resetSelection=true){if(drag){drag=null;ignoreClick=true;}ghost?.remove();ghost=null;boardNode.querySelector('.is-dragging')?.classList.remove('is-dragging');if(resetSelection)selected=null;}
     function pieceGhost(node,container=stage){const copy=node.cloneNode(true);copy.removeAttribute('data-puzzle-tile');copy.removeAttribute('id');copy.className='puzzle-drag-piece';copy.setAttribute('aria-hidden','true');copy.tabIndex=-1;copy.inert=true;container.append(copy);return copy;}
     boardNode.addEventListener('click',event=>{const node=event.target.closest('[data-puzzle-tile]'),skip=ignoreClick&&event.detail>0;ignoreClick=false;if(node&&!skip)select(Number(node.dataset.puzzleTile),event.detail===0);});
-    targetNode.addEventListener('click',()=>{if(selected!==null)put(selected);});
+    targetNode.addEventListener('click',event=>{
+      const pocket=event.target.closest('[data-puzzle-target]');
+      if(!pocket||selected===null)return;
+      const target=Number(pocket.dataset.puzzleTarget);
+      if(target===selected)put(selected);
+      else say(`This piece fits in box ${selected}.`);
+    });
     boardNode.addEventListener('keydown',event=>{const node=event.target.closest('[data-puzzle-tile]'),directions={ArrowLeft:-1,ArrowRight:1,ArrowUp:-age,ArrowDown:age};if(!node||!(event.key in directions))return;event.preventDefault();const nodes=[...boardNode.children],index=nodes.indexOf(node);let next=index+directions[event.key];while(next>=0&&next<nodes.length&&nodes[next].hidden)next+=directions[event.key];nodes[next]?.focus({preventScroll:true});});
     boardNode.addEventListener('pointerdown',event=>{ignoreClick=false;const node=event.target.closest('[data-puzzle-tile]');if(!node||event.button>0||event.isPrimary===false||!canPlay())return;const value=Number(node.dataset.puzzleTile);select(value);drag={id:event.pointerId,node,value,start:localPoint(event),moving:false};try{node.setPointerCapture(event.pointerId);}catch{}event.preventDefault();});
     boardNode.addEventListener('pointermove',event=>{if(!drag||drag.id!==event.pointerId)return;const point=localPoint(event);if(!drag.moving&&Math.hypot(point.x-drag.start.x,point.y-drag.start.y)<5)return;event.preventDefault();if(!ghost){ghost=pieceGhost(drag.node);drag.node.classList.add('is-dragging');}drag.moving=true;ghost.style.left=point.x+'px';ghost.style.top=(point.y-10)+'px';});
-    boardNode.addEventListener('pointerup',event=>{if(!drag||drag.id!==event.pointerId)return;const current=drag;drag=null;if(!current.moving)return;ignoreClick=true;const r=targetNode.getBoundingClientRect(),inside=event.clientX>=r.left-6&&event.clientX<=r.right+6&&event.clientY>=r.top-6&&event.clientY<=r.bottom+6;cancelDrag(false);if(inside)put(current.value);else{render();say('Bring the piece onto the picture grid.');}});
+    boardNode.addEventListener('pointerup',event=>{if(!drag||drag.id!==event.pointerId)return;const current=drag;drag=null;if(!current.moving)return;ignoreClick=true;const pocket=targetNode.querySelector(`[data-puzzle-target="${current.value}"]`),r=pocket?.getBoundingClientRect(),inside=!!r&&event.clientX>=r.left&&event.clientX<=r.right&&event.clientY>=r.top&&event.clientY<=r.bottom;cancelDrag(false);if(inside)put(current.value);else{render();say('Drop the piece in its matching picture box.');}});
     boardNode.addEventListener('pointercancel',()=>{cancelDrag();render();});
     function pause(ms,token){return new Promise(resolve=>{demoResolve=resolve;demoTimer=setTimeout(()=>{demoResolve=null;resolve(token===demoToken&&active);},ms);});}
     function stopDemo(){
