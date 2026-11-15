@@ -132,5 +132,19 @@
 .glossy-shelf-heading{justify-content:flex-start;flex-wrap:wrap;gap:4px}
 .glossy-shelf-heading h2{flex:0 0 auto}
 .glossy-shelf-heading .glossy-blocks-label{flex:0 1 auto}
-.glossy-shelf-heading .glossy-paging{margin-left:auto;gap:4px}
+.glossy-shelf-heading .glossy-paging{display:contents;margin:0}
+.glossy-shelf-heading #glossy-previous{margin-left:auto}
 #app[data-view="glossy"] #hint{text-align:left}
+
+/* Shared compact tab sizing: labels set the width, icons use a single icon-sized control. */
+#glossy-room :is(.glossy-build-heading,.glossy-shelf-heading) :is(button,summary,.glossy-blocks-label,#glossy-count,#glossy-inventory){box-sizing:border-box;flex:0 0 auto}
+#glossy-room .glossy-build-heading>button,#glossy-room .glossy-build-heading .glossy-palette>summary,
+#glossy-room .glossy-shelf-heading>button,#glossy-room .glossy-shelf-heading .glossy-blocks-label{width:max-content;min-width:0}
+#glossy-room #glossy-count,#glossy-room #glossy-inventory{font-size:14px;font-weight:800}
+#glossy-room #glossy-remove,#glossy-room #glossy-clear,#glossy-room #glossy-finish{width:max-content;min-width:0;height:44px;min-height:44px;padding:4px 8px;font:800 14px/1.1 system-ui,sans-serif;white-space:nowrap}
+.glossy-quick-actions{display:flex;flex:0 0 auto;align-items:center;gap:3px;min-width:0}
+.glossy-quick-actions[hidden]{display:none!important}
+#app .glossy-quick-actions button{box-sizing:border-box;width:max-content;min-width:0;height:44px;min-height:44px;padding:4px 8px;border-radius:10px;font:800 14px/1.1 system-ui,sans-serif;white-space:nowrap}
+#app.compact .companion-bar .glossy-quick-actions button{height:44px;min-height:44px;font-size:14px;padding:4px 8px}
+#app.portrait .glossy-quick-actions{display:none!important}
+@media(max-width:900px){#app:not(.portrait) #glossy-room .glossy-shelf-heading{gap:2px}#app:not(.portrait) #glossy-room .glossy-shelf-heading h2{font-size:15px}#app:not(.portrait) #glossy-room .glossy-blocks-label{font-size:12px}#app:not(.portrait) #glossy-room .glossy-blocks-label select{width:78px;max-width:78px;min-width:54px;font-size:12px;padding-left:3px;padding-right:3px}}
