@@ -2,7 +2,7 @@
 ((root,factory)=>{const api=factory(typeof module==='object'&&module.exports?require('./shape-library.js'):root.SaNaShapes,typeof module==='object'&&module.exports?require('./glossy-catalogue.js'):root.SaNaGlossyCatalogue);if(typeof module==='object'&&module.exports)module.exports=api;else root.SaNaGlossyBlocks=api;})(typeof window==='object'?window:globalThis,(shapeLibrary,catalogue)=>{
   'use strict';
   const palette=[['Coral','#ed7b75'],['Yellow','#f5c84d'],['Green','#78b98b'],['Blue','#73bde0'],['Purple','#aa91d5'],['Orange','#eda05d'],['Pink','#e99fbd'],['White','#fffaf0'],['Brown','#ad805e'],['Grey','#8c9da0'],['Turquoise','#54b8b2'],['Navy','#405f76']];
-  const categories=[['plain','Plain'],['mixed','Mixed'],['numbers','Numbers'],['letters','Letters'],['shapes','Shapes'],['animals','Animals'],['fruits','Fruits'],['vegetables','Vegetables'],['utensils','Utensils'],['colors','Colours']].map(([id,name])=>({id,name}));
+  const categories=[['plain','Plain'],['mixed','Shapes'],['numbers','Numbers'],['letters','Letters'],['shapes','Shapes'],['animals','Animals'],['fruits','Fruits'],['vegetables','Vegetables'],['utensils','Utensils'],['colors','Colours']].map(([id,name])=>({id,name}));
   const geometry=[...catalogue.nativeGeometry,...catalogue.geometry.map(g=>({...g,id:'ai-'+g.id}))],geometryById=id=>geometry.find(g=>g.id===id);
   const extraColours=[['Red','#e83e3e'],['Crimson','#be3455'],['Maroon','#7c3447'],['Magenta','#d94eaa'],['Lavender','#c8b6e8'],['Indigo','#55559c'],['Cyan','#40cedc'],['Aqua','#79d9ce'],['Teal','#268d8b'],['Mint','#a1d9b2'],['Lime','#b4d455'],['Olive','#869544'],['Gold','#dfb53d'],['Silver','#c4ccd2'],['Cream','#fff1cd'],['Beige','#d9c3a3'],['Peach','#ffc49b'],['Rose','#e890a1'],['Ruby','#ae2848'],['Plum','#845579'],['Ochre','#bd8d3d'],['Mauve','#b78ea9'],['Slate','#657d91'],['Seafoam','#8ec8b9']],namedColours=[...palette,...extraColours];
   const symbols=['!','?','&','@','#','%','=','+','×','÷'];
@@ -90,7 +90,7 @@
     }
     const layoutObserver=new MutationObserver(placeActions);layoutObserver.observe(app,{attributes:true,attributeFilter:['class']});
     window.addEventListener('resize',placeActions,{passive:true});window.addEventListener('orientationchange',placeActions,{passive:true});
-    let board=create(2),age=2,level=1,active=false,page=0,pageSize=4,selected=-1,picked=null,pickedKey=null,pointer=null,demoTimer=null,demoBoard=null,done=false,grid=false,layoutFrame=0;
+    let board=create(2),age=2,level=1,active=false,page=0,pageSize=4,selected=-1,picked=null,pickedKey=null,pointer=null,demoTimer=null,demoFrame=0,demoBoard=null,demoGuide=null,demoSource=null,done=false,grid=false,layoutFrame=0;
     let W=360,H=360,drawingKey='';
     const stock=()=>stores($('category').value,age),current=()=>demoBoard||board;
     function dimensions(){drawingKey='';const n=gridSize(age);W=H=n*SIZE;pageSize=n*n;svg.setAttribute('viewBox',`0 0 ${W} ${H}`);shelf.setAttribute('viewBox',`0 0 ${W} ${H}`);room.style.setProperty('--glossy-canvas-min',`${n*45}px`);}
@@ -107,7 +107,7 @@
       const sw=s.width/scale,sh=s.height/scale;shelf.setAttribute('viewBox',`${(W-sw)/2} ${(H-sh)/2} ${sw} ${sh}`);
       svg.dataset.gridSize=String(W/SIZE);return true;
     }
-    function stopDemo(){const showing=!!demoBoard;clearTimeout(demoTimer);demoTimer=null;demoBoard=null;if(showing){room.dataset.demo='false';document.getElementById('show-me').setAttribute('aria-pressed','false');}}
+    function stopDemo(){const showing=!!demoBoard;clearTimeout(demoTimer);cancelAnimationFrame(demoFrame);demoTimer=null;demoFrame=0;demoGuide?.remove();demoGuide=null;if(demoSource)demoSource.setAttribute('aria-pressed','false');demoSource=null;demoBoard=null;if(showing){room.dataset.demo='false';document.getElementById('show-me').setAttribute('aria-pressed','false');}}
     function releasePointer(){const held=pointer;pointer=null;if(held&&room.hasPointerCapture?.(held.id)){try{room.releasePointerCapture(held.id);}catch{/* The browser may already have cancelled this pointer. */}}return !!held;}
     function cancel(){const dragging=releasePointer(),showing=!!demoBoard;stopDemo();if(active&&(dragging||showing))renderBoard();}
     function renderBoard(){
@@ -214,7 +214,31 @@
     for(const [id,delta] of [['previous',-1],['next',1]])$(id).addEventListener('click',()=>{cancel();page+=delta;renderShelf();});
     $('remove').addEventListener('click',()=>{if(done||demoBoard)return;remove(board,selected);selected=-1;renderBoard();hint('Block removed. Keep creating!');});
     $('clear').addEventListener('click',()=>{reset();hint('Fresh board. Pick a block.');});$('finish').addEventListener('click',finish);$('snapshot').addEventListener('click',snapshot);
-    function demo(){if(!active||done)return;if(demoBoard){cancel();hint('Your turn! Your building is still here.');return;}cancel();demoBoard=create(Number(age)||2);room.dataset.demo='true';document.getElementById('show-me').setAttribute('aria-pressed','true');let step=0;const sample=items('plain',age);const tick=()=>{if(!active||!demoBoard)return;if(step===3){stopDemo();render();hint('Your turn! Select a block, then tap or drag it onto the board.');return;}place(demoBoard,sample[step],step===1?SIZE:0,step===2?SIZE:0,-1,{grid:true});step++;renderBoard();hint('Demo: put blocks beside each other.');demoTimer=setTimeout(tick,650);};tick();}
+    function demo(){
+      if(!active||done)return;if(demoBoard){cancel();hint('Your turn! Your building is still here.');return;}
+      cancel();demoBoard=create(Number(age)||2);room.dataset.demo='true';document.getElementById('show-me').setAttribute('aria-pressed','true');
+      const sample=stock().slice(0,Math.min(3,stock().length));let step=0;
+      const tick=()=>{
+        if(!active||!demoBoard)return;
+        if(step>=sample.length){stopDemo();render();hint('Your turn! Select a block, then tap or drag it onto the board.');return;}
+        const item=sample[step],source=[...shelf.querySelectorAll('[data-glossy-item]')].find(node=>node.dataset.glossyItem===item.id),sourceRect=source?.getBoundingClientRect();
+        if(!sourceRect?.width){step++;demoTimer=setTimeout(tick,100);return;}
+        const x=(step%demoBoard.columns)*SIZE,y=Math.floor(step/demoBoard.columns)*SIZE,matrix=svg.getScreenCTM();
+        const target=matrix?new DOMPoint(x+SIZE/2,y+SIZE/2).matrixTransform(matrix):null,startX=sourceRect.left+sourceRect.width/2,startY=sourceRect.top+sourceRect.height/2;
+        if(!target){step++;demoTimer=setTimeout(tick,100);return;}
+        demoSource=source;source.setAttribute('aria-pressed','true');
+        demoGuide=document.createElement('div');demoGuide.className='glossy-demo-guide';demoGuide.dataset.phase='touch';demoGuide.innerHTML=`<span class="glossy-demo-touch" aria-hidden="true"></span><svg class="glossy-demo-piece" viewBox="0 0 180 180" aria-hidden="true">${tile(item,'demo')}</svg><svg class="glossy-demo-finger" viewBox="0 0 32 32" aria-hidden="true"><use href="#hand-icon"/></svg>`;
+        demoGuide.style.left=`${startX-34}px`;demoGuide.style.top=`${startY-34}px`;document.body.append(demoGuide);hint('Demo: touch a block in Stores.');
+        demoTimer=setTimeout(()=>{
+          if(!demoGuide||!demoBoard)return;demoGuide.dataset.phase='drag';hint('Demo: drag the block into Assemble.');
+          const began=performance.now(),duration=950,fromX=startX-34,fromY=startY-34,toX=target.x-34,toY=target.y-34;
+          const travel=now=>{if(!demoGuide||!demoBoard)return;const t=Math.min(1,(now-began)/duration),ease=t*t*(3-2*t);demoGuide.style.left=`${fromX+(toX-fromX)*ease}px`;demoGuide.style.top=`${fromY+(toY-fromY)*ease}px`;if(t<1)demoFrame=requestAnimationFrame(travel);else{
+            demoFrame=0;demoGuide.dataset.phase='hold';hint('Demo: hold, then drop the block.');
+            demoTimer=setTimeout(()=>{if(!demoGuide||!demoBoard)return;demoGuide.dataset.phase='drop';place(demoBoard,item,x,y,-1,{grid:true});renderBoard();source.setAttribute('aria-pressed','false');demoSource=null;demoGuide.remove();demoGuide=null;step++;hint('Block dropped into Assemble.');demoTimer=setTimeout(tick,480);},380);
+          }};demoFrame=requestAnimationFrame(travel);
+        },360);
+      };tick();
+    }
     window.addEventListener('keydown',event=>{
       if(!active||done||demoBoard||selected<0||event.key.toLowerCase()!=='r'||event.ctrlKey||event.metaKey||event.altKey||event.target.closest?.('input,select,textarea,[contenteditable="true"]')||event.target!==document.body&&!room.contains(event.target)&&!sizePanel.contains(event.target))return;
       event.preventDefault();const wasBoard=svg.contains(event.target);rotateSelected();if(wasBoard)svg.querySelector(`[data-glossy-placed="${selected}"]`)?.focus({preventScroll:true});
