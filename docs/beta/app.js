@@ -68,17 +68,23 @@
       return {x,y,width:Math.max(...glyphs.map(g=>g.x+g.width))-x,height:Math.max(...glyphs.map(g=>g.y+g.height))-y};
     };
     captions.forEach(node=>{
+      const abacusHeading=state.activity==='abacus'&&state.age===5&&node.matches('[data-label-for="abacus-sum-heading"],[data-label-for="abacus-total-heading"]');
       if(!node.hasAttribute('data-abacus-equation')){
         node.dataset.captionFont ||= node.getAttribute('font-size');
         if(node.getAttribute('font-size')!==node.dataset.captionFont)node.setAttribute('font-size',node.dataset.captionFont);
       }
+      if(abacusHeading){node.removeAttribute('textLength');node.removeAttribute('lengthAdjust');}
       const base=parseFloat(node.getAttribute('font-size'));
       node.querySelectorAll('tspan[font-size]').forEach(span=>{span.dataset.captionFont ||= span.getAttribute('font-size');span.setAttribute('font-size',span.dataset.captionFont);});
       if(immersive){const font=fullscreenCaptionFont(node,base,normalSize);node.setAttribute('font-size',font);node.querySelectorAll('tspan[data-caption-font]').forEach(span=>span.setAttribute('font-size',Number(span.dataset.captionFont)*font/base));}
+      if(abacusHeading){
+        const matrix=scene.getScreenCTM(),scale=matrix&&Math.hypot(matrix.a,matrix.b),font=parseFloat(node.getAttribute('font-size'))||base;
+        if(scale>0&&font*scale<16)node.setAttribute('font-size',16/scale);
+      }
       let box=glyphBox(node);if(!box)return;
       const panel=[...scene.querySelectorAll('[data-text-panel]')].find(rect=>node.dataset.labelFor===rect.dataset.textPanel||node.dataset.labelFor?.startsWith(rect.dataset.textPanel+'-'));
       const maxWidth=node.hasAttribute('data-color-label')?Number(scene.querySelector('[data-abacus-label-panel]').getAttribute('width'))/2-20:panel&&!panel.dataset.textPanel.startsWith('train-number-')?Number(panel.getAttribute('width'))-16:Infinity;
-      if(box.width>maxWidth){node.setAttribute('font-size',parseFloat(getComputedStyle(node).fontSize)*maxWidth/box.width);box=glyphBox(node);}
+      if(box.width>maxWidth){if(abacusHeading){node.setAttribute('textLength',maxWidth);node.setAttribute('lengthAdjust','spacingAndGlyphs');}else node.setAttribute('font-size',parseFloat(getComputedStyle(node).fontSize)*maxWidth/box.width);box=glyphBox(node);}
       const font=parseFloat(getComputedStyle(node).fontSize),edgeCount=node.matches('[data-abacus-left],[data-abacus-right]'),px=edgeCount?2:Math.max(3,font*.22),py=Math.max(1.5,font*.1);
       const [fill,stroke]=captionTint(node);
       let tab=node.previousElementSibling;
