@@ -60,6 +60,51 @@
   let pendingUpdate=null;
   function applyUpdate(version){try{sessionStorage.setItem('sana-update-complete',version);}catch{/* Applying also works without optional session storage. */}location.reload();}
   if(app)new MutationObserver(()=>{if(pendingUpdate&&app.dataset.view==='home'&&canShowUpdate()){const version=pendingUpdate;pendingUpdate=null;applyUpdate(version);}}).observe(app,{attributes:true,attributeFilter:['data-view','class']});
+  const watchedWorkers=new WeakSet();
+  let automaticCheckRunning=false;
+  function applyDetectedVersion(version){
+    if(!version||version===release)return;
+    if(!app||(app.dataset.view==='home'&&canShowUpdate())){applyUpdate(version);return;}
+    // Let a child finish the current game, then refresh as soon as the app returns home.
+    pendingUpdate=version;
+  }
+  async function inspectActiveVersion(registration){
+    const worker=registration.active||navigator.serviceWorker.controller;
+    if(!worker||!release)return;
+    const ready=await workerStatus(worker);
+    if(ready?.ready&&ready.version)applyDetectedVersion(ready.version);
+  }
+  function watchWorker(worker,registration){
+    if(!worker||watchedWorkers.has(worker))return;
+    watchedWorkers.add(worker);
+    const check=()=>{if(worker.state==='activated')void inspectActiveVersion(registration);};
+    worker.addEventListener('statechange',check);
+    check();
+  }
+  function monitorRegistration(registration){
+    registration.addEventListener('updatefound',()=>watchWorker(registration.installing,registration));
+    watchWorker(registration.installing,registration);
+    watchWorker(registration.waiting,registration);
+  }
+  async function checkForAutomaticUpdate(){
+    if(automaticCheckRunning||document.hidden||!navigator.onLine||!('serviceWorker'in navigator)||!window.isSecureContext)return;
+    automaticCheckRunning=true;
+    try{
+      const registration=await navigator.serviceWorker.getRegistration()||await navigator.serviceWorker.register('sw.js',{scope:'./',updateViaCache:'none'});
+      monitorRegistration(registration);
+      await registration.update();
+      watchWorker(registration.installing||registration.waiting,registration);
+      await inspectActiveVersion(registration);
+    }catch{/* Automatic checks retry on the next timer, focus, or connection event. */}
+    finally{automaticCheckRunning=false;}
+  }
+  // Browsers normally check service workers on launch; poll while open as well so a
+  // GitHub Pages deployment reaches an already-running app without requiring a relaunch.
+  const UPDATE_CHECK_INTERVAL=2*60*1000;
+  window.setInterval(checkForAutomaticUpdate,UPDATE_CHECK_INTERVAL);
+  window.addEventListener('focus',checkForAutomaticUpdate);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkForAutomaticUpdate();});
+  window.addEventListener('online',checkForAutomaticUpdate);
   function updateDialog(title,copy){
     if(!canShowUpdate())return;
     if(window.sanaAppDialog){window.sanaAppDialog(title,copy,updateButton);return;}
@@ -126,10 +171,13 @@
     if(!('serviceWorker'in navigator)||!window.isSecureContext){setOfflineStatus('Open the HTTPS app link for offline play.');return;}
     try{
       const registered=await navigator.serviceWorker.register('sw.js',{scope:'./',updateViaCache:'none'});
+      monitorRegistration(registered);
       try{await registered.update();}catch{/* The previous cached release remains playable while offline. */}
       const registration=await navigator.serviceWorker.ready;
+      monitorRegistration(registration);
       const ready=registration.active&&await workerStatus(registration.active);
       setOfflineStatus(ready?.ready?'Ready for offline play':'Open online once to prepare offline play.');
+      if(ready?.ready&&ready.version)applyDetectedVersion(ready.version);
     }catch{setOfflineStatus('Open online once to prepare offline play.');}
   }
   if(document.readyState==='complete')prepareOffline();else window.addEventListener('load',prepareOffline,{once:true});
