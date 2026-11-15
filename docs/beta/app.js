@@ -2,6 +2,7 @@
   'use strict';
   const $=id=>document.getElementById(id);
   const app=$('app'),scene=$('scene');
+  const touchFeedbackLayer=document.createElement('div');touchFeedbackLayer.className='sana-touch-feedback-layer';touchFeedbackLayer.setAttribute('aria-hidden','true');document.body.append(touchFeedbackLayer);
   // Keep art settings together rather than taking a second row from the board.
   $('art-tools').append($('brush-modes'));
   const playSettings=document.createElement('details');playSettings.id='play-settings';
@@ -1240,22 +1241,32 @@
     scene.querySelector('#brush-cursor')?.remove();
   }
   // v0.99: haptics are independent of sound, bounded, and rate-limited.
-  let lastHaptic=0,lastSlideHaptic=0,lastHapticPoint=null;
-  const hapticAvailable=typeof navigator.vibrate==='function';
+  let lastHaptic=0,lastSlideHaptic=0,lastHapticPoint=null,feedbackPointerId=null;
+  let hapticAvailable=typeof navigator.vibrate==='function',touchWaves=true;
+  try{const savedWaves=localStorage.getItem('sanaTouchWavesV1');if(savedWaves!==null)touchWaves=savedWaves==='true';}catch{/* Touch waves stay available for this visit. */}
   function haptic(duration=30,spacing=95){
-    if(!state.haptics||!hapticAvailable||document.hidden)return;
+    if(!state.haptics||!hapticAvailable||document.hidden)return false;
     const now=performance.now();if(now-lastHaptic<spacing)return;
     lastHaptic=now;
-    try{navigator.vibrate(Math.min(55,Math.max(12,duration)));}catch{/* Device/browser may block haptics. */}
+    try{if(navigator.vibrate(Math.min(55,Math.max(12,duration)))===false){hapticAvailable=false;updateHapticButton();return false;}return true;}catch{hapticAvailable=false;updateHapticButton();return false;}
+  }
+  function showTouchWave(event){
+    if(!touchWaves||document.hidden)return;
+    const wave=document.createElement('span');wave.className='sana-touch-wave';wave.style.left=`${event.clientX}px`;wave.style.top=`${event.clientY}px`;
+    touchFeedbackLayer.append(wave);wave.addEventListener('animationend',()=>wave.remove(),{once:true});
+    while(touchFeedbackLayer.childElementCount>4)touchFeedbackLayer.firstElementChild?.remove();
   }
   function updateHapticButton(){
     const button=$('vibration-toggle');
+    button.hidden=false;
+    if(!hapticAvailable){button.setAttribute('aria-pressed',String(touchWaves));button.setAttribute('aria-label',`Vibration unavailable. Touch wave ${touchWaves?'on':'off'}. Tap to turn touch waves ${touchWaves?'off':'on'}`);button.title=`Touch wave ${touchWaves?'ON':'OFF'} · sound button enables chirps`;button.textContent=touchWaves?'◉':'○';return;}
     button.setAttribute('aria-pressed',String(state.haptics));
     button.setAttribute('aria-label',state.haptics?'Vibration on. Tap to turn off':'Vibration off. Tap to turn on');
     button.title=state.haptics?'Vibration ON':'Vibration OFF';
     button.textContent=state.haptics?'▥':'▤';
   }
   $('vibration-toggle').addEventListener('click',()=>{
+    if(!hapticAvailable){touchWaves=!touchWaves;try{localStorage.setItem('sanaTouchWavesV1',String(touchWaves));}catch{/* Keep the fallback preference for this visit. */}updateHapticButton();return;}
     state.haptics=!state.haptics;
     try{localStorage.setItem('sanaHapticsV1',String(state.haptics));}catch{}
     updateHapticButton();
@@ -1263,21 +1274,25 @@
   });
   try{const setting=localStorage.getItem('sanaHapticsV1');if(setting!==null)state.haptics=setting==='true';}catch{}
   updateHapticButton();
-  scene.addEventListener('pointerdown',event=>{
-    if(!event.isPrimary)return;
+  app.addEventListener('pointerdown',event=>{
+    if(!event.isPrimary||!['touch','pen'].includes(event.pointerType))return;
+    const target=event.target instanceof Element?event.target:null;
+    if(!target?.closest('button,a[href],summary,input,select,[role="button"],[role="radio"],[role="slider"],#scene,#glossy-board,#glossy-store,[data-glossy-item],[data-puzzle-tile]'))return;
+    feedbackPointerId=event.pointerId;
     lastHapticPoint={x:event.clientX,y:event.clientY};
     haptic(38,90);
+    showTouchWave(event);
     if(state.sound)tone(520);
-  },{passive:true});
-  scene.addEventListener('pointermove',event=>{
-    if(!event.isPrimary||!(event.buttons&1)&&event.pointerType==='mouse'||!state.pointer)return;
+  },true);
+  app.addEventListener('pointermove',event=>{
+    if(event.pointerId!==feedbackPointerId||!event.isPrimary||!state.haptics||!hapticAvailable)return;
     const pt={x:event.clientX,y:event.clientY};
     if(!lastHapticPoint){lastHapticPoint=pt;return;}
     const moved=Math.hypot(pt.x-lastHapticPoint.x,pt.y-lastHapticPoint.y);
     if(moved>=15){lastHapticPoint=pt;haptic(25,105);}
-  },{passive:true});
-  scene.addEventListener('pointerup',()=>{lastHapticPoint=null;},{passive:true});
-  scene.addEventListener('pointercancel',()=>{lastHapticPoint=null;},{passive:true});
+  },true);
+  const finishTouchFeedback=event=>{if(event.pointerId===feedbackPointerId){feedbackPointerId=null;lastHapticPoint=null;}};
+  app.addEventListener('pointerup',finishTouchFeedback,true);app.addEventListener('pointercancel',finishTouchFeedback,true);
   scene.addEventListener('pointerdown',pointerDown);scene.addEventListener('pointermove',pointerMove);scene.addEventListener('pointerup',pointerUp);scene.addEventListener('pointercancel',cancelGesture);scene.addEventListener('lostpointercapture',()=>{if(state.pointer)cancelGesture();});scene.addEventListener('contextmenu',e=>e.preventDefault());
   scene.addEventListener('keydown',event=>{
     if(!gameReady()||demoActive){event.preventDefault();return;}
@@ -1534,7 +1549,7 @@
   document.querySelectorAll('[data-paint]').forEach(button=>button.addEventListener('click',()=>{if(demoActive)stopDemo();cancelGesture();if(state.paintMode){state.erase=false;state.paintColor=button.dataset.paint;}else state.brushColor=button.dataset.paint;updateArtTools();tone(620);popObject(button,'paint-color');}));
   document.querySelectorAll('[data-brush-size]').forEach(button=>button.addEventListener('click',()=>{if(demoActive)stopDemo();cancelGesture();state.brushSize=button.dataset.brushSize;updateArtTools();}));
   $('erase-paint').addEventListener('click',()=>{cancelGesture();state.erase=!state.erase;updateArtTools();hint(state.erase?'Rub over the paint to erase. The picture stays safe.':`Choose a color and paint inside the ${artPicture().name}.`);});
-  function soundButton(){$('sound').setAttribute('aria-pressed',String(state.sound));$('sound').setAttribute('aria-label',state.sound?'All sound on':'All sound off');$('sound').style.opacity='1';window.dispatchEvent(new CustomEvent('sana-sound-change',{detail:{enabled:state.sound}}));}
+  function soundButton(){$('sound').setAttribute('aria-pressed',String(state.sound));$('sound').setAttribute('aria-label',state.sound?'All sound on':'All sound off');$('sound').title=state.sound?'Sound on · gentle touch chirps enabled':'Sound off · turn on for gentle touch chirps';$('sound').style.opacity='1';window.dispatchEvent(new CustomEvent('sana-sound-change',{detail:{enabled:state.sound}}));}
   $('sound').addEventListener('click',()=>{state.sound=!state.sound;save();soundButton();if(state.sound)tone(600);else{demoVoiceCancel?.();if(audio?.state==='running')audio.suspend().catch(()=>{});}});
   function fitFrame(){
     const visual=window.visualViewport,w=Math.min(visual?.width||innerWidth,innerWidth),h=Math.min(visual?.height||innerHeight,innerHeight);
