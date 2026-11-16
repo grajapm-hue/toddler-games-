@@ -17,7 +17,7 @@
     });
   }
   function patterns(age,level=1){if(ageIndex(age)===0)return [{name:'Row',cells:[[0,0],[1,0]]},{name:'Tower',cells:[[0,0],[0,1]]},patternList[2],patternList[3]];return patternList.slice(0,Math.min(8,[4,5,7,8][ageIndex(age)]+Math.max(0,level-1)));}
-  const SIZE=180;
+  const SIZE=180,STORE_COLUMNS=3,STORE_ROWS=3,STORE_PAGE_SIZE=9;
   const gridSize=age=>({2:2,3:3,4:4,5:6}[age]||2);
   const stores=(category,age)=>items(category,age);
   const create=(age=2)=>{const n=gridSize(age);return{blocks:[],columns:n,rows:n};};
@@ -37,7 +37,7 @@
     block={...block,...point};if(index<0)board.blocks.push(block);else board.blocks[index]=block;return true;
   }
   function rotate(board,index,step=45,{grid=false}={}){
-    if(!Number.isInteger(index)||!board.blocks[index]||!Number.isFinite(step))return false;const item=board.blocks[index];return place(board,{...item,angle:((angleOf(item)+step)%360+360)%360},item.x,item.y,index,{grid});
+    if(!Number.isInteger(index)||!board.blocks[index]||!Number.isFinite(step))return false;const item=board.blocks[index];return place(board,{...item,angle:((angleOf(item)+step)%360+360)%360},item.x,item.y,index,{grid:false});
   }
   function resize(board,index,axis,factor,{grid=false,preview=false}={}){
     if(!Number.isInteger(index)||!board.blocks[index]||!['width','height','both'].includes(axis)||!Number.isFinite(factor)||factor<=0)return false;
@@ -80,7 +80,7 @@
     const room=document.createElement('section');room.id='glossy-room';room.hidden=true;room.setAttribute('aria-label','Glossy Blocks playroom');
     room.innerHTML=`<div class="glossy-workspace"><section class="glossy-shelf" aria-label="Block shelf"><div class="glossy-shelf-heading"><h2>Stores</h2><div id="glossy-category-picker" class="glossy-category-picker"><button id="glossy-category-toggle" class="soft-button glossy-category-tab" type="button" aria-label="Choose block category" aria-haspopup="listbox" aria-expanded="false" aria-controls="glossy-category-menu"><span class="glossy-category-label">Blocks</span><span id="glossy-category-name">Shapes</span><span aria-hidden="true">▾</span></button><div id="glossy-category-menu" class="glossy-category-menu" role="listbox" aria-label="Block categories" hidden>${categories.filter(c=>!['plain','shapes','colors'].includes(c.id)).map(c=>`<button type="button" role="option" data-glossy-category-option="${c.id}" aria-selected="${c.id==='mixed'}">${c.name}</button>`).join('')}</div><select id="glossy-category" aria-label="Block category" hidden>${categories.filter(c=>!['plain','shapes','colors'].includes(c.id)).map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select></div><button id="glossy-inventory" class="soft-button glossy-inventory-tab" type="button" title="Tap or swipe to browse more blocks">0 Blocks</button></div><div class="glossy-store-canvas"><svg id="glossy-store" class="glossy-shelf-grid" viewBox="0 0 900 540" preserveAspectRatio="xMidYMid meet" role="group" aria-label="Available blocks"></svg></div></section><section class="glossy-build" aria-label="Assemble"><div class="glossy-build-heading"><h2>Assemble</h2><details id="glossy-colours" class="glossy-palette"><summary id="glossy-colour-toggle" aria-label="Block colours">Colour <span id="glossy-colour-preview" aria-hidden="true"></span></summary><div class="glossy-palette-panel"><div class="glossy-swatches" role="group" aria-label="Block colours">${palette.map(([name,color])=>`<button type="button" data-glossy-colour="${color}" aria-label="${name} block colour" aria-pressed="false" style="--swatch:${color}"></button>`).join('')}</div><label>Custom <input id="glossy-colour" type="color" value="#ed7b75" maxlength="7" pattern="#[0-9a-fA-F]{6}" aria-label="Custom block colour" aria-invalid="false"></label></div></details><span id="glossy-pan-hint" hidden aria-label="Scroll Assemble">↕</span><button id="glossy-size-toggle" class="soft-button secondary" type="button" aria-controls="glossy-size-panel" aria-expanded="false" disabled>Size</button><button id="glossy-rotate-left" class="soft-button secondary glossy-rotate-direction" type="button" aria-label="Rotate selected block counterclockwise 45 degrees" title="Rotate counterclockwise 45°" disabled>↶</button><button id="glossy-rotate-right" class="soft-button secondary glossy-rotate-direction" type="button" aria-label="Rotate selected block clockwise 45 degrees" title="Rotate clockwise 45°" disabled>↷</button><button id="glossy-grid" class="soft-button" type="button" aria-pressed="false">Grid</button><button id="glossy-snapshot" class="soft-button" type="button" aria-label="Save block snapshot" title="Save snapshot" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l1.5-2h7L17 7h3v12H4z"/><circle cx="12" cy="13" r="4"/></svg></button><div class="glossy-actions"><output id="glossy-count" aria-live="polite">0 Blocks</output><button id="glossy-remove" class="soft-button secondary" type="button">Remove</button><button id="glossy-clear" class="soft-button secondary" type="button">Clear</button><button id="glossy-finish" class="soft-button" type="button">Done</button></div></div><div class="glossy-canvas"><svg id="glossy-board" viewBox="0 0 900 540" preserveAspectRatio="xMidYMid meet" role="group" aria-label="Building area" tabindex="0"></svg></div></section></div>`;
     const sizePanel=document.createElement('section');sizePanel.id='glossy-size-panel';sizePanel.hidden=true;sizePanel.tabIndex=-1;sizePanel.setAttribute('role','group');sizePanel.setAttribute('aria-label','Selected piece size');sizePanel.innerHTML='<div class="glossy-size-row"><select id="glossy-axis" aria-label="Dimension to change"><option value="both">Both</option><option value="width">Width</option><option value="height">Height</option></select><button id="glossy-decrease" class="soft-button" type="button" aria-label="Decrease selected dimension">−</button><button id="glossy-increase" class="soft-button" type="button" aria-label="Increase selected dimension">+</button></div><small id="glossy-size-note"></small>';app.append(sizePanel);
-    scene.before(room);const $=id=>document.getElementById('glossy-'+id),svg=$('board'),shelf=room.querySelector('.glossy-shelf-grid');
+    scene.before(room);const $=id=>document.getElementById('glossy-'+id),svg=$('board'),shelf=room.querySelector('.glossy-shelf-grid');const storePager=document.createElement('div');storePager.id='glossy-store-pager';storePager.className='glossy-store-pager';storePager.hidden=true;storePager.innerHTML='<span id="glossy-store-page-label" aria-live="polite"></span><input id="glossy-store-page" type="range" min="1" max="1" value="1" step="1" aria-label="Browse blocks in Stores">';room.querySelector('.glossy-store-canvas').after(storePager);
     const actions=room.querySelector('.glossy-actions'),quickActions=document.querySelector('.glossy-quick-actions');
     const quickButtons=['remove','clear','finish'].map(id=>$(id));
     function placeActions(){
@@ -90,33 +90,31 @@
     }
     const layoutObserver=new MutationObserver(placeActions);layoutObserver.observe(app,{attributes:true,attributeFilter:['class']});
     window.addEventListener('resize',placeActions,{passive:true});window.addEventListener('orientationchange',placeActions,{passive:true});
-    let board=create(2),age=2,level=1,active=false,page=0,pageSize=4,selected=-1,picked=null,pickedKey=null,pointer=null,demoTimer=null,demoFrame=0,demoBoard=null,demoGuide=null,demoSource=null,done=false,grid=true,layoutFrame=0,preserveGridArrangement=false,dragGhost=null;
+    let board=create(2),age=2,level=1,active=false,page=0,pageSize=STORE_PAGE_SIZE,selected=-1,picked=null,pickedKey=null,pointer=null,demoTimer=null,demoFrame=0,demoBoard=null,demoGuide=null,demoSource=null,done=false,grid=true,layoutFrame=0,dragGhost=null;
     let W=360,H=360,drawingKey='';
     const stock=()=>stores($('category').value,age),current=()=>demoBoard||board;
-    function dimensions(){drawingKey='';const n=gridSize(age);W=H=n*SIZE;pageSize=n*n;svg.setAttribute('viewBox',`0 0 ${W} ${H}`);shelf.setAttribute('viewBox',`0 0 ${W} ${H}`);room.style.setProperty('--glossy-canvas-min',`${n*45}px`);}
+    function dimensions(){drawingKey='';const n=gridSize(age);W=H=n*SIZE;pageSize=STORE_PAGE_SIZE;svg.setAttribute('viewBox',`0 0 ${W} ${H}`);shelf.setAttribute('viewBox',`0 0 ${STORE_COLUMNS*SIZE} ${STORE_ROWS*SIZE}`);room.style.setProperty('--glossy-canvas-min',`${n*45}px`);}
     // The SVG camera fills the complete pane. The source and board share a scale;
     // a viewport change also fits existing free-positioned pieces without moving them.
     function fitDrawing(){
-      const a=svg.getBoundingClientRect(),s=shelf.getBoundingClientRect(),key=[a.width,a.height,s.width,s.height,W,H,grid,board.columns,board.rows].map(n=>String(n)).join('/');
-      if(!a.width||!a.height||!s.width||!s.height||key===drawingKey)return false;
-      const oldGridBounds=board.gridBounds||board.freeBounds,oldColumns=board.columns,oldRows=board.rows;drawingKey=key;let left=0,top=0,right=W,bottom=H;
-      if(grid){const baseScale=Math.min(s.width/W,s.height/H),width=a.width/baseScale,height=a.height/baseScale;left=(W-width)/2;top=(H-height)/2;right=left+width;bottom=top+height;}
+      const a=svg.getBoundingClientRect(),key=[a.width,a.height,W,H,board.columns,board.rows].map(n=>String(n)).join('/');
+      if(!a.width||!a.height||key===drawingKey)return false;
+      drawingKey=key;let left=0,top=0,right=W,bottom=H;
+      const baseScale=Math.min(a.width/W,a.height/H),initialWidth=a.width/baseScale,initialHeight=a.height/baseScale;
+      left=(W-initialWidth)/2;top=(H-initialHeight)/2;right=left+initialWidth;bottom=top+initialHeight;
       for(const b of board.blocks){const d=dimensionsOf(b),mx=(d.width-SIZE)/2,my=(d.height-SIZE)/2;left=Math.min(left,b.x-mx);top=Math.min(top,b.y-my);right=Math.max(right,b.x+SIZE+mx);bottom=Math.max(bottom,b.y+SIZE+my);}
-      const scale=Math.min(s.width/W,s.height/H,a.width/(right-left),a.height/(bottom-top)),width=a.width/scale,height=a.height/scale;
-      board.freeBounds={x:(left+right-width)/2,y:(top+bottom-height)/2,width,height};const v=board.freeBounds,n=gridSize(age);
-      if(grid){const aspect=v.width/v.height,columns=aspect>=1?Math.max(n,Math.round(n*aspect)):n,rows=aspect>=1?n:Math.max(n,Math.round(n/aspect)),cell=Math.min(v.width/columns,v.height/rows),gridWidth=columns*cell,gridHeight=rows*cell;board.columns=columns;board.rows=rows;board.gridBounds={x:v.x+(v.width-gridWidth)/2,y:v.y+(v.height-gridHeight)/2,width:gridWidth,height:gridHeight};if(!preserveGridArrangement&&oldGridBounds&&board.blocks.length&&(oldColumns!==columns||oldRows!==rows)){const next=board.gridBounds;board.blocks.forEach((item,i)=>{const col=Math.max(0,Math.min(columns-1,Math.floor((item.x+SIZE/2-oldGridBounds.x)/oldGridBounds.width*oldColumns))),row=Math.max(0,Math.min(rows-1,Math.floor((item.y+SIZE/2-oldGridBounds.y)/oldGridBounds.height*oldRows)));place(board,item,next.x+(col+.5)*next.width/columns-SIZE/2,next.y+(row+.5)*next.height/rows-SIZE/2,i,{grid:true});});}}else{board.columns=n;board.rows=n;board.gridBounds=null;}
-      preserveGridArrangement=false;
-      svg.setAttribute('viewBox',`${v.x} ${v.y} ${v.width} ${v.height}`);
-      const sw=s.width/scale,sh=s.height/scale;shelf.setAttribute('viewBox',`${(W-sw)/2} ${(H-sh)/2} ${sw} ${sh}`);
-      svg.dataset.gridSize=String(W/SIZE);return true;
-    }
-    function syncCategoryTab(){const option=$('category').selectedOptions[0];$('category-name').textContent=option?.textContent||'Shapes';$('category-toggle').setAttribute('aria-label',`Blocks: ${$('category-name').textContent}. Choose block category.`);for(const button of room.querySelectorAll('[data-glossy-category-option]'))button.setAttribute('aria-selected',String(button.dataset.glossyCategoryOption===$('category').value));}
+      const scale=Math.min(a.width/(right-left),a.height/(bottom-top)),width=a.width/scale,height=a.height/scale;
+      board.freeBounds={x:(left+right-width)/2,y:(top+bottom-height)/2,width,height};const v=board.freeBounds,n=gridSize(age),aspect=v.width/v.height;
+      const columns=aspect>=1?Math.max(n,Math.round(n*aspect)):n,rows=aspect>=1?n:Math.max(n,Math.round(n/aspect)),cell=Math.min(v.width/columns,v.height/rows),gridWidth=columns*cell,gridHeight=rows*cell;
+      board.columns=columns;board.rows=rows;board.gridBounds={x:v.x+(v.width-gridWidth)/2,y:v.y+(v.height-gridHeight)/2,width:gridWidth,height:gridHeight};
+      svg.setAttribute('viewBox',`${v.x} ${v.y} ${v.width} ${v.height}`);svg.dataset.gridSize=String(W/SIZE);return true;
+    }function syncCategoryTab(){const option=$('category').selectedOptions[0];$('category-name').textContent=option?.textContent||'Shapes';$('category-toggle').setAttribute('aria-label',`Blocks: ${$('category-name').textContent}. Choose block category.`);for(const button of room.querySelectorAll('[data-glossy-category-option]'))button.setAttribute('aria-selected',String(button.dataset.glossyCategoryOption===$('category').value));}
     function closeCategoryMenu(restore=false){const wasOpen=!$('category-menu').hidden;$('category-menu').hidden=true;$('category-toggle').setAttribute('aria-expanded','false');if(restore&&wasOpen)$('category-toggle').focus({preventScroll:true});}
     function stopDemo(){const showing=!!demoBoard;clearTimeout(demoTimer);cancelAnimationFrame(demoFrame);demoTimer=null;demoFrame=0;demoGuide?.remove();demoGuide=null;if(demoSource)demoSource.setAttribute('aria-pressed','false');demoSource=null;demoBoard=null;if(showing){room.dataset.demo='false';document.getElementById('show-me').setAttribute('aria-pressed','false');}}
     function releasePointer(){const held=pointer;pointer=null;if(held&&room.hasPointerCapture?.(held.id)){try{room.releasePointerCapture(held.id);}catch{/* The browser may already have cancelled this pointer. */}}return !!held;}
     function cancel(){const dragging=releasePointer(),showing=!!demoBoard;clearDragGhost();stopDemo();if(active&&(dragging||showing))renderBoard();}
-    function showDragGhost(item,x,y){clearDragGhost();dragGhost=document.createElement('div');dragGhost.className='glossy-drag-ghost';dragGhost.setAttribute('aria-hidden','true');dragGhost.innerHTML=`<svg viewBox="0 0 180 180" preserveAspectRatio="xMidYMid meet">${effects('drag')}${tile(item,'drag')}</svg>`;document.body.append(dragGhost);moveDragGhost(x,y);}
-    function moveDragGhost(x,y){if(!dragGhost)return;const size=108,gap=14;dragGhost.style.left=`${Math.max(4,Math.min(window.innerWidth-size-4,x+gap))}px`;dragGhost.style.top=`${Math.max(4,y-size-18)}px`;}
+    function showDragGhost(item,source,x,y){clearDragGhost();dragGhost=document.createElement('div');dragGhost.className='glossy-drag-ghost';dragGhost.setAttribute('aria-hidden','true');const box=source.getBoundingClientRect();dragGhost.style.width=`${box.width}px`;dragGhost.style.height=`${box.height}px`;dragGhost.innerHTML=`<svg viewBox="0 0 180 180" preserveAspectRatio="xMidYMid meet">${effects('drag')}${tile(item,'drag')}</svg>`;document.body.append(dragGhost);moveDragGhost(x,y);}
+    function moveDragGhost(x,y){if(!dragGhost)return;const box=dragGhost.getBoundingClientRect();dragGhost.style.left=`${x-box.width/2}px`;dragGhost.style.top=`${y-box.height/2}px`;}
     function clearDragGhost(){dragGhost?.remove();dragGhost=null;}
     function renderBoard(){
       fitDrawing();const area=board.freeBounds||{x:0,y:0,width:W,height:H},gridArea=board.gridBounds||area;
@@ -137,14 +135,14 @@
       render();hint('Colour changed. Keep creating!');
     }
     function renderShelf(){
-      const all=stock(),pages=Math.ceil(all.length/pageSize);page=Math.max(0,Math.min(page,pages-1));const columns=W/SIZE;
+      const all=stock(),pages=Math.ceil(all.length/pageSize);page=Math.max(0,Math.min(page,pages-1));const columns=STORE_COLUMNS;
       shelf.innerHTML=effects('store')+all.slice(page*pageSize,(page+1)*pageSize).map((item,slot)=>{const key=page+'/'+slot,shown=pickedKey===key&&picked?picked:item;return `<g transform="translate(${slot%columns*SIZE} ${Math.floor(slot/columns)*SIZE})" data-glossy-item="${item.id}" data-glossy-key="${key}" data-glossy-kind="${item.kind}" role="button" tabindex="0" aria-label="${esc(shown.name)} block" aria-pressed="${pickedKey===key}"><title>${esc(shown.name)}</title>${tile(shown,'store')}<rect data-glossy-source-focus="" x="10" y="10" width="160" height="160" rx="8" fill="none" stroke="#173e35" stroke-width="6" stroke-dasharray="14 7" pointer-events="none"/></g>`;}).join('');
-      $('inventory').innerHTML=`${pageSize}<span>Blocks</span>`;$('inventory').disabled=pages<=1;$('inventory').setAttribute('aria-label',`${pageSize} Blocks. Page ${page+1} of ${pages}. Tap or swipe this count to browse ${all.length} choices.`);syncCategoryTab();matchHeaders();
+      $('inventory').innerHTML=`${all.length}<span>Blocks</span>`;$('inventory').disabled=pages<=1;$('inventory').setAttribute('aria-label',`${all.length} Blocks. Page ${page+1} of ${pages}. Use the slider or swipe this count to browse.`);$('store-pager').hidden=pages<=1;$('store-page').max=String(pages);$('store-page').value=String(page+1);$('store-page-label').textContent=`Page ${page+1} of ${pages}`;syncCategoryTab();matchHeaders();
     }
     function updatePanHint(){if(!active)return;const canvas=room.querySelector('.glossy-canvas');$('pan-hint').hidden=canvas.scrollHeight<=canvas.clientHeight+1;}
     room.querySelector('.glossy-canvas').addEventListener('scroll',updatePanHint,{passive:true});
     let inventorySwipe=null,inventorySwipeAt=0;
-    $('inventory').addEventListener('pointerdown',event=>{if(event.isPrimary===false)return;inventorySwipe={id:event.pointerId,x:event.clientX,y:event.clientY};});
+    $('store-page').addEventListener('input',()=>{page=Math.max(0,Number($('store-page').value)-1);renderShelf();hint(`Showing Blocks page ${page+1} of ${Math.ceil(stock().length/pageSize)}.`);});     $('inventory').addEventListener('pointerdown',event=>{if(event.isPrimary===false)return;inventorySwipe={id:event.pointerId,x:event.clientX,y:event.clientY};});
     $('inventory').addEventListener('pointerup',event=>{if(!inventorySwipe||inventorySwipe.id!==event.pointerId)return;const dx=event.clientX-inventorySwipe.x,dy=event.clientY-inventorySwipe.y;inventorySwipe=null;if(Math.abs(dx)<24||Math.abs(dx)<Math.abs(dy)*1.2)return;inventorySwipeAt=performance.now();event.preventDefault();page+=dx<0?1:-1;renderShelf();hint(`Showing Blocks page ${page+1}.`);});
     $('inventory').addEventListener('click',()=>{if(performance.now()-inventorySwipeAt<450)return;const pages=Math.ceil(stock().length/pageSize);if(pages<=1)return;page=(page+1)%pages;renderShelf();hint(`Showing Blocks page ${page+1} of ${pages}.`);});
     $('inventory').addEventListener('keydown',event=>{if(!['ArrowLeft','ArrowRight'].includes(event.key))return;event.preventDefault();const pages=Math.ceil(stock().length/pageSize);if(pages<=1)return;page=(page+(event.key==='ArrowRight'?1:-1)+pages)%pages;renderShelf();hint(`Showing Blocks page ${page+1} of ${pages}.`);});
@@ -178,7 +176,13 @@ async function snapshot(){
       try{
         const rect=svg.getBoundingClientRect(),scale=Math.max(1,Math.min(2,window.devicePixelRatio||1)),width=Math.max(1,Math.round((svg.clientWidth||rect.width)*scale)),height=Math.max(1,Math.round((svg.clientHeight||rect.height)*scale)),copy=svg.cloneNode(true);
         copy.querySelectorAll('[data-glossy-placed-focus]').forEach(node=>node.remove());copy.setAttribute('xmlns','http://www.w3.org/2000/svg');copy.setAttribute('width',String(width));copy.setAttribute('height',String(height));
-        for(const image of copy.querySelectorAll('image')){const href=image.getAttribute('href');if(href&&!/^(?:data:|https?:|blob:)/.test(href))image.setAttribute('href',new URL(href,document.baseURI).href);}
+        const assetData=new Map();
+        for(const image of copy.querySelectorAll('image')){
+          const href=image.getAttribute('href')||image.getAttributeNS('http://www.w3.org/1999/xlink','href');if(!href||href.startsWith('data:'))continue;
+          const url=new URL(href,document.baseURI);let data=assetData.get(url.href);
+          if(!data){const response=await fetch(url.href,{mode:'cors',cache:'force-cache'});if(!response.ok)throw Error(`Snapshot art failed to load: ${url.pathname}`);const blob=await response.blob();data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(blob);});assetData.set(url.href,data);}
+          image.setAttribute('href',data);
+        }
         const source=new Blob([new XMLSerializer().serializeToString(copy)],{type:'image/svg+xml;charset=utf-8'});imageUrl=URL.createObjectURL(source);const image=new Image();
         await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;image.src=imageUrl;});
         const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;const context=canvas.getContext('2d');context.fillStyle='#fffaf0';context.fillRect(0,0,width,height);context.drawImage(image,0,0,width,height);
@@ -187,10 +191,10 @@ async function snapshot(){
     }
     function added(item,x,y,index=-1){
       const block={...item};
-      if(!place(board,block,x,y,index,{grid})){hint('That space is full. Try an empty spot.');renderBoard();return false;}
+      if(!place(board,block,x,y,index,{grid:false})){hint('That space is full. Try an empty spot.');renderBoard();return false;}
       selected=index<0?board.blocks.length-1:index;picked=null;pickedKey=null;renderShelf();renderBoard();feedback();hint('Block placed! Keep building.');return true;
     }
-    function autoAdd(item){const columns=board.columns||W/SIZE,rows=board.rows||H/SIZE,area=grid?(board.freeBounds||{x:0,y:0,width:W,height:H}):{x:0,y:0,width:W,height:H},cellWidth=area.width/columns,cellHeight=area.height/rows;for(let row=0;row<rows;row++)for(let column=0;column<columns;column++){const x=grid?area.x+column*cellWidth+(cellWidth-SIZE)/2:column*SIZE,y=grid?area.y+row*cellHeight+(cellHeight-SIZE)/2:row*SIZE;if(!board.blocks.some(b=>overlap({x,y},b))){added(item,x,y);svg.querySelector(`[data-glossy-placed="${selected}"]`)?.focus({preventScroll:true});return;}}const x=grid?area.x+(area.width-SIZE)/2:(W-SIZE)/2,y=grid?area.y+(area.height-SIZE)/2:(H-SIZE)/2;added(item,x,y);}
+    function autoAdd(item){const columns=board.columns||W/SIZE,rows=board.rows||H/SIZE,area=board.gridBounds||board.freeBounds||{x:0,y:0,width:W,height:H},cellWidth=area.width/columns,cellHeight=area.height/rows;for(let row=0;row<rows;row++)for(let column=0;column<columns;column++){const x=area.x+column*cellWidth+(cellWidth-SIZE)/2,y=area.y+row*cellHeight+(cellHeight-SIZE)/2;if(!board.blocks.some(b=>overlap({x,y},b))){added(item,x,y);svg.querySelector(`[data-glossy-placed="${selected}"]`)?.focus({preventScroll:true});return;}}added(item,area.x+(area.width-SIZE)/2,area.y+(area.height-SIZE)/2);}
     function point(event){const matrix=svg.getScreenCTM();return matrix?new DOMPoint(event.clientX,event.clientY).matrixTransform(matrix.inverse()):null;}
     function down(event){
       if(!active||done||demoBoard||event.button!==0||event.isPrimary===false||pointer)return;
@@ -198,11 +202,11 @@ async function snapshot(){
       if(!itemNode&&!onBoard)return;const p=point(event);if(!p)return;
       event.preventDefault();const index=placedNode&&!picked?Number(placedNode.dataset.glossyPlaced):-1,item=itemNode?stock().find(i=>i.id===itemNode.dataset.glossyItem):picked||board.blocks[index];
       if(!item)return;const offset=index>=0?{x:p.x-item.x,y:p.y-item.y}:{x:SIZE/2,y:SIZE/2};pointer={id:event.pointerId,item,index,offset,start:p,point:p,moved:false,kind:itemNode?'shelf':index>=0?'placed':'board'};
-      if(itemNode){picked=item;pickedKey=itemNode.dataset.glossyKey;selected=-1;for(const button of shelf.querySelectorAll('[data-glossy-item]'))button.setAttribute('aria-pressed',String(button.dataset.glossyKey===pickedKey));showDragGhost(item,event.clientX,event.clientY);}else if(index>=0)selected=index;
+      if(itemNode){picked=item;pickedKey=itemNode.dataset.glossyKey;selected=-1;for(const button of shelf.querySelectorAll('[data-glossy-item]'))button.setAttribute('aria-pressed',String(button.dataset.glossyKey===pickedKey));showDragGhost(item,itemNode,event.clientX,event.clientY);}else if(index>=0)selected=index;
       try{room.setPointerCapture?.(event.pointerId);}catch{/* Window listeners still finish the gesture when capture is unavailable. */}
     }
     function move(event){if(!pointer||pointer.id!==event.pointerId)return;const p=point(event);if(!p)return;pointer.point=p;if(pointer.kind==='shelf')moveDragGhost(event.clientX,event.clientY);if(Math.hypot(p.x-pointer.start.x,p.y-pointer.start.y)>8)pointer.moved=true;if(!pointer.moved)return;if(pointer.kind==='shelf')return;
-      let preview=svg.querySelector('[data-glossy-drag]');if(!preview){const sample=create(age);place(sample,pointer.item,0,0,-1,{grid});preview=document.createElementNS('http://www.w3.org/2000/svg','g');preview.dataset.glossyDrag='';preview.setAttribute('opacity','.8');preview.setAttribute('pointer-events','none');preview.innerHTML=turned(sample.blocks[0]||pointer.item,tile(pointer.item));svg.append(preview);if(pointer.index>=0)svg.querySelector(`[data-glossy-placed="${pointer.index}"]`).setAttribute('visibility','hidden');}preview.setAttribute('transform',`translate(${p.x-pointer.offset.x} ${p.y-pointer.offset.y})`);
+      let preview=svg.querySelector('[data-glossy-drag]');if(!preview){const sample=create(age);place(sample,pointer.item,0,0,-1,{grid:false});preview=document.createElementNS('http://www.w3.org/2000/svg','g');preview.dataset.glossyDrag='';preview.setAttribute('opacity','.8');preview.setAttribute('pointer-events','none');preview.innerHTML=turned(sample.blocks[0]||pointer.item,tile(pointer.item));svg.append(preview);if(pointer.index>=0)svg.querySelector(`[data-glossy-placed="${pointer.index}"]`).setAttribute('visibility','hidden');}preview.setAttribute('transform',`translate(${p.x-pointer.offset.x} ${p.y-pointer.offset.y})`);
     }
     function up(event){if(!pointer||pointer.id!==event.pointerId)return;const action=pointer,p=point(event);releasePointer();clearDragGhost();
       if(event.type==='pointercancel'||!p){renderBoard();return;}
@@ -233,11 +237,11 @@ async function snapshot(){
       const candidates=[(br.bottom-ar.top)/sy+4,(br.top-ar.top)/sy-ph-4,app.offsetHeight-ph-8].map(top=>({left,top:Math.max(8,Math.min(app.offsetHeight-ph-8,top))}));
       const covers=box=>selectedBox&&ar.left+box.left*sx<selectedBox.right&&ar.left+(box.left+pw)*sx>selectedBox.left&&ar.top+box.top*sy<selectedBox.bottom&&ar.top+(box.top+ph)*sy>selectedBox.top,position=candidates.find(box=>!covers(box))||candidates[0];sizePanel.style.left=Math.max(8,position.left)+'px';sizePanel.style.top=position.top+'px';sizePanel.focus({preventScroll:true});});
     $('axis').addEventListener('change',syncSize);
-    for(const [id,factor] of [['decrease',1/1.1],['increase',1.1]])$(id).addEventListener('click',()=>{cancel();if(resize(board,selected,$('axis').value,factor,{grid})){renderBoard();feedback();hint($('axis').value==='both'?'Both dimensions changed.':$('axis').value==='width'?'Width changed.':'Height changed.');}});
+    for(const [id,factor] of [['decrease',1/1.1],['increase',1.1]])$(id).addEventListener('click',()=>{cancel();if(resize(board,selected,$('axis').value,factor,{grid:false})){renderBoard();feedback();hint($('axis').value==='both'?'Both dimensions changed.':$('axis').value==='width'?'Width changed.':'Height changed.');}});
     document.addEventListener('pointerdown',e=>{if(!$('category-menu').hidden&&!$('category-picker').contains(e.target))closeCategoryMenu();if($('colours').open&&!$('colours').contains(e.target))$('colours').open=false;if(!sizePanel.hidden&&!sizePanel.contains(e.target)&&!$('size-toggle').contains(e.target))closeSize();},{capture:true});
-    function rotateSelected(degrees=45){if(done||demoBoard||selected<0)return;cancel();if(rotate(board,selected,degrees,{grid})){renderBoard();feedback();hint(degrees<0?'Turned 45° counterclockwise.':'Turned 45° clockwise.');}}
+    function rotateSelected(degrees=45){if(done||demoBoard||selected<0)return;cancel();if(rotate(board,selected,degrees,{grid:false})){renderBoard();feedback();hint(degrees<0?'Turned 45° counterclockwise.':'Turned 45° clockwise.');}}
     $('rotate-left').addEventListener('click',()=>rotateSelected(-45));$('rotate-right').addEventListener('click',()=>rotateSelected(45));
-    $('grid').addEventListener('click',()=>{cancel();preserveGridArrangement=true;grid=!grid;room.dataset.grid=String(grid);drawingKey='';$('grid').setAttribute('aria-pressed',String(grid));renderBoard();updatePanHint();hint(grid?'Grid on. Your assembled blocks stay in place.':'Grid off. Your assembled blocks stay in place.');});
+    $('grid').addEventListener('click',()=>{cancel();grid=!grid;room.dataset.grid=String(grid);drawingKey='';$('grid').setAttribute('aria-pressed',String(grid));renderBoard();updatePanHint();hint(grid?'Grid on. Your assembled blocks stay in place.':'Grid off. Your assembled blocks stay in place.');});
     $('remove').addEventListener('click',()=>{if(done||demoBoard)return;remove(board,selected);selected=-1;renderBoard();hint('Block removed. Keep creating!');});
     $('clear').addEventListener('click',()=>{reset();hint('Fresh board. Pick a block.');});$('finish').addEventListener('click',finish);$('snapshot').addEventListener('click',snapshot);
     function demo(){
