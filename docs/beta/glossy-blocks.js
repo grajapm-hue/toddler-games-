@@ -3,19 +3,18 @@
   'use strict';
   const palette=[['Coral','#ed7b75'],['Yellow','#f5c84d'],['Green','#78b98b'],['Blue','#73bde0'],['Purple','#aa91d5'],['Orange','#eda05d'],['Pink','#e99fbd'],['White','#fffaf0'],['Brown','#ad805e'],['Grey','#8c9da0'],['Turquoise','#54b8b2'],['Navy','#405f76']];
   const categories=[['plain','Plain'],['mixed','Shapes'],['numbers','Numbers'],['letters','Letters'],['shapes','Shapes'],['animals','Animals'],['fruits','Fruits'],['vegetables','Vegetables'],['utensils','Utensils'],['colors','Colours'],['transports','Transports']].map(([id,name])=>({id,name}));
-  const transportNames=['Car','Double-decker bus','Sailboat','Passenger jet','Fire engine','Rescue jeep','Delivery van','Cargo ship','Submarine','Motorcycle','Helicopter','Hot-air balloon'],transportAtlasCells=[0,1,7,9,2,3,4,6,8,5,10,11];
+  const transportNames=['Car','Double-decker bus','Sailboat','Passenger jet','Fire engine','Rescue jeep','Delivery van','Cargo ship','Submarine','Motorcycle','Helicopter','Hot-air balloon'],transportFiles=['car','double-decker-bus','sailboat','passenger-jet','fire-engine','rescue-jeep','delivery-van','cargo-ship','submarine','motorcycle','helicopter','hot-air-balloon'];
   const geometry=[...catalogue.nativeGeometry,...catalogue.geometry.map(g=>({...g,id:'ai-'+g.id}))],geometryById=id=>geometry.find(g=>g.id===id);
   const extraColours=[['Red','#e83e3e'],['Crimson','#be3455'],['Maroon','#7c3447'],['Magenta','#d94eaa'],['Lavender','#c8b6e8'],['Indigo','#55559c'],['Cyan','#40cedc'],['Aqua','#79d9ce'],['Teal','#268d8b'],['Mint','#a1d9b2'],['Lime','#b4d455'],['Olive','#869544'],['Gold','#dfb53d'],['Silver','#c4ccd2'],['Cream','#fff1cd'],['Beige','#d9c3a3'],['Peach','#ffc49b'],['Rose','#e890a1'],['Ruby','#ae2848'],['Plum','#845579'],['Ochre','#bd8d3d'],['Mauve','#b78ea9'],['Slate','#657d91'],['Seafoam','#8ec8b9']],namedColours=[...palette,...extraColours];
   const symbols=['!','?','&','@','#','%','=','+','×','÷'];
   const patternList=[['Row',[[0,0],[1,0],[2,0]]],['Tower',[[0,0],[0,1],[0,2]]],['Steps',[[0,1],[1,1],[1,0]]],['Square',[[0,0],[1,0],[0,1],[1,1]]],['Staircase',[[0,2],[1,2],[1,1],[2,1],[2,0]]],['Rectangle',[[0,0],[1,0],[2,0],[0,1],[1,1],[2,1]]],['Pyramid',[[0,1],[1,1],[2,1],[1,0]]],['Cross',[[1,0],[0,1],[1,1],[2,1],[1,2]]]].map(([name,cells])=>({name,cells}));
   const ageIndex=age=>Math.max(0,Math.min(3,(Number(age)||2)-2));
   function items(category,age){
-    const a=ageIndex(age),count=category==='transports'?[4,9,12,12][a]:(category==='mixed'?[4,18,32,36]:['numbers','letters'].includes(category)?[8,18,32,36]:['plain','colors'].includes(category)?[8,9,16,36]:[4,9,16,36])[a];
+    const a=ageIndex(age),count=category==='transports'?[4,7,10,12][a]:(category==='mixed'?[4,18,32,36]:['numbers','letters'].includes(category)?[8,18,32,36]:['plain','colors'].includes(category)?[8,9,16,36]:[4,9,16,36])[a];
     return Array.from({length:count},(_,i)=>{
       const shape=category==='mixed'&&a===1&&i>=12?geometry[20+i-12]:geometry[i];
       const name=category==='transports'?transportNames[i]:category==='numbers'?String(i+1):category==='letters'?(i<26?String.fromCharCode(65+i):symbols[i-26]):category==='colors'?namedColours[i][0]:catalogue.pictures[category]?.[i].name||shape.name;
-      const atlasIndex=transportAtlasCells[i],atlasCell=category==='transports'?`${(atlasIndex%4)*362} ${Math.floor(atlasIndex/4)*362} 362 362`:null;
-      return{id:category==='mixed'?'mixed-'+shape.id:category+'-'+i,kind:category,name,content:name,unit:180,color:category==='colors'?namedColours[i][1]:palette[i%palette.length][1],...(['plain','mixed','shapes','colors'].includes(category)?{shapeId:shape.id}:{}),...(category==='transports'?{asset:'./glossy-art/v191/transports-atlas.png',assetViewBox:atlasCell}:{}),...(catalogue.pictures[category]?{asset:catalogue.pictures[category][i].asset}:{} )};
+      return{id:category==='mixed'?'mixed-'+shape.id:category+'-'+i,kind:category,name,content:name,unit:180,color:category==='colors'?namedColours[i][1]:palette[i%palette.length][1],...(['plain','mixed','shapes','colors'].includes(category)?{shapeId:shape.id}:{}),...(category==='transports'?{asset:`./glossy-art/v193/transports/${transportFiles[i]}.png`}:{}),...(catalogue.pictures[category]?{asset:catalogue.pictures[category][i].asset}:{} )};
     });
   }
   function patterns(age,level=1){if(ageIndex(age)===0)return [{name:'Row',cells:[[0,0],[1,0]]},{name:'Tower',cells:[[0,0],[0,1]]},patternList[2],patternList[3]];return patternList.slice(0,Math.min(8,[4,5,7,8][ageIndex(age)]+Math.max(0,level-1)));}
@@ -61,10 +60,6 @@
   const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function art(item,scope){
     if(item.kind==='numbers'||item.kind==='letters')return `<text x="0" y="0" dominant-baseline="central" text-anchor="middle" font-size="94" font-weight="900" fill="${ink(item.color)}">${esc(item.content)}</text>`;
-    // Mobile browsers can let a nested SVG image overflow its viewBox while it
-    // is being dragged. Force a viewport clip so one transport cell never
-    // carries neighbouring vehicles into Stores or onto the board.
-    if(item.assetViewBox)return `<svg x="-55" y="-55" width="110" height="110" viewBox="${esc(item.assetViewBox)}" preserveAspectRatio="xMidYMid meet" overflow="hidden" style="overflow:hidden!important;clip-path:inset(0)!important"><image href="${esc(item.asset)}" x="0" y="0" width="1448" height="1086" preserveAspectRatio="none" pointer-events="none"/></svg>`;
     if(item.asset)return `<image href="${esc(item.asset)}" x="-55" y="-55" width="110" height="110" preserveAspectRatio="xMidYMid meet" pointer-events="none"/>`;
     if(item.kind==='shapes')return geometryArt(item,scope,0,0,105,false);return '';
   }
