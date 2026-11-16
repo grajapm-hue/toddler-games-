@@ -90,7 +90,7 @@
     }
     const layoutObserver=new MutationObserver(placeActions);layoutObserver.observe(app,{attributes:true,attributeFilter:['class']});
     window.addEventListener('resize',placeActions,{passive:true});window.addEventListener('orientationchange',placeActions,{passive:true});
-    let board=create(2),age=2,level=1,active=false,page=0,pageSize=4,selected=-1,picked=null,pickedKey=null,pointer=null,demoTimer=null,demoFrame=0,demoBoard=null,demoGuide=null,demoSource=null,done=false,grid=true,layoutFrame=0;
+    let board=create(2),age=2,level=1,active=false,page=0,pageSize=4,selected=-1,picked=null,pickedKey=null,pointer=null,demoTimer=null,demoFrame=0,demoBoard=null,demoGuide=null,demoSource=null,done=false,grid=true,layoutFrame=0,preserveGridArrangement=false,dragGhost=null;
     let W=360,H=360,drawingKey='';
     const stock=()=>stores($('category').value,age),current=()=>demoBoard||board;
     function dimensions(){drawingKey='';const n=gridSize(age);W=H=n*SIZE;pageSize=n*n;svg.setAttribute('viewBox',`0 0 ${W} ${H}`);shelf.setAttribute('viewBox',`0 0 ${W} ${H}`);room.style.setProperty('--glossy-canvas-min',`${n*45}px`);}
@@ -104,7 +104,8 @@
       for(const b of board.blocks){const d=dimensionsOf(b),mx=(d.width-SIZE)/2,my=(d.height-SIZE)/2;left=Math.min(left,b.x-mx);top=Math.min(top,b.y-my);right=Math.max(right,b.x+SIZE+mx);bottom=Math.max(bottom,b.y+SIZE+my);}
       const scale=Math.min(s.width/W,s.height/H,a.width/(right-left),a.height/(bottom-top)),width=a.width/scale,height=a.height/scale;
       board.freeBounds={x:(left+right-width)/2,y:(top+bottom-height)/2,width,height};const v=board.freeBounds,n=gridSize(age);
-      if(grid){const aspect=v.width/v.height,columns=aspect>=1?Math.max(n,Math.round(n*aspect)):n,rows=aspect>=1?n:Math.max(n,Math.round(n/aspect)),cell=Math.min(v.width/columns,v.height/rows),gridWidth=columns*cell,gridHeight=rows*cell;board.columns=columns;board.rows=rows;board.gridBounds={x:v.x+(v.width-gridWidth)/2,y:v.y+(v.height-gridHeight)/2,width:gridWidth,height:gridHeight};if(oldGridBounds&&board.blocks.length&&(oldColumns!==columns||oldRows!==rows)){const next=board.gridBounds;board.blocks.forEach((item,i)=>{const col=Math.max(0,Math.min(columns-1,Math.floor((item.x+SIZE/2-oldGridBounds.x)/oldGridBounds.width*oldColumns))),row=Math.max(0,Math.min(rows-1,Math.floor((item.y+SIZE/2-oldGridBounds.y)/oldGridBounds.height*oldRows)));place(board,item,next.x+(col+.5)*next.width/columns-SIZE/2,next.y+(row+.5)*next.height/rows-SIZE/2,i,{grid:true});});}}else{board.columns=n;board.rows=n;board.gridBounds=null;}
+      if(grid){const aspect=v.width/v.height,columns=aspect>=1?Math.max(n,Math.round(n*aspect)):n,rows=aspect>=1?n:Math.max(n,Math.round(n/aspect)),cell=Math.min(v.width/columns,v.height/rows),gridWidth=columns*cell,gridHeight=rows*cell;board.columns=columns;board.rows=rows;board.gridBounds={x:v.x+(v.width-gridWidth)/2,y:v.y+(v.height-gridHeight)/2,width:gridWidth,height:gridHeight};if(!preserveGridArrangement&&oldGridBounds&&board.blocks.length&&(oldColumns!==columns||oldRows!==rows)){const next=board.gridBounds;board.blocks.forEach((item,i)=>{const col=Math.max(0,Math.min(columns-1,Math.floor((item.x+SIZE/2-oldGridBounds.x)/oldGridBounds.width*oldColumns))),row=Math.max(0,Math.min(rows-1,Math.floor((item.y+SIZE/2-oldGridBounds.y)/oldGridBounds.height*oldRows)));place(board,item,next.x+(col+.5)*next.width/columns-SIZE/2,next.y+(row+.5)*next.height/rows-SIZE/2,i,{grid:true});});}}else{board.columns=n;board.rows=n;board.gridBounds=null;}
+      preserveGridArrangement=false;
       svg.setAttribute('viewBox',`${v.x} ${v.y} ${v.width} ${v.height}`);
       const sw=s.width/scale,sh=s.height/scale;shelf.setAttribute('viewBox',`${(W-sw)/2} ${(H-sh)/2} ${sw} ${sh}`);
       svg.dataset.gridSize=String(W/SIZE);return true;
@@ -113,7 +114,10 @@
     function closeCategoryMenu(restore=false){const wasOpen=!$('category-menu').hidden;$('category-menu').hidden=true;$('category-toggle').setAttribute('aria-expanded','false');if(restore&&wasOpen)$('category-toggle').focus({preventScroll:true});}
     function stopDemo(){const showing=!!demoBoard;clearTimeout(demoTimer);cancelAnimationFrame(demoFrame);demoTimer=null;demoFrame=0;demoGuide?.remove();demoGuide=null;if(demoSource)demoSource.setAttribute('aria-pressed','false');demoSource=null;demoBoard=null;if(showing){room.dataset.demo='false';document.getElementById('show-me').setAttribute('aria-pressed','false');}}
     function releasePointer(){const held=pointer;pointer=null;if(held&&room.hasPointerCapture?.(held.id)){try{room.releasePointerCapture(held.id);}catch{/* The browser may already have cancelled this pointer. */}}return !!held;}
-    function cancel(){const dragging=releasePointer(),showing=!!demoBoard;stopDemo();if(active&&(dragging||showing))renderBoard();}
+    function cancel(){const dragging=releasePointer(),showing=!!demoBoard;clearDragGhost();stopDemo();if(active&&(dragging||showing))renderBoard();}
+    function showDragGhost(item,x,y){clearDragGhost();dragGhost=document.createElement('div');dragGhost.className='glossy-drag-ghost';dragGhost.setAttribute('aria-hidden','true');dragGhost.innerHTML=`<svg viewBox="0 0 180 180" preserveAspectRatio="xMidYMid meet">${effects('drag')}${tile(item,'drag')}</svg>`;document.body.append(dragGhost);moveDragGhost(x,y);}
+    function moveDragGhost(x,y){if(!dragGhost)return;const size=84;dragGhost.style.left=`${x-size/2}px`;dragGhost.style.top=`${y-size/2}px`;}
+    function clearDragGhost(){dragGhost?.remove();dragGhost=null;}
     function renderBoard(){
       fitDrawing();const area=board.freeBounds||{x:0,y:0,width:W,height:H},gridArea=board.gridBounds||area;
       const columns=board.columns||W/SIZE,rows=board.rows||columns,cellWidth=gridArea.width/columns,cellHeight=gridArea.height/rows;
@@ -169,7 +173,18 @@
     }
     const sizes=new ResizeObserver(()=>{cancelAnimationFrame(layoutFrame);layoutFrame=requestAnimationFrame(layout);});sizes.observe(room);sizes.observe(svg);sizes.observe(shelf);
     function finish(){if(done||!board.blocks.length||demoBoard)return;cancel();done=true;selected=-1;renderBoard();hint('Your blocks are ready to snapshot.');}
-    async function snapshot(){if(!board.blocks.length||demoBoard)return;const button=$('snapshot');button.disabled=true;hint('Preparing your snapshot…');let imageUrl;try{const copy=svg.cloneNode(true);copy.querySelectorAll('[data-glossy-placed-focus]').forEach(node=>node.remove());copy.setAttribute('xmlns','http://www.w3.org/2000/svg');copy.setAttribute('width',String(W));copy.setAttribute('height',String(H));for(const image of copy.querySelectorAll('image')){const href=image.getAttribute('href');if(href&&!/^(?:data:|https?:|blob:)/.test(href))image.setAttribute('href',new URL(href,document.baseURI).href);}const source=new Blob([new XMLSerializer().serializeToString(copy)],{type:'image/svg+xml;charset=utf-8'});imageUrl=URL.createObjectURL(source);const image=new Image();await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;image.src=imageUrl;});const scale=Math.min(2,2400/Math.max(W,H)),canvas=document.createElement('canvas');canvas.width=Math.round(W*scale);canvas.height=Math.round(H*scale);const context=canvas.getContext('2d');context.fillStyle='#fffaf0';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(image,0,0,canvas.width,canvas.height);const png=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!png)throw Error('Image export failed');const url=URL.createObjectURL(png),link=document.createElement('a'),stamp=new Date().toISOString().replace(/[:.]/g,'-');link.href=url;link.download=`SaNa-Blocks-${stamp}.png`;link.click();setTimeout(()=>URL.revokeObjectURL(url),30000);hint('Snapshot saved to Downloads.');}catch{hint('Snapshot could not be saved. Try again.');}finally{if(imageUrl)URL.revokeObjectURL(imageUrl);button.disabled=board.blocks.length===0||!!demoBoard;}}
+async function snapshot(){
+      if(!board.blocks.length||demoBoard)return;const button=$('snapshot');button.disabled=true;hint('Preparing your snapshot…');let imageUrl;
+      try{
+        const rect=svg.getBoundingClientRect(),scale=Math.max(1,Math.min(2,window.devicePixelRatio||1)),width=Math.max(1,Math.round((svg.clientWidth||rect.width)*scale)),height=Math.max(1,Math.round((svg.clientHeight||rect.height)*scale)),copy=svg.cloneNode(true);
+        copy.querySelectorAll('[data-glossy-placed-focus]').forEach(node=>node.remove());copy.setAttribute('xmlns','http://www.w3.org/2000/svg');copy.setAttribute('width',String(width));copy.setAttribute('height',String(height));
+        for(const image of copy.querySelectorAll('image')){const href=image.getAttribute('href');if(href&&!/^(?:data:|https?:|blob:)/.test(href))image.setAttribute('href',new URL(href,document.baseURI).href);}
+        const source=new Blob([new XMLSerializer().serializeToString(copy)],{type:'image/svg+xml;charset=utf-8'});imageUrl=URL.createObjectURL(source);const image=new Image();
+        await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;image.src=imageUrl;});
+        const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;const context=canvas.getContext('2d');context.fillStyle='#fffaf0';context.fillRect(0,0,width,height);context.drawImage(image,0,0,width,height);
+        const png=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!png)throw Error('Image export failed');const url=URL.createObjectURL(png),link=document.createElement('a'),stamp=new Date().toISOString().replace(/[:.]/g,'-');link.href=url;link.download=`SaNa-Blocks-${stamp}.png`;link.click();setTimeout(()=>URL.revokeObjectURL(url),30000);hint('Snapshot saved to Downloads.');
+      }catch{hint('Snapshot could not be saved. Try again.');}finally{if(imageUrl)URL.revokeObjectURL(imageUrl);button.disabled=board.blocks.length===0||!!demoBoard;}
+    }
     function added(item,x,y,index=-1){
       const block={...item};
       if(!place(board,block,x,y,index,{grid})){hint('That space is full. Try an empty spot.');renderBoard();return false;}
@@ -183,13 +198,13 @@
       if(!itemNode&&!onBoard)return;const p=point(event);if(!p)return;
       event.preventDefault();const index=placedNode&&!picked?Number(placedNode.dataset.glossyPlaced):-1,item=itemNode?stock().find(i=>i.id===itemNode.dataset.glossyItem):picked||board.blocks[index];
       if(!item)return;const offset=index>=0?{x:p.x-item.x,y:p.y-item.y}:{x:SIZE/2,y:SIZE/2};pointer={id:event.pointerId,item,index,offset,start:p,point:p,moved:false,kind:itemNode?'shelf':index>=0?'placed':'board'};
-      if(itemNode){picked=item;pickedKey=itemNode.dataset.glossyKey;selected=-1;for(const button of shelf.querySelectorAll('[data-glossy-item]'))button.setAttribute('aria-pressed',String(button.dataset.glossyKey===pickedKey));}else if(index>=0)selected=index;
+      if(itemNode){picked=item;pickedKey=itemNode.dataset.glossyKey;selected=-1;for(const button of shelf.querySelectorAll('[data-glossy-item]'))button.setAttribute('aria-pressed',String(button.dataset.glossyKey===pickedKey));showDragGhost(item,event.clientX,event.clientY);}else if(index>=0)selected=index;
       try{room.setPointerCapture?.(event.pointerId);}catch{/* Window listeners still finish the gesture when capture is unavailable. */}
     }
-    function move(event){if(!pointer||pointer.id!==event.pointerId)return;const p=point(event);if(!p)return;pointer.point=p;if(Math.hypot(p.x-pointer.start.x,p.y-pointer.start.y)>8)pointer.moved=true;if(!pointer.moved)return;
+    function move(event){if(!pointer||pointer.id!==event.pointerId)return;const p=point(event);if(!p)return;pointer.point=p;if(pointer.kind==='shelf')moveDragGhost(event.clientX,event.clientY);if(Math.hypot(p.x-pointer.start.x,p.y-pointer.start.y)>8)pointer.moved=true;if(!pointer.moved)return;if(pointer.kind==='shelf')return;
       let preview=svg.querySelector('[data-glossy-drag]');if(!preview){const sample=create(age);place(sample,pointer.item,0,0,-1,{grid});preview=document.createElementNS('http://www.w3.org/2000/svg','g');preview.dataset.glossyDrag='';preview.setAttribute('opacity','.8');preview.setAttribute('pointer-events','none');preview.innerHTML=turned(sample.blocks[0]||pointer.item,tile(pointer.item));svg.append(preview);if(pointer.index>=0)svg.querySelector(`[data-glossy-placed="${pointer.index}"]`).setAttribute('visibility','hidden');}preview.setAttribute('transform',`translate(${p.x-pointer.offset.x} ${p.y-pointer.offset.y})`);
     }
-    function up(event){if(!pointer||pointer.id!==event.pointerId)return;const action=pointer,p=point(event);releasePointer();
+    function up(event){if(!pointer||pointer.id!==event.pointerId)return;const action=pointer,p=point(event);releasePointer();clearDragGhost();
       if(event.type==='pointercancel'||!p){renderBoard();return;}
       const area=board.freeBounds||{x:0,y:0,width:W,height:H},clip=room.querySelector('.glossy-canvas').getBoundingClientRect(),insideView=event.clientX>=clip.left&&event.clientX<=clip.right&&event.clientY>=clip.top&&event.clientY<=clip.bottom,inside=insideView&&p.x>=area.x&&p.y>=area.y&&p.x<=area.x+area.width&&p.y<=area.y+area.height;
       if((action.moved||action.kind==='board')&&inside)added(action.item,p.x-action.offset.x,p.y-action.offset.y,action.index);
@@ -222,7 +237,7 @@
     document.addEventListener('pointerdown',e=>{if(!$('category-menu').hidden&&!$('category-picker').contains(e.target))closeCategoryMenu();if($('colours').open&&!$('colours').contains(e.target))$('colours').open=false;if(!sizePanel.hidden&&!sizePanel.contains(e.target)&&!$('size-toggle').contains(e.target))closeSize();},{capture:true});
     function rotateSelected(degrees=45){if(done||demoBoard||selected<0)return;cancel();if(rotate(board,selected,degrees,{grid})){renderBoard();feedback();hint(degrees<0?'Turned 45° counterclockwise.':'Turned 45° clockwise.');}}
     $('rotate-left').addEventListener('click',()=>rotateSelected(-45));$('rotate-right').addEventListener('click',()=>rotateSelected(45));
-    $('grid').addEventListener('click',()=>{cancel();grid=!grid;room.dataset.grid=String(grid);drawingKey='';$('grid').setAttribute('aria-pressed',String(grid));renderBoard();updatePanHint();hint(grid?'Grid on. The full Assemble room is divided into age-matched cells.':'Grid off. Use the whole Assemble window. Join and overlap freely.');});
+    $('grid').addEventListener('click',()=>{cancel();preserveGridArrangement=true;grid=!grid;room.dataset.grid=String(grid);drawingKey='';$('grid').setAttribute('aria-pressed',String(grid));renderBoard();updatePanHint();hint(grid?'Grid on. Your assembled blocks stay in place.':'Grid off. Your assembled blocks stay in place.');});
     $('remove').addEventListener('click',()=>{if(done||demoBoard)return;remove(board,selected);selected=-1;renderBoard();hint('Block removed. Keep creating!');});
     $('clear').addEventListener('click',()=>{reset();hint('Fresh board. Pick a block.');});$('finish').addEventListener('click',finish);$('snapshot').addEventListener('click',snapshot);
     function demo(){
