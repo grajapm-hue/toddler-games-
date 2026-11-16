@@ -148,6 +148,9 @@
     function matchHeaders(){
       const shelfHeading=room.querySelector('.glossy-shelf-heading'),buildHeading=room.querySelector('.glossy-build-heading');
       shelfHeading.style.minHeight='';buildHeading.style.minHeight='';
+      // In portrait the two panels stack. Matching toolbar heights leaves a large
+      // empty band above the Stores blocks, so keep its header compact instead.
+      if(app.classList.contains('portrait'))return;
       const height=Math.ceil(Math.max(shelfHeading.getBoundingClientRect().height,buildHeading.getBoundingClientRect().height));
       shelfHeading.style.minHeight=`${height}px`;buildHeading.style.minHeight=`${height}px`;
     }

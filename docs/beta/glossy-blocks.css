@@ -188,3 +188,15 @@
 @media(max-width:900px){#app:not(.portrait) #glossy-room .glossy-shelf-heading{gap:4px}#app:not(.portrait) #glossy-room .glossy-shelf-heading h2{font-size:16px}#app:not(.portrait) #glossy-room .glossy-blocks-label{font-size:14px}#app:not(.portrait) #glossy-room .glossy-blocks-label select{width:90px;max-width:90px;min-width:90px;font-size:14px;padding:2px 5px}}
 @media(max-width:699px){#glossy-room .glossy-shelf-heading .glossy-blocks-label{font-size:14px}#glossy-room .glossy-shelf-heading .glossy-blocks-label select{width:90px;max-width:90px;min-width:90px;font-size:14px}}
 @media(max-width:900px){#app:not(.portrait) #glossy-room .glossy-category-tab{font-size:12px;padding-inline:5px}#glossy-room .glossy-category-menu{width:min(190px,calc(100vw - 24px))}}
+
+/* v1.86: override the legacy icon-button width for the new Stores tabs.
+   Keep all three labels readable and distribute them across the header. */
+#glossy-room .glossy-shelf-heading{width:100%;height:44px;min-height:44px;flex:0 0 44px;justify-content:space-between;flex-wrap:nowrap;gap:6px}
+#glossy-room .glossy-shelf-heading #glossy-category-toggle{width:max-content;min-width:0;max-width:100%;height:44px;min-height:44px;padding:3px 7px;flex:0 0 auto;font:800 13px/1.1 system-ui,sans-serif}
+#glossy-room .glossy-shelf-heading #glossy-category-toggle #glossy-category-name{max-width:90px;overflow:visible;text-overflow:clip;white-space:nowrap}
+#glossy-room .glossy-shelf-heading #glossy-inventory{width:64px;min-width:64px;height:44px;min-height:44px;flex:0 0 64px;padding:2px 4px;font:800 14px/1.05 system-ui,sans-serif;white-space:normal}
+#glossy-room .glossy-shelf-heading #glossy-inventory span{font-size:12px;line-height:1.05}
+#app.portrait #glossy-room .glossy-shelf-heading{height:44px;min-height:44px;flex:0 0 44px}
+#app.portrait #glossy-room .glossy-shelf-heading #glossy-category-toggle{width:max-content;min-width:0;max-width:100%;height:44px;min-height:44px;font-size:13px}
+#app.portrait #glossy-room .glossy-shelf-heading #glossy-inventory{width:64px;min-width:64px;height:44px;min-height:44px;flex:0 0 64px;font-size:13px}
+@media(max-width:699px) and (orientation:landscape){#glossy-room .glossy-shelf-heading{gap:3px}#glossy-room .glossy-shelf-heading h2{font-size:14px}#glossy-room .glossy-shelf-heading #glossy-category-toggle{font-size:11px;padding-inline:4px}#glossy-room .glossy-shelf-heading #glossy-category-name{max-width:68px}#glossy-room .glossy-shelf-heading #glossy-inventory{width:60px;min-width:60px;flex-basis:60px;font-size:13px}}
