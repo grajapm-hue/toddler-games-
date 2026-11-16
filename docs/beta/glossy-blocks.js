@@ -116,7 +116,7 @@
     function releasePointer(){const held=pointer;pointer=null;if(held&&room.hasPointerCapture?.(held.id)){try{room.releasePointerCapture(held.id);}catch{/* The browser may already have cancelled this pointer. */}}return !!held;}
     function cancel(){const dragging=releasePointer(),showing=!!demoBoard;clearDragGhost();stopDemo();if(active&&(dragging||showing))renderBoard();}
     function showDragGhost(item,x,y){clearDragGhost();dragGhost=document.createElement('div');dragGhost.className='glossy-drag-ghost';dragGhost.setAttribute('aria-hidden','true');dragGhost.innerHTML=`<svg viewBox="0 0 180 180" preserveAspectRatio="xMidYMid meet">${effects('drag')}${tile(item,'drag')}</svg>`;document.body.append(dragGhost);moveDragGhost(x,y);}
-    function moveDragGhost(x,y){if(!dragGhost)return;const size=84;dragGhost.style.left=`${x-size/2}px`;dragGhost.style.top=`${y-size/2}px`;}
+    function moveDragGhost(x,y){if(!dragGhost)return;const size=108,gap=14;dragGhost.style.left=`${Math.max(4,Math.min(window.innerWidth-size-4,x+gap))}px`;dragGhost.style.top=`${Math.max(4,y-size-18)}px`;}
     function clearDragGhost(){dragGhost?.remove();dragGhost=null;}
     function renderBoard(){
       fitDrawing();const area=board.freeBounds||{x:0,y:0,width:W,height:H},gridArea=board.gridBounds||area;
