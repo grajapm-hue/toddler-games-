@@ -28,7 +28,7 @@
   const validSize=item=>[item.widthScale??1,item.heightScale??1].every(v=>Number.isFinite(v)&&v>0&&v<=2.5);
   function place(board,item,x,y,index=-1,{grid=false,fit=true}={}){
     if(!item||!validColor(item.color)||!validSize(item)||(item.angle!==undefined&&!Number.isFinite(item.angle))||![x,y].every(Number.isFinite)||!Number.isInteger(index)||index< -1||index>=board.blocks.length)return false;
-    let block={...item,widthScale:item.widthScale??1,heightScale:item.heightScale??1,cellFit:!!(grid||item.cellFit),gridScale:item.cellFit?(item.gridScale??1):1};const columns=board.columns||2,rows=board.rows||2,W=columns*SIZE,H=rows*SIZE,area=grid?(board.freeBounds||{x:0,y:0,width:W,height:H}):(board.freeBounds||{x:0,y:0,width:W,height:H}),cellWidth=area.width/columns,cellHeight=area.height/rows;
+    let block={...item,widthScale:item.widthScale??1,heightScale:item.heightScale??1,cellFit:!!(grid||item.cellFit),gridScale:item.cellFit?(item.gridScale??1):1};const columns=board.columns||2,rows=board.rows||2,W=columns*SIZE,H=rows*SIZE,area=(grid&&board.gridBounds)||board.freeBounds||{x:0,y:0,width:W,height:H},cellWidth=area.width/columns,cellHeight=area.height/rows;
     if(grid&&fit)block.gridScale=1;
     let d=dimensionsOf(block);if(grid&&fit){block.gridScale=Math.min(1,cellWidth/d.width,cellHeight/d.height);d=dimensionsOf(block);}
     if(d.width>area.width+.001||d.height>area.height+.001||grid&&(d.width>cellWidth+.001||d.height>cellHeight+.001))return false;
@@ -90,20 +90,21 @@
     }
     const layoutObserver=new MutationObserver(placeActions);layoutObserver.observe(app,{attributes:true,attributeFilter:['class']});
     window.addEventListener('resize',placeActions,{passive:true});window.addEventListener('orientationchange',placeActions,{passive:true});
-    let board=create(2),age=2,level=1,active=false,page=0,pageSize=4,selected=-1,picked=null,pickedKey=null,pointer=null,demoTimer=null,demoFrame=0,demoBoard=null,demoGuide=null,demoSource=null,done=false,grid=false,layoutFrame=0;
+    let board=create(2),age=2,level=1,active=false,page=0,pageSize=4,selected=-1,picked=null,pickedKey=null,pointer=null,demoTimer=null,demoFrame=0,demoBoard=null,demoGuide=null,demoSource=null,done=false,grid=true,layoutFrame=0;
     let W=360,H=360,drawingKey='';
     const stock=()=>stores($('category').value,age),current=()=>demoBoard||board;
     function dimensions(){drawingKey='';const n=gridSize(age);W=H=n*SIZE;pageSize=n*n;svg.setAttribute('viewBox',`0 0 ${W} ${H}`);shelf.setAttribute('viewBox',`0 0 ${W} ${H}`);room.style.setProperty('--glossy-canvas-min',`${n*45}px`);}
     // The SVG camera fills the complete pane. The source and board share a scale;
     // a viewport change also fits existing free-positioned pieces without moving them.
     function fitDrawing(){
-      const a=svg.getBoundingClientRect(),s=shelf.getBoundingClientRect(),key=[a.width,a.height,s.width,s.height,W,H,grid].map(n=>String(n));
+      const a=svg.getBoundingClientRect(),s=shelf.getBoundingClientRect(),key=[a.width,a.height,s.width,s.height,W,H,grid,board.columns,board.rows].map(n=>String(n)).join('/');
       if(!a.width||!a.height||!s.width||!s.height||key===drawingKey)return false;
-      drawingKey=key.join('/');let left=0,top=0,right=W,bottom=H;
+      const oldGridBounds=board.gridBounds||board.freeBounds,oldColumns=board.columns,oldRows=board.rows;drawingKey=key;let left=0,top=0,right=W,bottom=H;
       if(grid){const baseScale=Math.min(s.width/W,s.height/H),width=a.width/baseScale,height=a.height/baseScale;left=(W-width)/2;top=(H-height)/2;right=left+width;bottom=top+height;}
       for(const b of board.blocks){const d=dimensionsOf(b),mx=(d.width-SIZE)/2,my=(d.height-SIZE)/2;left=Math.min(left,b.x-mx);top=Math.min(top,b.y-my);right=Math.max(right,b.x+SIZE+mx);bottom=Math.max(bottom,b.y+SIZE+my);}
       const scale=Math.min(s.width/W,s.height/H,a.width/(right-left),a.height/(bottom-top)),width=a.width/scale,height=a.height/scale;
-      board.freeBounds={x:(left+right-width)/2,y:(top+bottom-height)/2,width,height};const v=board.freeBounds;
+      board.freeBounds={x:(left+right-width)/2,y:(top+bottom-height)/2,width,height};const v=board.freeBounds,n=gridSize(age);
+      if(grid){const aspect=v.width/v.height,columns=aspect>=1?Math.max(n,Math.round(n*aspect)):n,rows=aspect>=1?n:Math.max(n,Math.round(n/aspect)),cell=Math.min(v.width/columns,v.height/rows),gridWidth=columns*cell,gridHeight=rows*cell;board.columns=columns;board.rows=rows;board.gridBounds={x:v.x+(v.width-gridWidth)/2,y:v.y+(v.height-gridHeight)/2,width:gridWidth,height:gridHeight};if(oldGridBounds&&board.blocks.length&&(oldColumns!==columns||oldRows!==rows)){const next=board.gridBounds;board.blocks.forEach((item,i)=>{const col=Math.max(0,Math.min(columns-1,Math.floor((item.x+SIZE/2-oldGridBounds.x)/oldGridBounds.width*oldColumns))),row=Math.max(0,Math.min(rows-1,Math.floor((item.y+SIZE/2-oldGridBounds.y)/oldGridBounds.height*oldRows)));place(board,item,next.x+(col+.5)*next.width/columns-SIZE/2,next.y+(row+.5)*next.height/rows-SIZE/2,i,{grid:true});});}}else{board.columns=n;board.rows=n;board.gridBounds=null;}
       svg.setAttribute('viewBox',`${v.x} ${v.y} ${v.width} ${v.height}`);
       const sw=s.width/scale,sh=s.height/scale;shelf.setAttribute('viewBox',`${(W-sw)/2} ${(H-sh)/2} ${sw} ${sh}`);
       svg.dataset.gridSize=String(W/SIZE);return true;
@@ -114,10 +115,9 @@
     function releasePointer(){const held=pointer;pointer=null;if(held&&room.hasPointerCapture?.(held.id)){try{room.releasePointerCapture(held.id);}catch{/* The browser may already have cancelled this pointer. */}}return !!held;}
     function cancel(){const dragging=releasePointer(),showing=!!demoBoard;stopDemo();if(active&&(dragging||showing))renderBoard();}
     function renderBoard(){
-      fitDrawing();const area=board.freeBounds||{x:0,y:0,width:W,height:H};
-      const columns=W/SIZE;
-      const rows=board.rows||columns,cellWidth=area.width/columns,cellHeight=area.height/rows;
-      svg.innerHTML=effects('board')+`<rect x="${area.x+2}" y="${area.y+2}" width="${area.width-4}" height="${area.height-4}" rx="14" fill="#fffaf0" stroke="#8aa67a" stroke-width="4"/>`+(grid?`<g data-glossy-grid="" aria-hidden="true" fill="none" stroke="#9bb18f" stroke-width="1" vector-effect="non-scaling-stroke">${Array.from({length:columns+1},(_,i)=>`<path d="M${area.x+i*cellWidth} ${area.y}V${area.y+area.height}"/>`).join('')}${Array.from({length:rows+1},(_,i)=>`<path d="M${area.x} ${area.y+i*cellHeight}H${area.x+area.width}"/>`).join('')}</g>`:'')+current().blocks.map((item,i)=>`<g transform="translate(${item.x} ${item.y})" data-glossy-placed="${i}" role="button" tabindex="0" aria-label="${esc(item.name)} block ${i+1}${i===selected?', selected':''}" aria-pressed="${i===selected}">${turned(item,tile(item)+`<rect data-glossy-placed-focus="" x="10" y="10" width="160" height="160" rx="8" fill="none" stroke="#173e35" stroke-width="6" stroke-dasharray="14 7" pointer-events="none"/>`)}</g>`).join('');
+      fitDrawing();const area=board.freeBounds||{x:0,y:0,width:W,height:H},gridArea=board.gridBounds||area;
+      const columns=board.columns||W/SIZE,rows=board.rows||columns,cellWidth=gridArea.width/columns,cellHeight=gridArea.height/rows;
+      svg.innerHTML=effects('board')+`<rect x="${area.x+2}" y="${area.y+2}" width="${area.width-4}" height="${area.height-4}" rx="14" fill="#fffaf0" stroke="#8aa67a" stroke-width="4"/>`+(grid?`<g data-glossy-grid="" aria-hidden="true" fill="none" stroke="#9bb18f" stroke-width="1" vector-effect="non-scaling-stroke">${Array.from({length:columns+1},(_,i)=>`<path d="M${gridArea.x+i*cellWidth} ${gridArea.y}V${gridArea.y+gridArea.height}"/>`).join('')}${Array.from({length:rows+1},(_,i)=>`<path d="M${gridArea.x} ${gridArea.y+i*cellHeight}H${gridArea.x+gridArea.width}"/>`).join('')}</g>`:'')+current().blocks.map((item,i)=>`<g transform="translate(${item.x} ${item.y})" data-glossy-placed="${i}" role="button" tabindex="0" aria-label="${esc(item.name)} block ${i+1}${i===selected?', selected':''}" aria-pressed="${i===selected}">${turned(item,tile(item)+`<rect data-glossy-placed-focus="" x="10" y="10" width="160" height="160" rx="8" fill="none" stroke="#173e35" stroke-width="6" stroke-dasharray="14 7" pointer-events="none"/>`)}</g>`).join('');
       syncColour();svg.dataset.blocks=JSON.stringify(board.blocks);$('count').textContent=board.blocks.length+' Block'+(board.blocks.length===1?'':'s');$('remove').disabled=selected<0||done||!!demoBoard;$('rotate-left').disabled=selected<0||done||!!demoBoard;$('rotate-right').disabled=selected<0||done||!!demoBoard;$('size-toggle').disabled=selected<0||done||!!demoBoard;syncSize();$('clear').disabled=board.blocks.length===0||!!demoBoard;$('finish').disabled=board.blocks.length===0||done||!!demoBoard;$('snapshot').disabled=board.blocks.length===0||!!demoBoard;
     }
     function syncColour(){
@@ -152,7 +152,7 @@
       shelfHeading.style.minHeight=`${height}px`;buildHeading.style.minHeight=`${height}px`;
     }
     function reset(){cancel();closeSize();$('axis').value='both';onReset();done=false;board=create(Number(age)||2);drawingKey='';selected=-1;picked=null;pickedKey=null;$('colours').open=false;render();room.querySelector('.glossy-canvas').scrollTop=0;}
-    function start(nextAge,nextLevel){active=true;age=nextAge;level=nextLevel;dimensions();room.hidden=false;page=0;$('category').value='mixed';syncCategoryTab();closeCategoryMenu();grid=false;room.dataset.grid='false';$('grid').setAttribute('aria-pressed','false');reset();placeActions();layout();}
+    function start(nextAge,nextLevel){active=true;age=nextAge;level=nextLevel;dimensions();room.hidden=false;page=0;$('category').value='mixed';syncCategoryTab();closeCategoryMenu();grid=true;room.dataset.grid='true';$('grid').setAttribute('aria-pressed','true');reset();placeActions();layout();}
     function leave(){cancel();closeSize();$('colours').open=false;active=false;placeActions();room.hidden=true;}
     function layout(){
       layoutFrame=0;if(!active)return;
@@ -224,14 +224,14 @@
     $('clear').addEventListener('click',()=>{reset();hint('Fresh board. Pick a block.');});$('finish').addEventListener('click',finish);$('snapshot').addEventListener('click',snapshot);
     function demo(){
       if(!active||done)return;if(demoBoard){cancel();hint('Your turn! Your building is still here.');return;}
-      cancel();demoBoard=create(Number(age)||2);demoBoard.freeBounds=board.freeBounds;room.dataset.demo='true';document.getElementById('show-me').setAttribute('aria-pressed','true');
+      cancel();demoBoard=create(Number(age)||2);demoBoard.columns=board.columns;demoBoard.rows=board.rows;demoBoard.freeBounds=board.freeBounds;demoBoard.gridBounds=board.gridBounds;room.dataset.demo='true';document.getElementById('show-me').setAttribute('aria-pressed','true');
       const sample=stock().slice(0,Math.min(3,stock().length));let step=0;
       const tick=()=>{
         if(!active||!demoBoard)return;
         if(step>=sample.length){stopDemo();render();hint('Your turn! Select a block, then tap or drag it onto the board.');return;}
         const item=sample[step],source=[...shelf.querySelectorAll('[data-glossy-item]')].find(node=>node.dataset.glossyItem===item.id),sourceRect=source?.getBoundingClientRect();
         if(!sourceRect?.width){step++;demoTimer=setTimeout(tick,100);return;}
-        const area=demoBoard.freeBounds||{x:0,y:0,width:W,height:H},cellWidth=area.width/demoBoard.columns,cellHeight=area.height/demoBoard.rows,x=area.x+(step%demoBoard.columns)*cellWidth+(cellWidth-SIZE)/2,y=area.y+Math.floor(step/demoBoard.columns)*cellHeight+(cellHeight-SIZE)/2,matrix=svg.getScreenCTM();
+        const area=demoBoard.gridBounds||demoBoard.freeBounds||{x:0,y:0,width:W,height:H},cellWidth=area.width/demoBoard.columns,cellHeight=area.height/demoBoard.rows,x=area.x+(step%demoBoard.columns)*cellWidth+(cellWidth-SIZE)/2,y=area.y+Math.floor(step/demoBoard.columns)*cellHeight+(cellHeight-SIZE)/2,matrix=svg.getScreenCTM();
         const target=matrix?new DOMPoint(x+SIZE/2,y+SIZE/2).matrixTransform(matrix):null,startX=sourceRect.left+sourceRect.width/2,startY=sourceRect.top+sourceRect.height/2;
         if(!target){step++;demoTimer=setTimeout(tick,100);return;}
         demoSource=source;source.setAttribute('aria-pressed','true');
