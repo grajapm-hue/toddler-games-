@@ -158,3 +158,21 @@
 @keyframes glossyDemoTouch{0%{opacity:0;transform:scale(.55)}45%{opacity:1;transform:scale(1)}100%{opacity:.55;transform:scale(.8)}}
 @keyframes glossyDemoDrop{0%{transform:scale(1)}55%{transform:scale(.82)}100%{transform:scale(.55);opacity:0}}
 @media(max-width:900px){#app:not(.portrait) #glossy-room .glossy-shelf-heading{gap:2px}#app:not(.portrait) #glossy-room .glossy-shelf-heading h2{font-size:15px}#app:not(.portrait) #glossy-room .glossy-blocks-label{font-size:12px}#app:not(.portrait) #glossy-room .glossy-blocks-label select{width:78px;max-width:78px;min-width:54px;font-size:12px;padding-left:3px;padding-right:3px}}
+
+/* v1.82: a compact Stores header releases height to both equal work canvases.
+   The Blocks count browses pages by tap/swipe, so the old ‹ › tabs are gone. */
+#glossy-room .glossy-shelf-heading{flex-wrap:nowrap;justify-content:flex-start;gap:4px}
+#glossy-room .glossy-shelf-heading .glossy-blocks-label{font-size:14px}
+#glossy-room .glossy-shelf-heading .glossy-blocks-label select{width:90px;max-width:90px;min-width:90px;font-size:14px;padding:2px 5px}
+#glossy-room .glossy-shelf-heading .glossy-inventory-tab{width:max-content;min-width:0;height:44px;min-height:44px;padding:4px 8px;font:800 14px/1.1 system-ui,sans-serif;white-space:nowrap;touch-action:pan-y}
+#glossy-room .glossy-inventory-tab:disabled{opacity:1}
+#glossy-room .glossy-rotate-direction{width:36px!important;min-width:36px!important;height:44px;min-height:44px;padding:2px!important;font:900 25px/1 system-ui,sans-serif!important}
+
+/* Keep the colour swatches fully inside Assemble, like the blocks in Stores. */
+#glossy-room .glossy-palette-panel{left:0;transform:none;width:200px;max-width:calc(100vw - 32px);padding:6px}
+#glossy-room .glossy-swatches{grid-template-columns:repeat(4,40px);gap:5px}
+#glossy-room .glossy-swatches button{width:40px;height:40px;min-width:40px;min-height:40px}
+
+/* Use the same readable Shapes dropdown size on mobile and tablet landscape. */
+@media(max-width:900px){#app:not(.portrait) #glossy-room .glossy-shelf-heading{gap:4px}#app:not(.portrait) #glossy-room .glossy-shelf-heading h2{font-size:16px}#app:not(.portrait) #glossy-room .glossy-blocks-label{font-size:14px}#app:not(.portrait) #glossy-room .glossy-blocks-label select{width:90px;max-width:90px;min-width:90px;font-size:14px;padding:2px 5px}}
+@media(max-width:699px){#glossy-room .glossy-shelf-heading .glossy-blocks-label{font-size:14px}#glossy-room .glossy-shelf-heading .glossy-blocks-label select{width:90px;max-width:90px;min-width:90px;font-size:14px}}
