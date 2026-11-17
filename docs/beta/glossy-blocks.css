@@ -205,8 +205,11 @@
 .glossy-drag-ghost{position:fixed;z-index:9999;left:0;top:0;pointer-events:none;user-select:none;filter:drop-shadow(0 4px 5px #173e3566);will-change:left,top}
 .glossy-drag-ghost svg{display:block;width:100%;height:100%;overflow:visible}
 
-/* Keep every Stores page at the age-3 three-by-three tile scale. */
-.glossy-store-pager{display:flex;align-items:center;gap:8px;flex:0 0 34px;min-height:34px;padding:0 5px;color:#173e35;font:800 12px/1.1 system-ui,sans-serif}
+/* Large, direct page taps are easier for small fingers than a slider or dots. */
+.glossy-store-pager{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:0 0 50px;min-height:50px;padding:2px 3px;color:#173e35;font:800 13px/1.1 system-ui,sans-serif}
 .glossy-store-pager[hidden]{display:none!important}
-.glossy-store-pager span{flex:none;white-space:nowrap}
-.glossy-store-pager input{flex:1;min-width:40px;max-width:none;min-height:24px;touch-action:pan-x;accent-color:#527e62}
+.glossy-store-pager span{flex:0 0 auto;min-width:76px;text-align:center;white-space:nowrap}
+#glossy-room .glossy-store-pager .glossy-page-button{display:flex;align-items:center;justify-content:center;flex:1 1 0;min-width:64px;min-height:44px;height:44px;padding:4px 8px;font:900 14px/1.1 system-ui,sans-serif;white-space:nowrap;touch-action:manipulation}
+#glossy-room .glossy-store-pager .glossy-page-button:disabled{opacity:.45}
+@media(max-width:699px) and (orientation:landscape){.glossy-store-pager{gap:4px}.glossy-store-pager span{min-width:68px;font-size:11px}#glossy-room .glossy-store-pager .glossy-page-button{min-width:54px;padding-inline:4px;font-size:12px}}
+@media(max-width:359px){.glossy-store-pager{gap:4px;padding-inline:0;font-size:11px}.glossy-store-pager span{min-width:68px;font-size:10px}#glossy-room .glossy-store-pager .glossy-page-button{min-width:54px;padding-inline:4px;font-size:12px}}
