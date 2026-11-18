@@ -2,6 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {before,after,test}=require('node:test');
 const playwright=require(process.env.MM_PLAYWRIGHT||'C:/Users/jeyan/Projects/DotMd/node_modules/@playwright/test');
+const {createHash}=require('node:crypto');
 const root=path.join(__dirname,'docs'),beta=path.join(root,'beta'),engine=process.env.PLAYROOM_BROWSER||'chromium';
 const out=path.join(__dirname,'artifacts/puppy-v199',engine);
 let browser,server,base;
@@ -31,6 +32,19 @@ test('new puppy install icons preserve SaNa identity and provide real 192/512 PN
  }
  assert.match(manifest.icons.find(icon=>icon.sizes==='512x512').purpose,/maskable/);
 });
+test('the circular welcome portrait is separate from the approved PWA icons and manifest',()=>{
+ const source=fs.readFileSync(path.join(beta,'index.html'),'utf8');
+ assert(/<image[^>]+data-sana-puppy[^>]+href="sana-puppy-welcome-circle-v199\.png"/.test(source),'the welcome must select its own circular portrait');
+ const unchanged={
+  'manifest.webmanifest':'165627341589f8d734b746a3c31911fe95acb1ba14f410f2ac312445883a2da8',
+  'icon.svg':'08ddad3b3b54804facfd85999dca057b1441f1943af3311ef7158c9753268132',
+  'icon-192.png':'32b0df4951785e2173cb96c81ef4ed14806766ed1bf757a303b350d50b340bbf',
+  'icon-512.png':'00b1e56ac5e6ee95f5a5bfcf20f2accf945f26776a1245e9770bb28ac1c06c07',
+  'sana-puppy-v199-192.png':'32b0df4951785e2173cb96c81ef4ed14806766ed1bf757a303b350d50b340bbf',
+  'sana-puppy-v199-512.png':'00b1e56ac5e6ee95f5a5bfcf20f2accf945f26776a1245e9770bb28ac1c06c07'
+ };
+ for(const [file,hash] of Object.entries(unchanged))assert.equal(createHash('sha256').update(fs.readFileSync(path.join(beta,file))).digest('hex'),hash,file+' must remain byte-for-byte unchanged');
+});
 for(const [width,height] of [[320,568],[393,852],[844,390],[800,1280],[1280,800],[1024,768]]){
  test(`puppy welcome keeps SaNa and usable controls at ${width}x${height}`,async()=>{
   const context=await browser.newContext({viewport:{width,height},hasTouch:true,serviceWorkers:'block',reducedMotion:'reduce'});
@@ -41,7 +55,7 @@ for(const [width,height] of [[320,568],[393,852],[844,390],[800,1280],[1280,800]
    assert.match(await page.locator('.family').innerText(),/A little world with SaNa/);
    assert.equal(await page.locator('.mascot-art image[data-sana-puppy]').count(),1);
    assert.match(await page.locator('.mascot-art').getAttribute('aria-label'),/SaNa the puppy/);
-   assert.match(await page.locator('.family img').getAttribute('src'),/sana-puppy-v199-192\.png/);
+   assert.match(await page.locator('.family img').getAttribute('src'),/sana-puppy-welcome-circle-v199\.png/);
    assert.equal(await page.locator('.sese-welcome').getAttribute('src'),'sese-enhanced-v89.png');
    assert.equal(await page.locator('[data-release-version]').first().textContent(),'v1.99');
    await page.evaluate(async()=>{const image=new Image();image.src=document.querySelector('[data-sana-puppy]').getAttribute('href');await image.decode();});
@@ -66,7 +80,7 @@ for(const [width,height] of [[320,568],[393,852],[844,390],[800,1280],[1280,800]
 test('preview, favicon and offline assets all point to puppy art',()=>{
  const worker=fs.readFileSync(path.join(beta,'sw.js'),'utf8');
  const assets=JSON.parse(worker.match(/const ASSETS=(\[[^;]+\]);/)[1]);
- assert.match(worker,/sana-little-hands-beta-v199-puppy-art/);
+ assert.match(worker,/sana-little-hands-beta-v199-circle-welcome/);
  for(const size of [192,512])assert(assets.includes(`./sana-puppy-v199-${size}.png`));
  for(const name of ['index.html','play.html']){
   const head=fs.readFileSync(path.join(beta,name),'utf8').split('</head>')[0];
