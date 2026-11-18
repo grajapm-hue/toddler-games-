@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#d9eff1">
+<title>SaNa tablet check</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#d9eff1;color:#173e35;font:17px/1.4 system-ui,sans-serif}main{max-width:44rem;margin:20px auto;padding:22px;background:#fffaf0;border:2px solid #91b7a2;border-radius:20px}h1{margin:0 0 8px;font-size:27px}p{margin:10px 0}#result{padding:12px;background:#fff0b4;border-radius:10px;font-weight:700}dl{margin:14px 0}dl div{display:flex;gap:16px;padding:6px 0;border-bottom:1px solid #d0dcd1}dt{flex:0 0 47%}dd{margin:0;overflow-wrap:anywhere}small{display:block;overflow-wrap:anywhere}button,a{display:inline-block;padding:12px 16px;margin:10px 8px 0 0;border:2px solid #91b7a2;border-radius:12px;background:#ffe17a;color:#173e35;font:700 17px system-ui;text-decoration:none}button:disabled{opacity:.6}@media(max-width:740px){main{margin:12px;padding:16px}}
+</style>
+<main>
+<h1>SaNa tablet check</h1>
+<p id="result" role="status" aria-live="polite">Checking this browser...</p>
+<dl>
+<div><dt>Connection to SaNa</dt><dd id="network">Checking...</dd></div>
+<div><dt>Device internet status</dt><dd id="online">Checking...</dd></div>
+<div><dt>Secure page</dt><dd id="secure">Checking...</dd></div>
+<div><dt>Browser update support</dt><dd id="support">Checking...</dd></div>
+<div><dt>Available release</dt><dd id="release">Checking...</dd></div>
+<div><dt>Downloaded app</dt><dd id="worker">Checking...</dd></div>
+</dl>
+<small id="browser"></small>
+<button id="retry" type="button">Check again</button>
+<a href="https://grajapm-hue.github.io/toddler-games-/beta/v1.98.html">Open v1.98</a>
+<small>This page only checks. It does not install, remove or change saved pictures or game settings. Send a screenshot of these results.</small>
+<noscript>JavaScript is disabled. Enable JavaScript in this browser to check and update SaNa.</noscript>
+</main>
+<script>
+// A fresh, read-only entry: no registration, update, cache writes or game-data access.
+(()=>{
+  const field=id=>document.getElementById(id);
+  const result=field('result'),retry=field('retry');
+  const timed=(promise,ms)=>new Promise((resolve,reject)=>{
+    const timer=setTimeout(()=>reject(Error('Check timed out')),ms);
+    Promise.resolve(promise).then(value=>{clearTimeout(timer);resolve(value);},error=>{clearTimeout(timer);reject(error);});
+  });
+  async function existingWorker(supported,secure){
+    if(!supported||!secure){field('worker').textContent='Unavailable here';return;}
+    try{
+      const registration=await timed(navigator.serviceWorker.getRegistration(),2000);
+      field('worker').textContent=registration?(registration.installing?'Downloading':registration.active?'Active':'Waiting'):'Not registered here';
+    }catch(error){field('worker').textContent=error.message||'Could not check';}
+  }
+  async function probe(){
+    let controller,timer;
+    try{
+      if(typeof AbortController!=='undefined')controller=new AbortController();
+      const options={cache:'no-store',credentials:'omit'};
+      if(controller)options.signal=controller.signal;
+      timer=setTimeout(()=>{if(controller)controller.abort();},10000);
+      const response=await timed(fetch('sw.js?tablet-check='+Date.now(),options),10000);
+      field('network').textContent='HTTP '+response.status;
+      if(!response.ok){field('release').textContent='Could not check';return false;}
+      const source=await timed(response.text(),3000);
+      const match=source.match(/sana-little-hands-beta-v(\d+)([^'"\s;]*)/);
+      if(!match){field('network').textContent+=' - unexpected response';field('release').textContent='Could not verify';return false;}
+      field('release').textContent='v'+(Number(match[1])/100).toFixed(2)+match[2];
+      return true;
+    }catch(error){
+      field('network').textContent=error.name==='AbortError'||/timed out/i.test(error.message)?'Connection timed out':error.message||'Connection failed';
+      field('release').textContent='Could not check';
+      return false;
+    }finally{clearTimeout(timer);if(controller)controller.abort();}
+  }
+  async function run(){
+    retry.disabled=true;result.dataset.complete='false';result.textContent='Checking this browser...';
+    field('network').textContent='Checking...';field('release').textContent='Checking...';field('worker').textContent='Checking...';
+    const online=navigator.onLine,secure=window.isSecureContext===true,supported='serviceWorker'in navigator;
+    field('online').textContent=online?'Online':'Offline';
+    field('secure').textContent=secure?'Yes':'No';field('support').textContent=supported?'Yes':'No';
+    field('browser').textContent=navigator.userAgent;
+    const outcomes=await Promise.all([probe(),existingWorker(supported,secure)]),connected=outcomes[0];
+    if(!secure)result.textContent='This page is not secure. Open the HTTPS SaNa link directly in your browser.';
+    else if(!supported)result.textContent='Browser update support is missing here. Open this link in a current browser.';
+    else if(!connected)result.textContent='The connection check failed. The details below show the network error.';
+    else if(!online)result.textContent='The connection works, but the browser reports Offline. That blocks the old Update button.';
+    else result.textContent='These checks passed in this browser. Open v1.98 below. The installed app may be using a different browser or connection.';
+    retry.disabled=false;result.dataset.complete='true';
+  }
+  retry.addEventListener('click',run);void run();
+})();
+</script>
+</html>
