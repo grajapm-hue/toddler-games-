@@ -44,7 +44,7 @@ const server=http.createServer((req,res)=>{try{
   check('An open child game survives the update',await game.evaluate(()=>window.releaseTestMarker)==='playing');
   check('Update preserves saved game settings',await welcome.evaluate(()=>localStorage.getItem('sanaLittleHandsV1'))===settings);
   const cachesAfter=await welcome.evaluate(()=>caches.keys());
-  check('V198 cache is present and V197 cache is removed',cachesAfter.includes('sana-little-hands-beta-v198-r3-update-recovery')&&!cachesAfter.includes('sana-little-hands-beta-v197-kid-friendly-store-pages'));
+  check('V198 cache is present and V197 cache is removed',cachesAfter.includes('sana-little-hands-beta-v198-r4-update-recovery')&&!cachesAfter.includes('sana-little-hands-beta-v197-kid-friendly-store-pages'));
   check('Unrelated cached data is preserved',cachesAfter.includes('unrelated-library-test'));
   await game.reload();await game.locator('[data-activity="puzzle"]').click();
   await expect(game.locator('[data-puzzle-choice]')).toHaveCount(2);
