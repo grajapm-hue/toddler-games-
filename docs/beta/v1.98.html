@@ -17,7 +17,7 @@ body{margin:0;background:#d9eff1;color:#173e35;font:18px/1.5 system-ui,sans-seri
 <script>
 // This new URL and inline bootstrap can open even when an older worker caches pwa.js.
 (()=>{
-  const target='sana-little-hands-beta-v199-circle-welcome-r2';
+  const target='sana-little-hands-beta-v199-circle-welcome-r3-app-name';
   const progress=document.getElementById('progress'),retry=document.getElementById('retry');
   function timed(promise,ms=15000){return new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('The connection took too long. Keep this page open and try again.')),ms);Promise.resolve(promise).then(value=>{clearTimeout(timer);resolve(value);},error=>{clearTimeout(timer);reject(error);});});}
   function status(worker){return new Promise(resolve=>{
