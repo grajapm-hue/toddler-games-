@@ -12,7 +12,7 @@ for(const name of ['index.html','play.html']){
  assert.equal(meta.get('og:title'),'SaNa Little Hands Beta',name+': picture preview needs a SaNa title');checks++;
  assert.equal(meta.get('og:type'),'website');assert.equal(meta.get('og:url'),base+'index.html');checks++;
  assert((meta.get('description')||'').length>0);assert.equal(meta.get('og:description'),meta.get('description'));checks++;
- const image=meta.get('og:image');assert.equal(image,base+'icon-512.png');
+ const image=meta.get('og:image');assert.equal(image,base+'sana-puppy-v199-512.png');
  const bytes=fs.readFileSync(path.join(root,new URL(image).pathname.split('/').pop()));
  assert.equal(bytes.subarray(1,4).toString(),'PNG');assert.equal(bytes.readUInt32BE(16),Number(meta.get('og:image:width')));assert.equal(bytes.readUInt32BE(20),Number(meta.get('og:image:height')));checks++;
  assert.equal(meta.get('og:image:type'),'image/png');assert.match(meta.get('og:image:alt')||'',/SaNa/);checks++;
