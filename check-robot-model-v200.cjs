@@ -1,0 +1,33 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path');
+const modulePath=path.join(__dirname,'docs/beta/robot-machines.js');
+assert(fs.existsSync(modulePath),'Machines needs the new transparent robot fitting model');
+const {core,catalogue}=require(modulePath);
+let checks=0;
+const check=(message,test)=>{assert(test,message);checks++;};
+for(const poseId of ['standing','waving']){
+  const pose=catalogue.poses[poseId],state=core.create(poseId,4);
+  check(`${poseId}: 16 unique cutouts`,pose.parts.length===16&&new Set(pose.parts.map(p=>p.id)).size===16);
+  check(`${poseId}: source proportions`,pose.width===848&&pose.height===1264&&pose.parts.every(p=>p.width>0&&p.height>0));
+  for(const p of pose.parts)check(`${poseId}: ${p.id} source exists`,fs.existsSync(path.join(__dirname,'docs/beta',p.asset)));
+  const head=pose.parts.find(p=>p.id==='head'),cx=head.x+head.width/2,cy=head.y+head.height/2;
+  core.drop(state,head.id,cx+220,cy+220);
+  check('A distant drop remains loose',core.fittedCount(state)===0&&!state.placed.head.fitted);
+  core.drop(state,head.id,cx+90,cy);
+  check('Age 4 has wider snap assistance',state.placed.head.fitted&&state.placed.head.x===head.x&&state.placed.head.y===head.y);
+  core.drop(state,head.id,cx,cy);
+  check('Fitted part cannot duplicate',Object.keys(state.placed).length===1&&core.fittedCount(state)===1);
+  const older=core.create(poseId,5);core.drop(older,head.id,cx+90,cy);
+  check('Age 5 requires closer placement',!older.placed.head.fitted);
+  core.drop(older,head.id,cx,cy);check('Exact placement fits at age 5',older.placed.head.fitted);
+  check('Unknown pieces are rejected',core.drop(older,'unknown',1,1)===false);
+  check('Nonfinite input is rejected',core.drop(older,pose.parts[1].id,NaN,1)===false);
+  const spare=pose.parts[1];core.drop(state,spare.id,-500,-500);
+  check('Loose pieces stay inside the board',state.placed[spare.id].x>=0&&state.placed[spare.id].y>=0);
+  check('Partial assembly cannot finish',!core.isComplete(state));
+  for(const p of pose.parts)core.drop(state,p.id,p.x+p.width/2,p.y+p.height/2);
+  check('All correctly fitted parts complete the robot',core.isComplete(state)&&core.fittedCount(state)===16);
+  core.remove(state,head.id);check('Removing a part clears completion',!core.isComplete(state)&&core.fittedCount(state)===15);
+  check('Variant state is independent',Object.keys(core.create(poseId==='standing'?'waving':'standing',4).placed).length===0);
+}
+console.log(`Robot model: ${checks} checks passed.`);
