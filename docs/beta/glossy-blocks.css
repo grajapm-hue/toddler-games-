@@ -5,8 +5,8 @@
 #app[data-view="home"] :is(#more-games,#first-games) span{flex:none;min-width:max-content}
 #app #activity-grid.extra-games{grid-template-rows:minmax(0,1fr);grid-template-columns:repeat(3,minmax(0,1fr))}
 #app #activity-grid.extra-games .activity-card{--card:#e9e1f2;--edge:#a591b5}
-#app[data-view="glossy"] #activity-view{grid-template-rows:minmax(0,1fr);grid-template-areas:"board";gap:0}
-#app[data-view="glossy"] .play-mat>:is(#scene,.play-toolbar,.game-status-top){display:none!important}
+#app:is([data-view="glossy"],[data-view="machines"]) #activity-view{grid-template-rows:minmax(0,1fr);grid-template-areas:"board";gap:0}
+#app:is([data-view="glossy"],[data-view="machines"]) .play-mat>:is(#scene,.play-toolbar,.game-status-top){display:none!important}
 #glossy-room{order:0;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"workspace";flex:1 1 0;min-height:0;min-width:0;padding:6px;gap:6px;overflow:hidden;color:#173e35;font-family:system-ui,sans-serif}
 #glossy-room[hidden]{display:none!important}
 .glossy-tools{display:none}
@@ -213,3 +213,14 @@
 #glossy-room .glossy-store-pager .glossy-page-button:disabled{opacity:.45}
 @media(max-width:699px) and (orientation:landscape){.glossy-store-pager{gap:4px}.glossy-store-pager span{min-width:68px;font-size:11px}#glossy-room .glossy-store-pager .glossy-page-button{min-width:54px;padding-inline:4px;font-size:12px}}
 @media(max-width:359px){.glossy-store-pager{gap:4px;padding-inline:0;font-size:11px}.glossy-store-pager span{min-width:68px;font-size:10px}#glossy-room .glossy-store-pager .glossy-page-button{min-width:54px;padding-inline:4px;font-size:12px}}
+
+/* Kids Machines Vision: isolated transparent machine components and a persistent assembled-object reference. */
+#glossy-room .glossy-canvas{position:relative}
+#glossy-room .glossy-look-button{min-width:max-content;padding-inline:9px}
+#glossy-room .glossy-look-panel{position:absolute;inset:8px;z-index:12;display:grid;grid-template-rows:minmax(0,1fr) auto;place-items:center;gap:8px;padding:12px;border:3px solid #739887;border-radius:18px;background:#fffaf0f2;box-shadow:0 6px 18px #173e3530}
+#glossy-room .glossy-look-panel img{display:block;max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain}
+#glossy-room .glossy-look-panel span{font:800 14px/1.15 system-ui,sans-serif;color:#254b4f;text-align:center}
+#glossy-room .glossy-look-panel[hidden]{display:none!important}
+@media(max-width:699px) and (orientation:landscape){#glossy-room .glossy-look-button{font-size:11px;padding-inline:5px}}
+
+#glossy-room .glossy-palette[hidden]{display:none!important}

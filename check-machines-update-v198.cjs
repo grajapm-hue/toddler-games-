@@ -1,0 +1,62 @@
+// Exercise a real V197 -> V198 worker upgrade, including a saved puzzle photo.
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
+const {execFileSync}=require('node:child_process');
+const {chromium,expect}=require(process.env.MM_PLAYWRIGHT||'C:/Users/jeyan/Projects/DotMd/node_modules/@playwright/test');
+const root=path.join(__dirname,'docs'),prior='1f11fa1f7f3497f1c95cf31d7979339ecbd385db',older=new Map();
+const changed=new Set(['index.html','play.html','app.js','glossy-blocks.js','glossy-blocks.css','parent-guide.js','sw.js']);
+const out=path.join(__dirname,'artifacts/machines-v198/update');fs.mkdirSync(out,{recursive:true});
+let revision=197,browser,checks=0;
+const check=(name,pass)=>{assert(pass,name);checks++;console.log('PASS '+name);};
+const server=http.createServer((req,res)=>{try{
+  const pathname=decodeURIComponent(new URL(req.url,'http://local').pathname).replace(/^\/toddler-games-\//,'/');
+  const filename=path.resolve(root,'.'+pathname+(pathname.endsWith('/')?'index.html':''));assert(filename.startsWith(root+path.sep));
+  const relative=path.relative(path.join(root,'beta'),filename).replaceAll('\\','/');let body;
+  if(revision===197&&changed.has(relative)){
+    if(!older.has(relative))older.set(relative,execFileSync('git',['show',`${prior}:docs/beta/${relative}`],{cwd:__dirname,maxBuffer:20000000}));
+    body=older.get(relative);
+  }else body=fs.readFileSync(filename);
+  res.writeHead(200,{'Content-Type':({'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg','.mp3':'audio/mpeg','.webmanifest':'application/manifest+json'})[path.extname(filename)]||'application/octet-stream','Cache-Control':'no-store'}).end(body);
+}catch{res.writeHead(404).end();}});
+(async()=>{
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const base=`http://127.0.0.1:${server.address().port}/toddler-games-/beta/`;
+  browser=await chromium.launch({headless:true});
+  const context=await browser.newContext({viewport:{width:393,height:852},acceptDownloads:true});
+  const welcome=await context.newPage();welcome.setDefaultTimeout(15000);
+  await welcome.goto(base+'index.html');await expect(welcome.locator('#offline-status')).toHaveText('Ready for offline play',{timeout:30000});
+  check('V197 is initially installed',await welcome.locator('[data-release-version]').first().textContent()==='v1.97');
+  await welcome.evaluate(()=>caches.open('unrelated-library-test'));
+  const game=await context.newPage();await game.goto(base+'play.html?age=3');
+  await game.locator('[data-activity="puzzle"]').click();
+  await game.locator('#puzzle-file').setInputFiles(path.join(root,'beta/icon-192.png'));
+  await expect(game.locator('[data-puzzle-choice]')).toHaveCount(2);
+  await expect(game.locator('#puzzle-board')).toHaveAttribute('data-ready','true');
+  await game.evaluate(()=>{window.releaseTestMarker='playing';});
+  const settings=await game.evaluate(()=>localStorage.getItem('sanaLittleHandsV1'));
+  revision=198;
+  await welcome.getByRole('button',{name:'Update app',exact:true}).click();
+  await expect(welcome.locator('[data-release-version]').first()).toHaveText('v1.98',{timeout:30000});
+  await expect(welcome.locator('#offline-status')).toHaveText('Ready for offline play',{timeout:30000});
+  check('Update installs and displays V198',await welcome.locator('[data-release-version]').first().textContent()==='v1.98');
+  check('An open child game survives the update',await game.evaluate(()=>window.releaseTestMarker)==='playing');
+  check('Update preserves saved game settings',await welcome.evaluate(()=>localStorage.getItem('sanaLittleHandsV1'))===settings);
+  const cachesAfter=await welcome.evaluate(()=>caches.keys());
+  check('V198 cache is present and V197 cache is removed',cachesAfter.includes('sana-little-hands-beta-v198-kids-machines-vision')&&!cachesAfter.includes('sana-little-hands-beta-v197-kid-friendly-store-pages'));
+  check('Unrelated cached data is preserved',cachesAfter.includes('unrelated-library-test'));
+  await game.reload();await game.locator('[data-activity="puzzle"]').click();
+  await expect(game.locator('[data-puzzle-choice]')).toHaveCount(2);
+  check('Saved puzzle photo remains available after upgrading',await game.locator('[data-puzzle-choice]').count()===2);
+  await context.setOffline(true);
+  const offline=await context.newPage();await offline.goto(base+'index.html');
+  check('V198 welcome reopens offline',await offline.locator('[data-release-version]').first().textContent()==='v1.98');
+  await offline.locator('#play').click();await offline.locator('#more-games').click();await offline.locator('[data-activity="machines"]').click();
+  check('New Machines activity starts offline',await offline.locator('#glossy-room').isVisible());
+  await offline.locator('#glossy-look').click();
+  check('Complete machine reference renders offline',await offline.locator('#glossy-look-image').evaluate(async image=>{await image.decode();return image.naturalWidth>0;}));
+  await offline.screenshot({path:path.join(out,'v198-offline-machine-reference.png')});
+  await context.close();
+})().catch(error=>{console.error(error);process.exitCode=1;}).finally(async()=>{
+  await browser?.close();await new Promise(resolve=>server.close(resolve));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({checks,failed:process.exitCode||0},null,2));
+  console.log(JSON.stringify({checks,failed:process.exitCode||0}));
+});
