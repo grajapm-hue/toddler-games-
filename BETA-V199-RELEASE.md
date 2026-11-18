@@ -53,3 +53,12 @@ After changing any offline asset, run `node build-offline-integrity.mjs` to rege
 Naren-PC validation: Chromium square-v1.99 upgrades passed with unchanged music deliberately stalled, corrupted cached audio, and an older network welcome response (16 checks per scenario). The outside-scope browser entry passed 21 upgrade/data-preservation checks. A changed portrait download deliberately stalled through all three request limits passed six failure-recovery checks. The v1.98 upgrade passed 13 checks. Branding/layout and bounded-checking tests passed 11 Chromium checks and nine WebKit layout checks; share-preview passed 14. Deployment validation passed 637 asset references and JavaScript syntax.
 
 WebKit successfully upgraded the actual worker and preserved the saved photo, but Playwright WebKit on Windows reported an internal navigation error opening a new tab offline. The same error reproduced against the already-published previous circular release, so it is a baseline test-environment limitation rather than evidence of a new regression. Chromium offline welcome, puzzle photo and machine-reference checks pass. These checks do not establish the installed physical phone's result.
+
+
+## Distinct installed-app name
+
+The Beta manifest name and short name are both `SaNa Beta`. Apple installation metadata, browser/share titles and install guidance use that name. Existing manifest ID `./`, start URL, scope, puppy icons, circular welcome and saved-data keys are unchanged. Cache `sana-little-hands-beta-v199-circle-welcome-r3-app-name` refreshes the manifest and labels. Fresh Chrome entry: https://grajapm-hue.github.io/toddler-games-/update-beta-v1.99-r4.html . Browser-managed home-screen labels can update separately from the web page; these checks do not establish a physical device rename.
+
+A fresh Chromium check of the previous public apps confirmed distinct processed IDs on different origins and showed Install app in both normal browser tabs. The existing Installed label derives from standalone display mode or the appinstalled event. No installation-detection or identity migration is introduced.
+
+Validation on Naren-PC: 11 branding/check-budget checks, 14 preview checks, 21 worker/browser-entry upgrade checks including offline photo retention, 637 deployment references and asset digests passed. Main naming belongs to the separate toddler Main PR, never MathMatrix.

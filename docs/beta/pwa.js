@@ -23,7 +23,7 @@
     if(label)label.textContent=installed?'Installed':'Install app';
     button.setAttribute('aria-label',installed?'Installed':'Install app');
   }
-  const guide=()=>window.sanaInstallDialog?.(installed?'Your SaNa app is installed':'Install SaNa Beta',installed
+  const guide=()=>window.sanaInstallDialog?.(installed?'SaNa Beta is installed':'Install SaNa Beta',installed
     ?'<p>Open <strong>SaNa Beta</strong> from your home screen or app list.</p><p>You can also keep playing here.</p>'
     :'<p><strong>iPhone or iPad:</strong> open this page in Safari, tap Share, then <strong>Add to Home Screen</strong> and Add.</p><p><strong>Android:</strong> open in Chrome, then choose <strong>Install app</strong> or <strong>Add to Home Screen</strong> from the browser menu.</p><p><strong>Laptop:</strong> open in Chrome or Edge and use the install icon beside the address bar.</p>');
   window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();nativePrompt=event;renderInstall();});

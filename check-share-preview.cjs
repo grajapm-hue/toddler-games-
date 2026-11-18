@@ -9,7 +9,7 @@ for(const name of ['index.html','play.html']){
   const key=attributes.get('property')||attributes.get('name');
   if(key)meta.set(key,attributes.get('content'));
  }
- assert.equal(meta.get('og:title'),'SaNa Little Hands Beta',name+': picture preview needs a SaNa title');checks++;
+ assert.equal(meta.get('og:title'),'SaNa Beta',name+': picture preview needs a SaNa title');checks++;
  assert.equal(meta.get('og:type'),'website');assert.equal(meta.get('og:url'),base+'index.html');checks++;
  assert((meta.get('description')||'').length>0);assert.equal(meta.get('og:description'),meta.get('description'));checks++;
  const image=meta.get('og:image');assert.equal(image,base+'sana-puppy-v199-512.png');

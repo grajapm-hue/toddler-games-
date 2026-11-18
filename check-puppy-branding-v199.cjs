@@ -21,7 +21,7 @@ after(async()=>{await browser?.close();server.closeAllConnections();await new Pr
 test('new puppy install icons preserve SaNa identity and provide real 192/512 PNGs',()=>{
  const manifest=JSON.parse(fs.readFileSync(path.join(beta,'manifest.webmanifest'),'utf8'));
  assert.equal(manifest.id,'./');assert.equal(manifest.scope,'./');assert.equal(manifest.start_url,'./index.html');
- assert.equal(manifest.name,'SaNa Little Hands Beta');assert.equal(manifest.short_name,'SaNa Beta');
+ assert.equal(manifest.name,'SaNa Beta');assert.equal(manifest.short_name,'SaNa Beta');
  assert.equal(manifest.icons.length,2);
  for(const size of [192,512]){
   const icon=manifest.icons.find(icon=>icon.sizes===`${size}x${size}`);
@@ -32,11 +32,10 @@ test('new puppy install icons preserve SaNa identity and provide real 192/512 PN
  }
  assert.match(manifest.icons.find(icon=>icon.sizes==='512x512').purpose,/maskable/);
 });
-test('the circular welcome portrait is separate from the approved PWA icons and manifest',()=>{
+test('the circular welcome portrait is separate from the approved PWA icons',()=>{
  const source=fs.readFileSync(path.join(beta,'index.html'),'utf8');
  assert(/<image[^>]+data-sana-puppy[^>]+href="sana-puppy-welcome-circle-v199\.png"/.test(source),'the welcome must select its own circular portrait');
  const unchanged={
-  'manifest.webmanifest':'165627341589f8d734b746a3c31911fe95acb1ba14f410f2ac312445883a2da8',
   'icon.svg':'08ddad3b3b54804facfd85999dca057b1441f1943af3311ef7158c9753268132',
   'icon-192.png':'32b0df4951785e2173cb96c81ef4ed14806766ed1bf757a303b350d50b340bbf',
   'icon-512.png':'00b1e56ac5e6ee95f5a5bfcf20f2accf945f26776a1245e9770bb28ac1c06c07',
