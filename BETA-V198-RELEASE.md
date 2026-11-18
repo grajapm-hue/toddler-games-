@@ -42,3 +42,12 @@ The public app version remains v1.98. The cache identifier changes to `sana-litt
 - Cache-busts pwa.js. Manifest identity, IndexedDB puzzle photos, settings and game rules remain unchanged.
 
 Validation on Naren-PC: 13 stalled-network/slow-download/retry checks; 10 standard V197-to-V198 update checks; 10 fresh-entry V197-to-V198 checks, including saved photos and offline Machines; 80 Machines checks per browser; deployment asset and syntax checks. A physical Moto G45 test is still required to establish device-specific success.
+
+
+## V198 first-install sequencing repair (internal revision r3)
+
+R3 supersedes R2 while keeping the public label v1.98. The fresh entry link is `v1.98.html`; `update-v1.98.html` remains available for compatibility.
+
+A cold live-browser check found that a second registration.update() could queue behind an initial installation. The entry now waits for an already installing/waiting worker, and regular update checks return as soon as updatefound starts the download. The normal offline preparer also avoids a redundant check during installation. Downloading therefore uses the installation timeout instead of the shorter connection-check timeout.
+
+The 16 timeout/retry checks now include a real initial installation held at an asset download beyond the connection timeout, followed by successful completion. Standard and fresh-entry V197 upgrades preserve settings and a puzzle photo; browser game and deployment checks are retained.

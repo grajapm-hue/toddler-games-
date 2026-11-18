@@ -3,7 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const {chromium,expect}=require(process.env.MM_PLAYWRIGHT||'C:/Users/jeyan/Projects/DotMd/node_modules/@playwright/test');
 const root=path.join(__dirname,'docs'),results=[];let hold=false,held=0,releaseWorker,browser,alternate=false,holdAsset=false,assetsHeld=0,releaseAsset;
 let gate=new Promise(resolve=>{releaseWorker=resolve;});
-const assetGate=new Promise(resolve=>{releaseAsset=resolve;});
+let assetGate=new Promise(resolve=>{releaseAsset=resolve;});
 const check=(name,pass)=>{results.push({name,pass:!!pass});console.log((pass?'PASS ':'FAIL ')+name);};
 const server=http.createServer(async(req,res)=>{try{
   const pathname=new URL(req.url,'http://local').pathname,file=path.resolve(root,'.'+pathname+(pathname.endsWith('/')?'index.html':''));
@@ -11,7 +11,7 @@ const server=http.createServer(async(req,res)=>{try{
   if(hold&&pathname.endsWith('/sw.js')){held++;await gate;}
   if(holdAsset&&pathname.endsWith('/icon-512.png')){assetsHeld++;await assetGate;}
   let body=fs.readFileSync(file);
-  if(alternate&&['sw.js','index.html','play.html'].includes(path.basename(file)))body=Buffer.from(body.toString().replaceAll('sana-little-hands-beta-v198-r2-update-recovery','sana-little-hands-beta-v198-r3-download-test'));
+  if(alternate&&['sw.js','index.html','play.html'].includes(path.basename(file)))body=Buffer.from(body.toString().replaceAll('sana-little-hands-beta-v198-r3-update-recovery','sana-little-hands-beta-v198-r4-download-test'));
   res.writeHead(200,{'Content-Type':({'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg','.mp3':'audio/mpeg','.webmanifest':'application/manifest+json'})[path.extname(file)]||'application/octet-stream','Cache-Control':'no-store'}).end(body);
 }catch{res.writeHead(404).end();}});
 (async()=>{
@@ -39,13 +39,13 @@ const server=http.createServer(async(req,res)=>{try{
   await page.getByRole('button',{name:'Got it',exact:true}).click();
   alternate=true;holdAsset=true;await page.locator('#update-app').click();
   await expect.poll(()=>assetsHeld).toBeGreaterThan(0);
-  await expect(page.locator('[data-update-label]')).toHaveText('Downloading…');
+  await expect(page.locator('[data-update-label]')).toHaveText('Downloading\u2026');
   await page.clock.fastForward(21000);
-  check('Slow asset downloads show Downloading instead of Checking',await page.locator('[data-update-label]').textContent()==='Downloading…');
+  check('Slow asset downloads show Downloading instead of Checking',await page.locator('[data-update-label]').textContent()==='Downloading\u2026');
   check('A slow download continues beyond the old 20-second limit',!await page.locator('#update-app').isEnabled());
-  check('Previous downloaded games remain cached until the replacement is complete',await page.evaluate(async()=> (await caches.keys()).includes('sana-little-hands-beta-v198-r2-update-recovery')));
+  check('Previous downloaded games remain cached until the replacement is complete',await page.evaluate(async()=> (await caches.keys()).includes('sana-little-hands-beta-v198-r3-update-recovery')));
   holdAsset=false;releaseAsset();
-  await expect(page.locator('meta[name="sana-release"]')).toHaveAttribute('content','sana-little-hands-beta-v198-r3-download-test',{timeout:30000});
+  await expect(page.locator('meta[name="sana-release"]')).toHaveAttribute('content','sana-little-hands-beta-v198-r4-download-test',{timeout:30000});
   check('A slow download applies successfully after all assets arrive',await page.locator('[data-release-version]').first().textContent()==='v1.98');
   await context.close();
   alternate=false;hold=true;const heldBefore=held;gate=new Promise(resolve=>{releaseWorker=resolve;});
@@ -58,6 +58,18 @@ const server=http.createServer(async(req,res)=>{try{
   await recovery.waitForURL('**/index.html',{timeout:30000});
   check('Fresh entry retry opens v1.98 when the connection recovers',await recovery.locator('[data-release-version]').first().textContent()==='v1.98');
   await fresh.close();
+  holdAsset=true;const beforeAssets=assetsHeld;assetGate=new Promise(resolve=>{releaseAsset=resolve;});
+  const cold=await browser.newContext(),firstInstall=await cold.newPage();await firstInstall.clock.install();
+  await firstInstall.goto(`http://127.0.0.1:${server.address().port}/beta/update-v1.98.html`);
+  await expect.poll(()=>assetsHeld).toBeGreaterThan(beforeAssets);
+  await expect(firstInstall.locator('#progress')).toContainText('Downloading');
+  await firstInstall.clock.fastForward(16000);
+  check('A fresh install reports Downloading while assets are still arriving',(await firstInstall.locator('#progress').textContent()).includes('Downloading'));
+  check('An active first download does not become a connection-timeout retry',await firstInstall.locator('#retry').isHidden());
+  if(await firstInstall.locator('#retry').isVisible())return;
+  holdAsset=false;releaseAsset();await firstInstall.waitForURL('**/index.html',{timeout:30000});
+  check('A slow first install opens the app after its assets finish',await firstInstall.locator('[data-release-version]').first().textContent()==='v1.98');
+  await cold.close();
 })().catch(error=>{console.error(error);check('Timeout scenario completes without an exception',false);}).finally(async()=>{
   hold=false;releaseWorker();holdAsset=false;releaseAsset();await browser?.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));
   const failed=results.filter(result=>!result.pass);console.log(JSON.stringify({checks:results.length,failed:failed.length,failures:failed}));process.exitCode=failed.length?1:0;
