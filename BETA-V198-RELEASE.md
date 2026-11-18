@@ -31,3 +31,14 @@ This remains free building. Guided assembly, correctness detection, revised sour
 Publish the maintained `docs/` tree through GitHub Pages. Do not regenerate it from the older root or `beta-runtime/` sources.
 
 The previous published source is commit `1f11fa1f7f3497f1c95cf31d7979339ecbd385db`. If release recovery is needed, restore the reviewed V197 application assets and publish them with a new cache identifier; preserve manifest identity and IndexedDB rather than clearing user data.
+
+## V198 update-check repair (internal revision r2)
+
+The public app version remains v1.98. The cache identifier changes to `sana-little-hands-beta-v198-r2-update-recovery` so the repair is installed safely.
+
+- Bounds browser registration/update checks to 15 seconds and restores the Update button on a stalled network request. Automatic checks also leave their running state after a timeout.
+- Uses Downloading while game assets install and allows up to two minutes before offering a retry; the previous downloaded release stays usable until installation finishes.
+- Adds `update-v1.98.html`, a fresh entry URL with a self-contained updater. An older cache cannot substitute its cached welcome page or old pwa.js for this new entry. It redirects to the normal app only after the new cache is ready and its worker controls the page.
+- Cache-busts pwa.js. Manifest identity, IndexedDB puzzle photos, settings and game rules remain unchanged.
+
+Validation on Naren-PC: 13 stalled-network/slow-download/retry checks; 10 standard V197-to-V198 update checks; 10 fresh-entry V197-to-V198 checks, including saved photos and offline Machines; 80 Machines checks per browser; deployment asset and syntax checks. A physical Moto G45 test is still required to establish device-specific success.
