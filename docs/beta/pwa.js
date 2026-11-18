@@ -37,6 +37,21 @@
   });
   renderInstall();
   function setOfflineStatus(text){if(status)status.textContent=text;}
+  const UPDATE_CHECK_TIMEOUT_MS=15000,INSTALL_TIMEOUT_MS=120000;
+  function withTimeout(promise,ms=UPDATE_CHECK_TIMEOUT_MS,message='The connection took too long. Please try Update again.'){
+    return new Promise((resolve,reject)=>{
+      const timer=setTimeout(()=>reject(new Error(message)),ms);
+      Promise.resolve(promise).then(value=>{clearTimeout(timer);resolve(value);},error=>{clearTimeout(timer);reject(error);});
+    });
+  }
+  async function checkedRegistration(){
+    return withTimeout((async()=>{
+      const registration=await navigator.serviceWorker.getRegistration()||await navigator.serviceWorker.register('sw.js',{scope:'./',updateViaCache:'none'});
+      monitorRegistration(registration);
+      await registration.update();
+      return registration;
+    })());
+  }
   /** Ask the active worker whether every launch asset is cached before promising offline play. */
   function workerStatus(worker){
     return new Promise(resolve=>{
@@ -52,7 +67,7 @@
     return new Promise((resolve,reject)=>{
       const finish=error=>{clearTimeout(timer);worker.removeEventListener('statechange',check);error?reject(error):resolve();};
       const check=()=>{if(worker.state==='activated')finish();else if(worker.state==='redundant')finish(new Error('Update did not install'));};
-      const timer=setTimeout(()=>finish(new Error('Update is still downloading')),20000);
+      const timer=setTimeout(()=>finish(new Error('The download is still running. Keep the app open and try Update again.')),INSTALL_TIMEOUT_MS);
       worker.addEventListener('statechange',check);check();
     });
   }
@@ -72,6 +87,7 @@
     const worker=registration.active||navigator.serviceWorker.controller;
     if(!worker||!release)return;
     const ready=await workerStatus(worker);
+    if(ready?.ready&&ready.version===release)setOfflineStatus('Ready for offline play');
     if(ready?.ready&&ready.version)applyDetectedVersion(ready.version);
   }
   function watchWorker(worker,registration){
@@ -90,9 +106,7 @@
     if(automaticCheckRunning||document.hidden||!navigator.onLine||!('serviceWorker'in navigator)||!window.isSecureContext)return;
     automaticCheckRunning=true;
     try{
-      const registration=await navigator.serviceWorker.getRegistration()||await navigator.serviceWorker.register('sw.js',{scope:'./',updateViaCache:'none'});
-      monitorRegistration(registration);
-      await registration.update();
+      const registration=await checkedRegistration();
       watchWorker(registration.installing||registration.waiting,registration);
       await inspectActiveVersion(registration);
     }catch{/* Automatic checks retry on the next timer, focus, or connection event. */}
@@ -129,15 +143,14 @@
     if(!canShowUpdate())return;
     const requestedInGame=app&&app.dataset.view!=='home';
     updateButton.disabled=true;updateButton.setAttribute('aria-busy','true');
-    updateLabel.textContent=app?'Wait…':'Checking…';
+    updateLabel.textContent='Checking…';
     try{
       if(!navigator.onLine||!('serviceWorker'in navigator)||!window.isSecureContext)throw new Error('An online secure connection is needed');
-      const registration=await navigator.serviceWorker.getRegistration()||await navigator.serviceWorker.register('sw.js',{scope:'./',updateViaCache:'none'});
-      await registration.update();
+      const registration=await checkedRegistration();
       // The active worker may still be the previous release while the new one installs.
       let worker=registration.installing||registration.waiting;
       if(worker){
-        updateLabel.textContent=app?'Wait…':'Updating…';
+        updateLabel.textContent='Downloading…';
         await activated(worker);
       }
       worker=registration.active||navigator.serviceWorker.controller||worker;
@@ -155,7 +168,7 @@
       if(!app||app.dataset.view==='home'||requestedInGame)updateDialog('App is up to date','<p>You already have the latest SaNa app. Your downloaded games are ready to play.</p>');
     }catch(error){
       const reason=String(error?.message||'Unknown update error').replace(/[<>&"']/g,'');
-      if(!app||app.dataset.view==='home'||requestedInGame)updateDialog('Update unavailable','<p>The new version could not be installed. Check that all files are deployed, then retry. Your downloaded games and saved settings are still available.</p><p style="font-size:.8em">Details: '+reason+'</p>');
+      if(!app||app.dataset.view==='home'||requestedInGame)updateDialog('Update unavailable','<p>Connect to the internet and try Update again. Your downloaded games, saved pictures and settings are still available.</p><p style="font-size:.8em">'+reason+'</p>');
     }finally{
       updateButton.disabled=false;updateButton.setAttribute('aria-busy','false');
       updateLabel.textContent=normalUpdateLabel;
@@ -170,10 +183,10 @@
   async function prepareOffline(){
     if(!('serviceWorker'in navigator)||!window.isSecureContext){setOfflineStatus('Open the HTTPS app link for offline play.');return;}
     try{
-      const registered=await navigator.serviceWorker.register('sw.js',{scope:'./',updateViaCache:'none'});
+      const registered=await withTimeout(navigator.serviceWorker.register('sw.js',{scope:'./',updateViaCache:'none'}));
       monitorRegistration(registered);
-      try{await registered.update();}catch{/* The previous cached release remains playable while offline. */}
-      const registration=await navigator.serviceWorker.ready;
+      try{await withTimeout(registered.update());}catch{/* The previous cached release remains playable while offline. */}
+      const registration=registered.active?registered:await withTimeout(navigator.serviceWorker.ready,INSTALL_TIMEOUT_MS,'The download is still running.');
       monitorRegistration(registration);
       const ready=registration.active&&await workerStatus(registration.active);
       setOfflineStatus(ready?.ready?'Ready for offline play':'Open online once to prepare offline play.');

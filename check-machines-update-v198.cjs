@@ -3,7 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const {execFileSync}=require('node:child_process');
 const {chromium,expect}=require(process.env.MM_PLAYWRIGHT||'C:/Users/jeyan/Projects/DotMd/node_modules/@playwright/test');
 const root=path.join(__dirname,'docs'),prior='1f11fa1f7f3497f1c95cf31d7979339ecbd385db',older=new Map();
-const changed=new Set(['index.html','play.html','app.js','glossy-blocks.js','glossy-blocks.css','parent-guide.js','sw.js']);
+const changed=new Set(['index.html','play.html','app.js','glossy-blocks.js','glossy-blocks.css','parent-guide.js','pwa.js','sw.js']);
 const out=path.join(__dirname,'artifacts/machines-v198/update');fs.mkdirSync(out,{recursive:true});
 let revision=197,browser,checks=0;
 const check=(name,pass)=>{assert(pass,name);checks++;console.log('PASS '+name);};
@@ -34,14 +34,17 @@ const server=http.createServer((req,res)=>{try{
   await game.evaluate(()=>{window.releaseTestMarker='playing';});
   const settings=await game.evaluate(()=>localStorage.getItem('sanaLittleHandsV1'));
   revision=198;
-  await welcome.getByRole('button',{name:'Update app',exact:true}).click();
+  if(process.env.RECOVERY_ENTRY){
+    await welcome.goto(base+'update-v1.98.html');
+    await welcome.waitForURL('**/index.html',{timeout:30000});
+  }else await welcome.getByRole('button',{name:'Update app',exact:true}).click();
   await expect(welcome.locator('[data-release-version]').first()).toHaveText('v1.98',{timeout:30000});
   await expect(welcome.locator('#offline-status')).toHaveText('Ready for offline play',{timeout:30000});
   check('Update installs and displays V198',await welcome.locator('[data-release-version]').first().textContent()==='v1.98');
   check('An open child game survives the update',await game.evaluate(()=>window.releaseTestMarker)==='playing');
   check('Update preserves saved game settings',await welcome.evaluate(()=>localStorage.getItem('sanaLittleHandsV1'))===settings);
   const cachesAfter=await welcome.evaluate(()=>caches.keys());
-  check('V198 cache is present and V197 cache is removed',cachesAfter.includes('sana-little-hands-beta-v198-kids-machines-vision')&&!cachesAfter.includes('sana-little-hands-beta-v197-kid-friendly-store-pages'));
+  check('V198 cache is present and V197 cache is removed',cachesAfter.includes('sana-little-hands-beta-v198-r2-update-recovery')&&!cachesAfter.includes('sana-little-hands-beta-v197-kid-friendly-store-pages'));
   check('Unrelated cached data is preserved',cachesAfter.includes('unrelated-library-test'));
   await game.reload();await game.locator('[data-activity="puzzle"]').click();
   await expect(game.locator('[data-puzzle-choice]')).toHaveCount(2);
