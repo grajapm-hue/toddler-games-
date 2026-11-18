@@ -35,7 +35,7 @@ const server=http.createServer((req,res)=>{try{
   const settings=await game.evaluate(()=>localStorage.getItem('sanaLittleHandsV1'));
   revision=198;
   if(process.env.RECOVERY_ENTRY){
-    await welcome.goto(base+'update-v1.98.html');
+    await welcome.goto(base+'v1.98.html');
     await welcome.waitForURL('**/index.html',{timeout:30000});
   }else await welcome.getByRole('button',{name:'Update app',exact:true}).click();
   await expect(welcome.locator('[data-release-version]').first()).toHaveText('v1.98',{timeout:30000});
@@ -44,7 +44,7 @@ const server=http.createServer((req,res)=>{try{
   check('An open child game survives the update',await game.evaluate(()=>window.releaseTestMarker)==='playing');
   check('Update preserves saved game settings',await welcome.evaluate(()=>localStorage.getItem('sanaLittleHandsV1'))===settings);
   const cachesAfter=await welcome.evaluate(()=>caches.keys());
-  check('V198 cache is present and V197 cache is removed',cachesAfter.includes('sana-little-hands-beta-v198-r2-update-recovery')&&!cachesAfter.includes('sana-little-hands-beta-v197-kid-friendly-store-pages'));
+  check('V198 cache is present and V197 cache is removed',cachesAfter.includes('sana-little-hands-beta-v198-r3-update-recovery')&&!cachesAfter.includes('sana-little-hands-beta-v197-kid-friendly-store-pages'));
   check('Unrelated cached data is preserved',cachesAfter.includes('unrelated-library-test'));
   await game.reload();await game.locator('[data-activity="puzzle"]').click();
   await expect(game.locator('[data-puzzle-choice]')).toHaveCount(2);

@@ -48,7 +48,12 @@
     return withTimeout((async()=>{
       const registration=await navigator.serviceWorker.getRegistration()||await navigator.serviceWorker.register('sw.js',{scope:'./',updateViaCache:'none'});
       monitorRegistration(registration);
-      await registration.update();
+      if(registration.installing||registration.waiting)return registration;
+      await new Promise((resolve,reject)=>{
+        const found=()=>{registration.removeEventListener('updatefound',found);resolve();};
+        registration.addEventListener('updatefound',found,{once:true});
+        registration.update().then(()=>{registration.removeEventListener('updatefound',found);resolve();},error=>{registration.removeEventListener('updatefound',found);reject(error);});
+      });
       return registration;
     })());
   }
@@ -185,7 +190,7 @@
     try{
       const registered=await withTimeout(navigator.serviceWorker.register('sw.js',{scope:'./',updateViaCache:'none'}));
       monitorRegistration(registered);
-      try{await withTimeout(registered.update());}catch{/* The previous cached release remains playable while offline. */}
+      if(!registered.installing&&!registered.waiting)try{await withTimeout(registered.update());}catch{/* The previous cached release remains playable while offline. */}
       const registration=registered.active?registered:await withTimeout(navigator.serviceWorker.ready,INSTALL_TIMEOUT_MS,'The download is still running.');
       monitorRegistration(registration);
       const ready=registration.active&&await workerStatus(registration.active);
