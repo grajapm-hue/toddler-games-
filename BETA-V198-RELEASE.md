@@ -60,3 +60,12 @@ A cold live-browser trace captured HTTP 503 on a machine SVG during the all-at-o
 R4 downloads four assets per batch and retries a failed batch up to three attempts with short backoff. Activation and old-cache cleanup still happen only after every batch succeeds. A permanent failure removes only the incomplete new cache; existing downloaded games and IndexedDB remain intact. The public version and fresh `v1.98.html` entry stay unchanged.
 
 The real-browser cache download check covers a constrained host, recovery from two temporary 503 responses, and bounded failure/cleanup for persistent 503 responses. Timeout, slow first-install, V197 migration and saved-photo checks remain required before publication; cold live verification remains required after publication.
+
+
+## Fire tablet update diagnosis
+
+The Fire HD 8 (10th generation) report shows the installed V197 app stopping at the shared online/secure-context/service-worker precondition, before it attempts a release download. The screenshot alone cannot identify which of those three conditions failed.
+
+Adds the fresh, read-only tablet-check.html entry. It displays the browser-reported connection state, secure-context and service-worker availability, the actual response from a no-store worker-script request, available release identity, existing registration state and browser identity. It does not register or update a worker, write caches or access saved game data. Network and registration checks have bounded timeouts. Existing game files, release identifiers, manifest and updater behaviour stay unchanged.
+
+Validation on Naren-PC: 25 checks each in Chromium and WebKit cover healthy access, an offline hint despite a working request, unavailable worker support, an insecure context, an HTTP 503 and a stalled connection. Checks also confirm preserved settings, no script errors, no horizontal overflow and no worker registration. Deployment validation passes all 633 asset references and Beta JavaScript syntax. Physical Fire tablet results remain required to diagnose the installed app.
