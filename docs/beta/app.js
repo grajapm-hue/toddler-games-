@@ -179,6 +179,7 @@
   Object.assign(state,{brushSize:profile().brushSize,erase:false,coverage:[],bubbleMode:profile().bubbleMode,bubbleSet:initial.bubbleSet==='full'||state.age===null?'full':'starter',bubbleHits:new Map(),bubblePops:0,bubbleRecent:[],bubbleEffects:[],bubbleSerial:0,bubbleWidth:1000});
   const picturePuzzle=window.SaNaPicturePuzzle.mount({app,scene,strip:$('item-progress-strip'),hint:words=>hint(words),complete:words=>{celebrate(words);applause();clearTimeout(rewardTimer);rewardTimer=setTimeout(()=>{$('celebrate').hidden=true;$('art-reward').hidden=true;},1500);},onReset:()=>{clearEffects();state.done=false;},status:words=>{$('game-results').hidden=false;$('result-score').hidden=false;$('result-score').textContent=words;$('progress').hidden=true;},readyChanged:()=>{if(state.activity==='puzzle')$('show-me').disabled=!gameReady();}});
   const glossy=window.SaNaGlossyBlocks.mount({app,scene,hint:words=>hint(words),feedback:()=>{tone(580);haptic(25,0);},complete:words=>{celebrate(words);applause();scheduleNextRound();},onReset:()=>{clearEffects();state.done=false;}});
+  const robots=window.SaNaRobotMachines.mount({scene,hint:words=>hint(words),feedback:()=>{tone(580);haptic(25,0);},complete:words=>{celebrate(words);applause();},onReset:()=>{clearEffects();state.done=false;}});
   const bubbleModes={plain:{label:'Plain',items:[]},numbers:{label:'1–20',items:Array.from({length:20},(_,i)=>String(i+1))},letters:{label:'A–Z',items:Array.from({length:26},(_,i)=>String.fromCharCode(65+i))},shapes:{label:'Shapes',items:shapes.map(shape=>shape.id)}};
   const bubbleColors=['#46b8cf','#ee6c88','#a890e5','#f5ce51','#76bc74','#f49d60'];
   const bubbleSpeeds={slow:72,medium:136,fast:464},bubbleDiameters={small:88,medium:120,large:384};
@@ -394,7 +395,7 @@
   }
   function preview(id){
     if(id==='glossy')return '<rect x="23" y="82" width="72" height="72" rx="8" fill="#ed7b75" stroke="#527e62" stroke-width="3"/><rect x="99" y="82" width="72" height="72" rx="8" fill="#73bde0" stroke="#527e62" stroke-width="3"/><rect x="61" y="7" width="72" height="72" rx="8" fill="#f5c84d" stroke="#527e62" stroke-width="3"/><path d="M34 111V96H80M110 111V96H156M72 36V21H118" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="6" stroke-linecap="round"/>' ;
-    if(id==='machines')return '<g stroke="#315c61" stroke-width="5" stroke-linejoin="round"><rect x="20" y="84" width="60" height="49" rx="16" fill="#5dd3ce"/><circle cx="37" cy="103" r="5" fill="#fff3a9" stroke="none"/><circle cx="61" cy="103" r="5" fill="#fff3a9" stroke="none"/><path d="M50 84V70M42 70H58" fill="none" stroke-linecap="round"/><path d="M105 116Q105 96 124 96H177Q196 96 196 116V132H105Z" fill="#f1b947"/><circle cx="125" cy="134" r="10" fill="#55727a"/><circle cx="176" cy="134" r="10" fill="#55727a"/><path d="M117 112H145V98M145 112H183" fill="none"/><path d="M29 48L64 32L100 48L96 58H34Z" fill="#f29778"/><path d="M43 48V22H88L98 48M45 22V13M58 22V10M72 22V7" fill="none"/><path d="M111 44L141 29L178 43L141 57Z" fill="#8d87ce"/><path d="M141 29V57M117 41L141 49L171 39" fill="none"/><path d="M116 160L147 145L181 160L178 172H119Z" fill="#68b9df"/><path d="M147 145L156 127L166 145M123 159L114 168M175 159L184 168" fill="#ffe17a"/></g>';
+    if(id==='machines')return '<image href="./glossy-art/v200/robots/standing/assembled.svg" x="38" y="0" width="124" height="165" preserveAspectRatio="xMidYMid meet"/>';
     if(id==='puzzle')return '<rect x="13" y="35" width="78" height="104" rx="9" fill="#b4deec" stroke="#6e8e76" stroke-width="3"/><path d="M15 90H89V137H15Z" fill="#8cbb79"/><path d="M52 36V138M14 87H90" stroke="#fffaf0" stroke-width="4"/><path d="M23 76L40 55L57 76Z" fill="#e78e76"/><circle cx="72" cy="57" r="11" fill="#ffe17a"/><rect x="130" y="35" width="78" height="104" rx="9" fill="#f3f5e9" stroke="#8aa67a" stroke-width="3"/><path d="M169 37V137M132 87H206" stroke="#9bb18e" stroke-width="2" stroke-dasharray="4 3"/><path d="M98 87H122M113 78L123 87L113 96" fill="none" stroke="#287c60" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>';
     if(id==='abacus')return `<g stroke="#9b7e60" stroke-width="5"><path d="M15 22V152M113 22V152M15 30H113M15 76H113M15 122H113"/>${[0,1,2].map((row)=>[0,1,2].map(i=>`<circle cx="${31+i*23}" cy="${30+row*46}" r="10" fill="${['#ff3b30','#ff9500','#ffe500'][row]}" stroke-width="1"/>`).join('')).join('')}</g><path d="M132 110A36 36 0 0 1 204 110M143 110A25 25 0 0 1 193 110M154 110A14 14 0 0 1 182 110" fill="none" stroke="#ff3b30" stroke-width="10"/><circle cx="168" cy="140" r="17" fill="#ff8fc7"/><circle cx="168" cy="140" r="11" fill="white"/><circle cx="168" cy="140" r="6" fill="#b5794a"/>`;
     if(id==='drag')return `<g transform="translate(63 76) scale(.67)">${primitive('triangle','#ebc34e')}${face(0,12)}</g><g transform="translate(150 90) scale(.67) rotate(12)">${primitive('square','#71abc6')}${face()}</g><path d="M110 27L114 17M184 49L195 43" stroke="#76a181" stroke-width="5" stroke-linecap="round"/>`;
@@ -420,7 +421,7 @@
   $('first-games').addEventListener('click',()=>{setChooserPage(0);cardGrid.querySelector('[data-activity]').focus({preventScroll:true});});
   setChooserPage(0);
   $('paint-tools').insertAdjacentHTML('beforeend',colors.map((color,i)=>`<button class="paint-color" type="button" data-paint="${color}" style="--paint:${color}" aria-label="${colorNames[i]} paint" aria-pressed="${i===0}"></button>`).join(''));
-  function clearEffects(){glossy.cancel();clearObjectFeedback();stopDemo();clearTimeout(nextRoundTimer);nextRoundTimer=null;clearTimeout(rewardTimer);clearTimeout(guideTimer);$('celebrate').hidden=true;$('art-reward').hidden=true;scene.querySelector('[data-guide]')?.remove();}
+  function clearEffects(){glossy.cancel();robots.cancel();clearObjectFeedback();stopDemo();clearTimeout(nextRoundTimer);nextRoundTimer=null;clearTimeout(rewardTimer);clearTimeout(guideTimer);$('celebrate').hidden=true;$('art-reward').hidden=true;scene.querySelector('[data-guide]')?.remove();}
   function cancelGesture(){
     glossy.cancel();
     releaseHeldObject();
@@ -459,7 +460,7 @@
       chooseParentAge(ageOptions[next].dataset.ageOption);ageOptions[next].focus({preventScroll:true});
     });
   });
-  function home(){playSettings.open=false;glossy.leave();picturePuzzle.leave();cancelCountAdvance();stopBubbles();cancelGesture();clearEffects();artGeneration++;artState('ready');state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('sound'),$('music-toggle'),$('vibration-toggle'));app.dataset.view='home';parentAgeControls();$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;$('item-progress-strip').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
+  function home(){playSettings.open=false;glossy.leave();robots.leave();picturePuzzle.leave();cancelCountAdvance();stopBubbles();cancelGesture();clearEffects();artGeneration++;artState('ready');state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('sound'),$('music-toggle'),$('vibration-toggle'));app.dataset.view='home';parentAgeControls();$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;$('item-progress-strip').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
   function levelControls(){document.querySelectorAll('[data-level]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.level)===state.level)));}
   function setLevel(level,reset=true){cancelGesture();const changed=state.level!==level;state.level=level;if(changed)state.brushSize=profile().brushSize;levelControls();save();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');if(reset&&state.activity)resetRound();else if(reset)hint(level===2?'Medium level: choose a picture and play together!':level===1?'Easy level: fewer, bigger things to try.':'Challenge level: a few more things to discover.');}
   function startActivity(id,paintMode=false){setChooserPage(['glossy','machines'].includes(id)?1:0);closeAgeMenu();playSettings.open=false;$('play-settings-panel').append($('sound'),$('music-toggle'),$('vibration-toggle'));$('game-mid-controls').insertBefore($('fullscreen'),playSettings);state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
@@ -473,7 +474,7 @@
     scene.parentElement.classList.toggle('bubble-mat',state.activity==='bubbles');scene.setAttribute('viewBox','0 0 1000 440');
     $('brush-modes').hidden=state.activity!=='brush';$('paint-tools').hidden=state.activity!=='brush';
     $('art-tools').hidden=state.activity!=='brush';
-    if(!['glossy','machines'].includes(state.activity))glossy.leave();
+    if(state.activity!=='glossy')glossy.leave();if(state.activity!=='machines')robots.leave();
     if(state.activity==='puzzle')picturePuzzle.start(state.age);else picturePuzzle.leave();
     state.erase=false;updateArtTools();
     scene.setAttribute('aria-label','Play area');
@@ -481,7 +482,8 @@
     updateBrushThumbnails();
     $('clean-mode').setAttribute('aria-pressed',String(!state.paintMode));$('paint-mode').setAttribute('aria-pressed',String(state.paintMode));
     scene.style.background='transparent';
-    if(state.activity==='glossy'||state.activity==='machines'){scene.replaceChildren();glossy.start(state.age,state.level,state.activity==='machines'?'machines':'blocks');}
+    if(state.activity==='machines'){scene.replaceChildren();robots.start(state.age);}
+    else if(state.activity==='glossy'){scene.replaceChildren();glossy.start(state.age,state.level,'blocks');}
     else if(state.activity==='abacus'){if(state.age===5){state.abacusRows=abacusColors.map(()=>Array(10).fill(false));state.abacusSelectedRow=0;renderAbacus();}else resetCountAdventure();}
     else if(state.activity==='drag'){
       if(shapeAge!==state.age){shapeAge=state.age;shapeRound=0;shapeCompleted=0;}
@@ -1370,7 +1372,8 @@
     return{x:left+width/2,y:top+height/2,width,height};
   }
   async function showMe(){
-    if(state.activity==='glossy'||state.activity==='machines'){glossy.demo();return;}
+    if(state.activity==='machines'){robots.demo();return;}
+    if(state.activity==='glossy'){glossy.demo();return;}
     if(state.activity==='puzzle'){void picturePuzzle.demo();return;}
     if(!gameReady()||objectFeedback)return;
     if(state.activity==='abacus'&&countHolding)return;
