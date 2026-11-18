@@ -78,3 +78,12 @@ The WhatsApp comparison shows a picture preview for MathMatrix and a title-only 
 Both pages now expose a SaNa title, concise description, canonical app URL and the existing 512 by 512 monkey PNG through static Open Graph and Twitter card metadata. The image is publicly available without JavaScript. This metadata-only change keeps the public v1.98 label, release cache, manifest, game rules and share message unchanged. Existing installed copies continue to share the same URL; preview crawlers read the published HTML.
 
 Validation on Naren-PC: 14 raw-HTML preview checks, all 633 deployment asset references and Beta JavaScript syntax, plus four actual Chromium/WebKit clipboard and browser-share fallback checks. These checks verify the page data and existing sharing behaviour, not the physical WhatsApp preview or its cache. A fresh phone share is required for that observation.
+
+
+## Short shared-link instructions (internal revision r5)
+
+Replaces the feature-list preview description with the same brief monkey/open-browser/install/accept/wait/play steps used in MathMatrix Main. SaNa WhatsApp and native sharing now send only the app URL, removing the repeated title and long invitation beneath the preview. Copy link stays a bare URL.
+
+The public app label remains v1.98. R5 updates the offline cache and recovery-entry targets so installed copies receive the new share script; manifest identity, saved data and game rules are preserved. The four-at-a-time download and retry repair remains in place.
+
+Naren-PC validation: 14 preview checks, four browser clipboard/share checks including the WhatsApp payload, 12 normal V197 upgrade checks, 12 recovery-entry upgrade checks, 16 bounded update/download checks and six download retry checks. The upgrade checks exercise the actual cached long message before updating and the bare URL after updating, together with saved photos/settings and offline Machines. Main preview and URL-only share payloads pass for both HTML entry pages in Chromium and WebKit. Device WhatsApp rendering remains an external observation.

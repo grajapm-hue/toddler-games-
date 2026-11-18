@@ -35,6 +35,8 @@ try{
           const page=await context.newPage();await page.goto(testURL);
           await page.evaluate(()=>document.addEventListener('copy',()=>{window.compatCopyEvents=(window.compatCopyEvents||0)+1;}));
           await page.getByRole('button',{name:'Share app',exact:true}).click();
+          const whatsappURL=new URL(await page.getByRole('link',{name:'WhatsApp',exact:true}).getAttribute('href'));
+          assert.equal(whatsappURL.searchParams.get('text'),canonical,'WhatsApp must receive only the link, without the repeated title or long message');
           await page.getByRole('button',{name:'Copy link',exact:true}).click();
           await expect(page.locator('#share-result')).toHaveText('Link copied. Paste it into your group.');
           const copyEvents=await page.evaluate(()=>window.compatCopyEvents||0);
