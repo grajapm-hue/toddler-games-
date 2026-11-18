@@ -24,11 +24,11 @@ body{margin:0;background:#d9eff1;color:#173e35;font:18px/1.5 system-ui,sans-seri
   const progress=document.getElementById('progress'),retry=document.getElementById('retry');
   const android=/Android/i.test(navigator.userAgent),embeddedAndroid=android&&/(?:;\s*wv\b|Version\/4\.0)/i.test(navigator.userAgent);
   if(android){
-    const self=new URL('update-beta-v1.99.html',location.href),chrome=document.getElementById('open-chrome');
+    const self=new URL('update-beta-v1.99-r2.html',location.href),chrome=document.getElementById('open-chrome');
     chrome.href='intent://'+self.host+self.pathname+'#Intent;scheme='+self.protocol.slice(0,-1)+';package=com.android.chrome;S.browser_fallback_url='+encodeURIComponent(self.href)+';end';
     chrome.hidden=false;document.getElementById('chrome-note').hidden=false;
   }
-  const timed=(promise,ms=15000)=>new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('The connection took too long. Keep this page open and try again.')),ms);Promise.resolve(promise).then(value=>{clearTimeout(timer);resolve(value);},error=>{clearTimeout(timer);reject(error);});});
+  const timed=(promise,ms=15000)=>new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('The update check took too long. Tap Try again. Your saved games are still available.')),ms);Promise.resolve(promise).then(value=>{clearTimeout(timer);resolve(value);},error=>{clearTimeout(timer);reject(error);});});
   function status(worker){return new Promise(resolve=>{
     if(!worker){resolve(null);return;}
     const channel=new MessageChannel(),timer=setTimeout(()=>{channel.port1.close();resolve(null);},5000);
@@ -53,20 +53,33 @@ body{margin:0;background:#d9eff1;color:#173e35;font:18px/1.5 system-ui,sans-seri
     retry.hidden=true;retry.disabled=true;
     try{
       if(!('serviceWorker'in navigator)||!window.isSecureContext)throw Error('Open this HTTPS page in Chrome or Safari to update SaNa Beta.');
-      progress.textContent='Checking SaNa Beta v1.99…';
+      // One budget covers the whole check, including CacheStorage reads.
+      let checkDeadline=performance.now()+15000;
+      const checked=promise=>timed(promise,Math.max(1,checkDeadline-performance.now()));
+      async function download(worker){
+        if(!worker)return;
+        progress.textContent='Downloading v1.99 games. Please keep this page open…';
+        await activated(worker);
+        checkDeadline=performance.now()+15000;
+      }
+      progress.textContent='Connecting to SaNa Beta…';
       // Always select Beta's exact scope, even though this browser page is outside it.
-      const registration=await timed(navigator.serviceWorker.register(new URL('sw.js',appBase).href,{scope:appBase.href,updateViaCache:'none'}));
+      const registration=await checked(navigator.serviceWorker.register(new URL('sw.js',appBase).href,{scope:appBase.href,updateViaCache:'none'}));
       if(registration.scope!==appBase.href)throw Error('The Beta update could not be selected. Please try again.');
-      if(!await prepared(registration)){
+      // An existing installation must be shown as Downloading before probing the old cache.
+      await download(registration.installing||registration.waiting);
+      progress.textContent='Checking the saved version…';
+      if(!await checked(prepared(registration))){
         if(!navigator.onLine)throw Error('Connect to the internet, then try again.');
-        if(!registration.installing&&!registration.waiting)await timed(new Promise((resolve,reject)=>{
+        progress.textContent='Requesting the puppy update…';
+        if(!registration.installing&&!registration.waiting)await checked(new Promise((resolve,reject)=>{
           const found=()=>{registration.removeEventListener('updatefound',found);resolve();};
           registration.addEventListener('updatefound',found,{once:true});
           registration.update().then(()=>{registration.removeEventListener('updatefound',found);resolve();},error=>{registration.removeEventListener('updatefound',found);reject(error);});
         }));
-        const worker=registration.installing||registration.waiting;
-        if(worker){progress.textContent='Downloading the v1.99 games. Please keep this page open…';await activated(worker);}
-        if(!await prepared(registration))throw Error('The puppy update is not ready yet. Keep this page open and try again.');
+        await download(registration.installing||registration.waiting);
+        progress.textContent='Checking the downloaded puppy version…';
+        if(!await checked(prepared(registration)))throw Error('The puppy update is not ready yet. Keep this page open and try again.');
       }
       // The updater is deliberately outside Beta's scope; the next navigation selects its active worker.
       progress.textContent='v1.99 is ready. Opening SaNa Beta…';location.replace(new URL('index.html',appBase).href);

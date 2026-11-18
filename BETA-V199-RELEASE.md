@@ -22,3 +22,8 @@ Exact generation prompt:
 ## Browser update entry
 
 `https://grajapm-hue.github.io/toddler-games-/update-beta-v1.99.html` sits outside the installed Beta manifest/worker scope. It explicitly registers the Beta worker, waits for its complete v1.99 cache and checks the cached welcome's release/puppy marker before opening Beta. Unlike the in-scope helper, it must not wait for the Beta worker to control the updater page itself. Android offers a user-operated Open in Chrome link. An Android WebView waits for that action instead of updating its separate browser storage. No storage, photo database, app identity or Main Live changes are made. Physical phone link handling still requires confirmation.
+
+
+### Bounded checking (browser updater R2)
+
+The fresh browser entry is `https://grajapm-hue.github.io/toddler-games-/update-beta-v1.99-r2.html`. The original outside-scope URL remains an alias. All checking work, including cache reads, shares a 15-second budget; a stalled cache listing or match now exposes Try again. Connection, request, cache verification and download use distinct status messages. Known worker installations show Downloading before any old-cache probe. Downloads retain their separate two-minute limit and checking gets a new budget after installation. The new filename avoids reuse of a previously cached updater page, including through Open in Chrome. No game bundle, app identity or user-data deletion changes.
