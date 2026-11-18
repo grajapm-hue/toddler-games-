@@ -27,3 +27,16 @@ Exact generation prompt:
 ### Bounded checking (browser updater R2)
 
 The fresh browser entry is `https://grajapm-hue.github.io/toddler-games-/update-beta-v1.99-r2.html`. The original outside-scope URL remains an alias. All checking work, including cache reads, shares a 15-second budget; a stalled cache listing or match now exposes Try again. Connection, request, cache verification and download use distinct status messages. Known worker installations show Downloading before any old-cache probe. Downloads retain their separate two-minute limit and checking gets a new budget after installation. The new filename avoids reuse of a previously cached updater page, including through Open in Chrome. No game bundle, app identity or user-data deletion changes.
+
+
+## Circular welcome only
+
+The welcome hero and its small welcome-header portrait now use `docs/beta/sana-puppy-welcome-circle-v199.png`, a separate circular gold/cream portrait with transparent outer corners. The full puppy, ears, bow and visible chest fit inside the circle. The decorative die is smaller and farther out so it does not cover the portrait. The SaNa name and family photograph remain unchanged.
+
+The manifest and all six approved PWA/legacy icon files retain their original bytes; install icons, favicon and shared preview keep the square puppy tile. No game logic changes. Public version stays v1.99. Cache `sana-little-hands-beta-v199-circle-welcome` and recovery target references are refreshed so installed users receive the welcome asset without reinstalling.
+
+Mode: built-in image generation, editing the approved puppy tile into a separate welcome portrait. Master: ignored `artifacts/circular-welcome/source.png`. Final asset: `docs/beta/sana-puppy-welcome-circle-v199.png` (512px RGBA PNG). The welcome SVG circle and header radius constrain only the transparent outer edge.
+
+Prompt:
+
+> Edit target: the attached approved SaNa puppy portrait. Create a separate WELCOME-PAGE illustration only, not a replacement app icon. Change its rounded SQUARE gold frame and cream background into one truly CIRCULAR cream-and-gold medallion. Preserve the same recognizable puppy exactly: identical white and brown silky fur, glossy dark eyes, black nose, tiny pink tongue, both floppy ears, pink-and-blue bow and the whole visible furry chest/body from the source. Keep the full puppy portrait inside the circle: shrink/reposition it as needed with generous breathing room; do not crop the bow, hair tuft, ears, chin, chest or sides of its existing visible body. Remove every square/rounded-square edge and corner. The circular frame should have a warm golden rim with a soft cream centre, matching the source's colours. The only outside shape must be a perfect circle, with genuinely TRANSPARENT pixels outside that circle, not white, black or a checkerboard background. Centre the circular medallion on a square canvas. No text or new objects. Do not change the puppy's expression, fur colours, proportions or bow. No new animal, no monkey. Do not add paws or features that were not visible in the source. This is a precise frame-shape/compositing change preserving the entire supplied puppy illustration.
