@@ -51,3 +51,12 @@ R3 supersedes R2 while keeping the public label v1.98. The fresh entry link is `
 A cold live-browser check found that a second registration.update() could queue behind an initial installation. The entry now waits for an already installing/waiting worker, and regular update checks return as soon as updatefound starts the download. The normal offline preparer also avoids a redundant check during installation. Downloading therefore uses the installation timeout instead of the shorter connection-check timeout.
 
 The 16 timeout/retry checks now include a real initial installation held at an asset download beyond the connection timeout, followed by successful completion. Standard and fresh-entry V197 upgrades preserve settings and a puzzle photo; browser game and deployment checks are retained.
+
+
+## V198 resilient downloads (internal revision r4)
+
+A cold live-browser trace captured HTTP 503 on a machine SVG during the all-at-once precache request burst; the install was discarded and remaining fetches were aborted. The asset returned 200 when requested individually.
+
+R4 downloads four assets per batch and retries a failed batch up to three attempts with short backoff. Activation and old-cache cleanup still happen only after every batch succeeds. A permanent failure removes only the incomplete new cache; existing downloaded games and IndexedDB remain intact. The public version and fresh `v1.98.html` entry stay unchanged.
+
+The real-browser cache download check covers a constrained host, recovery from two temporary 503 responses, and bounded failure/cleanup for persistent 503 responses. Timeout, slow first-install, V197 migration and saved-photo checks remain required before publication; cold live verification remains required after publication.

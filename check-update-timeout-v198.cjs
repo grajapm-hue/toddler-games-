@@ -11,7 +11,7 @@ const server=http.createServer(async(req,res)=>{try{
   if(hold&&pathname.endsWith('/sw.js')){held++;await gate;}
   if(holdAsset&&pathname.endsWith('/icon-512.png')){assetsHeld++;await assetGate;}
   let body=fs.readFileSync(file);
-  if(alternate&&['sw.js','index.html','play.html'].includes(path.basename(file)))body=Buffer.from(body.toString().replaceAll('sana-little-hands-beta-v198-r3-update-recovery','sana-little-hands-beta-v198-r4-download-test'));
+  if(alternate&&['sw.js','index.html','play.html'].includes(path.basename(file)))body=Buffer.from(body.toString().replaceAll('sana-little-hands-beta-v198-r4-update-recovery','sana-little-hands-beta-v198-r5-download-test'));
   res.writeHead(200,{'Content-Type':({'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg','.mp3':'audio/mpeg','.webmanifest':'application/manifest+json'})[path.extname(file)]||'application/octet-stream','Cache-Control':'no-store'}).end(body);
 }catch{res.writeHead(404).end();}});
 (async()=>{
@@ -43,9 +43,9 @@ const server=http.createServer(async(req,res)=>{try{
   await page.clock.fastForward(21000);
   check('Slow asset downloads show Downloading instead of Checking',await page.locator('[data-update-label]').textContent()==='Downloading\u2026');
   check('A slow download continues beyond the old 20-second limit',!await page.locator('#update-app').isEnabled());
-  check('Previous downloaded games remain cached until the replacement is complete',await page.evaluate(async()=> (await caches.keys()).includes('sana-little-hands-beta-v198-r3-update-recovery')));
+  check('Previous downloaded games remain cached until the replacement is complete',await page.evaluate(async()=> (await caches.keys()).includes('sana-little-hands-beta-v198-r4-update-recovery')));
   holdAsset=false;releaseAsset();
-  await expect(page.locator('meta[name="sana-release"]')).toHaveAttribute('content','sana-little-hands-beta-v198-r4-download-test',{timeout:30000});
+  await expect(page.locator('meta[name="sana-release"]')).toHaveAttribute('content','sana-little-hands-beta-v198-r5-download-test',{timeout:30000});
   check('A slow download applies successfully after all assets arrive',await page.locator('[data-release-version]').first().textContent()==='v1.98');
   await context.close();
   alternate=false;hold=true;const heldBefore=held;gate=new Promise(resolve=>{releaseWorker=resolve;});
