@@ -4,7 +4,7 @@ const {execFileSync}=require('node:child_process');
 const {chromium,expect}=require(process.env.MM_PLAYWRIGHT||'C:/Users/jeyan/Projects/DotMd/node_modules/@playwright/test');
 const root=path.join(__dirname,'docs'),prior='5278cc75e8cec6903bc478512a898c9bb53c6af0',older=new Map();
 const changed=new Set(['index.html','play.html','app.js','glossy-blocks.js','glossy-blocks.css','parent-guide.js','pwa.js','sw.js','share.js','manifest.webmanifest','icon.svg','icon-192.png','icon-512.png']);
-const out=path.join(__dirname,'artifacts/puppy-v199',process.env.RECOVERY_ENTRY?'fresh-entry':'manual-update');fs.mkdirSync(out,{recursive:true});
+const out=path.join(__dirname,'artifacts/puppy-v199',process.env.BROWSER_ENTRY?'browser-entry':process.env.RECOVERY_ENTRY?'fresh-entry':'manual-update');fs.mkdirSync(out,{recursive:true});
 let revision=198,browser,checks=0;
 const check=(name,pass)=>{assert(pass,name);checks++;console.log('PASS '+name);};
 const server=http.createServer((req,res)=>{try{
@@ -21,7 +21,7 @@ const server=http.createServer((req,res)=>{try{
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   const base=`http://127.0.0.1:${server.address().port}/toddler-games-/beta/`;
   browser=await chromium.launch({headless:true});
-  const context=await browser.newContext({viewport:{width:393,height:852},acceptDownloads:true});
+  const context=await browser.newContext({viewport:{width:393,height:852},acceptDownloads:true,...(process.env.BROWSER_ENTRY?{userAgent:'Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/133.0.0.0 Mobile Safari/537.36'}:{})});
   const welcome=await context.newPage();welcome.setDefaultTimeout(15000);
   await welcome.goto(base+'index.html');await expect(welcome.locator('#offline-status')).toHaveText('Ready for offline play',{timeout:30000});
   check('Published V198 is initially installed',await welcome.locator('[data-release-version]').first().textContent()==='v1.98');
@@ -34,7 +34,13 @@ const server=http.createServer((req,res)=>{try{
   await game.evaluate(()=>{window.releaseTestMarker='playing';});
   const settings=await game.evaluate(()=>localStorage.getItem('sanaLittleHandsV1'));
   revision=199;
-  if(process.env.RECOVERY_ENTRY){
+  if(process.env.BROWSER_ENTRY){
+    assert(fs.existsSync(path.join(root,'update-beta-v1.99.html')),'A browser updater must exist outside the installed Beta scope');
+    await welcome.goto(new URL('../update-beta-v1.99.html',base).href);
+    check('The browser update page is outside the old Beta worker scope',!welcome.url().startsWith(base)&&await welcome.evaluate(()=>!navigator.serviceWorker.controller));
+    check('Android has a user-operated Open in Chrome link',await welcome.locator('#open-chrome').isVisible()&&(await welcome.locator('#open-chrome').getAttribute('href')).includes('package=com.android.chrome;'));
+    await welcome.waitForURL('**/beta/index.html',{timeout:30000});
+  }else if(process.env.RECOVERY_ENTRY){
     await welcome.goto(base+'v1.99.html');
     await welcome.waitForURL('**/index.html',{timeout:30000});
   }else await welcome.getByRole('button',{name:'Update app',exact:true}).click();
@@ -65,6 +71,24 @@ const server=http.createServer((req,res)=>{try{
   await offline.locator('#glossy-look').click();
   check('Complete machine reference renders offline',await offline.locator('#glossy-look-image').evaluate(async image=>{await image.decode();return image.naturalWidth>0;}));
   await offline.screenshot({path:path.join(out,'v199-offline-machine-reference.png')});
+  if(process.env.BROWSER_ENTRY){
+    await context.setOffline(false);
+    await welcome.evaluate(async({html,url})=>{
+      localStorage.setItem('browser-repair-preserved','keep');
+      const cache=await caches.open('sana-little-hands-beta-v199-puppy-art');
+      await cache.put(url,new Response(html,{headers:{'Content-Type':'text/html'}}));
+    },{html:older.get('index.html').toString(),url:base+'index.html'});
+    await welcome.goto(new URL('../update-beta-v1.99.html',base).href);
+    await expect(welcome.locator('#retry')).toBeVisible();
+    check('An older welcome inside a newer cache cannot be reported as a completed puppy update',!welcome.url().startsWith(base)&&(await welcome.locator('#progress').textContent()).includes('not ready'));
+    check('An incomplete update preserves local data',await welcome.evaluate(()=>localStorage.getItem('browser-repair-preserved'))==='keep');
+    const embedded=await browser.newContext({userAgent:'Mozilla/5.0 (Linux; Android 15; wv) AppleWebKit/537.36 Version/4.0 Chrome/133.0.0.0 Mobile Safari/537.36'});
+    const embeddedPage=await embedded.newPage();await embeddedPage.goto(new URL('../update-beta-v1.99.html',base).href);
+    check('An embedded Android browser waits for Chrome instead of updating its separate storage',
+      (await embeddedPage.locator('#progress').textContent()).includes('Tap Open in Chrome')&&
+      await embeddedPage.evaluate(async()=> (await navigator.serviceWorker.getRegistrations()).length===0));
+    await embedded.close();
+  }
   await context.close();
 })().catch(error=>{console.error(error);process.exitCode=1;}).finally(async()=>{
   await browser?.close();await new Promise(resolve=>server.close(resolve));
