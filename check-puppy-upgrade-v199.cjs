@@ -36,7 +36,7 @@ const server=http.createServer((req,res)=>{try{
   revision=199;
   if(process.env.BROWSER_ENTRY){
     assert(fs.existsSync(path.join(root,'update-beta-v1.99.html')),'A browser updater must exist outside the installed Beta scope');
-    await welcome.goto(new URL('../update-beta-v1.99.html',base).href);
+    await welcome.goto(new URL('../update-beta-v1.99-r2.html',base).href);
     check('The browser update page is outside the old Beta worker scope',!welcome.url().startsWith(base)&&await welcome.evaluate(()=>!navigator.serviceWorker.controller));
     check('Android has a user-operated Open in Chrome link',await welcome.locator('#open-chrome').isVisible()&&(await welcome.locator('#open-chrome').getAttribute('href')).includes('package=com.android.chrome;'));
     await welcome.waitForURL('**/beta/index.html',{timeout:30000});
@@ -78,12 +78,12 @@ const server=http.createServer((req,res)=>{try{
       const cache=await caches.open('sana-little-hands-beta-v199-puppy-art');
       await cache.put(url,new Response(html,{headers:{'Content-Type':'text/html'}}));
     },{html:older.get('index.html').toString(),url:base+'index.html'});
-    await welcome.goto(new URL('../update-beta-v1.99.html',base).href);
+    await welcome.goto(new URL('../update-beta-v1.99-r2.html',base).href);
     await expect(welcome.locator('#retry')).toBeVisible();
     check('An older welcome inside a newer cache cannot be reported as a completed puppy update',!welcome.url().startsWith(base)&&(await welcome.locator('#progress').textContent()).includes('not ready'));
     check('An incomplete update preserves local data',await welcome.evaluate(()=>localStorage.getItem('browser-repair-preserved'))==='keep');
     const embedded=await browser.newContext({userAgent:'Mozilla/5.0 (Linux; Android 15; wv) AppleWebKit/537.36 Version/4.0 Chrome/133.0.0.0 Mobile Safari/537.36'});
-    const embeddedPage=await embedded.newPage();await embeddedPage.goto(new URL('../update-beta-v1.99.html',base).href);
+    const embeddedPage=await embedded.newPage();await embeddedPage.goto(new URL('../update-beta-v1.99-r2.html',base).href);
     check('An embedded Android browser waits for Chrome instead of updating its separate storage',
       (await embeddedPage.locator('#progress').textContent()).includes('Tap Open in Chrome')&&
       await embeddedPage.evaluate(async()=> (await navigator.serviceWorker.getRegistrations()).length===0));
