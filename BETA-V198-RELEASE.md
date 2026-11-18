@@ -69,3 +69,12 @@ The Fire HD 8 (10th generation) report shows the installed V197 app stopping at 
 Adds the fresh, read-only tablet-check.html entry. It displays the browser-reported connection state, secure-context and service-worker availability, the actual response from a no-store worker-script request, available release identity, existing registration state and browser identity. It does not register or update a worker, write caches or access saved game data. Network and registration checks have bounded timeouts. Existing game files, release identifiers, manifest and updater behaviour stay unchanged.
 
 Validation on Naren-PC: 25 checks each in Chromium and WebKit cover healthy access, an offline hint despite a working request, unavailable worker support, an insecure context, an HTTP 503 and a stalled connection. Checks also confirm preserved settings, no script errors, no horizontal overflow and no worker registration. Deployment validation passes all 633 asset references and Beta JavaScript syntax. Physical Fire tablet results remain required to diagnose the installed app.
+
+
+## SaNa shared-link picture preview
+
+The WhatsApp comparison shows a picture preview for MathMatrix and a title-only SaNa preview. SaNa already shares its own correct title and canonical link, but the published welcome and play HTML lacked social-preview metadata.
+
+Both pages now expose a SaNa title, concise description, canonical app URL and the existing 512 by 512 monkey PNG through static Open Graph and Twitter card metadata. The image is publicly available without JavaScript. This metadata-only change keeps the public v1.98 label, release cache, manifest, game rules and share message unchanged. Existing installed copies continue to share the same URL; preview crawlers read the published HTML.
+
+Validation on Naren-PC: 14 raw-HTML preview checks, all 633 deployment asset references and Beta JavaScript syntax, plus four actual Chromium/WebKit clipboard and browser-share fallback checks. These checks verify the page data and existing sharing behaviour, not the physical WhatsApp preview or its cache. A fresh phone share is required for that observation.
