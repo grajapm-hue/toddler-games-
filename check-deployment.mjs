@@ -3,6 +3,7 @@ import {readFile, stat, readdir} from 'node:fs/promises';
 import {dirname, resolve, relative, sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
+import {checkIntegrity} from './build-offline-integrity.mjs';
 
 const root=dirname(fileURLToPath(import.meta.url));
 const docs=resolve(root,'docs'), beta=resolve(docs,'beta');
@@ -19,6 +20,7 @@ async function asset(reference, from=base){
   checked++;
 }
 const worker=await readFile(resolve(beta,'sw.js'),'utf8');
+await checkIntegrity(worker);
 const assets=JSON.parse(worker.match(/const ASSETS=(\[[^;]+\]);/)?.[1]||'null');
 assert(Array.isArray(assets)&&assets.length>0,'Worker must declare offline assets');
 for(const entry of assets) await asset(entry);

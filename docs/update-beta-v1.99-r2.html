@@ -20,11 +20,11 @@ body{margin:0;background:#d9eff1;color:#173e35;font:18px/1.5 system-ui,sans-seri
 <script>
 // This page sits outside /beta/ so the old Beta worker cannot serve its cached welcome here.
 (()=>{
-  const appBase=new URL('./beta/',location.href),target='sana-little-hands-beta-v199-circle-welcome';
+  const appBase=new URL('./beta/',location.href),target='sana-little-hands-beta-v199-circle-welcome-r2';
   const progress=document.getElementById('progress'),retry=document.getElementById('retry');
   const android=/Android/i.test(navigator.userAgent),embeddedAndroid=android&&/(?:;\s*wv\b|Version\/4\.0)/i.test(navigator.userAgent);
   if(android){
-    const self=new URL('update-beta-v1.99-r2.html',location.href),chrome=document.getElementById('open-chrome');
+    const self=new URL('update-beta-v1.99-r3.html',location.href),chrome=document.getElementById('open-chrome');
     chrome.href='intent://'+self.host+self.pathname+'#Intent;scheme='+self.protocol.slice(0,-1)+';package=com.android.chrome;S.browser_fallback_url='+encodeURIComponent(self.href)+';end';
     chrome.hidden=false;document.getElementById('chrome-note').hidden=false;
   }
