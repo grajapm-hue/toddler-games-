@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),{execFileSync}=require('node:child_process');
-const beta=path.join(__dirname,'docs/beta'),release='sana-little-hands-beta-v207-two-row-tools';
+const beta=path.join(__dirname,'docs/beta'),release='sana-little-hands-beta-v207-two-row-tools-r2';
 let checks=0;const check=(msg,ok)=>{assert(ok,msg);checks++;};
 for(const f of ['manifest.webmanifest','sana-puppy-v199-192.png','sana-puppy-v199-512.png','sana-puppy-welcome-circle-v199.png','icon.svg','icon-192.png','icon-512.png'])check('Preserve '+f,fs.readFileSync(path.join(beta,f)).equals(execFileSync('git',['show','9657e25467bb12d9912c3fdb813b8e17053794d1:docs/beta/'+f],{cwd:__dirname})));
 for(const f of ['index.html','play.html']){const html=fs.readFileSync(path.join(beta,f),'utf8');check(f+' release',html.includes(`name="sana-release" content="${release}"`));check(f+' version label',html.includes('data-release-version>v2.07<'));}

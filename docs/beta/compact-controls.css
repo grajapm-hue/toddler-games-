@@ -136,7 +136,7 @@
 @media(orientation:landscape) and (max-width:560px){
  #app #robot-machines-room .robot-toolbar .robot-tool-row{gap:1px}
  #app #robot-machines-room .robot-toolbar .robot-tool-row button:not(#robot-zoom-level){font-size:0!important;width:24px!important;min-width:24px!important;padding:2px!important;gap:0}
- #app #robot-machines-room .robot-toolbar .robot-tool-row :is(#robot-rotate-left,#robot-rotate-right,#robot-zoom-out,#robot-zoom-in){font-size:18px!important;line-height:1}
+ #app #robot-machines-room .robot-toolbar .robot-tool-row button:is(#robot-rotate-left,#robot-rotate-right,#robot-zoom-out,#robot-zoom-in){font-size:18px!important;line-height:1}
  #app #robot-machines-room #robot-part-axis{width:56px!important;min-width:0!important;font-size:10px!important;padding-inline:2px!important}
  #app #robot-machines-room #robot-zoom-level{font-size:10px!important;padding-inline:2px!important}
  #app #robot-machines-room :is(#robot-look,#robot-part-flip,#robot-clear,#robot-view-fit,#robot-grid,#robot-done,#robot-snapshot)::before{content:"";display:block;flex:none;width:16px;height:16px;background:var(--robot-tool-icon) center/contain no-repeat}
