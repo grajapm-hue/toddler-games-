@@ -1,4 +1,7 @@
 /* Machines keeps real cutouts transparent; panels belong to the existing playroom. */
+.robot-active .companion-bar{height:54px;min-height:54px;max-height:54px;overflow:hidden}
+.robot-active #hint{font-size:clamp(12px,2vw,16px);line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+@media(max-height:460px) and (orientation:landscape){.robot-active .companion-bar{height:44px;min-height:44px;max-height:44px}}
 #robot-machines-room{display:flex;flex:1 1 0;min-height:0;min-width:0;padding:6px;color:#173e35;font-family:system-ui,sans-serif;overflow:hidden}
 #robot-machines-room [hidden],#robot-machines-room[hidden]{display:none!important}
 #robot-age-note{margin:auto;max-width:520px;padding:20px;text-align:center;font-size:22px;font-weight:800;background:#fffaf0;border-radius:16px}
@@ -14,7 +17,7 @@
 .robot-category-label{flex:1;min-width:0}.robot-category-label select{width:100%}.robot-variant-label select{width:100%}
 #robot-parts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:4px;flex:1;min-height:0}
 #robot-machines-room[data-page-size="3"] #robot-parts{grid-template-rows:minmax(0,1fr)}
-#robot-parts button{display:grid;grid-template-rows:minmax(0,1fr) auto;align-items:center;justify-content:center;gap:2px;min-height:0;min-width:0;padding:2px;border:0;border-radius:0;box-shadow:none;background:transparent;touch-action:none;color:#173e35;cursor:grab;overflow:hidden}
+#robot-parts button{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;align-items:center;justify-content:center;gap:2px;min-height:0;min-width:0;padding:2px;border:0;border-radius:0;box-shadow:none;background:transparent;touch-action:none;color:#173e35;cursor:grab;overflow:hidden}
 #robot-parts button img{display:block;width:100%;height:100%;min-height:0;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none}
 #robot-parts button span{font:800 11px/1.05 system-ui;max-width:100%;text-align:center;pointer-events:none}
 #robot-parts button[aria-pressed="true"] img{filter:drop-shadow(0 0 3px #c78d00)}
@@ -28,24 +31,26 @@
 #robot-board{display:block;width:100%;height:100%;min-height:0;touch-action:none;outline:none;user-select:none}
 #robot-board image{cursor:grab;pointer-events:visiblePainted}
 #robot-board[data-dragging] .robot-selected{opacity:0}
-#robot-board .robot-selected{filter:drop-shadow(0 0 5px #b89425)}
+.robot-selection-outline{animation:robot-selection-flash 1.25s ease-in-out infinite}
+#robot-board[data-dragging] [data-robot-selection]{visibility:hidden}
+@keyframes robot-selection-flash{0%,100%{opacity:1}50%{opacity:.3}}
+@media(prefers-reduced-motion:reduce){.robot-selection-outline{animation:none}}
 #robot-board:focus-visible{outline:3px solid #315c61;outline-offset:-3px}
 #robot-reference{position:absolute;left:0;top:0;max-width:none;object-fit:contain;pointer-events:none}
 .robot-actions{flex-wrap:wrap;justify-content:center}.robot-actions button{flex:1 0 auto}
-.robot-view-tools{display:flex;align-items:center;justify-content:center;gap:4px;flex:none}
+.robot-view-tools{display:flex;align-items:center;justify-content:space-between;gap:4px;flex-wrap:wrap;flex:none}
 #robot-machines-room #robot-zoom-level{font:800 12px system-ui;min-width:46px;text-align:center;padding:4px}
-#robot-selected-label{font:800 12px/1.2 system-ui;min-height:15px;text-align:center;flex:none}
-#robot-pan{flex:1;max-width:130px}
-#robot-pan[aria-pressed="true"]{background:#ffe17a!important;outline:2px solid #315c61}
-#robot-machines-room[data-pan="true"] #robot-board,#robot-machines-room[data-pan="true"] #robot-board image{cursor:grab}
+.robot-selection-row{display:flex;align-items:center;justify-content:space-between;gap:5px;min-height:15px;flex:none}
+#robot-selected-label{font:800 12px/1.2 system-ui;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.robot-control-heading{display:grid;grid-template-columns:auto auto minmax(56px,1fr) 44px 44px auto;gap:3px;flex-wrap:nowrap}
+#robot-machines-room .robot-control-heading h2{font-size:14px;white-space:nowrap}
+#robot-machines-room .robot-control-heading select{box-sizing:border-box;min-width:0;width:100%;padding:4px;font-size:12px}
+#robot-machines-room .robot-control-heading .soft-button{padding:4px;font-size:12px}
+#robot-machines-room .robot-control-heading #robot-rotate-left,#robot-machines-room .robot-control-heading #robot-rotate-right{font-size:22px}
+.robot-view-tools .soft-button{flex:1;min-width:0}
 .robot-drag-ghost{position:fixed;z-index:10000;pointer-events:none;transform:translate(-50%,-50%);object-fit:contain;filter:drop-shadow(0 3px 3px #173e3540)}
 .robot-demo-piece{opacity:.85;transition:x .2s,y .2s}
-#robot-tools-panel{position:fixed;z-index:9000;box-sizing:border-box;width:284px;max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);overflow:auto;padding:10px;color:#173e35;background:#fffaf0;border:2px solid #8aa67a;border-radius:14px;box-shadow:0 5px 16px #173e3540;font:700 13px/1.3 system-ui}
-#robot-tools-panel[hidden]{display:none!important}
-.robot-tools-title,.robot-tools-row{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:5px}.robot-tools-row:last-child{margin-bottom:0}
-#robot-tools-panel button,#robot-tools-panel select{box-sizing:border-box;min-height:44px;min-width:44px;padding:5px 7px;border:1px solid #8aa67a;border-radius:9px;background:#c1e5c2;color:#173e35;font:800 13px system-ui;touch-action:manipulation}
-#robot-tools-panel button:disabled,#robot-tools-panel select:disabled{opacity:.45}#robot-tools-panel button[aria-pressed="true"]{background:#ffe17a;outline:2px solid #315c61}
-#robot-part-axis{flex:1;min-width:0!important}#robot-part-percent{min-width:54px!important}#robot-part-original{flex:1}.robot-tools-row small{font-size:11px;text-align:right}
+#robot-grid[aria-pressed="true"]{background:#ffe17a!important;outline:2px solid #315c61}
 .robot-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 #app.portrait .robot-workspace{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,43fr) minmax(0,57fr)}
 #app.portrait .robot-stores{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:4px}
@@ -54,3 +59,9 @@
 #app.portrait #robot-parts{grid-column:1/-1;grid-row:2}
 #app.portrait .robot-pages{grid-column:1/-1;grid-row:3}
 @media(max-height:460px) and (orientation:landscape){#robot-machines-room{padding:3px}.robot-stores,.robot-assemble{padding:4px;gap:3px}.robot-heading{min-height:38px}#robot-machines-room select{min-height:38px}#robot-machines-room .soft-button{min-height:38px;padding:2px 6px;font-size:12px}#robot-parts button span{font-size:10px}.robot-heading h2{font-size:15px!important}#robot-progress{font-size:11px}}
+@media(max-height:460px) and (orientation:landscape){.robot-control-heading{grid-template-columns:auto auto minmax(56px,1fr) 38px 38px auto}#robot-machines-room .robot-control-heading h2{font-size:13px!important}}
+@media(max-width:370px){#robot-machines-room .robot-control-heading h2{font-size:12px}.robot-control-heading{grid-template-columns:auto auto minmax(48px,1fr) 40px 40px auto}#robot-machines-room .robot-control-heading .soft-button{min-width:40px}#robot-machines-room .robot-view-tools .soft-button{padding:4px;font-size:11px}}
+@media(max-width:340px){#robot-machines-room .robot-control-heading h2{display:none}.robot-control-heading{grid-template-columns:auto minmax(48px,1fr) 40px 40px auto}}
+@media(max-height:650px) and (max-width:360px) and (orientation:portrait){#app.portrait .robot-workspace{grid-template-rows:minmax(0,40fr) minmax(0,60fr)}#robot-machines-room{padding:3px}.robot-stores,.robot-assemble{padding:4px;gap:3px}.robot-heading{min-height:30px}#robot-machines-room select{min-height:30px;font-size:11px}#robot-machines-room .soft-button{min-height:30px;min-width:30px;padding:2px 4px;font-size:11px}#robot-machines-room .robot-control-heading .soft-button{min-width:30px}.robot-control-heading{grid-template-columns:auto minmax(48px,1fr) 30px 30px auto}#robot-parts button span{font-size:9px}.robot-selection-row{min-height:12px}#robot-selected-label,#robot-progress{font-size:10px}}
+@media(max-height:360px) and (orientation:landscape){.robot-stores,.robot-assemble{padding:3px;gap:2px}.robot-heading{min-height:28px}#robot-machines-room select{min-height:28px;font-size:11px}#robot-machines-room .soft-button{min-height:28px;min-width:28px;padding:2px 4px;font-size:11px}.robot-control-heading{grid-template-columns:auto auto minmax(46px,1fr) 28px 28px auto}#robot-machines-room .robot-control-heading .soft-button{min-width:28px}#robot-machines-room .robot-control-heading h2{font-size:11px!important}.robot-selection-row{min-height:12px}#robot-selected-label,#robot-progress{font-size:10px}}
+@media(max-height:650px) and (max-width:360px) and (orientation:portrait){#robot-machines-room .robot-control-heading h2{display:none}}
