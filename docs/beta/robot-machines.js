@@ -188,7 +188,7 @@
       if(pointer)return;
       const p=point(event.clientX,event.clientY),picked=source?pose().parts.find(p=>p.id===source.dataset.robotPart):!look&&!panMode&&!finished?(armed&&selected?pose().parts.find(p=>p.id===selected):pickPart(p,event.pointerType)):null;
       const explicit=!!source||armed;
-      if(picked){choose(picked.id,{arm:!!source||armed});const previous=state.placed[picked.id],fromJoint=!!previous&&!explicit&&Math.hypot(previous.x-picked.x,previous.y-picked.y)<=(state.age===4?112:72)/view.zoom;pointer={kind:'piece',part:picked,source:!!source,placeOnTap:!source&&explicit,fromJoint,leftZone:!fromJoint,offsetX:previous&&!explicit?p.x-previous.x-picked.width/2:0,offsetY:previous&&!explicit?p.y-previous.y-picked.height/2:0};}
+      if(picked){choose(picked.id,{arm:!!source||armed});const previous=state.placed[picked.id],startDistance=previous?Math.hypot(previous.x-picked.x,previous.y-picked.y):Infinity,fromJoint=!!previous&&!explicit&&startDistance<=(state.age===4?112:72)/view.zoom;pointer={kind:'piece',part:picked,source:!!source,placeOnTap:!source&&explicit,fromJoint,startDistance,leftZone:!fromJoint,offsetX:previous&&!explicit?p.x-previous.x-picked.width/2:0,offsetY:previous&&!explicit?p.y-previous.y-picked.height/2:0};}
       else pointer={kind:'pan',offsetX:0,offsetY:0};
       Object.assign(pointer,{id:event.pointerId,owner,startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastY:event.clientY,moved:false,type:event.pointerType});
       owner.setPointerCapture(event.pointerId);syncButtons();event.preventDefault();
@@ -215,7 +215,7 @@
       if(!pointer||pointer.id!==event.pointerId)return;
       const drag=pointer,inside=clientInside(event.clientX,event.clientY),r=svg.getBoundingClientRect();
       const p=!inside&&drag.kind==='piece'&&!drag.source?point(Math.max(r.left+2,Math.min(r.right-2,event.clientX)),Math.max(r.top+2,Math.min(r.bottom-2,event.clientY))):point(event.clientX,event.clientY);stopGesture();
-      if(drag.kind==='piece'&&(drag.moved||drag.placeOnTap)&&(!drag.source||inside)){p.x-=drag.offsetX;p.y-=drag.offsetY;placeSelected(p,{snap:!(drag.moved&&drag.fromJoint&&!drag.leftZone)});}
+      if(drag.kind==='piece'&&(drag.moved||drag.placeOnTap)&&(!drag.source||inside)){p.x-=drag.offsetX;p.y-=drag.offsetY;const distance=Math.hypot(p.x-drag.part.x-drag.part.width/2,p.y-drag.part.y-drag.part.height/2),tolerance=1/viewport.scale(view),departing=distance>tolerance&&distance>=drag.startDistance-tolerance;placeSelected(p,{snap:!(drag.moved&&drag.fromJoint&&!drag.leftZone&&departing)});}
       else if(drag.source&&!drag.moved&&state.placed[selected]){const at=state.placed[selected];view.centerX=at.x+drag.part.width/2;view.centerY=at.y+drag.part.height/2;view.manual=true;renderView();}
       syncButtons();
     }
@@ -230,9 +230,9 @@
     $('pan').addEventListener('click',()=>{stopGesture();armed=false;panMode=!panMode;syncButtons();hint(panMode?'Drag the canvas in any direction.':'Choose a part to move.');});
     svg.addEventListener('wheel',event=>{if(!ready()||demoActive||pointer)return;event.preventDefault();const r=svg.getBoundingClientRect();if(event.ctrlKey)viewport.zoomAt(view,Math.exp(-event.deltaY*.002),{x:event.clientX-r.left,y:event.clientY-r.top});else viewport.pan(view,-event.deltaX,-event.deltaY);renderView();},{passive:false});
     svg.addEventListener('keydown',event=>{
-      if(!ready()||look||demoActive)return;
+      if(!ready()||demoActive)return;
       const panSteps={ArrowLeft:[40,0],ArrowRight:[-40,0],ArrowUp:[0,40],ArrowDown:[0,-40]};if(panMode&&panSteps[event.key]){event.preventDefault();viewport.pan(view,...panSteps[event.key]);renderView();return;}
-      if(finished||!selected)return;
+      if(look||finished||!selected)return;
       const steps={ArrowLeft:[-32,0],ArrowRight:[32,0],ArrowUp:[0,-32],ArrowDown:[0,32]};
       if(steps[event.key]){event.preventDefault();keyboard=true;const b=state.bounds;cursor.x=Math.max(b.x,Math.min(b.x+b.width,cursor.x+steps[event.key][0]));cursor.y=Math.max(b.y,Math.min(b.y+b.height,cursor.y+steps[event.key][1]));renderBoard();}
       else if(event.key==='Enter'||event.key===' '){event.preventDefault();placeSelected(cursor,{snap:!state.placed[selected]?.fitted});}

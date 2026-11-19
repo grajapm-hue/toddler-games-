@@ -43,6 +43,7 @@ const server=http.createServer((req,res)=>{try{
  check('Unrelated app caches survive',await welcome.evaluate(async()=>(await caches.keys()).includes('unrelated-app-keep')));
  await context.setOffline(true);const offline=await context.newPage();await offline.goto(base+'play.html?age=4');await offline.locator('#more-games').click();await offline.locator('[data-activity="machines"]').click();
  check('New robot room opens offline',await offline.locator('#robot-machines-room').isVisible());
+ check('Previous Beta updater link remains available offline',await offline.evaluate(async()=>{try{const r=await fetch('v2.03.html');return r.ok&&(await r.text()).includes('<h1>SaNa v2.04</h1>');}catch{return false;}}));
  const beforeView=await offline.locator('#robot-board').getAttribute('data-assembly');await offline.getByRole('button',{name:'Zoom in',exact:true}).click();
  check('Zoom controls work offline',JSON.parse(await offline.locator('#robot-board').getAttribute('data-view')).zoom>1);
  await offline.getByRole('button',{name:'Move canvas',exact:true}).click();const board=await offline.locator('#robot-board').boundingBox(),viewBeforePan=JSON.parse(await offline.locator('#robot-board').getAttribute('data-view'));await offline.mouse.move(board.x+board.width/2,board.y+board.height/2);await offline.mouse.down();await offline.mouse.move(board.x+board.width/2+35,board.y+board.height/2+20);await offline.mouse.up();
