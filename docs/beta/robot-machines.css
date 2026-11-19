@@ -18,7 +18,7 @@
 #robot-parts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:4px;flex:1;min-height:0}
 #robot-machines-room[data-page-size="3"] #robot-parts{grid-template-rows:minmax(0,1fr)}
 #robot-parts button{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;align-items:center;justify-content:center;gap:2px;min-height:0;min-width:0;padding:2px;border:0;border-radius:0;box-shadow:none;background:transparent;touch-action:none;color:#173e35;cursor:grab;overflow:hidden}
-#robot-parts button img{display:block;width:100%;height:100%;min-height:0;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none}
+#robot-parts button img{display:block;width:100%;height:100%;min-height:0;object-fit:contain;justify-self:center;pointer-events:none;user-select:none;-webkit-user-drag:none}
 #robot-parts button span{font:800 11px/1.05 system-ui;max-width:100%;text-align:center;pointer-events:none}
 #robot-parts button[aria-pressed="true"] img{filter:drop-shadow(0 0 3px #c78d00)}
 #robot-parts button[data-used="true"] img{opacity:.55}

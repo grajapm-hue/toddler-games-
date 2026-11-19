@@ -68,7 +68,7 @@
       </div>`;
     scene.after(room);
     const $=name=>room.querySelector('#robot-'+name),svg=$('board'),app=scene.closest('#app');
-    let state=create(),active=false,selected=null,page=0,pointer=null,ghost=null,look=false,finished=false,demoTimer=null,demoActive=false,demoParts=[],keyboard=false,cursor={x:424,y:632},canvasFrame=0,view=null,armed=false,pendingLayout=false,grid=false,pendingScale=null,pendingStoreScale=null;
+    let state=create(),active=false,selected=null,page=0,pointer=null,ghost=null,look=false,finished=false,demoTimer=null,demoActive=false,demoParts=[],keyboard=false,cursor={x:424,y:632},canvasFrame=0,view=null,armed=false,pendingLayout=false,grid=false,pendingScale=null;
     const touches=new Map(),masks=new Map();let demoSavedView=null;
     const pose=()=>poseOf(state),ready=()=>active&&state.age>=4&&state.age<=5;
     const shelfOrder=['head','chest','waist','hip','upper_arm_L','upper_arm_R','forearm_L','forearm_R','hand_L','hand_R','thigh_L','thigh_R','shin_L','shin_R','foot_L','foot_R'];
@@ -99,6 +99,12 @@
       const parts=ready()?ordered.slice(page*pageSize(),(page+1)*pageSize()):[];
       $('parts').innerHTML=parts.map(part=>`<button type="button" data-robot-part="${part.id}" data-used="${!!state.placed[part.id]}" aria-label="${esc(part.name)}" aria-pressed="${selected===part.id}" ${finished||demoActive?'disabled':''}><img src="${part.asset}" alt="" draggable="false"><span>${esc(part.name)}</span></button>`).join('');
       $('page-label').textContent=`${page+1} / ${pageCount()}`;$('previous-page').disabled=page===0;$('next-page').disabled=page===pageCount()-1;
+      sizeShelfParts();
+    }
+    /** Stores and the reference share the same native scale at canvas 100%. */
+    function sizeShelfParts(){
+      if(!view)return;const m=svg.getScreenCTM(),base=m?Math.hypot(m.a,m.b)/(view.zoom||1):0;if(!(base>0))return;
+      for(const image of $('parts').querySelectorAll('img')){const part=pose().parts.find(p=>p.id===image.closest('[data-robot-part]').dataset.robotPart);image.style.width=`${part.width*base}px`;image.style.height=`${part.height*base}px`;}
     }
     const pieceImage=(part,placed,extra='')=>{const s=shapeOf(placed),cx=placed.x+part.width/2,cy=placed.y+part.height/2;return `<image href="${part.asset}" x="${placed.x}" y="${placed.y}" width="${part.width}" height="${part.height}" transform="translate(${cx} ${cy}) rotate(${s.angle}) scale(${s.baseScale*s.widthScale*(s.flipX?-1:1)} ${s.baseScale*s.heightScale}) translate(${-cx} ${-cy})" preserveAspectRatio="xMidYMid meet" ${extra}/>`;};
     function renderSelection(){svg.querySelector('[data-robot-selection]')?.remove();const at=selectedPart();if(!at||!view)return;const part=pose().parts.find(p=>p.id===selected),r=partBounds(part,at),s=viewport.scale(view),pad=4/s;svg.insertAdjacentHTML('beforeend',`<rect data-robot-selection="${part.id}" class="robot-selection-outline" x="${r.x-pad}" y="${r.y-pad}" width="${r.width+pad*2}" height="${r.height+pad*2}" rx="${3/s}" fill="none" stroke="#775400" stroke-width="${2/s}" stroke-dasharray="${5/s} ${4/s}" pointer-events="none" aria-hidden="true"/>`);}
@@ -107,12 +113,12 @@
       svg.dataset.assembly=JSON.stringify(state.placed);
       svg.dataset.canvasBounds=JSON.stringify(view?viewport.rect(view):state.bounds);
       svg.innerHTML=look?'':pose().parts.filter(p=>state.placed[p.id]).map(part=>pieceImage(part,state.placed[part.id],`data-robot-placed="${part.id}" data-fitted="${state.placed[part.id].fitted}" class="${selected===part.id?'robot-selected':''}" aria-label="${esc(part.name)}${state.placed[part.id].fitted?', fitted':''}"`)).join('');renderGrid();
-      if(keyboard&&selected&&!state.placed[selected]&&!look){const part=pose().parts.find(p=>p.id===selected);svg.insertAdjacentHTML('beforeend',pieceImage(part,{x:cursor.x-part.width/2,y:cursor.y-part.height/2,baseScale:measurePendingScale(part)},'data-robot-keyboard-preview="" opacity=".5" pointer-events="none"'));}
+      if(keyboard&&selected&&!state.placed[selected]&&!look){const part=pose().parts.find(p=>p.id===selected);svg.insertAdjacentHTML('beforeend',pieceImage(part,{x:cursor.x-part.width/2,y:cursor.y-part.height/2,baseScale:prepareNativeScale()},'data-robot-keyboard-preview="" opacity=".5" pointer-events="none"'));}
       if(demoActive)svg.insertAdjacentHTML('beforeend',demoParts.map(({part,offset})=>pieceImage(part,{x:part.x+offset,y:part.y+offset},'class="robot-demo-piece" pointer-events="none"')).join(''));
       renderSelection();syncButtons();
     }
     function render(){renderShelf();renderBoard();}
-    function renderView(){if(!view)return;const b=viewport.rect(view),s=viewport.scale(view),ref=$('reference');svg.setAttribute('viewBox',`${b.x} ${b.y} ${b.width} ${b.height}`);svg.dataset.canvasBounds=JSON.stringify(b);svg.dataset.view=JSON.stringify({...b,zoom:view.zoom,centerX:view.centerX,centerY:view.centerY});ref.style.left=(-b.x*s)+'px';ref.style.top=(-b.y*s)+'px';ref.style.width=(pose().width*s)+'px';ref.style.height=(pose().height*s)+'px';renderGrid();renderSelection();syncButtons();}
+    function renderView(){if(!view)return;const b=viewport.rect(view),s=viewport.scale(view),ref=$('reference');svg.setAttribute('viewBox',`${b.x} ${b.y} ${b.width} ${b.height}`);svg.dataset.canvasBounds=JSON.stringify(b);svg.dataset.view=JSON.stringify({...b,zoom:view.zoom,centerX:view.centerX,centerY:view.centerY});ref.style.left=(-b.x*s)+'px';ref.style.top=(-b.y*s)+'px';ref.style.width=(pose().width*s)+'px';ref.style.height=(pose().height*s)+'px';sizeShelfParts();renderGrid();renderSelection();syncButtons();}
     function fitCanvas(){
       canvasFrame=0;if(!ready()||svg.hidden)return;
       const rect=svg.getBoundingClientRect();if(!rect.width||!rect.height)return;
@@ -143,20 +149,20 @@
     function cancelPointer(){armed=false;keyboard=false;stopGesture();if(selected&&!state.placed[selected])deselect(true);if(active)renderBoard();}
     function choose(id,{arm=false}={}){
       if(!ready()||look||demoActive||finished)return;
-      if(selected!==id){$('part-axis').value='both';pendingScale=null;pendingStoreScale=null;}selected=id;keyboard=false;armed=arm;svg.querySelector('[data-robot-keyboard-preview]')?.remove();
+      if(selected!==id){$('part-axis').value='both';pendingScale=null;}selected=id;keyboard=false;armed=arm;svg.querySelector('[data-robot-keyboard-preview]')?.remove();
       for(const button of $('parts').querySelectorAll('[data-robot-part]'))button.setAttribute('aria-pressed',String(button.dataset.robotPart===id));
       for(const node of svg.querySelectorAll('[data-robot-placed]'))node.classList.toggle('robot-selected',node.dataset.robotPlaced===id);
       const part=pose().parts.find(p=>p.id===id),at=state.placed[id];cursor=at?{x:at.x+part.width/2,y:at.y+part.height/2}:{x:pose().width/2,y:pose().height/2};
-      if(at){pendingScale=null;pendingStoreScale=null;}else measurePendingScale(part);
+      if(at){pendingScale=null;}else prepareNativeScale();
       renderSelection();syncButtons();hint(at?`${part.name} selected.`:`Place ${part.name} in Assemble.`);
     }
-    function deselect(announce=false){const changed=!!selected||armed;selected=null;armed=false;keyboard=false;pendingScale=null;pendingStoreScale=null;svg.querySelector('[data-robot-keyboard-preview]')?.remove();$('part-axis').value='both';for(const button of $('parts').querySelectorAll('[data-robot-part]'))button.setAttribute('aria-pressed','false');for(const node of svg.querySelectorAll('.robot-selected'))node.classList.remove('robot-selected');renderSelection();syncButtons();if(announce&&(changed||app?.querySelector('#hint')?.textContent!=='Canvas: drag or zoom.'))hint('Canvas: drag or zoom.');}
-    function measurePendingScale(part){const source=$('parts').querySelector(`[data-robot-part="${part.id}"] img`)?.getBoundingClientRect();if(source?.width>0&&source?.height>0)pendingStoreScale=Math.min(source.width/part.width,source.height/part.height);const m=svg.getScreenCTM(),base=m?Math.hypot(m.a,m.b)/(view?.zoom||1):0;if(pendingStoreScale>0&&base>0)pendingScale=pendingStoreScale/base;return pendingScale??1;}
+    function deselect(announce=false){const changed=!!selected||armed;selected=null;armed=false;keyboard=false;pendingScale=null;svg.querySelector('[data-robot-keyboard-preview]')?.remove();$('part-axis').value='both';for(const button of $('parts').querySelectorAll('[data-robot-part]'))button.setAttribute('aria-pressed','false');for(const node of svg.querySelectorAll('.robot-selected'))node.classList.remove('robot-selected');renderSelection();syncButtons();if(announce&&(changed||app?.querySelector('#hint')?.textContent!=='Canvas: drag or zoom.'))hint('Canvas: drag or zoom.');}
+    function prepareNativeScale(){pendingScale=1;return pendingScale;}
     function point(x,y){const matrix=svg.getScreenCTM();return matrix?new DOMPoint(x,y).matrixTransform(matrix.inverse()):null;}
     function placeSelected(p,{snap=true}={}){
       if(!selected||!p||![p.x,p.y].every(Number.isFinite)||!ready()||look||finished||demoActive)return;
-      const wasFitted=state.placed[selected]?.fitted,part=pose().parts.find(p=>p.id===selected),initialScale=state.placed[selected]?undefined:measurePendingScale(part);
-      const fitted=drop(state,selected,p.x,p.y,{snap,free:true,baseScale:initialScale,radius:(state.age===4?112:72)/(view?.zoom||1)});armed=false;keyboard=false;pendingScale=null;pendingStoreScale=null;
+      const wasFitted=state.placed[selected]?.fitted,part=pose().parts.find(p=>p.id===selected),initialScale=state.placed[selected]?undefined:prepareNativeScale();
+      const fitted=drop(state,selected,p.x,p.y,{snap,free:true,baseScale:initialScale,radius:(state.age===4?112:72)/(view?.zoom||1)});armed=false;keyboard=false;pendingScale=null;
       if(fitted&&!wasFitted)feedback();
       render();
       hint(isComplete(state)?'All 16 joined! Tap Done.':fitted?`${part.name} joined!`:`${part.name} ready.`);
@@ -259,7 +265,7 @@
     $('rotate-left').addEventListener('click',()=>editPart({angle:shapeOf(state.placed[selected]).angle-45}));$('rotate-right').addEventListener('click',()=>editPart({angle:shapeOf(state.placed[selected]).angle+45}));$('part-flip').addEventListener('click',()=>editPart({flipX:!shapeOf(state.placed[selected]).flipX}));$('part-original').addEventListener('click',()=>editPart({widthScale:1,heightScale:1,angle:0,flipX:false}));
     $('grid').addEventListener('click',()=>{grid=!grid;renderGrid();syncButtons();});
     function reset(){
-      cancel();onReset();state=create($('variant').value,state.age);view=null;armed=false;pendingScale=null;pendingStoreScale=null;selected=null;page=0;finished=false;keyboard=false;cursor={x:424,y:632};$('part-axis').value='both';setLook(false);render();fitCanvas();pose().parts.forEach(warmMask);
+      cancel();onReset();state=create($('variant').value,state.age);view=null;armed=false;pendingScale=null;selected=null;page=0;finished=false;keyboard=false;cursor={x:424,y:632};$('part-axis').value='both';setLook(false);render();fitCanvas();pose().parts.forEach(warmMask);
       $('reference').src=pose().reference;$('reference').alt=`Completed ${pose().label.toLowerCase()} reference`;
     }
     $('variant').addEventListener('change',()=>{reset();hint('Choose a loose part and fit it into the robot.');});
