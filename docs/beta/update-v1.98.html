@@ -3,12 +3,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#d9eff1">
-<title>Update SaNa to v2.05</title>
+<title>Update SaNa to v2.06</title>
 <style>
 body{margin:0;background:#d9eff1;color:#173e35;font:18px/1.5 system-ui,sans-serif;min-height:100svh;display:grid;place-items:center}main{max-width:30rem;margin:20px;padding:24px;border:2px solid #91b7a2;border-radius:22px;background:#fffaf0}h1{font-size:28px;margin-top:0}button,a{display:inline-block;padding:12px 18px;margin:8px 8px 0 0;border:2px solid #91b7a2;border-radius:12px;background:#ffe17a;color:#173e35;font:700 17px system-ui;text-decoration:none}small{display:block;margin-top:18px}button[hidden]{display:none}
 </style>
 <main>
-<h1>SaNa v2.05</h1>
+<h1>SaNa v2.06</h1>
 <p id="progress" role="status" aria-live="polite">Preparing the update…</p>
 <button id="retry" type="button" hidden>Try again</button>
 <a href="index.html">Open SaNa</a>
@@ -17,7 +17,7 @@ body{margin:0;background:#d9eff1;color:#173e35;font:18px/1.5 system-ui,sans-seri
 <script>
 // This new URL and inline bootstrap can open even when an older worker caches pwa.js.
 (()=>{
-  const target='sana-little-hands-beta-v205-creative-controls';
+  const target='sana-little-hands-beta-v206-compact-controls';
   const progress=document.getElementById('progress'),retry=document.getElementById('retry');
   function timed(promise,ms=15000){return new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('The connection took too long. Keep this page open and try again.')),ms);Promise.resolve(promise).then(value=>{clearTimeout(timer);resolve(value);},error=>{clearTimeout(timer);reject(error);});});}
   function status(worker){return new Promise(resolve=>{
@@ -38,12 +38,12 @@ body{margin:0;background:#d9eff1;color:#173e35;font:18px/1.5 system-ui,sans-seri
     const timer=setTimeout(()=>done(Error('The update is ready. Please try once more to open it.')),5000);
     navigator.serviceWorker.addEventListener('controllerchange',check);check();
   });}
-  async function open(registration){await controlling(registration);progress.textContent='v2.05 is ready. Opening SaNa…';location.replace('index.html');}
+  async function open(registration){await controlling(registration);progress.textContent='v2.06 is ready. Opening SaNa…';location.replace('index.html');}
   async function run(){
     retry.hidden=true;retry.disabled=true;
     try{
       if(!('serviceWorker'in navigator)||!window.isSecureContext)throw Error('Open this HTTPS link in Chrome or Safari to update SaNa.');
-      progress.textContent='Checking for SaNa v2.05…';
+      progress.textContent='Checking for SaNa v2.06…';
       const registration=await timed((async()=>await navigator.serviceWorker.getRegistration()||await navigator.serviceWorker.register('sw.js',{scope:'./',updateViaCache:'none'}))());
       const current=await status(registration.active);
       if(current?.ready&&current.version===target){await open(registration);return;}
@@ -54,7 +54,7 @@ body{margin:0;background:#d9eff1;color:#173e35;font:18px/1.5 system-ui,sans-seri
         registration.update().then(()=>{registration.removeEventListener('updatefound',found);resolve();},error=>{registration.removeEventListener('updatefound',found);reject(error);});
       }));
       const installing=registration.installing||registration.waiting;
-      if(installing){progress.textContent='Downloading the v2.05 games. Please keep this page open…';await activated(installing);}
+      if(installing){progress.textContent='Downloading the v2.06 games. Please keep this page open…';await activated(installing);}
       const ready=await status(registration.active);
       if(!ready?.ready||ready.version!==target)throw Error('The new games are not ready yet. Keep this page open and try again.');
       await open(registration);

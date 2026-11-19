@@ -1,0 +1,121 @@
+/* Shared control sizing. Game targets, Store art and welcome cards are excluded. */
+#app{--control-height:30px;--control-gap:4px}
+#app :is(.topbar,.companion-bar,.play-navigation){gap:var(--control-gap);padding:3px 5px}
+#app>.topbar{min-height:36px}
+#app :is(.topbar,.companion-bar,.play-navigation) :is(button,summary),
+#app #play-options button,
+#app #robot-machines-room :is(.robot-heading,.robot-pages,.robot-view-tools,.robot-actions) :is(button,select),
+#app #glossy-room :is(.glossy-build-heading,.glossy-shelf-heading,.glossy-store-pager,.glossy-actions)>button,
+#app #glossy-room :is(#glossy-category-toggle,.glossy-palette>summary),
+#app .glossy-quick-actions button{
+ box-sizing:border-box;flex:0 0 auto!important;width:max-content!important;min-width:0!important;
+ height:var(--control-height)!important;min-height:var(--control-height)!important;max-height:none!important;
+ padding:3px 6px!important;gap:3px;font-size:13px;line-height:1.15;white-space:nowrap
+}
+/* Nested menu options keep their own grid widths and wrapping. */
+#app #glossy-room .glossy-category-menu button{width:auto!important;white-space:normal}
+#app :is(.topbar,.companion-bar,.play-navigation) :is(button,summary) svg{width:20px;height:20px;flex:none}
+#app :is(.topbar,.play-navigation) .icon-button,
+#app #play-settings>summary{width:30px!important;min-width:30px!important;padding:3px!important}
+#app .parent-age{gap:3px;font-size:11px}
+#app .topbar .age-radio{padding:2px 6px!important;font-size:14px}
+#app .app-update-button{gap:4px;font-size:13px}
+#app .app-update-button svg{width:16px;height:16px}
+#app .guide-trigger{font-size:12px}
+#app #game-mid-controls{gap:4px}
+#app .companion-bar{min-height:38px}
+#app .sana-badge{width:28px}
+#app .sana-badge svg{width:26px;height:26px}
+#app .sana-badge small{font-size:9px}
+#app.portrait .companion-bar{grid-template-columns:28px minmax(0,1fr) auto auto}
+/* Robot captions must remain a stable row while a finger is dragging. */
+#app.robot-active .companion-bar{height:42px;min-height:42px;max-height:42px}
+#app:not([data-view="home"]) #activity-view{padding:2px 5px 3px;gap:2px}
+#app:not([data-view="home"]) .play-mat>.play-toolbar{padding:2px 4px!important}
+#app:not([data-view="home"]):not(.immersive) .play-mat>.play-toolbar{
+ flex-basis:34px!important;height:34px!important;min-height:34px!important;max-height:34px!important
+}
+#app #play-options :is(.mode-switch,.levels){padding:1px;gap:3px}
+#app :is(#bubble-settings,#art-tools,#paint-tools){gap:3px;padding:2px 4px}
+#app :is(#bubble-modes,#brush-modes,.bubble-setting-group) button{
+ box-sizing:border-box;width:max-content;min-width:0;min-height:28px;height:auto;padding:3px 6px;font-size:12px;line-height:1.15
+}
+#app .bubble-setting-group{gap:3px;padding:2px 3px}
+#app #bubble-full-set,#app #art-tools .art-tool{
+ box-sizing:border-box;width:max-content;min-width:0;height:28px!important;min-height:28px!important;
+ padding:3px 6px!important;gap:3px;font-size:12px;line-height:1.15;white-space:nowrap
+}
+#app #erase-paint svg{width:20px;height:20px}
+
+/* Picture actions retain their icon-over-label layout in a shorter row. */
+#app[data-view="puzzle"] #activity-view .play-mat>#item-progress-strip{
+ grid-template-columns:repeat(7,max-content)!important;grid-template-rows:34px!important;
+ justify-content:center!important;height:38px!important;min-height:38px!important;max-height:38px!important;padding:2px 4px!important;gap:3px!important
+}
+#app[data-view="puzzle"] #activity-view #item-progress-strip>:is(.item-chip,.puzzle-grid-label,.puzzle-placed){
+ width:max-content!important;height:34px!important;min-height:34px!important;max-height:34px!important;padding:1px 3px!important;gap:0;font-size:12px
+}
+#app[data-view="puzzle"] #activity-view #item-progress-strip .item-chip>span{font-size:14px;line-height:15px}
+#app #puzzle-upload .puzzle-gallery-icon{width:20px;height:16px}
+
+/* Machine controls size to their labels, rather than stretching across a row. */
+#app #robot-machines-room{padding:3px}
+#app :is(.robot-stores,.robot-assemble){padding:4px;gap:3px}
+#app .robot-workspace{gap:5px}
+#app .robot-heading{min-height:var(--control-height);gap:3px}
+#app .robot-control-heading{display:flex;flex-wrap:wrap;justify-content:flex-start}
+#app #robot-machines-room .robot-control-heading h2{font-size:13px}
+#app #robot-machines-room .robot-control-heading select{width:auto;min-width:0;max-width:100%;padding:2px 3px;font-size:12px}
+#app #robot-machines-room .robot-variant-label select,
+#app #robot-machines-room .robot-category-label select{
+ box-sizing:border-box;min-height:var(--control-height);height:var(--control-height);padding:2px 4px;font-size:12px
+}
+#app #robot-machines-room :is(.robot-view-tools,.robot-actions){justify-content:flex-start;gap:3px}
+#app #robot-machines-room #robot-zoom-level{min-width:0;padding:3px 5px!important}
+#app #robot-machines-room :is(#robot-rotate-left,#robot-rotate-right){font-size:20px;min-width:28px!important}
+#app #robot-machines-room :is(#robot-zoom-in,#robot-zoom-out){min-width:28px!important;font-size:18px}
+
+/* Blocks headers and paging rows shrink together with their controls. */
+#app #glossy-room{padding:3px;gap:4px}
+#app :is(.glossy-shelf,.glossy-build){padding:4px;gap:3px}
+#app #glossy-room :is(.glossy-shelf-heading,.glossy-build-heading){
+ height:auto;min-height:var(--control-height);flex:0 0 auto;gap:3px
+}
+#app #glossy-room .glossy-shelf-heading{justify-content:flex-start}
+#app #glossy-category-toggle>span[aria-hidden]{flex:none;font-size:12px;line-height:1}
+#app #glossy-room #glossy-category-toggle{padding-right:10px!important}
+#app #glossy-room :is(#glossy-inventory,#glossy-count){
+ width:max-content!important;min-width:0;flex:0 0 auto;height:var(--control-height);min-height:var(--control-height);padding:2px 5px;font-size:12px
+}
+#app #glossy-room #glossy-inventory{flex-direction:row;gap:3px;white-space:nowrap}
+#app #glossy-room #glossy-inventory span{font-size:11px}
+#app #glossy-room .glossy-palette{height:var(--control-height)}
+#app #glossy-room .glossy-palette>summary{height:calc(var(--control-height) - 2px)!important;min-height:0!important}
+#app #glossy-colour-preview{width:18px;height:18px}
+#app #glossy-room :is(#glossy-rotate-left,#glossy-rotate-right){font-size:20px!important;min-width:28px!important}
+#app #glossy-room #glossy-snapshot svg{width:20px;height:20px}
+#app #glossy-room .glossy-store-pager{flex:0 0 auto;min-height:var(--control-height);gap:4px;padding:0}
+#app #glossy-room .glossy-store-pager span{min-width:0}
+#app #glossy-room .glossy-actions{gap:3px}
+
+/* Short landscape already places Demo/Again inside the header's reserved end. */
+#app.short-play:not([data-view="home"])>.companion-bar{height:28px;min-height:0;max-height:28px;padding:0;gap:3px}
+#app.short-play .companion-bar .soft-button{font-size:12px}
+#app.short-play .companion-bar .soft-button svg{width:16px;height:16px}
+#app.short-play:not([data-view="home"]) .guide-trigger>span:first-child{max-width:none}
+
+@media(max-height:460px) and (orientation:landscape){
+ #app{--control-height:28px}
+ #app>.topbar{min-height:32px;padding-block:2px}
+ #app.robot-active .companion-bar{height:36px;min-height:36px;max-height:36px}
+}
+@media(max-width:360px){
+ #app :is(.robot-heading,.robot-view-tools,.robot-actions) button{font-size:11px!important;padding-inline:4px!important}
+ #app #robot-machines-room .robot-control-heading select{font-size:11px}
+}
+@media(max-height:360px) and (orientation:landscape){
+ #app{--control-height:26px}
+ #app #robot-machines-room :is(.robot-heading,.robot-view-tools,.robot-actions) button{font-size:11px;padding:2px 4px!important}
+ #app #robot-machines-room .robot-control-heading :is(h2,select){font-size:11px}
+ #app #robot-machines-room :is(#robot-rotate-left,#robot-rotate-right,#robot-zoom-in,#robot-zoom-out){min-width:26px!important;font-size:18px}
+}
