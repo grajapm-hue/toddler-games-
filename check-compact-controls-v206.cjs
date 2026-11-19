@@ -31,6 +31,10 @@ try{
   }
   await ctx.close();
  }
+ for(const [width,height]of [[393,852],[1280,800]]){const ctx=await browser.newContext({viewport:{width,height},serviceWorkers:'block'}),p=await ctx.newPage();p.on('pageerror',e=>errors.push(e.message));await p.goto(base+'play.html?age=5');
+  await p.locator('[data-activity="bubbles"]').click();const full=await area(p,'#bubble-full-set');check(`${width}x${height} age 5 Full set is compact`,full.h<=30&&full.h>=24,full);await p.locator('#bubble-full-set').click();check(`${width}x${height} Full set toggles`,await p.locator('#bubble-full-set').getAttribute('aria-pressed')==='true');await p.locator('#game-home').click();
+  await p.locator('[data-activity="brush"]').click();await p.locator('#paint-mode').click();const tools=await p.locator('#art-tools .art-tool').evaluateAll(ns=>ns.map(n=>{const r=n.getBoundingClientRect();return {id:n.id||n.textContent,w:r.width,h:r.height};}));check(`${width}x${height} age 5 Brush size and Eraser are compact`,tools.length===4&&tools.every(n=>n.h<=30&&n.h>=24),tools);await p.locator('[data-brush-size="large"]').click();await p.locator('#erase-paint').click();check(`${width}x${height} Brush tools still toggle`,await p.locator('[data-brush-size="large"]').getAttribute('aria-pressed')==='true'&&await p.locator('#erase-paint').getAttribute('aria-pressed')==='true');await ctx.close();
+ }
  check('All game flows have no runtime errors',!errors.length,errors);
 }finally{await browser.close();server.close();fs.writeFileSync(path.join(out,`${engine}-results.json`),JSON.stringify(results,null,2));}
 console.log(`${results.filter(r=>r.pass).length}/${results.length} checks passed`);if(results.some(r=>!r.pass))process.exitCode=1;

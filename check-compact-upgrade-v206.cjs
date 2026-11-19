@@ -35,7 +35,9 @@ const server=http.createServer((req,res)=>{try{
  check('Open old game is preserved until returning to Games',await game.evaluate(()=>window.robotUpgradeMarker)==='still playing');
  await game.locator('#game-home').click();await expect(game.locator('#update-app [data-release-version]')).toHaveText('v2.06',{timeout:20000});
  check('Saved settings survive the upgrade',await game.evaluate(()=>localStorage.getItem('sanaLittleHandsV1'))===settings);
- if(await game.locator('#sana-update-shade').isVisible())await game.getByRole('button',{name:'Got it',exact:true}).click();
+ // The update notice is queued after the new page renders; await it before clicking a card.
+ await game.locator('#sana-update-shade').waitFor({state:'visible',timeout:3000}).catch(()=>{});
+ if(await game.locator('#sana-update-shade').isVisible()){await game.getByRole('button',{name:'Got it',exact:true}).click();await game.locator('#sana-update-shade').waitFor({state:'hidden'});}
  await game.locator('[data-activity="puzzle"]').click();await expect(game.locator('[data-puzzle-choice]')).toHaveCount(2);check('Saved photo survives the upgrade',await game.locator('[data-puzzle-choice]').count()===2);
  const cached=await welcome.evaluate(async name=>{const cache=await caches.open(name);return(await cache.keys()).map(req=>req.url);},target);
  check('All 32 cutouts and two references are cached',cached.filter(url=>url.includes('/glossy-art/v200/robots/')).length===34);
