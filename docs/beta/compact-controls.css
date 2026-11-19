@@ -83,6 +83,7 @@
 }
 #app #glossy-room .glossy-shelf-heading{justify-content:flex-start}
 #app #glossy-category-toggle>span[aria-hidden]{flex:none;font-size:12px;line-height:1}
+#app #glossy-room #glossy-category-toggle{padding-right:10px!important}
 #app #glossy-room :is(#glossy-inventory,#glossy-count){
  width:max-content!important;min-width:0;flex:0 0 auto;height:var(--control-height);min-height:var(--control-height);padding:2px 5px;font-size:12px
 }
