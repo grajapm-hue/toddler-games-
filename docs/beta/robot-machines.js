@@ -1,24 +1,27 @@
 /* Transparent cutout assembly, separate from the free-building Blocks model. */
 ((root,factory)=>{
   const catalogue=typeof module==='object'&&module.exports?require('./robot-catalogue.js'):root.SaNaRobotCatalogue;
-  if(typeof module==='object'&&module.exports)module.exports=factory(catalogue);
-  else root.SaNaRobotMachines=factory(catalogue);
-})(typeof window==='object'?window:globalThis,catalogue=>{
+  const viewport=typeof module==='object'&&module.exports?require('./robot-viewport.js'):root.SaNaRobotViewport;
+  if(typeof module==='object'&&module.exports)module.exports=factory(catalogue,viewport);
+  else root.SaNaRobotMachines=factory(catalogue,viewport);
+})(typeof window==='object'?window:globalThis,(catalogue,viewport)=>{
   'use strict';
   const poseOf=state=>catalogue.poses[state.poseId];
   const create=(poseId='standing',age=4)=>{const pose=catalogue.poses[poseId]||catalogue.poses.standing;return{poseId:pose.id,age:Number(age),placed:{},bounds:{x:0,y:0,width:pose.width,height:pose.height}};};
   const fittedCount=state=>Object.values(state.placed).filter(part=>part.fitted).length;
   const isComplete=state=>fittedCount(state)===poseOf(state).parts.length;
   /** Drop coordinates use the common source canvas, independent of screen size. */
-  function drop(state,id,cx,cy){
+  function drop(state,id,cx,cy,{snap=true,radius=state.age===4?112:72,free=false}={}){
     const pose=poseOf(state),part=pose.parts.find(piece=>piece.id===id),bounds=state.bounds;
     if(!part||![cx,cy].every(Number.isFinite))return false;
     const distance=Math.hypot(cx-part.x-part.width/2,cy-part.y-part.height/2);
-    const fitted=distance<=(state.age===4?112:72);
-    state.placed[id]={x:fitted?part.x:Math.max(bounds.x,Math.min(bounds.x+bounds.width-part.width,cx-part.width/2)),y:fitted?part.y:Math.max(bounds.y,Math.min(bounds.y+bounds.height-part.height,cy-part.height/2)),fitted};
+    const fitted=snap&&distance<=radius;
+    state.placed[id]={x:fitted?part.x:free?cx-part.width/2:Math.max(bounds.x,Math.min(bounds.x+bounds.width-part.width,cx-part.width/2)),y:fitted?part.y:free?cy-part.height/2:Math.max(bounds.y,Math.min(bounds.y+bounds.height-part.height,cy-part.height/2)),fitted};
+    if(free)state.bounds=worldBounds(state);
     return fitted;
   }
-  function remove(state,id){delete state.placed[id];}
+  function worldBounds(state){const b=state.homeBounds||state.bounds;let x=b.x,y=b.y,right=b.x+b.width,bottom=b.y+b.height;for(const p of poseOf(state).parts){const at=state.placed[p.id];if(at){x=Math.min(x,at.x);y=Math.min(y,at.y);right=Math.max(right,at.x+p.width);bottom=Math.max(bottom,at.y+p.height);}}return{x,y,width:right-x,height:bottom-y};}
+  function remove(state,id){delete state.placed[id];if(state.homeBounds)state.bounds=worldBounds({...state,bounds:state.homeBounds});}
   /** Expand the source coordinate space to cover the visible pane without stretching art. */
   function resizeCanvas(state,width,height){
     if(![width,height].every(n=>Number.isFinite(n)&&n>0))return false;
@@ -31,7 +34,7 @@
     }
     state.bounds=next;return true;
   }
-  const core={create,drop,remove,fittedCount,isComplete,resizeCanvas};
+  const core={create,drop,remove,fittedCount,isComplete,resizeCanvas,worldBounds};
   const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function mount({scene,hint,feedback,complete,onReset}){
     const room=document.createElement('section');room.id='robot-machines-room';room.hidden=true;
@@ -46,48 +49,56 @@
         </section>
         <section class="robot-assemble" aria-label="Assemble">
           <div class="robot-heading"><h2>Assemble</h2><button id="robot-look" type="button" class="soft-button" aria-pressed="false">Look</button><output id="robot-progress" aria-live="polite">0 / 16 fitted</output></div>
+          <div class="robot-view-tools" aria-label="Canvas view"><button id="robot-zoom-out" class="soft-button" type="button" aria-label="Zoom out">−</button><output id="robot-zoom-level">100%</output><button id="robot-zoom-in" class="soft-button" type="button" aria-label="Zoom in">+</button><button id="robot-view-fit" class="soft-button" type="button" aria-label="Fit canvas">Fit</button><button id="robot-pan" class="soft-button" type="button" aria-pressed="false">Move canvas</button></div><output id="robot-selected-label" aria-live="polite">Choose a part</output>
           <div class="robot-board-wrap"><svg id="robot-board" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 848 1264" preserveAspectRatio="xMidYMid meet" role="group" tabindex="0" aria-label="Assemble robot. Select a part, then tap to place it. For keyboard placement use arrow keys and Enter."></svg><img id="robot-reference" alt="Completed standing robot reference" hidden></div>
           <div class="robot-actions"><button id="robot-remove" type="button" class="soft-button" disabled>Remove</button><button id="robot-clear" type="button" class="soft-button" disabled>Clear</button><button id="robot-done" type="button" class="soft-button" disabled>Done</button><button id="robot-snapshot" type="button" class="soft-button" disabled>Save picture</button></div>
         </section>
       </div>`;
     scene.after(room);
     const $=name=>room.querySelector('#robot-'+name),svg=$('board');
-    let state=create(),active=false,selected=null,page=0,pointer=null,ghost=null,look=false,finished=false,demoTimer=null,demoActive=false,demoParts=[],keyboard=false,cursor={x:424,y:632},canvasFrame=0;
+    let state=create(),active=false,selected=null,page=0,pointer=null,ghost=null,look=false,finished=false,demoTimer=null,demoActive=false,demoParts=[],keyboard=false,cursor={x:424,y:632},canvasFrame=0,view=null,panMode=false,armed=false,pendingLayout=false;
+    const touches=new Map(),masks=new Map();let demoSavedView=null;
     const pose=()=>poseOf(state),ready=()=>active&&state.age>=4&&state.age<=5;
     const shelfOrder=['head','chest','waist','hip','upper_arm_L','upper_arm_R','forearm_L','forearm_R','hand_L','hand_R','thigh_L','thigh_R','shin_L','shin_R','foot_L','foot_R'];
     const pageSize=()=>window.matchMedia('(max-height:460px) and (orientation:landscape)').matches?3:6;
     const pageCount=()=>Math.ceil(pose().parts.length/pageSize());
     function syncButtons(){
-      $('progress').textContent=`${fittedCount(state)} / ${pose().parts.length} fitted`;
+      const lifting=pointer?.kind==='piece'&&pointer.moved&&state.placed[pointer.part.id]?.fitted?1:0;
+      $('progress').textContent=`${fittedCount(state)-lifting} / ${pose().parts.length} fitted`;
       $('done').disabled=!isComplete(state)||finished||demoActive||!!pointer;
       $('remove').disabled=!state.placed[selected]||finished||look||demoActive||!!pointer;
       $('clear').disabled=!Object.keys(state.placed).length||demoActive;
       $('snapshot').disabled=!Object.keys(state.placed).length||demoActive||!!pointer;
       $('variant').disabled=demoActive;$('look').disabled=demoActive;
+      $('zoom-level').textContent=`${Math.round((view?.zoom||1)*100)}%`;
+      $('zoom-in').disabled=!view||look||demoActive||view.zoom>=8;$('zoom-out').disabled=!view||look||demoActive||view.zoom<=.5;
+      $('view-fit').disabled=!view||look||demoActive;$('pan').disabled=!view||look||demoActive;$('pan').setAttribute('aria-pressed',String(panMode));room.dataset.pan=String(panMode);
     }
     function renderShelf(){
       page=Math.min(page,pageCount()-1);room.dataset.pageSize=pageSize();
       const ordered=shelfOrder.map(id=>pose().parts.find(part=>part.id===id));
       const parts=ready()?ordered.slice(page*pageSize(),(page+1)*pageSize()):[];
-      $('parts').innerHTML=parts.map(part=>`<button type="button" data-robot-part="${part.id}" data-used="${!!state.placed[part.id]}" aria-label="${esc(part.name)}" aria-pressed="${selected===part.id}" ${state.placed[part.id]?'disabled':''}><img src="${part.asset}" alt="" draggable="false"><span>${esc(part.name)}</span></button>`).join('');
+      $('parts').innerHTML=parts.map(part=>`<button type="button" data-robot-part="${part.id}" data-used="${!!state.placed[part.id]}" aria-label="${esc(part.name)}" aria-pressed="${selected===part.id}" ${finished||demoActive?'disabled':''}><img src="${part.asset}" alt="" draggable="false"><span>${esc(part.name)}</span></button>`).join('');
       $('page-label').textContent=`${page+1} / ${pageCount()}`;$('previous-page').disabled=page===0;$('next-page').disabled=page===pageCount()-1;
     }
     const pieceImage=(part,placed,extra='')=>`<image href="${part.asset}" x="${placed.x}" y="${placed.y}" width="${part.width}" height="${part.height}" preserveAspectRatio="xMidYMid meet" ${extra}/>`;
     function renderBoard(){
       svg.dataset.assembly=JSON.stringify(state.placed);
-      svg.dataset.canvasBounds=JSON.stringify(state.bounds);
+      svg.dataset.canvasBounds=JSON.stringify(view?viewport.rect(view):state.bounds);
       svg.innerHTML=pose().parts.filter(p=>state.placed[p.id]).map(part=>pieceImage(part,state.placed[part.id],`data-robot-placed="${part.id}" data-fitted="${state.placed[part.id].fitted}" class="${selected===part.id?'robot-selected':''}" aria-label="${esc(part.name)}${state.placed[part.id].fitted?', fitted':''}"`)).join('');
       if(keyboard&&selected&&!state.placed[selected]&&!look){const part=pose().parts.find(p=>p.id===selected);svg.insertAdjacentHTML('beforeend',pieceImage(part,{x:cursor.x-part.width/2,y:cursor.y-part.height/2},'opacity=".5" pointer-events="none"'));}
       if(demoActive)svg.insertAdjacentHTML('beforeend',demoParts.map(({part,offset})=>pieceImage(part,{x:part.x+offset,y:part.y+offset},'class="robot-demo-piece" pointer-events="none"')).join(''));
       syncButtons();
     }
     function render(){renderShelf();renderBoard();}
+    function renderView(){if(!view)return;const b=viewport.rect(view);svg.setAttribute('viewBox',`${b.x} ${b.y} ${b.width} ${b.height}`);svg.dataset.canvasBounds=JSON.stringify(b);svg.dataset.view=JSON.stringify({...b,zoom:view.zoom,centerX:view.centerX,centerY:view.centerY});syncButtons();}
     function fitCanvas(){
       canvasFrame=0;if(!ready()||svg.hidden)return;
       const rect=svg.getBoundingClientRect();if(!rect.width||!rect.height)return;
-      const changed=resizeCanvas(state,rect.width,rect.height),b=state.bounds;
-      svg.setAttribute('viewBox',`${b.x} ${b.y} ${b.width} ${b.height}`);
-      if(changed)renderBoard();
+      if(pointer){pendingLayout=true;return;}
+      if(!view){resizeCanvas(state,rect.width,rect.height);state.homeBounds={...state.bounds};view=viewport.create(state.bounds,rect.width,rect.height);}
+      else{viewport.resize(view,rect.width,rect.height);if(!view.manual)viewport.fit(view,worldBounds(state));}
+      pendingLayout=false;renderView();
     }
     const canvasSizes=new ResizeObserver(()=>{cancelAnimationFrame(canvasFrame);canvasFrame=requestAnimationFrame(fitCanvas);});
     canvasSizes.observe(room.querySelector('.robot-board-wrap'));
@@ -96,75 +107,125 @@
       $('look').textContent=value?'Back to build':'Look';$('look').setAttribute('aria-pressed',String(value));syncButtons();if(!value)fitCanvas();
     }
     function stopGesture(){
-      if(pointer?.owner?.hasPointerCapture?.(pointer.id))pointer.owner.releasePointerCapture(pointer.id);
-      pointer=null;ghost?.remove();ghost=null;delete svg.dataset.dragging;if(active)syncButtons();
+      const old=pointer;pointer=null;
+      if(old?.owner&&Number.isInteger(old.id)&&old.owner.hasPointerCapture?.(old.id))old.owner.releasePointerCapture(old.id);
+      for(const [id,touch]of touches)if(touch.owner?.hasPointerCapture?.(id))touch.owner.releasePointerCapture(id);
+      touches.clear();ghost?.remove();ghost=null;delete svg.dataset.dragging;if(active)syncButtons();
+      if(pendingLayout)requestAnimationFrame(()=>{if(active){renderShelf();fitCanvas();}});
     }
     function cancel(){
-      stopGesture();clearTimeout(demoTimer);demoTimer=null;demoActive=false;demoParts=[];
+      armed=false;stopGesture();clearTimeout(demoTimer);demoTimer=null;demoActive=false;demoParts=[];
+      if(demoSavedView){view=demoSavedView;demoSavedView=null;const r=svg.getBoundingClientRect();viewport.resize(view,r.width,r.height);renderView();}
       document.getElementById('show-me')?.setAttribute('aria-pressed','false');
       if(active)renderBoard();
     }
-    function choose(id){
+    function cancelPointer(){armed=false;keyboard=false;stopGesture();if(active)renderBoard();}
+    function choose(id,{arm=false}={}){
       if(!ready()||look||demoActive||finished)return;
-      selected=id;keyboard=false;
+      selected=id;keyboard=false;armed=arm;panMode=false;
       for(const button of $('parts').querySelectorAll('[data-robot-part]'))button.setAttribute('aria-pressed',String(button.dataset.robotPart===id));
-      renderBoard();const part=pose().parts.find(p=>p.id===id);
-      hint(state.placed[id]?.fitted?`${part.name} fits. You can still drag it to move it.`:`${part.name}: drag or tap to place. It will fit when close.`);
+      for(const node of svg.querySelectorAll('[data-robot-placed]'))node.classList.toggle('robot-selected',node.dataset.robotPlaced===id);
+      const part=pose().parts.find(p=>p.id===id),at=state.placed[id];cursor=at?{x:at.x+part.width/2,y:at.y+part.height/2}:{x:pose().width/2,y:pose().height/2};
+      $('selected-label').textContent=part.name;syncButtons();hint(`${part.name} selected.`);
     }
     function point(x,y){const matrix=svg.getScreenCTM();return matrix?new DOMPoint(x,y).matrixTransform(matrix.inverse()):null;}
-    function inBoard(p){const b=state.bounds;return p&&p.x>=b.x&&p.y>=b.y&&p.x<=b.x+b.width&&p.y<=b.y+b.height;}
-    function placeSelected(p){
-      if(!selected||!inBoard(p)||!ready()||look||finished||demoActive)return;
+    function placeSelected(p,{snap=true}={}){
+      if(!selected||!p||![p.x,p.y].every(Number.isFinite)||!ready()||look||finished||demoActive)return;
       const wasFitted=state.placed[selected]?.fitted;
-      const fitted=drop(state,selected,p.x,p.y),part=pose().parts.find(p=>p.id===selected);
+      const fitted=drop(state,selected,p.x,p.y,{snap,free:true,radius:(state.age===4?112:72)/(view?.zoom||1)}),part=pose().parts.find(p=>p.id===selected);armed=false;keyboard=false;
       if(fitted&&!wasFitted)feedback();
       render();
-      hint(isComplete(state)?'All 16 parts fit! Tap Done.':fitted?`${part.name} fits! Choose the next part.`:`Move ${part.name.toLowerCase()} closer to its place. Look shows the full robot.`);
+      hint(isComplete(state)?'All 16 parts fit! Tap Done.':fitted?`${part.name} fits!`:`${part.name} placed. Move freely or use Look.`);
     }
     function makeGhost(part,x,y){
       ghost=document.createElement('img');ghost.className='robot-drag-ghost';ghost.src=part.asset;ghost.alt='';ghost.draggable=false;
-      const scale=Math.min(svg.getBoundingClientRect().width/pose().width,svg.getBoundingClientRect().height/pose().height);
-      ghost.style.width=`${Math.max(34,part.width*scale)}px`;ghost.style.height='auto';document.body.append(ghost);moveGhost(x,y);
+      const scale=viewport.scale(view);ghost.style.width=`${part.width*scale}px`;ghost.style.height=`${part.height*scale}px`;document.body.append(ghost);moveGhost(x,y);
     }
-    function moveGhost(x,y){if(ghost){ghost.style.left=x+'px';ghost.style.top=y+'px';}}
+    function moveGhost(x,y){if(ghost){const m=svg.getScreenCTM(),dx=(pointer?.offsetX||0),dy=(pointer?.offsetY||0);ghost.style.left=(x-dx*m.a-dy*m.c)+'px';ghost.style.top=(y-dx*m.b-dy*m.d)+'px';}}
+    function clientInside(x,y){const r=svg.getBoundingClientRect();return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom;}
+    function warmMask(part){
+      if(masks.has(part.asset))return;
+      masks.set(part.asset,null);const image=new Image();image.src=part.asset;
+      image.decode().then(()=>{const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;const ctx=c.getContext('2d');ctx.drawImage(image,0,0);masks.set(part.asset,{alpha:ctx.getImageData(0,0,c.width,c.height).data,width:c.width,height:c.height});}).catch(()=>{masks.delete(part.asset);});
+    }
+    function pickPart(p,type){
+      const tolerance=(type==='touch'?22:2)/viewport.scale(view);let nearest=null,distance=tolerance;
+      for(const part of [...pose().parts].reverse()){
+        const at=state.placed[part.id];if(!at)continue;const x=p.x-at.x,y=p.y-at.y,mask=masks.get(part.asset),inside=x>=0&&x<part.width&&y>=0&&y<part.height;
+        if(inside&&(!mask||mask.alpha[(Math.floor(y/part.height*mask.height)*mask.width+Math.floor(x/part.width*mask.width))*4+3]>96))return part;
+        if(!mask||Math.hypot(Math.max(0,-x,x-part.width),Math.max(0,-y,y-part.height))>tolerance)continue;
+        const sx=part.width/mask.width,sy=part.height/mask.height,left=Math.max(0,Math.floor((x-distance)/sx)),right=Math.min(mask.width-1,Math.ceil((x+distance)/sx)),top=Math.max(0,Math.floor((y-distance)/sy)),bottom=Math.min(mask.height-1,Math.ceil((y+distance)/sy));
+        for(let row=top;row<=bottom;row++)for(let col=left;col<=right;col++)if(mask.alpha[(row*mask.width+col)*4+3]>96){const dx=Math.max(0,col*sx-x,x-(col+1)*sx),dy=Math.max(0,row*sy-y,y-(row+1)*sy),d=Math.hypot(dx,dy);if(d<distance){distance=d;nearest=part;}}
+      }
+      return nearest;
+    }
+    function startPinch(){
+      const points=[...touches.values()];if(points.length<2)return;
+      ghost?.remove();ghost=null;delete svg.dataset.dragging;armed=false;
+      pointer={kind:'pinch',owner:svg,lastMid:{x:(points[0].x+points[1].x)/2,y:(points[0].y+points[1].y)/2},lastDistance:Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y)};
+      for(const [id,touch]of touches){touch.owner=svg;svg.setPointerCapture(id);}renderBoard();
+    }
     function down(event){
-      if(!ready()||look||finished||demoActive||event.button>0||pointer)return;
-      const source=event.target.closest('[data-robot-part]'),placed=event.target.closest('[data-robot-placed]');
-      if(!source&&!placed&&event.currentTarget!==svg)return;
-      const id=source?.dataset.robotPart||placed?.dataset.robotPlaced||selected;if(!id)return;
-      choose(id);
-      // Selecting renders the board, so capture on its stable root rather than a replaced image.
-      const owner=source||svg,part=pose().parts.find(p=>p.id===id),p=point(event.clientX,event.clientY),previous=state.placed[id];
-      pointer={id:event.pointerId,owner,part,startX:event.clientX,startY:event.clientY,moved:false,source:!!source,offsetX:previous&&placed?p.x-previous.x-part.width/2:0,offsetY:previous&&placed?p.y-previous.y-part.height/2:0};
+      if(!ready()||!view||look||demoActive||event.button>0)return;
+      const source=event.target.closest('[data-robot-part]'),owner=source||svg;
+      if(source&&(source.disabled||pointer))return;
+      if(event.pointerType==='touch')touches.set(event.pointerId,{x:event.clientX,y:event.clientY,owner});
+      if(touches.size>=2&&[...touches.values()].every(p=>clientInside(p.x,p.y))){startPinch();event.preventDefault();return;}
+      if(pointer)return;
+      const p=point(event.clientX,event.clientY),picked=source?pose().parts.find(p=>p.id===source.dataset.robotPart):!panMode&&!finished?(armed&&selected?pose().parts.find(p=>p.id===selected):pickPart(p,event.pointerType)):null;
+      const explicit=!!source||armed;
+      if(picked){choose(picked.id,{arm:!!source||armed});const previous=state.placed[picked.id];pointer={kind:'piece',part:picked,source:!!source,placeOnTap:!source&&explicit,fromFitted:!!previous?.fitted,leftZone:!previous?.fitted,offsetX:previous&&!explicit?p.x-previous.x-picked.width/2:0,offsetY:previous&&!explicit?p.y-previous.y-picked.height/2:0};}
+      else pointer={kind:'pan',offsetX:0,offsetY:0};
+      Object.assign(pointer,{id:event.pointerId,owner,startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastY:event.clientY,moved:false,type:event.pointerType});
       owner.setPointerCapture(event.pointerId);syncButtons();event.preventDefault();
     }
     function move(event){
+      const touch=touches.get(event.pointerId);if(touch){touch.x=event.clientX;touch.y=event.clientY;}
+      if(pointer?.kind==='pinch'){
+        const points=[...touches.values()];if(points.length<2)return;const mid={x:(points[0].x+points[1].x)/2,y:(points[0].y+points[1].y)/2},distance=Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y),r=svg.getBoundingClientRect();
+        if(pointer.lastDistance>0)viewport.zoomAt(view,distance/pointer.lastDistance,{x:pointer.lastMid.x-r.left,y:pointer.lastMid.y-r.top});viewport.pan(view,mid.x-pointer.lastMid.x,mid.y-pointer.lastMid.y);pointer.lastMid=mid;pointer.lastDistance=distance;renderView();event.preventDefault();return;
+      }
       if(!pointer||pointer.id!==event.pointerId)return;
-      if(Math.hypot(event.clientX-pointer.startX,event.clientY-pointer.startY)>5)pointer.moved=true;
+      if(Math.hypot(event.clientX-pointer.startX,event.clientY-pointer.startY)>(pointer.type==='touch'?4:2))pointer.moved=true;
       if(!pointer.moved)return;
-      if(!ghost){makeGhost(pointer.part,event.clientX,event.clientY);svg.dataset.dragging=pointer.part.id;}else moveGhost(event.clientX,event.clientY);
+      if(pointer.kind==='pan'){viewport.pan(view,event.clientX-pointer.lastX,event.clientY-pointer.lastY);renderView();}
+      else{const p=point(event.clientX,event.clientY),part=pointer.part;if(Math.hypot(p.x-pointer.offsetX-part.x-part.width/2,p.y-pointer.offsetY-part.y-part.height/2)>(state.age===4?112:72)/view.zoom)pointer.leftZone=true;if(!ghost){makeGhost(part,event.clientX,event.clientY);svg.dataset.dragging=part.id;}else moveGhost(event.clientX,event.clientY);syncButtons();}
+      pointer.lastX=event.clientX;pointer.lastY=event.clientY;
       event.preventDefault();
     }
     function up(event){
+      if(pointer?.kind==='pinch'){
+        touches.delete(event.pointerId);if(svg.hasPointerCapture(event.pointerId))svg.releasePointerCapture(event.pointerId);
+        if(touches.size){const [id,p]=[...touches][0];pointer={kind:'pan',id,owner:svg,startX:p.x,startY:p.y,lastX:p.x,lastY:p.y,moved:true};}else stopGesture();return;
+      }
       if(!pointer||pointer.id!==event.pointerId)return;
-      const drag=pointer,p=point(event.clientX,event.clientY);stopGesture();
-      if(drag.moved||!drag.source){if(p){p.x-=drag.offsetX;p.y-=drag.offsetY;}placeSelected(p);}
+      const drag=pointer,inside=clientInside(event.clientX,event.clientY),r=svg.getBoundingClientRect();
+      const p=!inside&&drag.kind==='piece'&&!drag.source?point(Math.max(r.left+2,Math.min(r.right-2,event.clientX)),Math.max(r.top+2,Math.min(r.bottom-2,event.clientY))):point(event.clientX,event.clientY);stopGesture();
+      if(drag.kind==='piece'&&(drag.moved||drag.placeOnTap)&&(!drag.source||inside)){p.x-=drag.offsetX;p.y-=drag.offsetY;placeSelected(p,{snap:!(drag.moved&&drag.fromFitted&&!drag.leftZone)});}
+      else if(drag.source&&!drag.moved&&state.placed[selected]){const at=state.placed[selected];view.centerX=at.x+drag.part.width/2;view.centerY=at.y+drag.part.height/2;view.manual=true;renderView();}
+      syncButtons();
     }
     $('parts').addEventListener('pointerdown',down);svg.addEventListener('pointerdown',down);
     for(const owner of [$('parts'),svg]){
-      owner.addEventListener('pointermove',move);owner.addEventListener('pointerup',up);owner.addEventListener('pointercancel',stopGesture);owner.addEventListener('lostpointercapture',()=>{if(pointer)stopGesture();});
+      owner.addEventListener('pointermove',move);owner.addEventListener('pointerup',up);owner.addEventListener('pointercancel',cancelPointer);owner.addEventListener('lostpointercapture',event=>{if(pointer?.kind!=='pinch'&&pointer?.id===event.pointerId&&!pointer.owner.hasPointerCapture(event.pointerId))cancelPointer();});
     }
-    $('parts').addEventListener('click',event=>{const button=event.target.closest('[data-robot-part]');if(button&&event.detail===0)choose(button.dataset.robotPart);});
+    $('parts').addEventListener('click',event=>{const button=event.target.closest('[data-robot-part]');if(button&&event.detail===0)choose(button.dataset.robotPart,{arm:true});});
+    $('zoom-in').addEventListener('click',()=>{stopGesture();viewport.zoomAt(view,1.25);renderView();});$('zoom-out').addEventListener('click',()=>{stopGesture();viewport.zoomAt(view,.8);renderView();});
+    $('view-fit').addEventListener('click',()=>{stopGesture();viewport.fit(view,worldBounds(state));renderView();});
+    $('pan').addEventListener('click',()=>{stopGesture();armed=false;panMode=!panMode;syncButtons();hint(panMode?'Drag the canvas in any direction.':'Choose a part to move.');});
+    svg.addEventListener('wheel',event=>{if(!ready()||look||demoActive||pointer)return;event.preventDefault();const r=svg.getBoundingClientRect();if(event.ctrlKey)viewport.zoomAt(view,Math.exp(-event.deltaY*.002),{x:event.clientX-r.left,y:event.clientY-r.top});else viewport.pan(view,-event.deltaX,-event.deltaY);renderView();},{passive:false});
     svg.addEventListener('keydown',event=>{
-      if(!ready()||look||finished||demoActive||!selected)return;
+      if(!ready()||look||demoActive)return;
+      const panSteps={ArrowLeft:[40,0],ArrowRight:[-40,0],ArrowUp:[0,40],ArrowDown:[0,-40]};if(panMode&&panSteps[event.key]){event.preventDefault();viewport.pan(view,...panSteps[event.key]);renderView();return;}
+      if(finished||!selected)return;
       const steps={ArrowLeft:[-32,0],ArrowRight:[32,0],ArrowUp:[0,-32],ArrowDown:[0,32]};
       if(steps[event.key]){event.preventDefault();keyboard=true;const b=state.bounds;cursor.x=Math.max(b.x,Math.min(b.x+b.width,cursor.x+steps[event.key][0]));cursor.y=Math.max(b.y,Math.min(b.y+b.height,cursor.y+steps[event.key][1]));renderBoard();}
-      else if(event.key==='Enter'||event.key===' '){event.preventDefault();placeSelected(cursor);}
+      else if(event.key==='Enter'||event.key===' '){event.preventDefault();placeSelected(cursor,{snap:!state.placed[selected]?.fitted});}
     });
     for(const [id,delta] of [['previous-page',-1],['next-page',1]])$(id).addEventListener('click',()=>{stopGesture();page=Math.max(0,Math.min(pageCount()-1,page+delta));renderShelf();});
     $('look').addEventListener('click',()=>{stopGesture();setLook(!look);hint(look?'Look at the full robot. Tap Back to build when ready.':'Choose a part and fit it into Assemble.');});
     function reset(){
-      cancel();onReset();state=create($('variant').value,state.age);selected=null;page=0;finished=false;keyboard=false;cursor={x:424,y:632};setLook(false);render();
+      cancel();onReset();state=create($('variant').value,state.age);view=null;armed=false;panMode=false;selected=null;page=0;finished=false;keyboard=false;cursor={x:424,y:632};$('selected-label').textContent='Choose a part';setLook(false);render();fitCanvas();pose().parts.forEach(warmMask);
       $('reference').src=pose().reference;$('reference').alt=`Completed ${pose().label.toLowerCase()} reference`;
     }
     $('variant').addEventListener('change',()=>{reset();hint('Choose a loose part and fit it into the robot.');});
@@ -173,20 +234,20 @@
     $('done').addEventListener('click',()=>{if(isComplete(state)&&!finished){finished=true;syncButtons();complete('You built the whole robot!');}});
     $('snapshot').addEventListener('click',async()=>{
       if(!Object.keys(state.placed).length)return;
-      const snapshotPose=pose(),snapshotBounds={...state.bounds},snapshotParts=Object.fromEntries(Object.entries(state.placed).map(([id,at])=>[id,{...at}]));$('snapshot').disabled=true;hint('Preparing your picture…');
+      const snapshotPose=pose(),snapshotBounds=worldBounds(state),snapshotParts=Object.fromEntries(Object.entries(state.placed).map(([id,at])=>[id,{...at}]));$('snapshot').disabled=true;hint('Preparing your picture…');
       let url;
       try{
         const canvas=document.createElement('canvas');canvas.width=Math.ceil(snapshotBounds.width);canvas.height=Math.ceil(snapshotBounds.height);const ctx=canvas.getContext('2d');
         const images=await Promise.all(snapshotPose.parts.filter(p=>snapshotParts[p.id]).map(async part=>{const image=new Image();image.src=part.asset;await image.decode();return{part,image};}));
         for(const {part,image} of images){const at=snapshotParts[part.id];ctx.drawImage(image,at.x-snapshotBounds.x,at.y-snapshotBounds.y,part.width,part.height);}
         const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw Error('Picture unavailable');
-        url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=`SaNa-robot-${snapshotPose.id}-v2.02.png`;link.click();hint('Your robot picture is ready.');
+        url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=`SaNa-robot-${snapshotPose.id}-v2.03.png`;link.click();hint('Your robot picture is ready.');
       }catch{hint('Picture could not be saved. Please try again.');}
       finally{if(url)setTimeout(()=>URL.revokeObjectURL(url),1000);if(active)syncButtons();}
     });
     function demo(){
       if(!ready()||finished)return;if(demoActive){cancel();hint('Your turn. Your robot pieces are still here.');return;}
-      stopGesture();setLook(false);demoActive=true;demoParts=[];document.getElementById('show-me').setAttribute('aria-pressed','true');
+      stopGesture();setLook(false);demoSavedView={...view,basis:{...view.basis}};viewport.fit(view,worldBounds(state));renderView();demoActive=true;demoParts=[];document.getElementById('show-me').setAttribute('aria-pressed','true');
       const sample=['chest','head','upper_arm_L'].map(id=>pose().parts.find(p=>p.id===id));let step=0;
       const next=()=>{
         if(!active||!demoActive)return;
@@ -202,8 +263,8 @@
       else hint('Choose age 4 or 5 above for the robot cutouts.');
     }
     function leave(){cancel();active=false;room.hidden=true;}
-    window.addEventListener('blur',cancel);window.addEventListener('pagehide',cancel);window.addEventListener('orientationchange',stopGesture);
-    window.addEventListener('resize',()=>{if(active){stopGesture();renderShelf();fitCanvas();}});
+    window.addEventListener('blur',cancel);window.addEventListener('pagehide',cancel);window.addEventListener('orientationchange',cancelPointer);
+    window.addEventListener('resize',()=>{if(active){if(pointer){pendingLayout=true;return;}renderShelf();fitCanvas();}});
     document.addEventListener('visibilitychange',()=>{if(document.hidden)cancel();});
     window.addEventListener('keydown',event=>{if(active&&event.key==='Escape'){cancel();setLook(false);}});
     return {start,leave,cancel,demo,reset};

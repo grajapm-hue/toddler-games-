@@ -18,7 +18,7 @@
 #robot-parts button img{display:block;width:100%;height:100%;min-height:0;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none}
 #robot-parts button span{font:800 11px/1.05 system-ui;max-width:100%;text-align:center;pointer-events:none}
 #robot-parts button[aria-pressed="true"] img{filter:drop-shadow(0 0 3px #c78d00)}
-#robot-parts button[data-used="true"]{opacity:.18;cursor:default}
+#robot-parts button[data-used="true"] img{opacity:.55}
 #robot-parts button:focus-visible{outline:3px solid #315c61;outline-offset:-3px}
 .robot-pages,.robot-actions{display:flex;gap:5px;align-items:center;justify-content:space-between;flex:none}
 #robot-machines-room .soft-button{font:800 13px/1.05 system-ui;min-height:44px;min-width:44px;padding:4px 8px;border-radius:12px;box-shadow:0 3px 0 #a5b987}
@@ -27,11 +27,17 @@
 .robot-board-wrap{position:relative;display:flex;align-items:stretch;flex:1;min-height:0;min-width:0;border:2px solid #8aa67a;border-radius:12px;overflow:hidden;background:transparent}
 #robot-board{display:block;width:100%;height:100%;min-height:0;touch-action:none;outline:none;user-select:none}
 #robot-board image{cursor:grab;pointer-events:visiblePainted}
-#robot-board[data-dragging] .robot-selected{opacity:.2}
+#robot-board[data-dragging] .robot-selected{opacity:0}
 #robot-board .robot-selected{filter:drop-shadow(0 0 5px #b89425)}
 #robot-board:focus-visible{outline:3px solid #315c61;outline-offset:-3px}
 #robot-reference{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
 .robot-actions{flex-wrap:wrap;justify-content:center}.robot-actions button{flex:1 0 auto}
+.robot-view-tools{display:flex;align-items:center;justify-content:center;gap:4px;flex:none}
+#robot-zoom-level{font:800 12px system-ui;min-width:38px;text-align:center}
+#robot-selected-label{font:800 12px/1.2 system-ui;min-height:15px;text-align:center;flex:none}
+#robot-pan{flex:1;max-width:130px}
+#robot-pan[aria-pressed="true"]{background:#ffe17a!important;outline:2px solid #315c61}
+#robot-machines-room[data-pan="true"] #robot-board,#robot-machines-room[data-pan="true"] #robot-board image{cursor:grab}
 .robot-drag-ghost{position:fixed;z-index:10000;pointer-events:none;transform:translate(-50%,-50%);object-fit:contain;filter:drop-shadow(0 3px 3px #173e3540)}
 .robot-demo-piece{opacity:.85;transition:x .2s,y .2s}
 .robot-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
