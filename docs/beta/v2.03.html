@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#d9eff1">
+<title>Update SaNa to v2.03</title>
+<style>
+body{margin:0;background:#d9eff1;color:#173e35;font:18px/1.5 system-ui,sans-serif;min-height:100svh;display:grid;place-items:center}main{max-width:30rem;margin:20px;padding:24px;border:2px solid #91b7a2;border-radius:22px;background:#fffaf0}h1{font-size:28px;margin-top:0}button,a{display:inline-block;padding:12px 18px;margin:8px 8px 0 0;border:2px solid #91b7a2;border-radius:12px;background:#ffe17a;color:#173e35;font:700 17px system-ui;text-decoration:none}small{display:block;margin-top:18px}button[hidden]{display:none}
+</style>
+<main>
+<h1>SaNa v2.03</h1>
+<p id="progress" role="status" aria-live="polite">Preparing the update…</p>
+<button id="retry" type="button" hidden>Try again</button>
+<a href="index.html">Open SaNa</a>
+<small>Your saved pictures and game settings stay on this device.</small>
+</main>
+<script>
+// This new URL and inline bootstrap can open even when an older worker caches pwa.js.
+(()=>{
+  const target='sana-little-hands-beta-v203-zoom-pan-precision';
+  const progress=document.getElementById('progress'),retry=document.getElementById('retry');
+  function timed(promise,ms=15000){return new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('The connection took too long. Keep this page open and try again.')),ms);Promise.resolve(promise).then(value=>{clearTimeout(timer);resolve(value);},error=>{clearTimeout(timer);reject(error);});});}
+  function status(worker){return new Promise(resolve=>{
+    if(!worker){resolve(null);return;}
+    const channel=new MessageChannel(),timer=setTimeout(()=>{channel.port1.close();resolve(null);},5000);
+    channel.port1.onmessage=event=>{clearTimeout(timer);channel.port1.close();resolve(event.data);};
+    try{worker.postMessage({type:'OFFLINE_STATUS'},[channel.port2]);}catch{clearTimeout(timer);channel.port1.close();resolve(null);}
+  });}
+  function activated(worker){return new Promise((resolve,reject)=>{
+    const done=error=>{clearTimeout(timer);worker.removeEventListener('statechange',check);error?reject(error):resolve();};
+    const check=()=>{if(worker.state==='activated')done();else if(worker.state==='redundant')done(Error('The download did not finish. Please try again.'));};
+    const timer=setTimeout(()=>done(Error('The games are still downloading. Keep this page open and try again.')),120000);
+    worker.addEventListener('statechange',check);check();
+  });}
+  function controlling(registration){return new Promise((resolve,reject)=>{
+    const done=error=>{clearTimeout(timer);navigator.serviceWorker.removeEventListener('controllerchange',check);error?reject(error):resolve();};
+    const check=()=>{if(registration.active===navigator.serviceWorker.controller)done();};
+    const timer=setTimeout(()=>done(Error('The update is ready. Please try once more to open it.')),5000);
+    navigator.serviceWorker.addEventListener('controllerchange',check);check();
+  });}
+  async function open(registration){await controlling(registration);progress.textContent='v2.03 is ready. Opening SaNa…';location.replace('index.html');}
+  async function run(){
+    retry.hidden=true;retry.disabled=true;
+    try{
+      if(!('serviceWorker'in navigator)||!window.isSecureContext)throw Error('Open this HTTPS link in Chrome or Safari to update SaNa.');
+      progress.textContent='Checking for SaNa v2.03…';
+      const registration=await timed((async()=>await navigator.serviceWorker.getRegistration()||await navigator.serviceWorker.register('sw.js',{scope:'./',updateViaCache:'none'}))());
+      const current=await status(registration.active);
+      if(current?.ready&&current.version===target){await open(registration);return;}
+      if(!navigator.onLine)throw Error('Connect to the internet, then try again.');
+      if(!registration.installing&&!registration.waiting)await timed(new Promise((resolve,reject)=>{
+        const found=()=>{registration.removeEventListener('updatefound',found);resolve();};
+        registration.addEventListener('updatefound',found,{once:true});
+        registration.update().then(()=>{registration.removeEventListener('updatefound',found);resolve();},error=>{registration.removeEventListener('updatefound',found);reject(error);});
+      }));
+      const installing=registration.installing||registration.waiting;
+      if(installing){progress.textContent='Downloading the v2.03 games. Please keep this page open…';await activated(installing);}
+      const ready=await status(registration.active);
+      if(!ready?.ready||ready.version!==target)throw Error('The new games are not ready yet. Keep this page open and try again.');
+      await open(registration);
+    }catch(error){progress.textContent=error.message||'The update did not finish. Please try again.';retry.hidden=false;retry.disabled=false;}
+  }
+  retry.addEventListener('click',run);void run();
+})();
+</script>
+</html>
