@@ -1,0 +1,37 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),{createServer}=require('node:http');
+const pw=require('C:/Users/jeyan/Projects/DotMd/node_modules/@playwright/test');
+const engine=process.env.PLAYROOM_BROWSER||'chromium',out=path.join(__dirname,'artifacts/compact-controls-v206'),results=[];
+fs.mkdirSync(out,{recursive:true});
+function check(name,pass,detail){results.push({name,pass:!!pass,detail});console.log(`${pass?'PASS':'FAIL'} ${name}`);}
+const server=createServer((req,res)=>{try{const file=path.resolve(__dirname,'docs','.'+new URL(req.url,'http://local').pathname);if(!file.startsWith(path.join(__dirname,'docs')+path.sep))throw Error('path');res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.webp':'image/webp','.png':'image/png'})[path.extname(file)]||'application/octet-stream');res.end(fs.readFileSync(file));}catch{res.writeHead(404).end();}});
+async function settle(p){await p.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));await p.waitForTimeout(90);}
+async function area(p,sel){return p.locator(sel).first().evaluate(n=>{const r=n.getBoundingClientRect();return {w:r.width,h:r.height,area:r.width*r.height};});}
+const controls='#home,#update-app,#how-to-play,.age-radio,#show-me,#again,.play-navigation button,.play-navigation summary,.robot-heading button,.robot-view-tools button,.robot-actions button,.robot-pages button,.glossy-build-heading>button,.glossy-shelf-heading>button,#glossy-category-toggle,.glossy-store-pager button,.glossy-actions button,#app[data-view="puzzle"] #item-progress-strip>button';
+(async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=process.env.COMPACT_URL||`http://127.0.0.1:${server.address().port}/beta/`,browser=await pw[engine].launch(),errors=[];
+try{
+ const sizes=process.env.COMPACT_QUICK?[[393,852]]:[[320,568],[393,852],[568,320],[852,393],[800,1280],[1280,800],[1366,768]];
+ for(const [width,height]of sizes){const ctx=await browser.newContext({viewport:{width,height},hasTouch:true,serviceWorkers:'block',reducedMotion:'reduce'}),p=await ctx.newPage();p.setDefaultTimeout(7000);p.on('pageerror',e=>errors.push(e.message));await p.goto(base+'play.html?age=4');
+  const homeBefore=await area(p,'.activity-card');await p.evaluate(()=>{const s=document.querySelector('link[href*="compact-controls"]');if(s)s.disabled=true;});await settle(p);const homeOld=await area(p,'.activity-card');check(`${width}x${height} home cards preserve art and target sizing`,Math.abs(homeBefore.w-homeOld.w)<1&&homeBefore.h>=homeOld.h-1,{homeBefore,homeOld});await p.evaluate(()=>{const s=document.querySelector('link[href*="compact-controls"]');if(s)s.disabled=false;});
+  for(const id of ['drag','bubbles','slide','brush','abacus','puzzle','glossy','machines']){
+   if(!await p.locator(`[data-activity="${id}"]`).isVisible())await p.locator('#more-games').click();await p.locator(`[data-activity="${id}"]`).click();const board=id==='machines'?'#robot-board':id==='glossy'?'#glossy-board':id==='puzzle'?'#picture-puzzle':'#scene';await p.locator(board).waitFor();await settle(p);
+   const geometry=await area(p,board),tabs=await p.locator(controls).evaluateAll(ns=>ns.filter(n=>n.checkVisibility()).map(n=>{const r=n.getBoundingClientRect();return {id:n.id||n.textContent.trim().slice(0,25),w:r.width,h:r.height,inside:r.x>=-1&&r.y>=-1&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1,hit:n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))};}));
+   check(`${width}x${height} ${id} compact controls fit and remain reachable`,tabs.every(n=>n.h<=34&&n.h>=24&&n.inside&&n.hit),tabs);
+   const clipped=await p.locator(controls).evaluateAll(ns=>ns.filter(n=>n.checkVisibility()).flatMap(n=>{const box=n.getBoundingClientRect(),walker=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),bad=[];let t;while((t=walker.nextNode())){const el=t.parentElement;if(!t.textContent.trim()||!el.checkVisibility()||el.closest('svg,.visually-hidden,.robot-sr')||getComputedStyle(el).fontSize==='0px'||(el.clientWidth<=1&&getComputedStyle(el).position==='absolute'))continue;const range=document.createRange();range.selectNodeContents(t);const r=range.getBoundingClientRect();if(r.width&&(r.x<box.x-1||r.right>box.right+1||r.y<box.y-1||r.bottom>box.bottom+1))bad.push({id:n.id,text:t.textContent.trim(),box:{x:box.x,y:box.y,w:box.width,h:box.height},textBox:{x:r.x,y:r.y,w:r.width,h:r.height}});}return bad;}));
+   check(`${width}x${height} ${id} labels fit their tabs`,!clipped.length,clipped);
+   await p.evaluate(()=>{const s=document.querySelector('link[href*="compact-controls"]');if(s)s.disabled=true;});await settle(p);const old=await area(p,board);await p.evaluate(()=>{const s=document.querySelector('link[href*="compact-controls"]');if(s)s.disabled=false;});await settle(p);
+   check(`${width}x${height} ${id} gains canvas space`,geometry.area>old.area+1&&geometry.w>=old.w-1&&geometry.h>0,{old,geometry,gain:Math.round(100*(geometry.area/old.area-1))});
+   const hidden=await p.locator('#play-options [hidden],#robot-machines-room[hidden],#glossy-room[hidden]').evaluateAll(ns=>ns.every(n=>!n.checkVisibility()));check(`${width}x${height} ${id} unrelated tools stay hidden`,hidden);
+   // Use the real controls, including native details and game-specific selectors.
+   await p.locator('#play-settings>summary').click();const sound=p.locator('#sound'),before=await sound.getAttribute('aria-pressed');await sound.click();check(`${width}x${height} ${id} sound toggle still works`,await sound.getAttribute('aria-pressed')!==before);await sound.click();await p.locator('#play-settings>summary').click();
+   if(id==='machines'){await p.locator('#robot-zoom-in').click();check(`${width}x${height} robot zoom works`,await p.locator('#robot-zoom-level').textContent()!=='100%');await p.locator('#robot-zoom-level').click();await p.locator('#robot-variant').selectOption({index:1});await p.locator('#robot-look').click();check(`${width}x${height} robot reference works`,await p.locator('#robot-reference').isVisible());await p.locator('#robot-look').click();}
+   if(id==='glossy'){await p.locator('#glossy-category-toggle').click();check(`${width}x${height} Blocks dropdown opens`,await p.locator('.glossy-category-menu').isVisible());await p.locator('#glossy-category-toggle').click();await p.locator('#glossy-colour-toggle').click();const swatch=await area(p,'.glossy-swatches button');check(`${width}x${height} colour targets preserve their size`,swatch.w>=40&&swatch.h>=40,swatch);await p.locator('#glossy-colour-toggle').click();}
+   if((width===393||width===1280))await p.screenshot({path:path.join(out,`${engine}-${width}-${id}.png`)});
+   await p.locator('#game-home').click();
+  }
+  await ctx.close();
+ }
+ check('All game flows have no runtime errors',!errors.length,errors);
+}finally{await browser.close();server.close();fs.writeFileSync(path.join(out,`${engine}-results.json`),JSON.stringify(results,null,2));}
+console.log(`${results.filter(r=>r.pass).length}/${results.length} checks passed`);if(results.some(r=>!r.pass))process.exitCode=1;
+})().catch(e=>{console.error(e);server.close();process.exitCode=1;});
