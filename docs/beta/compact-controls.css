@@ -74,6 +74,14 @@
 #app #robot-machines-room #robot-zoom-level{min-width:0;padding:3px 5px!important}
 #app #robot-machines-room :is(#robot-rotate-left,#robot-rotate-right){font-size:20px;min-width:28px!important}
 #app #robot-machines-room :is(#robot-zoom-in,#robot-zoom-out){min-width:28px!important;font-size:18px}
+/* Machines: two tool rows, with status announcements outside the visual layout. */
+#app #robot-machines-room .robot-assemble-title{min-height:0;line-height:1}
+#app #robot-machines-room .robot-assemble-title h2{font-size:14px;line-height:1.1}
+#app #robot-machines-room .robot-toolbar{display:flex;flex-direction:column;flex:none;gap:3px;min-width:0}
+#app #robot-machines-room .robot-tool-row{display:flex;flex-wrap:nowrap;justify-content:flex-start;gap:3px;min-width:0}
+#app #robot-machines-room .robot-tool-row :is(button,select){font-size:12px;padding-inline:5px!important}
+#app #robot-machines-room .robot-selection-row.robot-sr{min-height:0;min-width:0}
+#app #robot-remove svg{display:none;width:16px;height:16px}
 
 /* Blocks headers and paging rows shrink together with their controls. */
 #app #glossy-room{padding:3px;gap:4px}
@@ -112,10 +120,18 @@
 @media(max-width:360px){
  #app :is(.robot-heading,.robot-view-tools,.robot-actions) button{font-size:11px!important;padding-inline:4px!important}
  #app #robot-machines-room .robot-control-heading select{font-size:11px}
+ #app #robot-machines-room .robot-toolbar .robot-tool-row{gap:2px}
+ #app #robot-machines-room .robot-toolbar .robot-tool-row :is(button,select){font-size:11px!important;padding-inline:3px!important}
+ #app #robot-remove svg{display:block}
+ #app #robot-remove span{display:none}
 }
 @media(max-height:360px) and (orientation:landscape){
  #app{--control-height:26px}
  #app #robot-machines-room :is(.robot-heading,.robot-view-tools,.robot-actions) button{font-size:11px;padding:2px 4px!important}
  #app #robot-machines-room .robot-control-heading :is(h2,select){font-size:11px}
  #app #robot-machines-room :is(#robot-rotate-left,#robot-rotate-right,#robot-zoom-in,#robot-zoom-out){min-width:26px!important;font-size:18px}
+ #app #robot-machines-room .robot-toolbar .robot-tool-row{gap:2px}
+ #app #robot-machines-room .robot-toolbar .robot-tool-row :is(button,select){font-size:11px!important;padding-inline:3px!important}
+ #app #robot-remove svg{display:block}
+ #app #robot-remove span{display:none}
 }
