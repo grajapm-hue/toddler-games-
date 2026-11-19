@@ -4,12 +4,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#d9eff1">
-<title>Update SaNa Beta to v2.01</title>
+<title>Update SaNa Beta to v2.02</title>
 <style>
 body{margin:0;background:#d9eff1;color:#173e35;font:18px/1.5 system-ui,sans-serif;min-height:100svh;display:grid;place-items:center}main{max-width:30rem;margin:20px;padding:24px;border:2px solid #91b7a2;border-radius:22px;background:#fffaf0}h1{font-size:28px;margin-top:0}button,a{display:inline-block;padding:12px 18px;margin:8px 8px 0 0;border:2px solid #91b7a2;border-radius:12px;background:#ffe17a;color:#173e35;font:700 17px system-ui;text-decoration:none}small{display:block;margin-top:18px}[hidden]{display:none!important}
 </style>
 <main>
-<h1>SaNa Beta v2.01</h1>
+<h1>SaNa Beta v2.02</h1>
 <p id="progress" role="status" aria-live="polite">Preparing the puppy update…</p>
 <button id="retry" type="button" hidden>Try again</button>
 <a id="open-chrome" hidden>Open in Chrome</a>
@@ -20,11 +20,11 @@ body{margin:0;background:#d9eff1;color:#173e35;font:18px/1.5 system-ui,sans-seri
 <script>
 // This page sits outside /beta/ so the old Beta worker cannot serve its cached welcome here.
 (()=>{
-  const appBase=new URL('./beta/',location.href),target='sana-little-hands-beta-v201-movable-cutouts';
+  const appBase=new URL('./beta/',location.href),target='sana-little-hands-beta-v202-full-assembly-canvas';
   const progress=document.getElementById('progress'),retry=document.getElementById('retry');
   const android=/Android/i.test(navigator.userAgent),embeddedAndroid=android&&/(?:;\s*wv\b|Version\/4\.0)/i.test(navigator.userAgent);
   if(android){
-    const self=new URL('update-beta-v2.01.html',location.href),chrome=document.getElementById('open-chrome');
+    const self=new URL('update-beta-v2.02.html',location.href),chrome=document.getElementById('open-chrome');
     chrome.href='intent://'+self.host+self.pathname+'#Intent;scheme='+self.protocol.slice(0,-1)+';package=com.android.chrome;S.browser_fallback_url='+encodeURIComponent(self.href)+';end';
     chrome.hidden=false;document.getElementById('chrome-note').hidden=false;
   }
@@ -58,7 +58,7 @@ body{margin:0;background:#d9eff1;color:#173e35;font:18px/1.5 system-ui,sans-seri
       const checked=promise=>timed(promise,Math.max(1,checkDeadline-performance.now()));
       async function download(worker){
         if(!worker)return;
-        progress.textContent='Downloading v2.01 games. Please keep this page open…';
+        progress.textContent='Downloading v2.02 games. Please keep this page open…';
         await activated(worker);
         checkDeadline=performance.now()+15000;
       }
@@ -82,7 +82,7 @@ body{margin:0;background:#d9eff1;color:#173e35;font:18px/1.5 system-ui,sans-seri
         if(!await checked(prepared(registration)))throw Error('The puppy update is not ready yet. Keep this page open and try again.');
       }
       // The updater is deliberately outside Beta's scope; the next navigation selects its active worker.
-      progress.textContent='v2.01 is ready. Opening SaNa Beta…';location.replace(new URL('index.html',appBase).href);
+      progress.textContent='v2.02 is ready. Opening SaNa Beta…';location.replace(new URL('index.html',appBase).href);
     }catch(error){progress.textContent=error.message||'The update did not finish. Please try again.';retry.hidden=false;retry.disabled=false;}
   }
   retry.addEventListener('click',run);
