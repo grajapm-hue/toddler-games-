@@ -159,3 +159,26 @@
  #app #robot-remove svg{display:block}
  #app #robot-remove span{display:none}
 }
+
+/* Wider zoom targets, with breathing room at the canvas edge, retain both rows. */
+#app #robot-machines-room .robot-toolbar .robot-tool-row.robot-view-tools{box-sizing:border-box;padding-inline-start:8px;column-gap:4px}
+#app #robot-machines-room .robot-toolbar .robot-tool-row button:is(#robot-zoom-out,#robot-zoom-in){width:40px!important;min-width:40px!important;padding-block:1px!important;font-size:18px!important;line-height:1}
+@media(max-width:380px),(orientation:landscape) and (max-width:760px){
+ #app #robot-machines-room .robot-toolbar .robot-tool-row.robot-view-tools{padding-inline-start:6px;column-gap:3px}
+ #app #robot-machines-room .robot-toolbar .robot-tool-row button:is(#robot-zoom-out,#robot-zoom-in){width:36px!important;min-width:36px!important}
+ #app #robot-machines-room .robot-toolbar .robot-tool-row #robot-zoom-level{width:36px!important;min-width:36px!important;white-space:normal;overflow-wrap:anywhere;word-break:break-all;font-size:10px!important;line-height:11px;padding:0 2px!important}
+}
+@media(max-width:380px){
+ #app #robot-machines-room .robot-toolbar .robot-tool-row{gap:2px}
+ #app #robot-machines-room .robot-toolbar .robot-tool-row :is(button,select){font-size:11px!important;padding-inline:3px!important}
+ #app #robot-machines-room .robot-control-heading select{font-size:11px}
+ #app #robot-remove svg{display:block}
+ #app #robot-remove span{display:none}
+}
+@media(orientation:landscape) and (max-width:760px){
+ #app #robot-machines-room .robot-toolbar .robot-tool-row button:is(#robot-view-fit,#robot-grid,#robot-done,#robot-snapshot){padding-inline:2px!important}
+}
+@media(orientation:landscape) and (max-width:560px){
+ #app #robot-machines-room .robot-toolbar .robot-tool-row button:is(#robot-zoom-out,#robot-zoom-in){width:30px!important;min-width:30px!important}
+ #app #robot-machines-room .robot-toolbar .robot-tool-row #robot-zoom-level{width:32px!important;min-width:32px!important;padding-inline:0!important}
+}
