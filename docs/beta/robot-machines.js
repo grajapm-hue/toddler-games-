@@ -13,7 +13,6 @@
   function drop(state,id,cx,cy){
     const pose=poseOf(state),part=pose.parts.find(piece=>piece.id===id);
     if(!part||![cx,cy].every(Number.isFinite))return false;
-    if(state.placed[id]?.fitted)return true;
     const distance=Math.hypot(cx-part.x-part.width/2,cy-part.y-part.height/2);
     const fitted=distance<=(state.age===4?112:72);
     state.placed[id]={x:fitted?part.x:Math.max(0,Math.min(pose.width-part.width,cx-part.width/2)),y:fitted?part.y:Math.max(0,Math.min(pose.height-part.height,cy-part.height/2)),fitted};
@@ -48,10 +47,10 @@
     const pageCount=()=>Math.ceil(pose().parts.length/pageSize());
     function syncButtons(){
       $('progress').textContent=`${fittedCount(state)} / ${pose().parts.length} fitted`;
-      $('done').disabled=!isComplete(state)||finished||demoActive;
-      $('remove').disabled=!state.placed[selected]||finished||look||demoActive;
+      $('done').disabled=!isComplete(state)||finished||demoActive||!!pointer;
+      $('remove').disabled=!state.placed[selected]||finished||look||demoActive||!!pointer;
       $('clear').disabled=!Object.keys(state.placed).length||demoActive;
-      $('snapshot').disabled=!Object.keys(state.placed).length||demoActive;
+      $('snapshot').disabled=!Object.keys(state.placed).length||demoActive||!!pointer;
       $('variant').disabled=demoActive;$('look').disabled=demoActive;
     }
     function renderShelf(){
@@ -76,7 +75,7 @@
     }
     function stopGesture(){
       if(pointer?.owner?.hasPointerCapture?.(pointer.id))pointer.owner.releasePointerCapture(pointer.id);
-      pointer=null;ghost?.remove();ghost=null;
+      pointer=null;ghost?.remove();ghost=null;delete svg.dataset.dragging;if(active)syncButtons();
     }
     function cancel(){
       stopGesture();clearTimeout(demoTimer);demoTimer=null;demoActive=false;demoParts=[];
@@ -88,7 +87,7 @@
       selected=id;keyboard=false;
       for(const button of $('parts').querySelectorAll('[data-robot-part]'))button.setAttribute('aria-pressed',String(button.dataset.robotPart===id));
       renderBoard();const part=pose().parts.find(p=>p.id===id);
-      hint(state.placed[id]?.fitted?`${part.name} is fitted. Choose another part.`:`${part.name}: drag or tap to place. It will fit when close.`);
+      hint(state.placed[id]?.fitted?`${part.name} fits. You can still drag it to move it.`:`${part.name}: drag or tap to place. It will fit when close.`);
     }
     function point(x,y){const matrix=svg.getScreenCTM();return matrix?new DOMPoint(x,y).matrixTransform(matrix.inverse()):null;}
     function inBoard(p){return p&&p.x>=0&&p.y>=0&&p.x<=pose().width&&p.y<=pose().height;}
@@ -114,20 +113,19 @@
       choose(id);
       // Selecting renders the board, so capture on its stable root rather than a replaced image.
       const owner=source||svg,part=pose().parts.find(p=>p.id===id),p=point(event.clientX,event.clientY),previous=state.placed[id];
-      pointer={id:event.pointerId,owner,part,startX:event.clientX,startY:event.clientY,moved:false,source:!!source,locked:!!previous?.fitted,offsetX:previous&&placed?p.x-previous.x-part.width/2:0,offsetY:previous&&placed?p.y-previous.y-part.height/2:0};
-      owner.setPointerCapture(event.pointerId);event.preventDefault();
+      pointer={id:event.pointerId,owner,part,startX:event.clientX,startY:event.clientY,moved:false,source:!!source,offsetX:previous&&placed?p.x-previous.x-part.width/2:0,offsetY:previous&&placed?p.y-previous.y-part.height/2:0};
+      owner.setPointerCapture(event.pointerId);syncButtons();event.preventDefault();
     }
     function move(event){
-      if(!pointer||pointer.id!==event.pointerId||pointer.locked)return;
+      if(!pointer||pointer.id!==event.pointerId)return;
       if(Math.hypot(event.clientX-pointer.startX,event.clientY-pointer.startY)>5)pointer.moved=true;
       if(!pointer.moved)return;
-      if(!ghost)makeGhost(pointer.part,event.clientX,event.clientY);else moveGhost(event.clientX,event.clientY);
+      if(!ghost){makeGhost(pointer.part,event.clientX,event.clientY);svg.dataset.dragging=pointer.part.id;}else moveGhost(event.clientX,event.clientY);
       event.preventDefault();
     }
     function up(event){
       if(!pointer||pointer.id!==event.pointerId)return;
       const drag=pointer,p=point(event.clientX,event.clientY);stopGesture();
-      if(drag.locked)return;
       if(drag.moved||!drag.source){if(p){p.x-=drag.offsetX;p.y-=drag.offsetY;}placeSelected(p);}
     }
     $('parts').addEventListener('pointerdown',down);svg.addEventListener('pointerdown',down);
@@ -160,7 +158,7 @@
         const images=await Promise.all(snapshotPose.parts.filter(p=>snapshotParts[p.id]).map(async part=>{const image=new Image();image.src=part.asset;await image.decode();return{part,image};}));
         for(const {part,image} of images){const at=snapshotParts[part.id];ctx.drawImage(image,at.x,at.y,part.width,part.height);}
         const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw Error('Picture unavailable');
-        url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=`SaNa-robot-${snapshotPose.id}-v2.00.png`;link.click();hint('Your robot picture is ready.');
+        url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=`SaNa-robot-${snapshotPose.id}-v2.01.png`;link.click();hint('Your robot picture is ready.');
       }catch{hint('Picture could not be saved. Please try again.');}
       finally{if(url)setTimeout(()=>URL.revokeObjectURL(url),1000);if(active)syncButtons();}
     });

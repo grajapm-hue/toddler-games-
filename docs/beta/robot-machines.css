@@ -27,7 +27,7 @@
 .robot-board-wrap{position:relative;display:flex;align-items:stretch;flex:1;min-height:0;min-width:0;border:2px solid #8aa67a;border-radius:12px;overflow:hidden;background:transparent}
 #robot-board{display:block;width:100%;height:100%;min-height:0;touch-action:none;outline:none;user-select:none}
 #robot-board image{cursor:grab;pointer-events:visiblePainted}
-#robot-board image[data-fitted="true"]{cursor:default}
+#robot-board[data-dragging] .robot-selected{opacity:.2}
 #robot-board .robot-selected{filter:drop-shadow(0 0 5px #b89425)}
 #robot-board:focus-visible{outline:3px solid #315c61;outline-offset:-3px}
 #robot-reference{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
