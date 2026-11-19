@@ -74,6 +74,14 @@
 #app #robot-machines-room #robot-zoom-level{min-width:0;padding:3px 5px!important}
 #app #robot-machines-room :is(#robot-rotate-left,#robot-rotate-right){font-size:20px;min-width:28px!important}
 #app #robot-machines-room :is(#robot-zoom-in,#robot-zoom-out){min-width:28px!important;font-size:18px}
+/* Machines: two tool rows, with status announcements outside the visual layout. */
+#app #robot-machines-room .robot-assemble-title{min-height:0;line-height:1}
+#app #robot-machines-room .robot-assemble-title h2{font-size:14px;line-height:1.1}
+#app #robot-machines-room .robot-toolbar{display:flex;flex-direction:column;flex:none;gap:3px;min-width:0}
+#app #robot-machines-room .robot-tool-row{display:flex;flex-wrap:nowrap;justify-content:flex-start;gap:3px;min-width:0}
+#app #robot-machines-room .robot-tool-row :is(button,select){font-size:12px;padding-inline:5px!important}
+#app #robot-machines-room .robot-selection-row.robot-sr{min-height:0;min-width:0}
+#app #robot-remove svg{display:none;width:16px;height:16px}
 
 /* Blocks headers and paging rows shrink together with their controls. */
 #app #glossy-room{padding:3px;gap:4px}
@@ -112,10 +120,42 @@
 @media(max-width:360px){
  #app :is(.robot-heading,.robot-view-tools,.robot-actions) button{font-size:11px!important;padding-inline:4px!important}
  #app #robot-machines-room .robot-control-heading select{font-size:11px}
+ #app #robot-machines-room .robot-toolbar .robot-tool-row{gap:2px}
+ #app #robot-machines-room .robot-toolbar .robot-tool-row :is(button,select){font-size:11px!important;padding-inline:3px!important}
+ #app #robot-remove svg{display:block}
+ #app #robot-remove span{display:none}
+}
+/* The landscape panes are half the viewport width, regardless of its height. */
+@media(orientation:landscape) and (max-width:760px){
+ #app #robot-machines-room .robot-toolbar .robot-tool-row{gap:2px}
+ #app #robot-machines-room .robot-toolbar .robot-tool-row :is(button,select){font-size:11px!important;padding-inline:3px!important}
+ #app #robot-remove svg{display:block}
+ #app #robot-remove span{display:none}
+}
+/* Icon controls keep both rows usable even in a 480px-wide landscape window. */
+@media(orientation:landscape) and (max-width:560px){
+ #app #robot-machines-room .robot-toolbar .robot-tool-row{gap:1px}
+ #app #robot-machines-room .robot-toolbar .robot-tool-row button:not(#robot-zoom-level){font-size:0!important;width:24px!important;min-width:24px!important;padding:2px!important;gap:0}
+ #app #robot-machines-room .robot-toolbar .robot-tool-row :is(#robot-rotate-left,#robot-rotate-right,#robot-zoom-out,#robot-zoom-in){font-size:18px!important;line-height:1}
+ #app #robot-machines-room #robot-part-axis{width:56px!important;min-width:0!important;font-size:10px!important;padding-inline:2px!important}
+ #app #robot-machines-room #robot-zoom-level{font-size:10px!important;padding-inline:2px!important}
+ #app #robot-machines-room :is(#robot-look,#robot-part-flip,#robot-clear,#robot-view-fit,#robot-grid,#robot-done,#robot-snapshot)::before{content:"";display:block;flex:none;width:16px;height:16px;background:var(--robot-tool-icon) center/contain no-repeat}
+ #app #robot-look{--robot-tool-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'%23173e35'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M2%2012s4-7%2010-7%2010%207%2010%207-4%207-10%207-10-7-10-7Z'%2F%3E%3Ccircle%20cx%3D'12'%20cy%3D'12'%20r%3D'3'%2F%3E%3C%2Fsvg%3E")}
+ #app #robot-part-flip{--robot-tool-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'%23173e35'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M12%203v18M3%206h6v12H3ZM21%206h-6v12h6Z'%2F%3E%3C%2Fsvg%3E")}
+ #app #robot-clear{--robot-tool-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'%23173e35'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M4%206h16M9%206V3h6v3M6%206l1%2015h10l1-15M10%2010v7M14%2010v7'%2F%3E%3C%2Fsvg%3E")}
+ #app #robot-view-fit{--robot-tool-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'%23173e35'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M8%203H3v5M16%203h5v5M21%2016v5h-5M8%2021H3v-5M8%208h8v8H8Z'%2F%3E%3C%2Fsvg%3E")}
+ #app #robot-grid{--robot-tool-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'%23173e35'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Crect%20x%3D'3'%20y%3D'3'%20width%3D'18'%20height%3D'18'%20rx%3D'1'%2F%3E%3Cpath%20d%3D'M9%203v18M15%203v18M3%209h18M3%2015h18'%2F%3E%3C%2Fsvg%3E")}
+ #app #robot-done{--robot-tool-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'%23173e35'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'm4%2012%205%206L21%205'%2F%3E%3C%2Fsvg%3E")}
+ #app #robot-snapshot{--robot-tool-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'%23173e35'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M3%207h5l2-3h4l2%203h5v13H3Z'%2F%3E%3Ccircle%20cx%3D'12'%20cy%3D'13'%20r%3D'4'%2F%3E%3C%2Fsvg%3E")}
+ #app #robot-look[aria-pressed="true"]{--robot-tool-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'%23173e35'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'm4%2016%2012-12%204%204L8%2020H4ZM13%207l4%204'%2F%3E%3C%2Fsvg%3E")}
 }
 @media(max-height:360px) and (orientation:landscape){
  #app{--control-height:26px}
  #app #robot-machines-room :is(.robot-heading,.robot-view-tools,.robot-actions) button{font-size:11px;padding:2px 4px!important}
  #app #robot-machines-room .robot-control-heading :is(h2,select){font-size:11px}
  #app #robot-machines-room :is(#robot-rotate-left,#robot-rotate-right,#robot-zoom-in,#robot-zoom-out){min-width:26px!important;font-size:18px}
+ #app #robot-machines-room .robot-toolbar .robot-tool-row{gap:2px}
+ #app #robot-machines-room .robot-toolbar .robot-tool-row :is(button,select){font-size:11px!important;padding-inline:3px!important}
+ #app #robot-remove svg{display:block}
+ #app #robot-remove span{display:none}
 }
