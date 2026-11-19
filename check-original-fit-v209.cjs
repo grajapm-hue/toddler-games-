@@ -24,12 +24,12 @@ async function findSource(p,part){const b=p.getByRole('button',{name:part.name,e
 (async()=>{
  await originals();await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=process.env.MACHINES_URL||`http://127.0.0.1:${server.address().port}/beta/`,browser=await pw[engine].launch(),errors=[];
  try{
-  const cases=process.env.RAW_FIT_QUICK?[['standing',4,393,852]]:[['standing',4,393,852],['standing',5,480,320],['standing',4,320,568],['waving',4,1280,800],['waving',5,393,852],['waving',5,852,393],['waving',4,800,1280]];
-  for(const [id,age,width,height]of cases){
-   const context=await browser.newContext({viewport:{width,height},hasTouch:true,serviceWorkers:'block'}),p=await context.newPage(),pose=catalogue.poses[id],name=`${id}/age${age}/${width}x${height}`;
+  const cases=process.env.RAW_FIT_CASES?JSON.parse(process.env.RAW_FIT_CASES):process.env.RAW_FIT_QUICK?[['standing',4,393,852]]:[['standing',4,393,852],['standing',5,480,320],['standing',4,320,568],['waving',4,1280,800],['waving',5,393,852],['waving',5,852,393],['waving',4,800,1280],['standing',5,480,320,true],['waving',4,393,852,true]];
+  for(const [id,age,width,height,full=false]of cases){
+   const context=await browser.newContext({viewport:{width,height},hasTouch:true,serviceWorkers:'block'}),p=await context.newPage(),pose=catalogue.poses[id],name=`${id}/age${age}/${width}x${height}${full?'/fullscreen':''}`;
    p.on('pageerror',e=>errors.push(e.message));p.setDefaultTimeout(8000);
    try{
-    await p.goto(base+'play.html?age='+age);await p.locator('#more-games').click();await p.locator('[data-activity="machines"]').click();await p.locator('#robot-variant').selectOption(id);await p.locator('#robot-board[data-view]').waitFor();
+    await p.goto(base+'play.html?age='+age);await p.locator('#more-games').click();await p.locator('[data-activity="machines"]').click();await p.locator('#robot-variant').selectOption(id);if(full)await p.locator('#fullscreen').click();await p.locator('#robot-board[data-view]').waitFor();await p.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
     for(const part of pose.parts){
      const button=await findSource(p,part);
      const measured=await button.evaluate((b,part)=>{const im=b.querySelector('img'),r=im.getBoundingClientRect(),br=b.getBoundingClientRect(),label=b.querySelector('span').getBoundingClientRect(),svg=document.getElementById('robot-board'),m=svg.getScreenCTM(),base=Math.hypot(m.a,m.b)/JSON.parse(svg.dataset.view).zoom;return {scaleX:r.width/part.width/base,scaleY:r.height/part.height/base,widthError:Math.abs(r.width-part.width*base),heightError:Math.abs(r.height-part.height*base),inside:r.x>=br.x-.25&&r.right<=br.right+.25&&r.y>=br.y-.25&&r.bottom<=label.y+.25};},part);
