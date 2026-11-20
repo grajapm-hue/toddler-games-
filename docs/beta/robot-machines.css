@@ -65,3 +65,46 @@
 @media(max-height:650px) and (max-width:360px) and (orientation:portrait){#app.portrait .robot-workspace{grid-template-rows:minmax(0,40fr) minmax(0,60fr)}#robot-machines-room{padding:3px}.robot-stores,.robot-assemble{padding:4px;gap:3px}.robot-heading{min-height:30px}#robot-machines-room select{min-height:30px;font-size:11px}#robot-machines-room .soft-button{min-height:30px;min-width:30px;padding:2px 4px;font-size:11px}#robot-machines-room .robot-control-heading .soft-button{min-width:30px}.robot-control-heading{grid-template-columns:auto minmax(48px,1fr) 30px 30px auto}#robot-parts button span{font-size:9px}.robot-selection-row{min-height:12px}#robot-selected-label,#robot-progress{font-size:10px}}
 @media(max-height:360px) and (orientation:landscape){.robot-stores,.robot-assemble{padding:3px;gap:2px}.robot-heading{min-height:28px}#robot-machines-room select{min-height:28px;font-size:11px}#robot-machines-room .soft-button{min-height:28px;min-width:28px;padding:2px 4px;font-size:11px}.robot-control-heading{grid-template-columns:auto auto minmax(46px,1fr) 28px 28px auto}#robot-machines-room .robot-control-heading .soft-button{min-width:28px}#robot-machines-room .robot-control-heading h2{font-size:11px!important}.robot-selection-row{min-height:12px}#robot-selected-label,#robot-progress{font-size:10px}}
 @media(max-height:650px) and (max-width:360px) and (orientation:portrait){#robot-machines-room .robot-control-heading h2{display:none}}
+
+
+/* v2.14: give the Assemble canvas more room on every orientation and viewport mode. */
+@media (orientation:landscape){
+  .robot-workspace{grid-template-columns:minmax(0,1fr) minmax(0,3fr)}
+  .robot-stores #robot-parts{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr))}
+  .robot-stores[data-page-size="3"] #robot-parts{grid-template-rows:repeat(2,minmax(0,1fr))}
+}
+#app.portrait .robot-workspace{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,34fr) minmax(0,66fr)}
+.robot-assemble{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  grid-template-rows:minmax(44px,auto) auto minmax(0,1fr);
+  align-content:stretch;
+}
+.robot-assemble-title{grid-column:1;grid-row:1}
+.robot-assemble .robot-toolbar{display:contents}
+.robot-assemble .robot-control-heading{
+  display:flex;grid-column:2;grid-row:1;min-width:0;overflow-x:auto;overflow-y:hidden;
+  flex-wrap:nowrap;scrollbar-width:thin;overscroll-behavior-inline:contain;
+}
+.robot-assemble .robot-control-heading>*{flex:none}
+.robot-assemble .robot-control-heading select{flex:0 0 auto;width:auto;min-width:64px}
+.robot-assemble .robot-view-tools{grid-column:1/-1;grid-row:2;justify-content:flex-start}
+.robot-assemble .robot-selection-row{grid-column:1/-1;grid-row:3}
+.robot-assemble .robot-board-wrap{grid-column:1/-1;grid-row:3;min-height:0}
+@media (orientation:portrait){
+  .robot-assemble{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto minmax(0,1fr)}
+  .robot-assemble-title{grid-column:1;grid-row:1}
+  .robot-assemble .robot-control-heading{
+    grid-column:1;grid-row:2;overflow:visible;overflow-x:visible;overflow-y:visible;
+    flex-wrap:wrap;justify-content:flex-start;
+  }
+  .robot-assemble .robot-view-tools{grid-column:1;grid-row:3}
+  .robot-assemble .robot-board-wrap{grid-column:1;grid-row:4}
+}
+@media(max-height:460px) and (orientation:landscape){
+  .robot-assemble{grid-template-rows:minmax(38px,auto) auto minmax(0,1fr)}
+}
+@media(max-width:370px){
+  .robot-assemble .robot-control-heading{gap:3px}
+}
+
