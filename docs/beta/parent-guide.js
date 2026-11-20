@@ -84,7 +84,7 @@
   }
   function content(){
     body.replaceChildren();const game=app.dataset.view,age=Number(app.dataset.age),paint=document.getElementById('paint-mode').getAttribute('aria-pressed')==='true';
-    const titles={home:'Choose a game',drag:'Drag shapes',bubbles:'Pop bubbles',slide:'Slide to reveal',brush:paint?'Finger paint':'Brush clean',abacus:age===2?'Count apples':age===3?'Count carrots':age===4?'Number train':'Count with the abacus',puzzle:'Picture Puzzle',glossy:'Glossy Blocks',machines:'Kids Machines Vision'};
+    const titles={home:'Choose a game',drag:'Drag shapes',bubbles:'Pop bubbles',slide:'Slide to reveal',brush:paint?'Finger paint':'Brush clean',abacus:age===2?'Count apples':age===3?'Count carrots':age===4?'Number train':'Count with the abacus',puzzle:'Picture Puzzle',glossy:'Glossy Blocks',machines:'Kids Assemble Exploring'};
     shade.dataset.guideFor=game==='abacus'?({2:'count-apples',3:'count-carrots',4:'count-train',5:'count-beads'}[age]||'count-beads'):game;shade.dataset.guideMode=game==='brush'?(paint?'paint':'clean'):'';
     document.getElementById('guide-title').textContent='How to Play · '+titles[game];
     const lead=document.createElement('p');lead.className='guide-lead';lead.textContent=game==='home'?'Play together at your child’s pace. These notes match the controls on this page.':'Follow these steps together. The pictures below show the controls in this game.';body.append(lead);

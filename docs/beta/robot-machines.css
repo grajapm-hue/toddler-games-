@@ -110,3 +110,5 @@
   .robot-assemble .robot-control-heading{gap:3px}
 }
 
+
+#robot-machines-room[data-page-size="4"] #robot-parts{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}

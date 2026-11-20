@@ -165,7 +165,7 @@
     abacus:{title:'Counting adventures',label:'Counting games',word:'Count',caption:'count and play',note:'',hint:'Slide beads in any row, either way. See the number and its word change!' },
     puzzle:{title:'Picture Puzzle',label:'Picture Puzzle',word:'Puzzle',caption:'make your own picture',note:'',hint:'Move the pieces on the left onto the picture grid.'},
     glossy:{title:'Glossy Blocks',label:'Glossy Blocks',word:'Blocks',caption:'build, count and create',note:'',hint:'Pick a block to build.'},
-    machines:{title:'Kids Machines Vision',label:'Kids Machines Vision',word:'Machines',caption:'assemble and explore machines',note:'Choose a machine, then build it part by part.',hint:'Pick a machine part from Stores and place it in Assemble.'}
+    machines:{title:'Kids Assemble Exploring',label:'Kids Assemble Exploring',word:'Machines',caption:'assemble and explore machines',note:'Choose a machine, then build it part by part.',hint:'Pick a machine part from Stores and place it in Assemble.'}
   };
   let saved={};try{const stored=JSON.parse(localStorage.getItem('sanaLittleHandsV1')||'{}');saved=stored&&typeof stored==='object'?stored:{};}catch{/* Settings are optional. */}
   const hasAgeSettings=saved.ageSettings&&typeof saved.ageSettings==='object'&&!Array.isArray(saved.ageSettings);
@@ -397,10 +397,10 @@
     const covers={
       bubbles:'bubble-garden.jpg',slide:'peek-a-boo-friends.jpg',brush:'little-art-studio.jpg',
       abacus:'counting-adventures.jpg',drag:'shape-picnic.jpg',puzzle:'picture-puzzle.jpg',
-      glossy:'glossy-blocks.jpg',machines:'kids-machines-vision.jpg'
+      glossy:'glossy-blocks.jpg',machines:'kids-assemble-exploring.png'
     };
     const file=covers[id];
-    return file?'<image href="./game-book-art/v210/'+file+'" x="0" y="0" width="220" height="180" preserveAspectRatio="xMidYMid meet"/>':'';
+    return file?'<image href="./game-book-art/'+(id==='machines'?'v217/':'v210/')+file+'" x="0" y="0" width="220" height="180" preserveAspectRatio="xMidYMid meet"/>':'';
   }
   $('activity-grid').innerHTML=Object.entries(activities).map(([id,a])=>`<button class="activity-card" type="button" data-activity="${id}" aria-label="${a.title}: ${a.caption}"><span class="card-arrow" aria-hidden="true">↗</span><svg class="card-art" viewBox="0 0 220 180" role="img" aria-label="${a.title}"><title>${a.title}</title>${preview(id)}</svg><small>${a.caption}</small></button>`).join('');
   const cardGrid=$('activity-grid');
@@ -411,7 +411,7 @@
     chooserPage=page===1?1:0;
     for(const card of cardGrid.querySelectorAll('[data-activity]'))card.hidden=(['glossy','machines'].includes(card.dataset.activity))!==(chooserPage===1);
     cardGrid.classList.toggle('extra-games',chooserPage===1);
-    cardGrid.setAttribute('aria-label',chooserPage?'More games: Glossy Blocks and Kids Machines Vision':'Choose from six games');
+    cardGrid.setAttribute('aria-label',chooserPage?'More games: Glossy Blocks and Kids Assemble Exploring':'Choose from six games');
     $('more-games').hidden=chooserPage===1;$('more-games').disabled=false;$('more-games').title='Open more games';$('more-games-label').textContent='More games';
     $('first-games').hidden=chooserPage===0;$('first-games').disabled=false;$('first-games').title='Back to first games';
     $('card-page').textContent=chooserPage?'More games':'First six games';
