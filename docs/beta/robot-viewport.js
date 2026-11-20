@@ -15,3 +15,4 @@
  function pan(v,dx,dy){const s=scale(v);v.centerX-=dx/s;v.centerY-=dy/s;v.manual=true;return v;}
  return {create,fit,reset,resize,zoomAt,pan,rect,scale};
 });
+

@@ -46,13 +46,13 @@
   const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function mount({scene,hint,feedback,complete,onReset}){
     const room=document.createElement('section');room.id='robot-machines-room';room.hidden=true;
-    room.setAttribute('aria-label','Robot cutout assembly');
-    room.innerHTML=`<div id="robot-age-note" hidden>Robot cutouts are ready for ages 4 and 5. Choose 4 or 5 above to build.</div>
+    room.setAttribute('aria-label','Machine assembly');
+    room.innerHTML=`<div id="robot-age-note" hidden>Choose age 2 for the simple car. Robot parts are ready at ages 4 and 5.</div>
       <div class="robot-workspace">
         <section class="robot-stores" aria-label="Stores">
-          <div class="robot-heading"><h2>Stores</h2><label class="robot-category-label"><span class="robot-sr">Machine collection</span><select id="robot-category" aria-label="Machine collection"><option value="robots">Robots</option><option disabled>Cars — pictures pending</option><option disabled>Ships — pictures pending</option><option disabled>Planes — pictures pending</option><option disabled>Rockets — pictures pending</option></select></label></div>
-          <label class="robot-variant-label"><span class="robot-sr">Robot variant</span><select id="robot-variant" aria-label="Robot variant">${Object.values(catalogue.poses).map(p=>`<option value="${p.id}">${p.label}</option>`).join('')}</select></label>
-          <div id="robot-parts" aria-label="Loose robot cutouts"></div>
+          <div class="robot-heading"><h2>Stores</h2><label class="robot-category-label"><span class="robot-sr">Machine collection</span><select id="robot-category" aria-label="Machine collection"><option value="robots">Robots</option><option value="cars">Cars</option><option disabled>Ships — later</option><option disabled>Planes — later</option><option disabled>Rockets — later</option></select></label></div>
+          <label class="robot-variant-label"><span class="robot-sr">Machine model</span><select id="robot-variant" aria-label="Machine model">${Object.values(catalogue.poses).map(p=>`<option value="${p.id}">${p.label}</option>`).join('')}</select></label>
+          <div id="robot-parts" aria-label="Loose machine parts"></div>
           <nav class="robot-pages" aria-label="Stores pages"><button id="robot-previous-page" type="button" class="soft-button">Previous</button><output id="robot-page-label">1 / 2</output><button id="robot-next-page" type="button" class="soft-button">Next</button></nav>
         </section>
         <section class="robot-assemble" aria-label="Assemble">
@@ -63,17 +63,17 @@
             <button hidden id="robot-part-original" class="soft-button" type="button">Original</button>
           </div>
           <div class="robot-selection-row robot-sr"><output id="robot-selected-label" aria-live="polite">Canvas · zoom</output><output id="robot-progress" aria-live="polite">0 / 16 fitted</output></div>
-          <div class="robot-board-wrap"><svg id="robot-board" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 848 1264" preserveAspectRatio="xMidYMid meet" role="group" tabindex="0" aria-label="Robot canvas. Tap a part to resize it; drag empty space to pan. Arrow keys pan when no part is selected."></svg><img id="robot-reference" alt="Completed standing robot reference" hidden></div>
+          <div class="robot-board-wrap"><svg id="robot-board" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 848 1264" preserveAspectRatio="xMidYMid meet" role="group" tabindex="0" aria-label="Assembly canvas. Tap or drag a part into place; drag empty space to pan."></svg><img id="robot-reference" alt="Completed machine reference" hidden></div>
         </section>
       </div>`;
     scene.after(room);
     const $=name=>room.querySelector('#robot-'+name),svg=$('board'),app=scene.closest('#app');
     let state=create(),active=false,selected=null,page=0,pointer=null,ghost=null,look=false,finished=false,demoTimer=null,demoActive=false,demoParts=[],keyboard=false,cursor={x:424,y:632},canvasFrame=0,view=null,armed=false,pendingLayout=false,grid=false,pendingScale=null;
     const touches=new Map(),masks=new Map();let demoSavedView=null;
-    const pose=()=>poseOf(state),ready=()=>active&&state.age>=4&&state.age<=5;
+    const pose=()=>poseOf(state),ready=()=>active&&((state.age===2&&pose().category==='cars')||(state.age>=4&&state.age<=5&&pose().category!=='cars'));
     const shelfOrder=['head','chest','waist','hip','upper_arm_L','upper_arm_R','forearm_L','forearm_R','hand_L','hand_R','thigh_L','thigh_R','shin_L','shin_R','foot_L','foot_R'];
     const pageSize=()=>window.matchMedia('(max-height:650px) and (max-width:360px) and (orientation:portrait)').matches?3:6;
-    const pageCount=()=>Math.ceil(pose().parts.length/pageSize());
+    const pageCount=()=>Math.max(1,Math.ceil(pose().parts.length/pageSize()));
     const selectedPart=()=>selected&&state.placed[selected]&&!look&&!finished&&!demoActive?state.placed[selected]:null;
     function syncButtons(){
       const lifting=pointer?.kind==='piece'&&pointer.moved&&state.placed[pointer.part.id]?.fitted?1:0;
@@ -95,7 +95,7 @@
     }
     function renderShelf(){
       page=Math.min(page,pageCount()-1);room.dataset.pageSize=pageSize();
-      const ordered=shelfOrder.map(id=>pose().parts.find(part=>part.id===id));
+      const ordered=pose().category==='cars'?pose().parts:shelfOrder.map(id=>pose().parts.find(part=>part.id===id)).filter(Boolean);
       const parts=ready()?ordered.slice(page*pageSize(),(page+1)*pageSize()):[];
       $('parts').innerHTML=parts.map(part=>`<button type="button" data-robot-part="${part.id}" data-used="${!!state.placed[part.id]}" aria-label="${esc(part.name)}" aria-pressed="${selected===part.id}" ${finished||demoActive?'disabled':''}><img src="${part.asset}" alt="" draggable="false"><span>${esc(part.name)}</span></button>`).join('');
       $('page-label').textContent=`${page+1} / ${pageCount()}`;$('previous-page').disabled=page===0;$('next-page').disabled=page===pageCount()-1;
@@ -104,7 +104,7 @@
     /** Stores and the reference share the same native scale at canvas 100%. */
     function sizeShelfParts(){
       if(!view)return;const m=svg.getScreenCTM(),base=m?Math.hypot(m.a,m.b)/(view.zoom||1):0;if(!(base>0))return;
-      for(const image of $('parts').querySelectorAll('img')){const part=pose().parts.find(p=>p.id===image.closest('[data-robot-part]').dataset.robotPart);image.style.width=`${part.width*base}px`;image.style.height=`${part.height*base}px`;}
+      for(const image of $('parts').querySelectorAll('img')){const part=pose().parts.find(p=>p.id===image.closest('[data-robot-part]').dataset.robotPart),storeScale=part.storeScale||1;image.style.width=`${part.width*base*storeScale}px`;image.style.height=`${part.height*base*storeScale}px`;}
     }
     const pieceImage=(part,placed,extra='')=>{const s=shapeOf(placed),cx=placed.x+part.width/2,cy=placed.y+part.height/2;return `<image href="${part.asset}" x="${placed.x}" y="${placed.y}" width="${part.width}" height="${part.height}" transform="translate(${cx} ${cy}) rotate(${s.angle}) scale(${s.baseScale*s.widthScale*(s.flipX?-1:1)} ${s.baseScale*s.heightScale}) translate(${-cx} ${-cy})" preserveAspectRatio="xMidYMid meet" ${extra}/>`;};
     function renderSelection(){svg.querySelector('[data-robot-selection]')?.remove();const at=selectedPart();if(!at||!view)return;const part=pose().parts.find(p=>p.id===selected),r=partBounds(part,at),s=viewport.scale(view),pad=4/s;svg.insertAdjacentHTML('beforeend',`<rect data-robot-selection="${part.id}" class="robot-selection-outline" x="${r.x-pad}" y="${r.y-pad}" width="${r.width+pad*2}" height="${r.height+pad*2}" rx="${3/s}" fill="none" stroke="#775400" stroke-width="${2/s}" stroke-dasharray="${5/s} ${4/s}" pointer-events="none" aria-hidden="true"/>`);}
@@ -162,10 +162,10 @@
     function placeSelected(p,{snap=true}={}){
       if(!selected||!p||![p.x,p.y].every(Number.isFinite)||!ready()||look||finished||demoActive)return;
       const wasFitted=state.placed[selected]?.fitted,part=pose().parts.find(p=>p.id===selected),initialScale=state.placed[selected]?undefined:prepareNativeScale();
-      const fitted=drop(state,selected,p.x,p.y,{snap,free:true,baseScale:initialScale,radius:(state.age===4?112:72)/(view?.zoom||1)});armed=false;keyboard=false;pendingScale=null;
+      const fitted=drop(state,selected,p.x,p.y,{snap,free:true,baseScale:initialScale,radius:(state.age===2?150:state.age===4?112:72)/(view?.zoom||1)});armed=false;keyboard=false;pendingScale=null;
       if(fitted&&!wasFitted)feedback();
       render();
-      hint(isComplete(state)?'All 16 joined! Tap Done.':fitted?`${part.name} joined!`:`${part.name} ready.`);
+      hint(isComplete(state)?`All ${pose().parts.length} parts joined! Tap Done.`:fitted?`${part.name} joined!`:`${part.name} ready.`);
     }
     function makeGhost(part,x,y){
       ghost=document.createElement('img');ghost.className='robot-drag-ghost';ghost.src=part.asset;ghost.alt='';ghost.draggable=false;
@@ -207,7 +207,7 @@
       if(pointer)return;
       const p=point(event.clientX,event.clientY),pending=armed&&selected&&!state.placed[selected],picked=source?pose().parts.find(p=>p.id===source.dataset.robotPart):!look&&!finished?(pending?pose().parts.find(p=>p.id===selected):pickPart(p,event.pointerType)):null;
       const explicit=!!source||!!pending;
-      if(picked){choose(picked.id,{arm:!!source||armed});const previous=state.placed[picked.id],startDistance=previous?Math.hypot(previous.x-picked.x,previous.y-picked.y):Infinity,fromJoint=!!previous&&!explicit&&startDistance<=(state.age===4?112:72)/view.zoom;pointer={kind:'piece',part:picked,source:!!source,placeOnTap:!source&&explicit,fromJoint,startDistance,leftZone:!fromJoint,offsetX:previous&&!explicit?p.x-previous.x-picked.width/2:0,offsetY:previous&&!explicit?p.y-previous.y-picked.height/2:0};}
+      if(picked){choose(picked.id,{arm:!!source||armed});const previous=state.placed[picked.id],startDistance=previous?Math.hypot(previous.x-picked.x,previous.y-picked.y):Infinity,fromJoint=!!previous&&!explicit&&startDistance<=(state.age===2?150:state.age===4?112:72)/view.zoom;pointer={kind:'piece',part:picked,source:!!source,placeOnTap:!source&&explicit,fromJoint,startDistance,leftZone:!fromJoint,offsetX:previous&&!explicit?p.x-previous.x-picked.width/2:0,offsetY:previous&&!explicit?p.y-previous.y-picked.height/2:0};}
       else{deselect(true);pointer={kind:'pan',offsetX:0,offsetY:0};}
       Object.assign(pointer,{id:event.pointerId,owner,startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastY:event.clientY,moved:false,type:event.pointerType});
       owner.setPointerCapture(event.pointerId);syncButtons();event.preventDefault();
@@ -259,7 +259,7 @@
       else if(event.key==='Enter'||event.key===' '){event.preventDefault();placeSelected(cursor,{snap:!state.placed[selected]?.fitted});}
     });
     for(const [id,delta] of [['previous-page',-1],['next-page',1]])$(id).addEventListener('click',()=>{stopGesture();page=Math.max(0,Math.min(pageCount()-1,page+delta));renderShelf();});
-    $('look').addEventListener('click',()=>{stopGesture();setLook(!look);hint(look?'Look at the robot. Tap Build to return.':'Choose a part and fit it into Assemble.');});
+    $('look').addEventListener('click',()=>{stopGesture();setLook(!look);hint(look?'Look at the completed '+pose().label.toLowerCase()+'. Tap Build to return.':'Choose a part and fit it into Assemble.');});
     $('part-axis').addEventListener('change',syncButtons);
     function editPart(patch){if(!state.placed[selected]||finished||look||demoActive)return;stopGesture();if(transform(state,selected,patch)){render();renderView();}}
     $('rotate-left').addEventListener('click',()=>editPart({angle:shapeOf(state.placed[selected]).angle-45}));$('rotate-right').addEventListener('click',()=>editPart({angle:shapeOf(state.placed[selected]).angle+45}));$('part-flip').addEventListener('click',()=>editPart({flipX:!shapeOf(state.placed[selected]).flipX}));$('part-original').addEventListener('click',()=>editPart({widthScale:1,heightScale:1,angle:0,flipX:false}));
@@ -268,10 +268,18 @@
       cancel();onReset();state=create($('variant').value,state.age);view=null;armed=false;pendingScale=null;selected=null;page=0;finished=false;keyboard=false;cursor={x:424,y:632};$('part-axis').value='both';setLook(false);render();fitCanvas();pose().parts.forEach(warmMask);
       $('reference').src=pose().reference;$('reference').alt=`Completed ${pose().label.toLowerCase()} reference`;
     }
-    $('variant').addEventListener('change',()=>{reset();hint('Choose a loose part and fit it into the robot.');});
-    $('clear').addEventListener('click',()=>{reset();hint('Fresh assembly. Choose a robot part.');});
+    $('variant').addEventListener('change',()=>{reset();hint('Choose a loose part and fit it into the '+pose().label.toLowerCase()+'.');});
+    function configureAge(age){
+      const collection=Number(age)===2?'cars':'robots';$('category').value=collection;
+      for(const option of $('category').options)if(option.value)option.disabled=option.value!==collection;
+      const choices=Object.values(catalogue.poses).filter(item=>(item.category||'robots')===collection);
+      $('variant').innerHTML=choices.map(item=>'<option value="'+esc(item.id)+'">'+esc(item.label)+'</option>').join('');
+      $('variant').value=collection==='cars'?'city-car':(choices.some(item=>item.id==='standing')?'standing':choices[0]?.id||'');
+    }
+    $('category').addEventListener('change',()=>{configureAge(state.age);state=create($('variant').value,state.age);reset();hint('Choose a loose part for the '+pose().label.toLowerCase()+'.');});
+    $('clear').addEventListener('click',()=>{reset();hint('Fresh assembly. Choose a '+pose().label.toLowerCase()+' part.');});
     $('remove').addEventListener('click',()=>{if(selected&&!finished){remove(state,selected);deselect();render();hint('Part returned to Stores.');}});
-    $('done').addEventListener('click',()=>{if(isComplete(state)&&!finished){finished=true;deselect();syncButtons();complete('You built the whole robot!');}});
+    $('done').addEventListener('click',()=>{if(isComplete(state)&&!finished){finished=true;deselect();syncButtons();complete('You assembled the '+pose().label.toLowerCase()+'!');}});
     $('snapshot').addEventListener('click',async()=>{
       if(!Object.keys(state.placed).length)return;
       const snapshotPose=pose(),snapshotBounds=worldBounds(state),snapshotParts=Object.fromEntries(Object.entries(state.placed).map(([id,at])=>[id,{...at}]));$('snapshot').disabled=true;hint('Preparing your picture…');
@@ -281,14 +289,14 @@
         const images=await Promise.all(snapshotPose.parts.filter(p=>snapshotParts[p.id]).map(async part=>{const image=new Image();image.src=part.asset;await image.decode();return{part,image};}));
         for(const {part,image} of images){const at=snapshotParts[part.id],s=shapeOf(at);ctx.save();ctx.translate(at.x+part.width/2-snapshotBounds.x,at.y+part.height/2-snapshotBounds.y);ctx.rotate(s.angle*Math.PI/180);ctx.scale(s.baseScale*s.widthScale*(s.flipX?-1:1),s.baseScale*s.heightScale);ctx.drawImage(image,-part.width/2,-part.height/2,part.width,part.height);ctx.restore();}
         const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw Error('Picture unavailable');
-        url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=`SaNa-robot-${snapshotPose.id}-v2.05.png`;link.click();hint('Your robot picture is ready.');
+        url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=`SaNa-${snapshotPose.id}-v2.16.png`;link.click();hint(snapshotPose.label+' picture is ready.');
       }catch{hint('Picture could not be saved. Please try again.');}
       finally{if(url)setTimeout(()=>URL.revokeObjectURL(url),1000);if(active)syncButtons();}
     });
     function demo(){
-      if(!ready()||finished)return;if(demoActive){cancel();hint('Your turn. Your robot pieces are still here.');return;}
+      if(!ready()||finished)return;if(demoActive){cancel();hint('Your turn. Your machine pieces are still here.');return;}
       stopGesture();setLook(false);demoSavedView={...view,basis:{...view.basis}};viewport.reset(view);renderView();demoActive=true;demoParts=[];document.getElementById('show-me').setAttribute('aria-pressed','true');
-      const sample=['chest','head','upper_arm_L'].map(id=>pose().parts.find(p=>p.id===id));let step=0;
+      const sample=(pose().category==='cars'?pose().parts.slice(0,3):['chest','head','upper_arm_L'].map(id=>pose().parts.find(p=>p.id===id))).filter(Boolean);let step=0;
       const next=()=>{
         if(!active||!demoActive)return;
         if(step===sample.length){cancel();hint('Your turn. Drag a part close to its place to fit it.');return;}
@@ -297,10 +305,10 @@
       };next();
     }
     function start(age){
-      active=true;app?.classList.add('robot-active');state=create($('variant').value,age);room.hidden=false;
+      active=true;app?.classList.add('robot-active');configureAge(age);state=create($('variant').value,age);room.hidden=false;
       $('age-note').hidden=ready();room.querySelector('.robot-workspace').hidden=!ready();reset();
-      if(ready())hint('Choose a robot part. Drag or tap to place it; nearby parts fit together.');
-      else hint('Choose age 4 or 5 above for the robot cutouts.');
+      if(ready())hint('Choose a '+pose().label.toLowerCase()+' part. Drag or tap to place it; move it near its matching place to fit.');
+      else hint('Choose age 2 for the simple car or age 4 or 5 for robot parts.');
     }
     function leave(){cancel();active=false;room.hidden=true;app?.classList.remove('robot-active');}
     window.addEventListener('blur',cancel);window.addEventListener('pagehide',cancel);window.addEventListener('orientationchange',cancelPointer);
@@ -311,4 +319,5 @@
   }
   return {catalogue,core,mount};
 });
+
 
