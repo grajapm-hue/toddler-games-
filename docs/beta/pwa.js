@@ -7,7 +7,10 @@
   const app=document.getElementById('app');
   const release=document.querySelector('meta[name="sana-release"]')?.content;
   // Report the page currently running, even while a newer worker downloads.
+  const versionNumber=value=>Number(value?.match(/-v(\d+)(?:-|$)/)?.[1]||0);
   const releaseNumber=release?.match(/-v(\d+)(?:-|$)/)?.[1];
+  const reloadGuardKey='sana-update-reload-target';
+  try{if(sessionStorage.getItem(reloadGuardKey)===release)sessionStorage.removeItem(reloadGuardKey);}catch{/* Optional loop guard. */}
   if(releaseNumber){
     const number=Number(releaseNumber),version=`v${Math.floor(number/100)}.${String(number%100).padStart(2,'0')}`;
     document.querySelectorAll('[data-release-version]').forEach(label=>{
@@ -78,12 +81,24 @@
   }
   const canShowUpdate=()=>!app||!app.classList.contains('immersive');
   let pendingUpdate=null;
-  function applyUpdate(version){try{sessionStorage.setItem('sana-update-complete',version);}catch{/* Applying also works without optional session storage. */}location.reload();}
+  function applyUpdate(version){
+    const pageVersion=versionNumber(release),workerVersion=versionNumber(version);
+    if(!version||(pageVersion&&workerVersion&&workerVersion<pageVersion)){setOfflineStatus('Offline update is still preparing');return false;}
+    try{
+      if(version!==release&&sessionStorage.getItem(reloadGuardKey)===version){setOfflineStatus('Update is still preparing. Keep using this page and try again soon.');return false;}
+      if(version!==release)sessionStorage.setItem(reloadGuardKey,version);
+      sessionStorage.setItem('sana-update-complete',version);
+    }catch{/* Version ordering still prevents stale-worker reload loops. */}
+    location.reload();return true;
+  }
   if(app)new MutationObserver(()=>{if(pendingUpdate&&app.dataset.view==='home'&&canShowUpdate()){const version=pendingUpdate;pendingUpdate=null;applyUpdate(version);}}).observe(app,{attributes:true,attributeFilter:['data-view','class']});
   const watchedWorkers=new WeakSet();
   let automaticCheckRunning=false;
   function applyDetectedVersion(version){
     if(!version||version===release)return;
+    const pageVersion=versionNumber(release),workerVersion=versionNumber(version);
+    // Never replace a newer online page with an older cached worker. Keep the page usable while the new worker installs.
+    if(!pageVersion||!workerVersion||workerVersion<=pageVersion){setOfflineStatus('Offline update is still preparing');return;}
     if(!app||(app.dataset.view==='home'&&canShowUpdate())){applyUpdate(version);return;}
     // Let a child finish the current game, then refresh as soon as the app returns home.
     pendingUpdate=version;
@@ -163,6 +178,8 @@
       const ready=await workerStatus(worker);
       if(!ready?.ready||!ready.version||!release)throw new Error('Update files are not ready');
       if(ready.version!==release){
+        const pageVersion=versionNumber(release),workerVersion=versionNumber(ready.version);
+        if(!pageVersion||!workerVersion||workerVersion<=pageVersion){updateDialog('Update still preparing','<p>This page is newer than its saved offline copy. Keep using this page and try Update again later.</p>');return;}
         if(!canShowUpdate())return;
         if(app&&app.dataset.view!=='home'){
           if(requestedInGame){pendingUpdate=ready.version;updateDialog('Update ready','<p>The latest SaNa app has downloaded. Keep playing, then choose <strong>Games</strong> to apply it.</p>');}

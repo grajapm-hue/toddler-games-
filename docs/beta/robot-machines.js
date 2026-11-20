@@ -289,7 +289,7 @@
         const images=await Promise.all(snapshotPose.parts.filter(p=>snapshotParts[p.id]).map(async part=>{const image=new Image();image.src=part.asset;await image.decode();return{part,image};}));
         for(const {part,image} of images){const at=snapshotParts[part.id],s=shapeOf(at);ctx.save();ctx.translate(at.x+part.width/2-snapshotBounds.x,at.y+part.height/2-snapshotBounds.y);ctx.rotate(s.angle*Math.PI/180);ctx.scale(s.baseScale*s.widthScale*(s.flipX?-1:1),s.baseScale*s.heightScale);ctx.drawImage(image,-part.width/2,-part.height/2,part.width,part.height);ctx.restore();}
         const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw Error('Picture unavailable');
-        url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=`SaNa-${snapshotPose.id}-v2.16.png`;link.click();hint(snapshotPose.label+' picture is ready.');
+        url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=`SaNa-${snapshotPose.id}-v2.17.png`;link.click();hint(snapshotPose.label+' picture is ready.');
       }catch{hint('Picture could not be saved. Please try again.');}
       finally{if(url)setTimeout(()=>URL.revokeObjectURL(url),1000);if(active)syncButtons();}
     });
