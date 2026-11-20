@@ -99,4 +99,9 @@
  #app:not(.portrait) .activity-card .card-art{width:100%;height:82%;max-height:none;max-width:100%;flex:0 1 82%}
  #app:not(.portrait) .activity-card small{width:auto;max-width:100%;font-size:12px;line-height:1.12;margin:2px 0 0;flex:0 0 auto}
 }
+/* v2.13: give all game-book covers the same generous card area in every orientation. */
+#app .activity-card{flex-direction:column;flex-wrap:nowrap;align-content:center;justify-content:center;gap:4px;padding:5px}
+#app .activity-card .card-art{width:100%;height:82%;max-height:none;max-width:100%;flex:0 1 82%;min-height:0}
+#app .activity-card small{width:auto;max-width:100%;font-size:clamp(11px,1.4vw,16px);line-height:1.15;margin:2px 0 0;flex:0 0 auto}
+#app .activity-grid.extra-games{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr)}
 
