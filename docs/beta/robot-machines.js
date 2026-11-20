@@ -8,21 +8,49 @@
   'use strict';
   const poseOf=state=>catalogue.poses[state.poseId];
   const create=(poseId='standing',age=4)=>{const pose=catalogue.poses[poseId]||catalogue.poses.standing;return{poseId:pose.id,age:Number(age),placed:{},bounds:{x:0,y:0,width:pose.width,height:pose.height}};};
-  const fittedCount=state=>Object.values(state.placed).filter(part=>part.fitted).length;
+  const fittedCount=state=>poseOf(state).parts.filter(part=>state.placed[part.id]?.fitted).length;
   const isComplete=state=>fittedCount(state)===poseOf(state).parts.length;
   const shapeOf=at=>({baseScale:at?.baseScale??1,widthScale:at?.widthScale??1,heightScale:at?.heightScale??1,angle:at?.angle??0,flipX:at?.flipX??false});
   function landingScale(part,width,height,canvasScale){return [width,height,canvasScale].every(n=>Number.isFinite(n)&&n>0) ? Math.min(width/part.width,height/part.height)/canvasScale : 1;}
   function partBounds(part,at){const s=shapeOf(at),a=s.angle*Math.PI/180,c=Math.abs(Math.cos(a)),n=Math.abs(Math.sin(a)),w=part.width*s.widthScale*s.baseScale,h=part.height*s.heightScale*s.baseScale,width=w*c+h*n,height=w*n+h*c;return{x:at.x+part.width/2-width/2,y:at.y+part.height/2-height/2,width,height};}
   function localPoint(part,at,p){const s=shapeOf(at),a=s.angle*Math.PI/180,c=Math.cos(a),n=Math.sin(a),dx=p.x-at.x-part.width/2,dy=p.y-at.y-part.height/2;return{x:(dx*c+dy*n)/(s.widthScale*s.baseScale*(s.flipX?-1:1))+part.width/2,y:(-dx*n+dy*c)/(s.heightScale*s.baseScale)+part.height/2};}
-  function transform(state,id,patch){const part=poseOf(state).parts.find(p=>p.id===id),at=state.placed[id];if(!part||!at)return false;const s={...shapeOf(at),...patch,baseScale:at.baseScale??1};if(![s.widthScale,s.heightScale,s.angle].every(Number.isFinite))return false;s.widthScale=Math.max(.25,Math.min(4,s.widthScale));s.heightScale=Math.max(.25,Math.min(4,s.heightScale));s.angle=((s.angle%360)+360)%360;s.flipX=!!s.flipX;Object.assign(at,s);at.fitted=Math.abs(at.x-part.x)<.000001&&Math.abs(at.y-part.y)<.000001;state.bounds=worldBounds(state);return true;}
+  function transform(state,id,patch){
+    const part=poseOf(state).parts.find(p=>p.id===id),at=state.placed[id];
+    if(!part||!at)return false;
+    const shape={...shapeOf(at),...patch,baseScale:at.baseScale??1};
+    if(![shape.widthScale,shape.heightScale,shape.angle].every(Number.isFinite))return false;
+    shape.widthScale=Math.max(.25,Math.min(4,shape.widthScale));
+    shape.heightScale=Math.max(.25,Math.min(4,shape.heightScale));
+    shape.angle=((shape.angle%360)+360)%360;
+    shape.flipX=!!shape.flipX;
+    Object.assign(at,shape);
+    const near=(a,b)=>Math.abs(a-b)<.000001;
+    at.fitted=near(at.x,part.x)&&near(at.y,part.y)
+      &&near(shape.widthScale*shape.baseScale,1)&&near(shape.heightScale*shape.baseScale,1)
+      &&shape.angle===0&&!shape.flipX;
+    state.bounds=worldBounds(state);
+    return true;
+  }
   /** Drop coordinates use the common source canvas, independent of screen size. */
   function drop(state,id,cx,cy,{snap=true,radius=state.age===4?112:72,free=false,baseScale}={}){
     const pose=poseOf(state),part=pose.parts.find(piece=>piece.id===id),bounds=state.bounds;
     if(!part||![cx,cy].every(Number.isFinite))return false;
     const distance=Math.hypot(cx-part.x-part.width/2,cy-part.y-part.height/2);
     const fitted=snap&&distance<=radius;
-    const previous=state.placed[id],shape=previous&&['baseScale','widthScale','heightScale','angle','flipX'].some(k=>k in previous)?shapeOf(previous):Number.isFinite(baseScale)&&baseScale>0?{baseScale}:{};
-    state.placed[id]={x:fitted?part.x:free?cx-part.width/2:Math.max(bounds.x,Math.min(bounds.x+bounds.width-part.width,cx-part.width/2)),y:fitted?part.y:free?cy-part.height/2:Math.max(bounds.y,Math.min(bounds.y+bounds.height-part.height,cy-part.height/2)),fitted,...shape};
+    if(fitted){
+      // Each cutout is drawn at its original size and angle in the assembled image.
+      state.placed[id]={x:part.x,y:part.y,fitted:true};
+    }else{
+      const previous=state.placed[id];
+      const shape=previous?shapeOf(previous):Number.isFinite(baseScale)&&baseScale>0?{baseScale}:{};
+      const x=cx-part.width/2,y=cy-part.height/2;
+      state.placed[id]={
+        x:free?x:Math.max(bounds.x,Math.min(bounds.x+bounds.width-part.width,x)),
+        y:free?y:Math.max(bounds.y,Math.min(bounds.y+bounds.height-part.height,y)),
+        fitted:false,
+        ...shape
+      };
+    }
     if(free)state.bounds=worldBounds(state);
     return fitted;
   }
@@ -69,21 +97,30 @@
     scene.after(room);
     const $=name=>room.querySelector('#robot-'+name),svg=$('board'),app=scene.closest('#app');
     let state=create(),active=false,selected=null,page=0,pointer=null,ghost=null,look=false,finished=false,demoTimer=null,demoActive=false,demoParts=[],keyboard=false,cursor={x:424,y:632},canvasFrame=0,view=null,armed=false,pendingLayout=false,grid=false,pendingScale=null;
-    const touches=new Map(),masks=new Map();let demoSavedView=null;
-    const pose=()=>poseOf(state),ready=()=>active&&state.age===5&&pose().category==='robots';
+    const touches=new Map(),masks=new Map();
+    let demoSavedView=null,savingState=null;
+    // Legacy built-in robot poses predate the category field, so treat an untagged pose as a robot.
+    // Otherwise age 5 incorrectly hides Stores and Assemble.
+    const pose=()=>poseOf(state),ready=()=>active&&state.age===5&&(pose().category||'robots')==='robots';
     const shelfOrder=['head','chest','waist','hip','upper_arm_L','upper_arm_R','forearm_L','forearm_R','hand_L','hand_R','thigh_L','thigh_R','shin_L','shin_R','foot_L','foot_R'];
     const pageCapacity=()=>window.matchMedia('(max-height:650px) and (max-width:360px) and (orientation:portrait)').matches?3:6;
     const pageCount=()=>ready()?Math.max(1,Math.ceil(pose().parts.length/pageCapacity())):1;
     const pageRange=()=>{const total=ready()?pose().parts.length:0,pages=pageCount(),base=Math.floor(total/pages),extra=total%pages,start=page*base+Math.min(page,extra);return{start,end:start+base+(page<extra?1:0),size:base+(page<extra?1:0)};};
     const selectedPart=()=>selected&&state.placed[selected]&&!look&&!finished&&!demoActive?state.placed[selected]:null;
+    const canFinish=()=>ready()&&!finished&&!look&&!demoActive&&!pointer&&isComplete(state);
+    const canSave=()=>ready()&&finished&&!pointer&&savingState!==state;
+    const fitProgress=()=>`${fittedCount(state)}/${pose().parts.length} fitted.`;
+    const buildHint=()=>finished?'Assembly locked. Tap Save to keep the picture.':
+      isComplete(state)?'All parts fitted. Tap Done to lock the assembly.':
+      `Fit each part in its matching place. ${fitProgress()}`;
     function syncButtons(){
       const lifting=pointer?.kind==='piece'&&pointer.moved&&state.placed[pointer.part.id]?.fitted?1:0;
       $('progress').textContent=`${fittedCount(state)-lifting} / ${pose().parts.length} fitted`;
-      $('done').disabled=!isComplete(state)||finished||demoActive||!!pointer;
+      $('done').disabled=!canFinish();
       $('remove').disabled=!state.placed[selected]||finished||look||demoActive||!!pointer;
-      $('clear').disabled=!Object.keys(state.placed).length||demoActive;
-      $('snapshot').disabled=!Object.keys(state.placed).length||demoActive||!!pointer;
-      $('variant').disabled=demoActive;$('look').disabled=demoActive;
+      $('clear').disabled=finished||!Object.keys(state.placed).length||demoActive;
+      $('snapshot').disabled=!canSave();
+      $('variant').disabled=!ready()||demoActive;$('look').disabled=!ready()||finished||demoActive;
       const at=selectedPart(),editable=!!at&&!pointer,s=shapeOf(at),axis=$('part-axis').value,scales=axis==='both'?[s.widthScale,s.heightScale]:[axis==='width'?s.widthScale:s.heightScale];
       $('zoom-level').textContent=at?(axis==='both'&&s.widthScale!==s.heightScale?`${Math.round(s.widthScale*100)}×${Math.round(s.heightScale*100)}%`:`${Math.round(scales[0]*100)}%`):`${Math.round((view?.zoom||1)*100)}%`;
       $('zoom-level').setAttribute('aria-label',at?'Reset selected dimension to 100 percent':'Reset canvas to reference 100 percent');
@@ -98,7 +135,7 @@
       page=Math.min(page,pageCount()-1);const range=pageRange();room.dataset.pageSize=range.size;
       const ordered=pose().category==='cars'?pose().parts:shelfOrder.map(id=>pose().parts.find(part=>part.id===id)).filter(Boolean);
       const parts=ready()?ordered.slice(range.start,range.end):[];
-      $('parts').innerHTML=parts.map(part=>`<button type="button" data-robot-part="${part.id}" data-used="${!!state.placed[part.id]}" aria-label="${esc(part.name)}" aria-pressed="${selected===part.id}" ${finished||demoActive?'disabled':''}><img src="${part.asset}" alt="" draggable="false"><span>${esc(part.name)}</span></button>`).join('');
+      $('parts').innerHTML=parts.map(part=>`<button type="button" data-robot-part="${part.id}" data-used="${!!state.placed[part.id]?.fitted}" aria-label="${esc(part.name)}" aria-pressed="${selected===part.id}" ${finished||demoActive?'disabled':''}><img src="${part.asset}" alt="" draggable="false"><span>${esc(part.name)}</span></button>`).join('');
       $('page-label').textContent=`${page+1} / ${pageCount()}`;$('previous-page').disabled=page===0;$('next-page').disabled=page===pageCount()-1;
       sizeShelfParts();
     }
@@ -157,7 +194,15 @@
       if(at){pendingScale=null;}else prepareNativeScale(part);
       renderSelection();syncButtons();hint(at?`${part.name} selected.`:`Place ${part.name} in Assemble.`);
     }
-    function deselect(announce=false){const changed=!!selected||armed;selected=null;armed=false;keyboard=false;pendingScale=null;svg.querySelector('[data-robot-keyboard-preview]')?.remove();$('part-axis').value='both';for(const button of $('parts').querySelectorAll('[data-robot-part]'))button.setAttribute('aria-pressed','false');for(const node of svg.querySelectorAll('.robot-selected'))node.classList.remove('robot-selected');renderSelection();syncButtons();if(announce&&(changed||app?.querySelector('#hint')?.textContent!=='Canvas: drag or zoom.'))hint('Canvas: drag or zoom.');}
+    function deselect(announce=false){
+      selected=null;armed=false;keyboard=false;pendingScale=null;
+      svg.querySelector('[data-robot-keyboard-preview]')?.remove();
+      $('part-axis').value='both';
+      for(const button of $('parts').querySelectorAll('[data-robot-part]'))button.setAttribute('aria-pressed','false');
+      for(const node of svg.querySelectorAll('.robot-selected'))node.classList.remove('robot-selected');
+      renderSelection();syncButtons();
+      if(announce&&!finished)hint(buildHint());
+    }
     function prepareNativeScale(part){pendingScale=part?.storeScale||1;return pendingScale;}
     function point(x,y){const matrix=svg.getScreenCTM();return matrix?new DOMPoint(x,y).matrixTransform(matrix.inverse()):null;}
     function placeSelected(p,{snap=true}={}){
@@ -166,7 +211,8 @@
       const fitted=drop(state,selected,p.x,p.y,{snap,free:true,baseScale:initialScale,radius:(state.age===2?150:state.age===4?112:72)/(view?.zoom||1)});armed=false;keyboard=false;pendingScale=null;
       if(fitted&&!wasFitted)feedback();
       render();
-      hint(isComplete(state)?`All ${pose().parts.length} parts joined! Tap Done.`:fitted?`${part.name} joined!`:`${part.name} ready.`);
+      if(isComplete(state))hint(buildHint());
+      else hint(fitted?`${part.name} fitted. ${fitProgress()}`:`${part.name} is loose. Move it to its matching place. ${fitProgress()}`);
     }
     function makeGhost(part,x,y){
       ghost=document.createElement('img');ghost.className='robot-drag-ghost';ghost.src=part.asset;ghost.alt='';ghost.draggable=false;
@@ -202,7 +248,7 @@
     function down(event){
       if(!ready()||!view||demoActive||event.button>0)return;
       const source=event.target.closest('[data-robot-part]'),owner=source||svg;
-      if(source&&(look||source.disabled||pointer))return;
+      if(source&&(finished||look||source.disabled||pointer))return;
       if(event.pointerType==='touch')touches.set(event.pointerId,{x:event.clientX,y:event.clientY,owner});
       if(touches.size>=2&&[...touches.values()].every(p=>clientInside(p.x,p.y))){startPinch();event.preventDefault();return;}
       if(pointer)return;
@@ -260,9 +306,18 @@
       else if(event.key==='Enter'||event.key===' '){event.preventDefault();placeSelected(cursor,{snap:!state.placed[selected]?.fitted});}
     });
     for(const [id,delta] of [['previous-page',-1],['next-page',1]])$(id).addEventListener('click',()=>{stopGesture();page=Math.max(0,Math.min(pageCount()-1,page+delta));renderShelf();});
-    $('look').addEventListener('click',()=>{stopGesture();setLook(!look);hint(look?'Look at the completed '+pose().label.toLowerCase()+'. Tap Build to return.':'Choose a part and fit it into Assemble.');});
+    $('look').addEventListener('click',()=>{
+      if(finished)return;
+      stopGesture();
+      setLook(!look);
+      hint(look?'Look at the completed '+pose().label.toLowerCase()+'. Tap Build to return.':buildHint());
+    });
     $('part-axis').addEventListener('change',syncButtons);
-    function editPart(patch){if(!state.placed[selected]||finished||look||demoActive)return;stopGesture();if(transform(state,selected,patch)){render();renderView();}}
+    function editPart(patch){
+      if(!state.placed[selected]||finished||look||demoActive)return;
+      stopGesture();
+      if(transform(state,selected,patch)){render();renderView();hint(buildHint());}
+    }
     $('rotate-left').addEventListener('click',()=>editPart({angle:shapeOf(state.placed[selected]).angle-45}));$('rotate-right').addEventListener('click',()=>editPart({angle:shapeOf(state.placed[selected]).angle+45}));$('part-flip').addEventListener('click',()=>editPart({flipX:!shapeOf(state.placed[selected]).flipX}));$('part-original').addEventListener('click',()=>editPart({widthScale:1,heightScale:1,angle:0,flipX:false}));
     $('grid').addEventListener('click',()=>{grid=!grid;renderGrid();syncButtons();});
     function reset(){
@@ -276,24 +331,52 @@
       category.innerHTML='<option value="robots">Robots</option><option disabled>Cars — later</option><option disabled>Ships — later</option><option disabled>Planes — later</option><option disabled>Rockets — later</option>';category.value='robots';category.disabled=false;
       const choices=Object.values(catalogue.poses).filter(item=>(item.category||'robots')==='robots'&&(item.age==null||item.age===5));
       variant.innerHTML=choices.map(item=>'<option value="'+esc(item.id)+'">'+esc(item.label)+'</option>').join('');variant.disabled=!choices.length;
-      variant.value=choices.some(item=>item.id==='standing')?'standing':choices[0]?.id||'';
+      const ageTrial=choices.find(item=>item.age===5);
+      variant.value=ageTrial?.id||(choices.some(item=>item.id==='standing')?'standing':choices[0]?.id||'');
     }
     $('category').addEventListener('change',()=>{configureAge(state.age);state=create($('variant').value,state.age);reset();hint('Choose a loose part for the '+pose().label.toLowerCase()+'.');});
-    $('clear').addEventListener('click',()=>{reset();hint('Fresh assembly. Choose a '+pose().label.toLowerCase()+' part.');});
-    $('remove').addEventListener('click',()=>{if(selected&&!finished){remove(state,selected);deselect();render();hint('Part returned to Stores.');}});
-    $('done').addEventListener('click',()=>{if(isComplete(state)&&!finished){finished=true;deselect();syncButtons();complete('You assembled the '+pose().label.toLowerCase()+'!');}});
+    $('clear').addEventListener('click',()=>{
+      if(finished)return;
+      reset();hint('Fresh assembly. Choose a '+pose().label.toLowerCase()+' part.');
+    });
+    $('remove').addEventListener('click',()=>{if(selected&&!finished){remove(state,selected);deselect();render();hint(`Part returned to Stores. ${fitProgress()}`);}});
+    $('done').addEventListener('click',()=>{
+      if(!canFinish())return;
+      finished=true;
+      deselect();
+      render();
+      complete('Assembly locked. Tap Save to keep the picture.');
+    });
     $('snapshot').addEventListener('click',async()=>{
-      if(!Object.keys(state.placed).length)return;
-      const snapshotPose=pose(),snapshotBounds=worldBounds(state),snapshotParts=Object.fromEntries(Object.entries(state.placed).map(([id,at])=>[id,{...at}]));$('snapshot').disabled=true;hint('Preparing your picture…');
+      if(!canSave())return;
+      const snapshotState=state, snapshotPose=pose(), snapshotBounds=assemblyBounds(state);
+      const stillViewing=()=>active&&state===snapshotState;
+      savingState=snapshotState;
+      syncButtons();
+      hint('Preparing your picture…');
       let url;
       try{
         const canvas=document.createElement('canvas');canvas.width=Math.ceil(snapshotBounds.width);canvas.height=Math.ceil(snapshotBounds.height);const ctx=canvas.getContext('2d');
-        const images=await Promise.all(snapshotPose.parts.filter(p=>snapshotParts[p.id]).map(async part=>{const image=new Image();image.src=part.asset;await image.decode();return{part,image};}));
-        for(const {part,image} of images){const at=snapshotParts[part.id],s=shapeOf(at);ctx.save();ctx.translate(at.x+part.width/2-snapshotBounds.x,at.y+part.height/2-snapshotBounds.y);ctx.rotate(s.angle*Math.PI/180);ctx.scale(s.baseScale*s.widthScale*(s.flipX?-1:1),s.baseScale*s.heightScale);ctx.drawImage(image,-part.width/2,-part.height/2,part.width,part.height);ctx.restore();}
+        const images=await Promise.all(snapshotPose.parts.map(async part=>{const image=new Image();image.src=part.asset;await image.decode();return{part,image};}));
+        for(const {part,image} of images){
+          ctx.drawImage(image,part.x-snapshotBounds.x,part.y-snapshotBounds.y,part.width,part.height);
+        }
         const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw Error('Picture unavailable');
-        url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=`SaNa-${snapshotPose.id}-v2.17.png`;link.click();hint(snapshotPose.label+' picture is ready.');
-      }catch{hint('Picture could not be saved. Please try again.');}
-      finally{if(url)setTimeout(()=>URL.revokeObjectURL(url),1000);if(active)syncButtons();}
+        if(!stillViewing())return;
+        url=URL.createObjectURL(blob);
+        const link=document.createElement('a');
+        link.href=url;
+        link.download=`SaNa-${snapshotPose.id}-v2.19.png`;
+        document.body.append(link);
+        link.click();
+        link.remove();
+        hint('Picture sent to your device’s downloads.');
+      }catch{if(stillViewing())hint('Picture could not be saved. Please try again.');}
+      finally{
+        if(url)setTimeout(()=>URL.revokeObjectURL(url),30000);
+        if(savingState===snapshotState)savingState=null;
+        if(stillViewing())syncButtons();
+      }
     });
     function demo(){
       if(!ready()||finished)return;if(demoActive){cancel();hint('Your turn. Your machine pieces are still here.');return;}
