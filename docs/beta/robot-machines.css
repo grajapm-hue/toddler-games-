@@ -70,8 +70,10 @@
 /* v2.14: give the Assemble canvas more room on every orientation and viewport mode. */
 @media (orientation:landscape){
   .robot-workspace{grid-template-columns:minmax(0,1fr) minmax(0,3fr)}
-  .robot-stores #robot-parts{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr))}
-  .robot-stores[data-page-size="3"] #robot-parts{grid-template-rows:repeat(2,minmax(0,1fr))}
+  .robot-stores #robot-parts{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:900px) and (orientation:landscape){
+  .robot-workspace{grid-template-columns:minmax(0,3fr) minmax(0,7fr)}
 }
 #app.portrait .robot-workspace{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,34fr) minmax(0,66fr)}
 .robot-assemble{

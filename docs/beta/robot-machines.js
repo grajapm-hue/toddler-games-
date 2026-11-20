@@ -72,7 +72,7 @@
     const touches=new Map(),masks=new Map();let demoSavedView=null;
     const pose=()=>poseOf(state),ready=()=>active&&state.age>=4&&state.age<=5;
     const shelfOrder=['head','chest','waist','hip','upper_arm_L','upper_arm_R','forearm_L','forearm_R','hand_L','hand_R','thigh_L','thigh_R','shin_L','shin_R','foot_L','foot_R'];
-    const pageSize=()=>window.matchMedia('(max-height:460px) and (orientation:landscape), (max-height:650px) and (max-width:360px)').matches?3:6;
+    const pageSize=()=>window.matchMedia('(max-height:650px) and (max-width:360px) and (orientation:portrait)').matches?3:6;
     const pageCount=()=>Math.ceil(pose().parts.length/pageSize());
     const selectedPart=()=>selected&&state.placed[selected]&&!look&&!finished&&!demoActive?state.placed[selected]:null;
     function syncButtons(){
@@ -311,3 +311,4 @@
   }
   return {catalogue,core,mount};
 });
+
