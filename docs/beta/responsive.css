@@ -92,3 +92,11 @@
 .sana-touch-wave{position:absolute;display:block;width:30px;height:30px;margin:-15px 0 0 -15px;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 3px #6dc8d966,0 0 12px #fff9;opacity:.78;transform:scale(.45);animation:sana-touch-wave .52s ease-out forwards;will-change:transform,opacity}
 @keyframes sana-touch-wave{0%{opacity:.78;transform:scale(.45)}100%{opacity:0;transform:scale(2.35)}}
 @media(prefers-reduced-motion:reduce){.sana-touch-wave{animation-duration:.18s;transform:none;box-shadow:0 0 0 5px #6dc8d966}}
+/* v2.12: override the short-landscape icon rule so game book covers stay legible. */
+@media (orientation:landscape) and (max-height:480px) and (max-width:950px) and (pointer:coarse){
+ #app:not(.portrait) .activity-grid.extra-games{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr)}
+ #app:not(.portrait) .activity-card{flex-direction:column;flex-wrap:nowrap;align-content:center;justify-content:center;gap:3px;padding:4px}
+ #app:not(.portrait) .activity-card .card-art{width:100%;height:82%;max-height:none;max-width:100%;flex:0 1 82%}
+ #app:not(.portrait) .activity-card small{width:auto;max-width:100%;font-size:12px;line-height:1.12;margin:2px 0 0;flex:0 0 auto}
+}
+
