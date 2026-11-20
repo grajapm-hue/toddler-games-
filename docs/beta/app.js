@@ -394,16 +394,15 @@
     return `<g stroke="#5c6555" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><g fill="${outline?'none':picture.color}">${picture.region}</g><g fill="${outline?'none':'#f6d789'}">${picture.details}</g></g>`;
   }
   function preview(id){
-    if(id==='glossy')return '<rect x="23" y="82" width="72" height="72" rx="8" fill="#ed7b75" stroke="#527e62" stroke-width="3"/><rect x="99" y="82" width="72" height="72" rx="8" fill="#73bde0" stroke="#527e62" stroke-width="3"/><rect x="61" y="7" width="72" height="72" rx="8" fill="#f5c84d" stroke="#527e62" stroke-width="3"/><path d="M34 111V96H80M110 111V96H156M72 36V21H118" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="6" stroke-linecap="round"/>' ;
-    if(id==='machines')return '<image href="./glossy-art/v200/robots/standing/assembled.svg" x="38" y="0" width="124" height="165" preserveAspectRatio="xMidYMid meet"/>';
-    if(id==='puzzle')return '<rect x="13" y="35" width="78" height="104" rx="9" fill="#b4deec" stroke="#6e8e76" stroke-width="3"/><path d="M15 90H89V137H15Z" fill="#8cbb79"/><path d="M52 36V138M14 87H90" stroke="#fffaf0" stroke-width="4"/><path d="M23 76L40 55L57 76Z" fill="#e78e76"/><circle cx="72" cy="57" r="11" fill="#ffe17a"/><rect x="130" y="35" width="78" height="104" rx="9" fill="#f3f5e9" stroke="#8aa67a" stroke-width="3"/><path d="M169 37V137M132 87H206" stroke="#9bb18e" stroke-width="2" stroke-dasharray="4 3"/><path d="M98 87H122M113 78L123 87L113 96" fill="none" stroke="#287c60" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>';
-    if(id==='abacus')return `<g stroke="#9b7e60" stroke-width="5"><path d="M15 22V152M113 22V152M15 30H113M15 76H113M15 122H113"/>${[0,1,2].map((row)=>[0,1,2].map(i=>`<circle cx="${31+i*23}" cy="${30+row*46}" r="10" fill="${['#ff3b30','#ff9500','#ffe500'][row]}" stroke-width="1"/>`).join('')).join('')}</g><path d="M132 110A36 36 0 0 1 204 110M143 110A25 25 0 0 1 193 110M154 110A14 14 0 0 1 182 110" fill="none" stroke="#ff3b30" stroke-width="10"/><circle cx="168" cy="140" r="17" fill="#ff8fc7"/><circle cx="168" cy="140" r="11" fill="white"/><circle cx="168" cy="140" r="6" fill="#b5794a"/>`;
-    if(id==='drag')return `<g transform="translate(63 76) scale(.67)">${primitive('triangle','#ebc34e')}${face(0,12)}</g><g transform="translate(150 90) scale(.67) rotate(12)">${primitive('square','#71abc6')}${face()}</g><path d="M110 27L114 17M184 49L195 43" stroke="#76a181" stroke-width="5" stroke-linecap="round"/>`;
-    if(id==='bubbles')return `<circle cx="69" cy="84" r="38" fill="#e59b9d"/><circle cx="145" cy="65" r="45" fill="#8fc7d5"/><circle cx="144" cy="65" r="36" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="3"/><path d="M121 46Q125 35 140 34M49 66Q56 56 67 56" stroke="white" stroke-width="7" stroke-linecap="round" opacity=".7"/><g transform="translate(145 65) scale(.6)">${face()}</g><path d="M56 25L53 15M188 111L197 116" stroke="#cfa834" stroke-width="5" stroke-linecap="round"/>`;
-    if(id==='slide')return `<rect x="35" y="13" width="145" height="119" rx="20" fill="#fffaf0" stroke="#9cbfc9" stroke-width="4"/>${friend('fox',107,79,.56)}<path d="M38 109H177V130H38Z" fill="#bbd6d9"/><path d="M49 152H166" stroke="#9bbec9" stroke-width="11" stroke-linecap="round"/><circle cx="119" cy="152" r="17" fill="#f2cf65" stroke="#bc9d45" stroke-width="3"/>`;
-    return `<g transform="translate(-90 -19) scale(.42)">${pictureArt()}</g><g transform="translate(145 82) rotate(24)"><rect x="-10" y="-65" width="20" height="78" rx="10" fill="#74a390"/><rect x="-24" y="3" width="48" height="39" rx="9" fill="#f7e1b1" stroke="#d7bb8d" stroke-width="3"/><path d="M-12 27V40M0 27V41M12 27V40" stroke="#c8a87d" stroke-width="3"/></g>`;
+    const covers={
+      bubbles:'bubble-garden.jpg',slide:'peek-a-boo-friends.jpg',brush:'little-art-studio.jpg',
+      abacus:'counting-adventures.jpg',drag:'shape-picnic.jpg',puzzle:'picture-puzzle.jpg',
+      glossy:'glossy-blocks.jpg',machines:'kids-machines-vision.jpg'
+    };
+    const file=covers[id];
+    return file?'<image href="./game-book-art/v210/'+file+'" x="0" y="0" width="220" height="180" preserveAspectRatio="xMidYMid meet"/>':'';
   }
-  $('activity-grid').innerHTML=Object.entries(activities).map(([id,a])=>`<button class="activity-card" type="button" data-activity="${id}" aria-label="${a.label}"><span class="card-arrow" aria-hidden="true">↗</span><svg class="card-art" viewBox="0 0 220 180" aria-hidden="true">${preview(id)}</svg><b>${a.word}</b><small>${a.caption}</small></button>`).join('');
+  $('activity-grid').innerHTML=Object.entries(activities).map(([id,a])=>`<button class="activity-card" type="button" data-activity="${id}" aria-label="${a.title}: ${a.caption}"><span class="card-arrow" aria-hidden="true">↗</span><svg class="card-art" viewBox="0 0 220 180" role="img" aria-label="${a.title}"><title>${a.title}</title>${preview(id)}</svg><small>${a.caption}</small></button>`).join('');
   const cardGrid=$('activity-grid');
   let chooserPage=0;
   const welcomeRow=app.querySelector('#home-view .welcome');
@@ -1654,3 +1653,4 @@
   // Release a previous document's lock when the platform exposes it.
   try{screen.orientation?.unlock?.();}catch{/* Native rotation remains device controlled. */}
 })();
+
