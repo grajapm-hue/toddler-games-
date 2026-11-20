@@ -109,6 +109,7 @@
     const selectedPart=()=>selected&&state.placed[selected]&&!look&&!finished&&!demoActive?state.placed[selected]:null;
     const canFinish=()=>ready()&&!finished&&!look&&!demoActive&&!pointer&&isComplete(state);
     const canSave=()=>ready()&&finished&&!pointer&&savingState!==state;
+    const canMoveCanvas=()=>ready()&&!!view&&!finished&&!demoActive;
     const fitProgress=()=>`${fittedCount(state)}/${pose().parts.length} fitted.`;
     const buildHint=()=>finished?'Assembly locked. Tap Save to keep the picture.':
       isComplete(state)?'All parts fitted. Tap Done to lock the assembly.':
@@ -126,8 +127,11 @@
       $('zoom-level').setAttribute('aria-label',at?'Reset selected dimension to 100 percent':'Reset canvas to reference 100 percent');
       const target=at?`${pose().parts.find(p=>p.id===selected).name} ${axis==='both'?'size':axis}`:null;$('zoom-in').setAttribute('aria-label',target?`Increase ${target}`:'Zoom in');$('zoom-out').setAttribute('aria-label',target?`Decrease ${target}`:'Zoom out');
       $('selected-label').textContent=at?`${pose().parts.find(p=>p.id===selected).name} · size`:'Canvas · zoom';
-      $('zoom-in').disabled=!view||demoActive||!!pointer||(at?scales.every(n=>n>=4-.000001):view.zoom>=8);$('zoom-out').disabled=!view||demoActive||!!pointer||(at?scales.every(n=>n<=.25+.000001):view.zoom<=.5);
-      $('zoom-level').disabled=!view||demoActive||!!pointer;$('view-fit').disabled=!view||demoActive||!!pointer;
+      const viewControlsDisabled=!canMoveCanvas()||!!pointer;
+      $('zoom-in').disabled=viewControlsDisabled||(at?scales.every(n=>n>=4-.000001):view.zoom>=8);
+      $('zoom-out').disabled=viewControlsDisabled||(at?scales.every(n=>n<=.25+.000001):view.zoom<=.5);
+      $('zoom-level').disabled=viewControlsDisabled;
+      $('view-fit').disabled=viewControlsDisabled;
       for(const id of ['part-axis','part-original','rotate-left','rotate-right','part-flip'])$(id).disabled=!editable;
       $('part-flip').setAttribute('aria-pressed',String(s.flipX));$('grid').setAttribute('aria-pressed',String(grid));$('grid').disabled=demoActive;
     }
@@ -246,13 +250,13 @@
       for(const [id,touch]of touches){touch.owner=svg;svg.setPointerCapture(id);}renderBoard();
     }
     function down(event){
-      if(!ready()||!view||demoActive||event.button>0)return;
+      if(!canMoveCanvas()||event.button>0)return;
       const source=event.target.closest('[data-robot-part]'),owner=source||svg;
-      if(source&&(finished||look||source.disabled||pointer))return;
+      if(source&&(look||source.disabled||pointer))return;
       if(event.pointerType==='touch')touches.set(event.pointerId,{x:event.clientX,y:event.clientY,owner});
       if(touches.size>=2&&[...touches.values()].every(p=>clientInside(p.x,p.y))){startPinch();event.preventDefault();return;}
       if(pointer)return;
-      const p=point(event.clientX,event.clientY),pending=armed&&selected&&!state.placed[selected],picked=source?pose().parts.find(p=>p.id===source.dataset.robotPart):!look&&!finished?(pending?pose().parts.find(p=>p.id===selected):pickPart(p,event.pointerType)):null;
+      const p=point(event.clientX,event.clientY),pending=armed&&selected&&!state.placed[selected],picked=source?pose().parts.find(p=>p.id===source.dataset.robotPart):!look?(pending?pose().parts.find(p=>p.id===selected):pickPart(p,event.pointerType)):null;
       const explicit=!!source||!!pending;
       if(picked){choose(picked.id,{arm:!!source||armed});const previous=state.placed[picked.id],startDistance=previous?Math.hypot(previous.x-picked.x,previous.y-picked.y):Infinity,fromJoint=!!previous&&!explicit&&startDistance<=(state.age===2?150:state.age===4?112:72)/view.zoom;pointer={kind:'piece',part:picked,source:!!source,placeOnTap:!source&&explicit,fromJoint,startDistance,leftZone:!fromJoint,offsetX:previous&&!explicit?p.x-previous.x-picked.width/2:0,offsetY:previous&&!explicit?p.y-previous.y-picked.height/2:0};}
       else{deselect(true);pointer={kind:'pan',offsetX:0,offsetY:0};}
@@ -260,6 +264,7 @@
       owner.setPointerCapture(event.pointerId);syncButtons();event.preventDefault();
     }
     function move(event){
+      if(!canMoveCanvas())return;
       const touch=touches.get(event.pointerId);if(touch){touch.x=event.clientX;touch.y=event.clientY;}
       if(pointer?.kind==='pinch'){
         const points=[...touches.values()];if(points.length<2)return;const mid={x:(points[0].x+points[1].x)/2,y:(points[0].y+points[1].y)/2},distance=Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y),r=svg.getBoundingClientRect();
@@ -274,6 +279,7 @@
       event.preventDefault();
     }
     function up(event){
+      if(!canMoveCanvas())return;
       if(pointer?.kind==='pinch'){
         touches.delete(event.pointerId);if(svg.hasPointerCapture(event.pointerId))svg.releasePointerCapture(event.pointerId);
         if(touches.size){const [id,p]=[...touches][0];pointer={kind:'pan',id,owner:svg,startX:p.x,startY:p.y,lastX:p.x,lastY:p.y,moved:true};}else stopGesture();return;
@@ -292,15 +298,43 @@
     }
     $('parts').addEventListener('click',event=>{const button=event.target.closest('[data-robot-part]');if(button&&event.detail===0)choose(button.dataset.robotPart,{arm:true});});
     function resizeSelected(factor){const s=shapeOf(selectedPart()),axis=$('part-axis').value;editPart({...(axis!=='height'?{widthScale:s.widthScale*factor}:{}),...(axis!=='width'?{heightScale:s.heightScale*factor}:{})});}
-    function zoom(factor){stopGesture();if(selectedPart())resizeSelected(factor);else{viewport.zoomAt(view,factor);renderView();}}
+    function zoom(factor){
+      if(!canMoveCanvas())return;
+      stopGesture();
+      if(selectedPart())resizeSelected(factor);
+      else{viewport.zoomAt(view,factor);renderView();}
+    }
     $('zoom-in').addEventListener('click',()=>zoom(1.25));$('zoom-out').addEventListener('click',()=>zoom(.8));
-    $('view-fit').addEventListener('click',()=>{stopGesture();deselect(true);viewport.fit(view,assemblyBounds(state));renderView();});
-    $('zoom-level').addEventListener('click',()=>{stopGesture();if(selectedPart()){const axis=$('part-axis').value;editPart({...(axis!=='height'?{widthScale:1}:{}),...(axis!=='width'?{heightScale:1}:{})});}else{viewport.reset(view);renderView();}});
-    svg.addEventListener('wheel',event=>{if(!ready()||demoActive||pointer)return;event.preventDefault();deselect(true);const r=svg.getBoundingClientRect();if(event.ctrlKey)viewport.zoomAt(view,Math.exp(-event.deltaY*.002),{x:event.clientX-r.left,y:event.clientY-r.top});else viewport.pan(view,-event.deltaX,-event.deltaY);renderView();},{passive:false});
+    $('view-fit').addEventListener('click',()=>{
+      if(!canMoveCanvas())return;
+      stopGesture();deselect(true);viewport.fit(view,assemblyBounds(state));renderView();
+    });
+    $('zoom-level').addEventListener('click',()=>{
+      if(!canMoveCanvas())return;
+      stopGesture();
+      if(selectedPart()){
+        const axis=$('part-axis').value;
+        editPart({...(axis!=='height'?{widthScale:1}:{}),...(axis!=='width'?{heightScale:1}:{})});
+      }else{viewport.reset(view);renderView();}
+    });
+    svg.addEventListener('wheel',event=>{
+      if(!ready())return;
+      if(finished){event.preventDefault();return;}
+      if(!canMoveCanvas()||pointer)return;
+      event.preventDefault();
+      deselect(true);
+      const r=svg.getBoundingClientRect();
+      if(event.ctrlKey)viewport.zoomAt(view,Math.exp(-event.deltaY*.002),{x:event.clientX-r.left,y:event.clientY-r.top});
+      else viewport.pan(view,-event.deltaX,-event.deltaY);
+      renderView();
+    },{passive:false});
     svg.addEventListener('keydown',event=>{
-      if(!ready()||demoActive)return;
-      const panSteps={ArrowLeft:[40,0],ArrowRight:[-40,0],ArrowUp:[0,40],ArrowDown:[0,-40]};if((!selected||look||finished)&&panSteps[event.key]){event.preventDefault();viewport.pan(view,...panSteps[event.key]);renderView();return;}
-      if(look||finished||!selected)return;
+      if(!ready())return;
+      const panSteps={ArrowLeft:[40,0],ArrowRight:[-40,0],ArrowUp:[0,40],ArrowDown:[0,-40]};
+      if(finished){if(panSteps[event.key])event.preventDefault();return;}
+      if(!canMoveCanvas())return;
+      if((!selected||look)&&panSteps[event.key]){event.preventDefault();viewport.pan(view,...panSteps[event.key]);renderView();return;}
+      if(look||!selected)return;
       const steps={ArrowLeft:[-32,0],ArrowRight:[32,0],ArrowUp:[0,-32],ArrowDown:[0,32]};
       if(steps[event.key]){event.preventDefault();keyboard=true;const b=state.bounds;cursor.x=Math.max(b.x,Math.min(b.x+b.width,cursor.x+steps[event.key][0]));cursor.y=Math.max(b.y,Math.min(b.y+b.height,cursor.y+steps[event.key][1]));renderBoard();}
       else if(event.key==='Enter'||event.key===' '){event.preventDefault();placeSelected(cursor,{snap:!state.placed[selected]?.fitted});}
@@ -343,6 +377,7 @@
     $('done').addEventListener('click',()=>{
       if(!canFinish())return;
       finished=true;
+      stopGesture();
       deselect();
       render();
       complete('Assembly locked. Tap Save to keep the picture.');
@@ -366,7 +401,7 @@
         url=URL.createObjectURL(blob);
         const link=document.createElement('a');
         link.href=url;
-        link.download=`SaNa-${snapshotPose.id}-v2.19.png`;
+        link.download=`SaNa-${snapshotPose.id}-v2.20.png`;
         document.body.append(link);
         link.click();
         link.remove();
