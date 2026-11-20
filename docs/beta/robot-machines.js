@@ -1,4 +1,4 @@
-/* Transparent cutout assembly, separate from the free-building Blocks model. */
+/* Free building with transparent machine parts. */
 ((root,factory)=>{
   const catalogue=typeof module==='object'&&module.exports?require('./robot-catalogue.js'):root.SaNaRobotCatalogue;
   const viewport=typeof module==='object'&&module.exports?require('./robot-viewport.js'):root.SaNaRobotViewport;
@@ -6,71 +6,70 @@
   else root.SaNaRobotMachines=factory(catalogue,viewport);
 })(typeof window==='object'?window:globalThis,(catalogue,viewport)=>{
   'use strict';
-  const poseOf=state=>catalogue.poses[state.poseId];
-  const create=(poseId='standing',age=4)=>{const pose=catalogue.poses[poseId]||catalogue.poses.standing;return{poseId:pose.id,age:Number(age),placed:{},bounds:{x:0,y:0,width:pose.width,height:pose.height}};};
-  const fittedCount=state=>poseOf(state).parts.filter(part=>state.placed[part.id]?.fitted).length;
-  const isComplete=state=>fittedCount(state)===poseOf(state).parts.length;
+  const referenceBounds={x:0,y:0,width:catalogue.poses.standing.width,height:catalogue.poses.standing.height};
+  const create=(age=5)=>({age:Number(age),placed:{},nextId:1,locked:false});
   const shapeOf=at=>({baseScale:at?.baseScale??1,widthScale:at?.widthScale??1,heightScale:at?.heightScale??1,angle:at?.angle??0,flipX:at?.flipX??false});
-  function landingScale(part,width,height,canvasScale){return [width,height,canvasScale].every(n=>Number.isFinite(n)&&n>0) ? Math.min(width/part.width,height/part.height)/canvasScale : 1;}
-  function partBounds(part,at){const s=shapeOf(at),a=s.angle*Math.PI/180,c=Math.abs(Math.cos(a)),n=Math.abs(Math.sin(a)),w=part.width*s.widthScale*s.baseScale,h=part.height*s.heightScale*s.baseScale,width=w*c+h*n,height=w*n+h*c;return{x:at.x+part.width/2-width/2,y:at.y+part.height/2-height/2,width,height};}
-  function localPoint(part,at,p){const s=shapeOf(at),a=s.angle*Math.PI/180,c=Math.cos(a),n=Math.sin(a),dx=p.x-at.x-part.width/2,dy=p.y-at.y-part.height/2;return{x:(dx*c+dy*n)/(s.widthScale*s.baseScale*(s.flipX?-1:1))+part.width/2,y:(-dx*n+dy*c)/(s.heightScale*s.baseScale)+part.height/2};}
+
+  function partBounds(part,at){
+    const shape=shapeOf(at),angle=shape.angle*Math.PI/180;
+    const c=Math.abs(Math.cos(angle)),s=Math.abs(Math.sin(angle));
+    const w=part.width*shape.widthScale*shape.baseScale,h=part.height*shape.heightScale*shape.baseScale;
+    const width=w*c+h*s,height=w*s+h*c;
+    return {x:at.x+part.width/2-width/2,y:at.y+part.height/2-height/2,width,height};
+  }
+
+  function localPoint(part,at,p){
+    const shape=shapeOf(at),angle=shape.angle*Math.PI/180;
+    const c=Math.cos(angle),s=Math.sin(angle),dx=p.x-at.x-part.width/2,dy=p.y-at.y-part.height/2;
+    return {
+      x:(dx*c+dy*s)/(shape.widthScale*shape.baseScale*(shape.flipX?-1:1))+part.width/2,
+      y:(-dx*s+dy*c)/(shape.heightScale*shape.baseScale)+part.height/2
+    };
+  }
+
+  function addPart(state,part,center){
+    if(state.locked||!part||![center.x,center.y].every(Number.isFinite))return null;
+    const id=String(state.nextId++);
+    state.placed[id]={id,part,x:center.x-part.width/2,y:center.y-part.height/2,baseScale:part.storeScale||1};
+    return id;
+  }
+
+  function movePart(state,id,center){
+    const at=state.placed[id];
+    if(state.locked||!at||![center.x,center.y].every(Number.isFinite))return false;
+    at.x=center.x-at.part.width/2;
+    at.y=center.y-at.part.height/2;
+    return true;
+  }
+
   function transform(state,id,patch){
-    const part=poseOf(state).parts.find(p=>p.id===id),at=state.placed[id];
-    if(!part||!at)return false;
-    const shape={...shapeOf(at),...patch,baseScale:at.baseScale??1};
+    const at=state.placed[id];
+    if(state.locked||!at)return false;
+    const shape={...shapeOf(at),...patch,baseScale:at.baseScale};
     if(![shape.widthScale,shape.heightScale,shape.angle].every(Number.isFinite))return false;
     shape.widthScale=Math.max(.25,Math.min(4,shape.widthScale));
     shape.heightScale=Math.max(.25,Math.min(4,shape.heightScale));
     shape.angle=((shape.angle%360)+360)%360;
-    shape.flipX=!!shape.flipX;
     Object.assign(at,shape);
-    const near=(a,b)=>Math.abs(a-b)<.000001;
-    at.fitted=near(at.x,part.x)&&near(at.y,part.y)
-      &&near(shape.widthScale*shape.baseScale,1)&&near(shape.heightScale*shape.baseScale,1)
-      &&shape.angle===0&&!shape.flipX;
-    state.bounds=worldBounds(state);
     return true;
   }
-  /** Drop coordinates use the common source canvas, independent of screen size. */
-  function drop(state,id,cx,cy,{snap=true,radius=state.age===4?112:72,free=false,baseScale}={}){
-    const pose=poseOf(state),part=pose.parts.find(piece=>piece.id===id),bounds=state.bounds;
-    if(!part||![cx,cy].every(Number.isFinite))return false;
-    const distance=Math.hypot(cx-part.x-part.width/2,cy-part.y-part.height/2);
-    const fitted=snap&&distance<=radius;
-    if(fitted){
-      // Each cutout is drawn at its original size and angle in the assembled image.
-      state.placed[id]={x:part.x,y:part.y,fitted:true};
-    }else{
-      const previous=state.placed[id];
-      const shape=previous?shapeOf(previous):Number.isFinite(baseScale)&&baseScale>0?{baseScale}:{};
-      const x=cx-part.width/2,y=cy-part.height/2;
-      state.placed[id]={
-        x:free?x:Math.max(bounds.x,Math.min(bounds.x+bounds.width-part.width,x)),
-        y:free?y:Math.max(bounds.y,Math.min(bounds.y+bounds.height-part.height,y)),
-        fitted:false,
-        ...shape
-      };
-    }
-    if(free)state.bounds=worldBounds(state);
-    return fitted;
+
+  function remove(state,id){if(!state.locked)delete state.placed[id];}
+
+  function designBounds(state){
+    const boxes=Object.values(state.placed).map(at=>partBounds(at.part,at));
+    if(!boxes.length)return {...referenceBounds};
+    const x=Math.min(...boxes.map(box=>box.x)),y=Math.min(...boxes.map(box=>box.y));
+    const right=Math.max(...boxes.map(box=>box.x+box.width)),bottom=Math.max(...boxes.map(box=>box.y+box.height));
+    return {x,y,width:right-x,height:bottom-y};
   }
-  function worldBounds(state,base=state.homeBounds||state.bounds){const b=base;let x=b.x,y=b.y,right=b.x+b.width,bottom=b.y+b.height;for(const p of poseOf(state).parts){const at=state.placed[p.id];if(at){const r=partBounds(p,at);x=Math.min(x,r.x);y=Math.min(y,r.y);right=Math.max(right,r.x+r.width);bottom=Math.max(bottom,r.y+r.height);}}return{x,y,width:right-x,height:bottom-y};}
-  const referenceBounds=state=>({x:0,y:0,width:poseOf(state).width,height:poseOf(state).height});
-  const assemblyBounds=state=>worldBounds(state,referenceBounds(state));
-  function remove(state,id){delete state.placed[id];if(state.homeBounds)state.bounds=worldBounds({...state,bounds:state.homeBounds});}
-  /** Expand the source coordinate space to cover the visible pane without stretching art. */
-  function resizeCanvas(state,width,height){
-    if(![width,height].every(n=>Number.isFinite(n)&&n>0))return false;
-    const pose=poseOf(state),ratio=width/height;
-    const next=ratio>=pose.width/pose.height?{x:(pose.width-pose.height*ratio)/2,y:0,width:pose.height*ratio,height:pose.height}:{x:0,y:(pose.height-pose.width/ratio)/2,width:pose.width,height:pose.width/ratio};
-    const old=state.bounds;if(Object.keys(next).every(k=>Math.abs(next[k]-old[k])<.00001))return false;
-    for(const part of pose.parts){const at=state.placed[part.id];if(!at||at.fitted)continue;
-      const fx=Math.max(0,Math.min(1,(at.x-old.x)/(old.width-part.width))),fy=Math.max(0,Math.min(1,(at.y-old.y)/(old.height-part.height)));
-      state.placed[part.id]={...at,x:next.x+fx*(next.width-part.width),y:next.y+fy*(next.height-part.height)};
-    }
-    state.bounds=next;return true;
+
+  function lock(state){
+    if(state.locked||!Object.keys(state.placed).length)return false;
+    state.locked=true;
+    return true;
   }
-  const core={create,drop,remove,fittedCount,isComplete,resizeCanvas,worldBounds,assemblyBounds,shapeOf,partBounds,localPoint,transform,landingScale};
+  const core={create,addPart,movePart,remove,transform,designBounds,shapeOf,partBounds,localPoint,lock};
   const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function mount({scene,hint,feedback,complete,onReset}){
     const room=document.createElement('section');room.id='robot-machines-room';room.hidden=true;
@@ -84,63 +83,62 @@
           <nav class="robot-pages" aria-label="Stores pages"><button id="robot-previous-page" type="button" class="soft-button">Previous</button><output id="robot-page-label">1 / 2</output><button id="robot-next-page" type="button" class="soft-button">Next</button></nav>
         </section>
         <section class="robot-assemble" aria-label="Assemble">
-          <div class="robot-heading robot-assemble-title"><h2>Assemble</h2></div>
+          <div class="robot-heading robot-assemble-title"><h2>Assemble</h2><output id="robot-progress" aria-live="polite"></output></div>
           <div class="robot-toolbar" role="group" aria-label="Assembly tools">
             <div class="robot-tool-row robot-heading robot-control-heading"><button id="robot-look" type="button" class="soft-button" aria-pressed="false">Look</button><select id="robot-part-axis" aria-label="Part dimension"><option value="both">Both</option><option value="width">Width</option><option value="height">Height</option></select><button id="robot-rotate-left" class="soft-button" type="button" aria-label="Rotate selected part counterclockwise 45 degrees">↶</button><button id="robot-rotate-right" class="soft-button" type="button" aria-label="Rotate selected part clockwise 45 degrees">↷</button><button id="robot-part-flip" class="soft-button" type="button" aria-pressed="false">Flip</button><button id="robot-remove" type="button" class="soft-button" aria-label="Remove" title="Remove selected part" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><span>Remove</span></button><button id="robot-clear" type="button" class="soft-button" disabled>Clear</button></div>
             <div class="robot-tool-row robot-view-tools"><button id="robot-zoom-out" class="soft-button" type="button" aria-label="Zoom out">−</button><button id="robot-zoom-level" class="soft-button" type="button" aria-label="Reset canvas to reference 100 percent">100%</button><button id="robot-zoom-in" class="soft-button" type="button" aria-label="Zoom in">+</button><button id="robot-view-fit" class="soft-button" type="button" aria-label="Fit canvas">Fit</button><button id="robot-grid" class="soft-button" type="button" aria-pressed="false">Grid</button><button id="robot-done" type="button" class="soft-button" disabled>Done</button><button id="robot-snapshot" type="button" class="soft-button" disabled aria-label="Save picture" title="Save picture">Save</button></div>
             <button hidden id="robot-part-original" class="soft-button" type="button">Original</button>
           </div>
-          <div class="robot-selection-row robot-sr"><output id="robot-selected-label" aria-live="polite">Canvas · zoom</output><output id="robot-progress" aria-live="polite">0 / 16 fitted</output></div>
+          <div class="robot-selection-row robot-sr"><output id="robot-selected-label" aria-live="polite">Canvas · zoom</output></div>
           <div class="robot-board-wrap"><svg id="robot-board" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 848 1264" preserveAspectRatio="xMidYMid meet" role="group" tabindex="0" aria-label="Assembly canvas. Tap or drag a part into place; drag empty space to pan."></svg><img id="robot-reference" alt="Completed machine reference" hidden></div>
         </section>
       </div>`;
     scene.after(room);
     const $=name=>room.querySelector('#robot-'+name),svg=$('board'),app=scene.closest('#app');
-    let state=create(),active=false,selected=null,page=0,pointer=null,ghost=null,look=false,finished=false,demoTimer=null,demoActive=false,demoParts=[],keyboard=false,cursor={x:424,y:632},canvasFrame=0,view=null,armed=false,pendingLayout=false,grid=false,pendingScale=null;
+    let state=create(),active=false,selected=null,storePick=null,storeModel=null;
+    let page=0,pointer=null,ghost=null,look=false,demoTimer=null,demoActive=false,demoParts=[];
+    let keyboard=false,cursor=null,canvasFrame=0,view=null,pendingLayout=false,grid=false;
     const touches=new Map(),masks=new Map();
-    let demoSavedView=null,savingState=null;
-    // Legacy built-in robot poses predate the category field, so treat an untagged pose as a robot.
-    // Otherwise age 5 incorrectly hides Stores and Assemble.
-    const pose=()=>poseOf(state),ready=()=>active&&state.age===5&&(pose().category||'robots')==='robots';
-    const shelfOrder=['head','chest','waist','hip','upper_arm_L','upper_arm_R','forearm_L','forearm_R','hand_L','hand_R','thigh_L','thigh_R','shin_L','shin_R','foot_L','foot_R'];
+    let demoSavedView=null,picture=null;
+    const pose=()=>storeModel,ready=()=>active&&state.age===5&&!!storeModel;
+    const shelfOrder=new Map(['head','chest','waist','hip','upper_arm_L','upper_arm_R','forearm_L','forearm_R','hand_L','hand_R','thigh_L','thigh_R','shin_L','shin_R','foot_L','foot_R'].map((id,index)=>[id,index]));
+    const shelfIndex=part=>shelfOrder.get(part.id)??shelfOrder.size;
     const pageCapacity=()=>window.matchMedia('(max-height:650px) and (max-width:360px) and (orientation:portrait)').matches?3:6;
     const pageCount=()=>ready()?Math.max(1,Math.ceil(pose().parts.length/pageCapacity())):1;
     const pageRange=()=>{const total=ready()?pose().parts.length:0,pages=pageCount(),base=Math.floor(total/pages),extra=total%pages,start=page*base+Math.min(page,extra);return{start,end:start+base+(page<extra?1:0),size:base+(page<extra?1:0)};};
-    const selectedPart=()=>selected&&state.placed[selected]&&!look&&!finished&&!demoActive?state.placed[selected]:null;
-    const canFinish=()=>ready()&&!finished&&!look&&!demoActive&&!pointer&&isComplete(state);
-    const canSave=()=>ready()&&finished&&!pointer&&savingState!==state;
-    const canMoveCanvas=()=>ready()&&!!view&&!finished&&!demoActive;
-    const fitProgress=()=>`${fittedCount(state)}/${pose().parts.length} fitted.`;
-    const buildHint=()=>finished?'Assembly locked. Tap Save to keep the picture.':
-      isComplete(state)?'All parts fitted. Tap Done to lock the assembly.':
-      `Fit each part in its matching place. ${fitProgress()}`;
+    const partCount=()=>Object.keys(state.placed).length;
+    const selectedPart=()=>!look&&!state.locked&&!demoActive?state.placed[selected]:null;
+    const canFinish=()=>ready()&&!state.locked&&!demoActive&&!pointer&&partCount()>0;
+    const canSave=()=>ready()&&state.locked&&!picture?.pending;
+    const canMoveCanvas=()=>ready()&&!!view&&!state.locked&&!demoActive;
+    const buildHint=()=>partCount()?'Build your way. Tap Done when you’re ready.':'Pick any part from Stores and place it where you like.';
     function syncButtons(){
-      const lifting=pointer?.kind==='piece'&&pointer.moved&&state.placed[pointer.part.id]?.fitted?1:0;
-      $('progress').textContent=`${fittedCount(state)-lifting} / ${pose().parts.length} fitted`;
+      const count=partCount();
+      $('progress').textContent=state.locked?'Locked':`${count} ${count===1?'part':'parts'}`;
       $('done').disabled=!canFinish();
-      $('remove').disabled=!state.placed[selected]||finished||look||demoActive||!!pointer;
-      $('clear').disabled=finished||!Object.keys(state.placed).length||demoActive;
+      $('remove').disabled=!selectedPart()||!!pointer;
+      $('clear').disabled=state.locked||!count||demoActive||!!pointer;
       $('snapshot').disabled=!canSave();
-      $('variant').disabled=!ready()||demoActive;$('look').disabled=!ready()||finished||demoActive;
+      $('snapshot').textContent=picture?.pending?'Preparing…':'Save';
+      $('category').disabled=$('variant').disabled=$('look').disabled=!ready()||state.locked||demoActive;
       const at=selectedPart(),editable=!!at&&!pointer,s=shapeOf(at),axis=$('part-axis').value,scales=axis==='both'?[s.widthScale,s.heightScale]:[axis==='width'?s.widthScale:s.heightScale];
       $('zoom-level').textContent=at?(axis==='both'&&s.widthScale!==s.heightScale?`${Math.round(s.widthScale*100)}×${Math.round(s.heightScale*100)}%`:`${Math.round(scales[0]*100)}%`):`${Math.round((view?.zoom||1)*100)}%`;
       $('zoom-level').setAttribute('aria-label',at?'Reset selected dimension to 100 percent':'Reset canvas to reference 100 percent');
-      const target=at?`${pose().parts.find(p=>p.id===selected).name} ${axis==='both'?'size':axis}`:null;$('zoom-in').setAttribute('aria-label',target?`Increase ${target}`:'Zoom in');$('zoom-out').setAttribute('aria-label',target?`Decrease ${target}`:'Zoom out');
-      $('selected-label').textContent=at?`${pose().parts.find(p=>p.id===selected).name} · size`:'Canvas · zoom';
+      const target=at?`${at.part.name} ${axis==='both'?'size':axis}`:null;$('zoom-in').setAttribute('aria-label',target?`Increase ${target}`:'Zoom in');$('zoom-out').setAttribute('aria-label',target?`Decrease ${target}`:'Zoom out');
+      $('selected-label').textContent=at?`${at.part.name} · size`:'Canvas · zoom';
       const viewControlsDisabled=!canMoveCanvas()||!!pointer;
       $('zoom-in').disabled=viewControlsDisabled||(at?scales.every(n=>n>=4-.000001):view.zoom>=8);
       $('zoom-out').disabled=viewControlsDisabled||(at?scales.every(n=>n<=.25+.000001):view.zoom<=.5);
       $('zoom-level').disabled=viewControlsDisabled;
       $('view-fit').disabled=viewControlsDisabled;
       for(const id of ['part-axis','part-original','rotate-left','rotate-right','part-flip'])$(id).disabled=!editable;
-      $('part-flip').setAttribute('aria-pressed',String(s.flipX));$('grid').setAttribute('aria-pressed',String(grid));$('grid').disabled=demoActive;
+      $('part-flip').setAttribute('aria-pressed',String(s.flipX));$('grid').setAttribute('aria-pressed',String(grid));$('grid').disabled=state.locked||demoActive;
     }
     function renderShelf(){
       page=Math.min(page,pageCount()-1);const range=pageRange();room.dataset.pageSize=range.size;
-      const ordered=pose().category==='cars'?pose().parts:shelfOrder.map(id=>pose().parts.find(part=>part.id===id)).filter(Boolean);
-      const parts=ready()?ordered.slice(range.start,range.end):[];
-      $('parts').innerHTML=parts.map(part=>`<button type="button" data-robot-part="${part.id}" data-used="${!!state.placed[part.id]?.fitted}" aria-label="${esc(part.name)}" aria-pressed="${selected===part.id}" ${finished||demoActive?'disabled':''}><img src="${part.asset}" alt="" draggable="false"><span>${esc(part.name)}</span></button>`).join('');
-      $('page-label').textContent=`${page+1} / ${pageCount()}`;$('previous-page').disabled=page===0;$('next-page').disabled=page===pageCount()-1;
+      const parts=ready()?[...pose().parts].sort((a,b)=>shelfIndex(a)-shelfIndex(b)).slice(range.start,range.end):[];
+      $('parts').innerHTML=parts.map(part=>`<button type="button" data-robot-part="${part.id}" aria-label="${esc(part.name)}" aria-pressed="${storePick===part}" ${state.locked||look||demoActive?'disabled':''}><img src="${part.asset}" alt="" draggable="false"><span>${esc(part.name)}</span></button>`).join('');
+      $('page-label').textContent=`${page+1} / ${pageCount()}`;$('previous-page').disabled=state.locked||page===0;$('next-page').disabled=state.locked||page===pageCount()-1;
       sizeShelfParts();
     }
     /** Stores and the reference share the same native scale at canvas 100%. */
@@ -149,23 +147,45 @@
       for(const image of $('parts').querySelectorAll('img')){const part=pose().parts.find(p=>p.id===image.closest('[data-robot-part]').dataset.robotPart),storeScale=part.storeScale||1;image.style.width=`${part.width*base*storeScale}px`;image.style.height=`${part.height*base*storeScale}px`;}
     }
     const pieceImage=(part,placed,extra='')=>{const s=shapeOf(placed),cx=placed.x+part.width/2,cy=placed.y+part.height/2;return `<image href="${part.asset}" x="${placed.x}" y="${placed.y}" width="${part.width}" height="${part.height}" transform="translate(${cx} ${cy}) rotate(${s.angle}) scale(${s.baseScale*s.widthScale*(s.flipX?-1:1)} ${s.baseScale*s.heightScale}) translate(${-cx} ${-cy})" preserveAspectRatio="xMidYMid meet" ${extra}/>`;};
-    function renderSelection(){svg.querySelector('[data-robot-selection]')?.remove();const at=selectedPart();if(!at||!view)return;const part=pose().parts.find(p=>p.id===selected),r=partBounds(part,at),s=viewport.scale(view),pad=4/s;svg.insertAdjacentHTML('beforeend',`<rect data-robot-selection="${part.id}" class="robot-selection-outline" x="${r.x-pad}" y="${r.y-pad}" width="${r.width+pad*2}" height="${r.height+pad*2}" rx="${3/s}" fill="none" stroke="#775400" stroke-width="${2/s}" stroke-dasharray="${5/s} ${4/s}" pointer-events="none" aria-hidden="true"/>`);}
+    function renderSelection(){
+      svg.querySelector('[data-robot-selection]')?.remove();
+      const at=selectedPart();
+      if(!at||!view)return;
+      const bounds=partBounds(at.part,at),scale=viewport.scale(view),pad=4/scale;
+      svg.insertAdjacentHTML('beforeend',`<rect data-robot-selection="${at.id}" class="robot-selection-outline" x="${bounds.x-pad}" y="${bounds.y-pad}" width="${bounds.width+pad*2}" height="${bounds.height+pad*2}" rx="${3/scale}" fill="none" stroke="#775400" stroke-width="${2/scale}" stroke-dasharray="${5/scale} ${4/scale}" pointer-events="none" aria-hidden="true"/>`);
+    }
     function renderGrid(){svg.querySelector('[data-robot-grid]')?.remove();if(!grid||!view)return;const b=viewport.rect(view),step=100,lines=[];for(let x=Math.ceil(b.x/step)*step;x<=b.x+b.width;x+=step)lines.push(`M${x} ${b.y}v${b.height}`);for(let y=Math.ceil(b.y/step)*step;y<=b.y+b.height;y+=step)lines.push(`M${b.x} ${y}h${b.width}`);svg.insertAdjacentHTML('afterbegin',`<path data-robot-grid="" d="${lines.join(' ')}" fill="none" stroke="#88a885" stroke-width="1" vector-effect="non-scaling-stroke" opacity=".6" pointer-events="none"/>`);}
     function renderBoard(){
       svg.dataset.assembly=JSON.stringify(state.placed);
-      svg.dataset.canvasBounds=JSON.stringify(view?viewport.rect(view):state.bounds);
-      svg.innerHTML=look?'':pose().parts.filter(p=>state.placed[p.id]).map(part=>pieceImage(part,state.placed[part.id],`data-robot-placed="${part.id}" data-fitted="${state.placed[part.id].fitted}" class="${selected===part.id?'robot-selected':''}" aria-label="${esc(part.name)}${state.placed[part.id].fitted?', fitted':''}"`)).join('');renderGrid();
-      if(keyboard&&selected&&!state.placed[selected]&&!look){const part=pose().parts.find(p=>p.id===selected);svg.insertAdjacentHTML('beforeend',pieceImage(part,{x:cursor.x-part.width/2,y:cursor.y-part.height/2,baseScale:prepareNativeScale(part)},'data-robot-keyboard-preview="" opacity=".5" pointer-events="none"'));}
+      svg.dataset.canvasBounds=JSON.stringify(view?viewport.rect(view):referenceBounds);
+      svg.innerHTML=look?'':Object.values(state.placed).map(at=>pieceImage(at.part,at,`data-robot-placed="${at.id}" class="${selected===at.id?'robot-selected':''}" aria-label="${esc(at.part.name)}"`)).join('');
+      renderGrid();
+      const at=selectedPart(),preview=storePick||at?.part;
+      if(keyboard&&preview&&!look){
+        const position={...(at||{baseScale:preview.storeScale||1}),x:cursor.x-preview.width/2,y:cursor.y-preview.height/2};
+        svg.insertAdjacentHTML('beforeend',pieceImage(preview,position,'data-robot-keyboard-preview="" opacity=".5" style="pointer-events:none" aria-hidden="true"'));
+      }
       if(demoActive)svg.insertAdjacentHTML('beforeend',demoParts.map(({part,offset})=>pieceImage(part,{x:part.x+offset,y:part.y+offset},'class="robot-demo-piece" pointer-events="none"')).join(''));
       renderSelection();syncButtons();
     }
     function render(){renderShelf();renderBoard();}
-    function renderView(){if(!view)return;const b=viewport.rect(view),s=viewport.scale(view),ref=$('reference');svg.setAttribute('viewBox',`${b.x} ${b.y} ${b.width} ${b.height}`);svg.dataset.canvasBounds=JSON.stringify(b);svg.dataset.view=JSON.stringify({...b,zoom:view.zoom,centerX:view.centerX,centerY:view.centerY});ref.style.left=(-b.x*s)+'px';ref.style.top=(-b.y*s)+'px';ref.style.width=(pose().width*s)+'px';ref.style.height=(pose().height*s)+'px';sizeShelfParts();renderGrid();renderSelection();syncButtons();}
+    function renderView(){
+      if(!view||!pose())return;
+      const bounds=viewport.rect(view),scale=viewport.scale(view),ref=$('reference');
+      svg.setAttribute('viewBox',`${bounds.x} ${bounds.y} ${bounds.width} ${bounds.height}`);
+      svg.dataset.canvasBounds=JSON.stringify(bounds);
+      svg.dataset.view=JSON.stringify({...bounds,zoom:view.zoom,centerX:view.centerX,centerY:view.centerY});
+      ref.style.left=((referenceBounds.width-pose().width)/2-bounds.x)*scale+'px';
+      ref.style.top=((referenceBounds.height-pose().height)/2-bounds.y)*scale+'px';
+      ref.style.width=pose().width*scale+'px';
+      ref.style.height=pose().height*scale+'px';
+      sizeShelfParts();renderGrid();renderSelection();syncButtons();
+    }
     function fitCanvas(){
       canvasFrame=0;if(!ready()||svg.hidden)return;
       const rect=svg.getBoundingClientRect();if(!rect.width||!rect.height)return;
       if(pointer){pendingLayout=true;return;}
-      if(!view){resizeCanvas(state,rect.width,rect.height);state.homeBounds={...state.bounds};view=viewport.create(referenceBounds(state),rect.width,rect.height);}
+      if(!view)view=viewport.create(referenceBounds,rect.width,rect.height);
       else viewport.resize(view,rect.width,rect.height);
       pendingLayout=false;renderView();
     }
@@ -183,44 +203,52 @@
       if(pendingLayout)requestAnimationFrame(()=>{if(active){renderShelf();fitCanvas();}});
     }
     function cancel(){
-      armed=false;stopGesture();if(selected&&!state.placed[selected])deselect(true);clearTimeout(demoTimer);demoTimer=null;demoActive=false;demoParts=[];
+      stopGesture();if(storePick)deselect(true);clearTimeout(demoTimer);demoTimer=null;demoActive=false;demoParts=[];
       if(demoSavedView){view=demoSavedView;demoSavedView=null;const r=svg.getBoundingClientRect();viewport.resize(view,r.width,r.height);renderView();}
       document.getElementById('show-me')?.setAttribute('aria-pressed','false');
       if(active)renderBoard();
     }
-    function cancelPointer(){armed=false;keyboard=false;stopGesture();if(selected&&!state.placed[selected])deselect(true);if(active)renderBoard();}
-    function choose(id,{arm=false}={}){
-      if(!ready()||look||demoActive||finished)return;
-      if(selected!==id){$('part-axis').value='both';pendingScale=null;}selected=id;keyboard=false;armed=arm;svg.querySelector('[data-robot-keyboard-preview]')?.remove();
-      for(const button of $('parts').querySelectorAll('[data-robot-part]'))button.setAttribute('aria-pressed',String(button.dataset.robotPart===id));
+    function cancelPointer(){keyboard=false;stopGesture();if(storePick)deselect(true);if(active)renderBoard();}
+    function choose(part,id=null){
+      if(!canMoveCanvas()||look||!part)return;
+      if(selected!==id)$('part-axis').value='both';
+      selected=id;
+      storePick=id===null?part:null;
+      keyboard=false;
+      svg.querySelector('[data-robot-keyboard-preview]')?.remove();
+      for(const button of $('parts').querySelectorAll('[data-robot-part]'))button.setAttribute('aria-pressed',String(storePick?.id===button.dataset.robotPart));
       for(const node of svg.querySelectorAll('[data-robot-placed]'))node.classList.toggle('robot-selected',node.dataset.robotPlaced===id);
-      const part=pose().parts.find(p=>p.id===id),at=state.placed[id];cursor=at?{x:at.x+part.width/2,y:at.y+part.height/2}:{x:pose().width/2,y:pose().height/2};
-      if(at){pendingScale=null;}else prepareNativeScale(part);
-      renderSelection();syncButtons();hint(at?`${part.name} selected.`:`Place ${part.name} in Assemble.`);
+      const at=state.placed[id];
+      cursor=at?{x:at.x+part.width/2,y:at.y+part.height/2}:{x:view.centerX,y:view.centerY};
+      renderSelection();syncButtons();
+      hint(at?`${part.name} selected.`:`Place ${part.name} anywhere in Assemble.`);
     }
     function deselect(announce=false){
-      selected=null;armed=false;keyboard=false;pendingScale=null;
+      selected=null;storePick=null;keyboard=false;
       svg.querySelector('[data-robot-keyboard-preview]')?.remove();
       $('part-axis').value='both';
       for(const button of $('parts').querySelectorAll('[data-robot-part]'))button.setAttribute('aria-pressed','false');
       for(const node of svg.querySelectorAll('.robot-selected'))node.classList.remove('robot-selected');
       renderSelection();syncButtons();
-      if(announce&&!finished)hint(buildHint());
+      if(announce&&!state.locked)hint(buildHint());
     }
-    function prepareNativeScale(part){pendingScale=part?.storeScale||1;return pendingScale;}
     function point(x,y){const matrix=svg.getScreenCTM();return matrix?new DOMPoint(x,y).matrixTransform(matrix.inverse()):null;}
-    function placeSelected(p,{snap=true}={}){
-      if(!selected||!p||![p.x,p.y].every(Number.isFinite)||!ready()||look||finished||demoActive)return;
-      const wasFitted=state.placed[selected]?.fitted,part=pose().parts.find(p=>p.id===selected),initialScale=state.placed[selected]?undefined:prepareNativeScale(part);
-      const fitted=drop(state,selected,p.x,p.y,{snap,free:true,baseScale:initialScale,radius:(state.age===2?150:state.age===4?112:72)/(view?.zoom||1)});armed=false;keyboard=false;pendingScale=null;
-      if(fitted&&!wasFitted)feedback();
-      render();
-      if(isComplete(state))hint(buildHint());
-      else hint(fitted?`${part.name} fitted. ${fitProgress()}`:`${part.name} is loose. Move it to its matching place. ${fitProgress()}`);
+    function placeSelected(p){
+      if(!canMoveCanvas()||look||!p)return;
+      if(storePick){
+        const id=addPart(state,storePick,p);
+        if(!id)return;
+        selected=id;
+        storePick=null;
+        feedback();
+      }else if(!movePart(state,selected,p))return;
+      keyboard=false;
+      cursor=p;
+      render();hint(buildHint());
     }
     function makeGhost(part,x,y){
       ghost=document.createElement('img');ghost.className='robot-drag-ghost';ghost.src=part.asset;ghost.alt='';ghost.draggable=false;
-      const scale=viewport.scale(view),s=shapeOf(state.placed[part.id]||{baseScale:pendingScale??1});ghost.style.width=`${part.width*scale}px`;ghost.style.height=`${part.height*scale}px`;ghost.style.transform=`translate(-50%,-50%) rotate(${s.angle}deg) scale(${s.baseScale*s.widthScale*(s.flipX?-1:1)},${s.baseScale*s.heightScale})`;document.body.append(ghost);moveGhost(x,y);
+      const scale=viewport.scale(view),s=shapeOf(state.placed[pointer.placedId]||{baseScale:part.storeScale||1});ghost.style.width=`${part.width*scale}px`;ghost.style.height=`${part.height*scale}px`;ghost.style.transform=`translate(-50%,-50%) rotate(${s.angle}deg) scale(${s.baseScale*s.widthScale*(s.flipX?-1:1)},${s.baseScale*s.heightScale})`;document.body.append(ghost);moveGhost(x,y);
     }
     function moveGhost(x,y){if(ghost){const m=svg.getScreenCTM(),dx=(pointer?.offsetX||0),dy=(pointer?.offsetY||0);ghost.style.left=(x-dx*m.a-dy*m.c)+'px';ghost.style.top=(y-dx*m.b-dy*m.d)+'px';}}
     function clientInside(x,y){const r=svg.getBoundingClientRect();return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom;}
@@ -231,20 +259,19 @@
     }
     function pickPart(p,type){
       const tolerance=(type==='touch'?22:2)/viewport.scale(view);let nearest=null,distance=tolerance;
-      const parts=[...pose().parts].reverse();if(armed&&state.placed[selected])parts.sort((a,b)=>a.id===selected?-1:b.id===selected?1:0);
-      for(const part of parts){
-        const at=state.placed[part.id];if(!at)continue;const {x,y}=localPoint(part,at,p),shape=shapeOf(at),mask=masks.get(part.asset),inside=x>=0&&x<part.width&&y>=0&&y<part.height;
-        if(inside&&(!mask||mask.alpha[(Math.floor(y/part.height*mask.height)*mask.width+Math.floor(x/part.width*mask.width))*4+3]>96))return part;
+      for(const at of Object.values(state.placed).reverse()){
+        const part=at.part,{x,y}=localPoint(part,at,p),shape=shapeOf(at),mask=masks.get(part.asset),inside=x>=0&&x<part.width&&y>=0&&y<part.height;
+        if(inside&&(!mask||mask.alpha[(Math.floor(y/part.height*mask.height)*mask.width+Math.floor(x/part.width*mask.width))*4+3]>96))return at;
         const scaleX=shape.widthScale*shape.baseScale,scaleY=shape.heightScale*shape.baseScale;
         if(!mask||Math.hypot(Math.max(0,-x,x-part.width)*scaleX,Math.max(0,-y,y-part.height)*scaleY)>tolerance)continue;
         const sx=part.width/mask.width,sy=part.height/mask.height,tx=distance/scaleX,ty=distance/scaleY,left=Math.max(0,Math.floor((x-tx)/sx)),right=Math.min(mask.width-1,Math.ceil((x+tx)/sx)),top=Math.max(0,Math.floor((y-ty)/sy)),bottom=Math.min(mask.height-1,Math.ceil((y+ty)/sy));
-        for(let row=top;row<=bottom;row++)for(let col=left;col<=right;col++)if(mask.alpha[(row*mask.width+col)*4+3]>96){const dx=Math.max(0,col*sx-x,x-(col+1)*sx)*scaleX,dy=Math.max(0,row*sy-y,y-(row+1)*sy)*scaleY,d=Math.hypot(dx,dy);if(d<distance){distance=d;nearest=part;}}
+        for(let row=top;row<=bottom;row++)for(let col=left;col<=right;col++)if(mask.alpha[(row*mask.width+col)*4+3]>96){const dx=Math.max(0,col*sx-x,x-(col+1)*sx)*scaleX,dy=Math.max(0,row*sy-y,y-(row+1)*sy)*scaleY,d=Math.hypot(dx,dy);if(d<distance){distance=d;nearest=at;}}
       }
       return nearest;
     }
     function startPinch(){
       const points=[...touches.values()];if(points.length<2)return;
-      ghost?.remove();ghost=null;delete svg.dataset.dragging;armed=false;
+      ghost?.remove();ghost=null;delete svg.dataset.dragging;
       pointer={kind:'pinch',owner:svg,originView:{zoom:view.zoom,centerX:view.centerX,centerY:view.centerY},originMid:{x:(points[0].x+points[1].x)/2,y:(points[0].y+points[1].y)/2},originDistance:Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y)};
       deselect(true);
       for(const [id,touch]of touches){touch.owner=svg;svg.setPointerCapture(id);}renderBoard();
@@ -256,9 +283,17 @@
       if(event.pointerType==='touch')touches.set(event.pointerId,{x:event.clientX,y:event.clientY,owner});
       if(touches.size>=2&&[...touches.values()].every(p=>clientInside(p.x,p.y))){startPinch();event.preventDefault();return;}
       if(pointer)return;
-      const p=point(event.clientX,event.clientY),pending=armed&&selected&&!state.placed[selected],picked=source?pose().parts.find(p=>p.id===source.dataset.robotPart):!look?(pending?pose().parts.find(p=>p.id===selected):pickPart(p,event.pointerType)):null;
-      const explicit=!!source||!!pending;
-      if(picked){choose(picked.id,{arm:!!source||armed});const previous=state.placed[picked.id],startDistance=previous?Math.hypot(previous.x-picked.x,previous.y-picked.y):Infinity,fromJoint=!!previous&&!explicit&&startDistance<=(state.age===2?150:state.age===4?112:72)/view.zoom;pointer={kind:'piece',part:picked,source:!!source,placeOnTap:!source&&explicit,fromJoint,startDistance,leftZone:!fromJoint,offsetX:previous&&!explicit?p.x-previous.x-picked.width/2:0,offsetY:previous&&!explicit?p.y-previous.y-picked.height/2:0};}
+      const p=point(event.clientX,event.clientY);
+      if(!p)return;
+      const pending=!look&&!source&&storePick;
+      const previous=!look&&!source&&!pending?pickPart(p,event.pointerType):null;
+      const picked=source?pose().parts.find(part=>part.id===source.dataset.robotPart):pending||previous?.part;
+      if(picked){
+        choose(picked,previous?.id);
+        pointer={kind:'piece',part:picked,placedId:previous?.id,source:!!source,placeOnTap:!!pending,
+          offsetX:previous?p.x-previous.x-picked.width/2:0,
+          offsetY:previous?p.y-previous.y-picked.height/2:0};
+      }
       else{deselect(true);pointer={kind:'pan',offsetX:0,offsetY:0};}
       Object.assign(pointer,{id:event.pointerId,owner,startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastY:event.clientY,moved:false,type:event.pointerType});
       owner.setPointerCapture(event.pointerId);syncButtons();event.preventDefault();
@@ -274,7 +309,10 @@
       if(Math.hypot(event.clientX-pointer.startX,event.clientY-pointer.startY)>(pointer.type==='touch'?4:2))pointer.moved=true;
       if(!pointer.moved)return;
       if(pointer.kind==='pan'){viewport.pan(view,event.clientX-pointer.lastX,event.clientY-pointer.lastY);renderView();}
-      else{const p=point(event.clientX,event.clientY),part=pointer.part;if(Math.hypot(p.x-pointer.offsetX-part.x-part.width/2,p.y-pointer.offsetY-part.y-part.height/2)>(state.age===4?112:72)/view.zoom)pointer.leftZone=true;if(!ghost){makeGhost(part,event.clientX,event.clientY);svg.dataset.dragging=part.id;}else moveGhost(event.clientX,event.clientY);syncButtons();}
+      else{
+        if(!ghost){makeGhost(pointer.part,event.clientX,event.clientY);svg.dataset.dragging='true';}
+        else moveGhost(event.clientX,event.clientY);
+      }
       pointer.lastX=event.clientX;pointer.lastY=event.clientY;
       event.preventDefault();
     }
@@ -288,15 +326,19 @@
       const drag=pointer,inside=clientInside(event.clientX,event.clientY),r=svg.getBoundingClientRect();
       const p=!inside&&drag.kind==='piece'&&!drag.source?point(Math.max(r.left+2,Math.min(r.right-2,event.clientX)),Math.max(r.top+2,Math.min(r.bottom-2,event.clientY))):point(event.clientX,event.clientY);stopGesture();
       if(drag.source&&drag.moved&&!inside){deselect(true);return;}
-      if(drag.kind==='piece'&&(drag.moved||drag.placeOnTap)&&(!drag.source||inside)){p.x-=drag.offsetX;p.y-=drag.offsetY;const distance=Math.hypot(p.x-drag.part.x-drag.part.width/2,p.y-drag.part.y-drag.part.height/2),tolerance=1/viewport.scale(view),departing=distance>tolerance&&distance>=drag.startDistance-tolerance;placeSelected(p,{snap:!(drag.moved&&drag.fromJoint&&!drag.leftZone&&departing)});}
-      else if(drag.source&&!drag.moved&&state.placed[selected]){const at=state.placed[selected];view.centerX=at.x+drag.part.width/2;view.centerY=at.y+drag.part.height/2;view.manual=true;renderView();}
+      if(p&&drag.kind==='piece'&&(drag.moved||drag.placeOnTap)&&(!drag.source||inside)){
+        placeSelected({x:p.x-drag.offsetX,y:p.y-drag.offsetY});
+      }
       syncButtons();
     }
     $('parts').addEventListener('pointerdown',down);svg.addEventListener('pointerdown',down);
     for(const owner of [$('parts'),svg]){
       owner.addEventListener('pointermove',move);owner.addEventListener('pointerup',up);owner.addEventListener('pointercancel',cancelPointer);owner.addEventListener('lostpointercapture',event=>{if(pointer?.kind!=='pinch'&&pointer?.id===event.pointerId&&!pointer.owner.hasPointerCapture(event.pointerId))cancelPointer();});
     }
-    $('parts').addEventListener('click',event=>{const button=event.target.closest('[data-robot-part]');if(button&&event.detail===0)choose(button.dataset.robotPart,{arm:true});});
+    $('parts').addEventListener('click',event=>{
+      const button=event.target.closest('[data-robot-part]');
+      if(button&&event.detail===0)choose(pose()?.parts.find(part=>part.id===button.dataset.robotPart));
+    });
     function resizeSelected(factor){const s=shapeOf(selectedPart()),axis=$('part-axis').value;editPart({...(axis!=='height'?{widthScale:s.widthScale*factor}:{}),...(axis!=='width'?{heightScale:s.heightScale*factor}:{})});}
     function zoom(factor){
       if(!canMoveCanvas())return;
@@ -307,7 +349,7 @@
     $('zoom-in').addEventListener('click',()=>zoom(1.25));$('zoom-out').addEventListener('click',()=>zoom(.8));
     $('view-fit').addEventListener('click',()=>{
       if(!canMoveCanvas())return;
-      stopGesture();deselect(true);viewport.fit(view,assemblyBounds(state));renderView();
+      stopGesture();deselect(true);viewport.fit(view,partCount()?designBounds(state):referenceBounds);renderView();
     });
     $('zoom-level').addEventListener('click',()=>{
       if(!canMoveCanvas())return;
@@ -319,7 +361,7 @@
     });
     svg.addEventListener('wheel',event=>{
       if(!ready())return;
-      if(finished){event.preventDefault();return;}
+      if(state.locked){event.preventDefault();return;}
       if(!canMoveCanvas()||pointer)return;
       event.preventDefault();
       deselect(true);
@@ -331,103 +373,146 @@
     svg.addEventListener('keydown',event=>{
       if(!ready())return;
       const panSteps={ArrowLeft:[40,0],ArrowRight:[-40,0],ArrowUp:[0,40],ArrowDown:[0,-40]};
-      if(finished){if(panSteps[event.key])event.preventDefault();return;}
+      if(state.locked){if(panSteps[event.key])event.preventDefault();return;}
       if(!canMoveCanvas())return;
-      if((!selected||look)&&panSteps[event.key]){event.preventDefault();viewport.pan(view,...panSteps[event.key]);renderView();return;}
-      if(look||!selected)return;
+      if((!selected&&!storePick||look)&&panSteps[event.key]){event.preventDefault();viewport.pan(view,...panSteps[event.key]);renderView();return;}
+      if(look||(!selected&&!storePick))return;
       const steps={ArrowLeft:[-32,0],ArrowRight:[32,0],ArrowUp:[0,-32],ArrowDown:[0,32]};
-      if(steps[event.key]){event.preventDefault();keyboard=true;const b=state.bounds;cursor.x=Math.max(b.x,Math.min(b.x+b.width,cursor.x+steps[event.key][0]));cursor.y=Math.max(b.y,Math.min(b.y+b.height,cursor.y+steps[event.key][1]));renderBoard();}
-      else if(event.key==='Enter'||event.key===' '){event.preventDefault();placeSelected(cursor,{snap:!state.placed[selected]?.fitted});}
+      if(steps[event.key]){event.preventDefault();keyboard=true;const b=viewport.rect(view);cursor.x=Math.max(b.x,Math.min(b.x+b.width,cursor.x+steps[event.key][0]));cursor.y=Math.max(b.y,Math.min(b.y+b.height,cursor.y+steps[event.key][1]));renderBoard();}
+      else if(event.key==='Enter'||event.key===' '){event.preventDefault();placeSelected(cursor);}
     });
-    for(const [id,delta] of [['previous-page',-1],['next-page',1]])$(id).addEventListener('click',()=>{stopGesture();page=Math.max(0,Math.min(pageCount()-1,page+delta));renderShelf();});
+    for(const [id,delta] of [['previous-page',-1],['next-page',1]])$(id).addEventListener('click',()=>{if(state.locked)return;stopGesture();page=Math.max(0,Math.min(pageCount()-1,page+delta));renderShelf();});
     $('look').addEventListener('click',()=>{
-      if(finished)return;
+      if(state.locked)return;
       stopGesture();
       setLook(!look);
-      hint(look?'Look at the completed '+pose().label.toLowerCase()+'. Tap Build to return.':buildHint());
+      hint(look?'Reference picture. Tap Build to return to your design.':buildHint());
     });
     $('part-axis').addEventListener('change',syncButtons);
     function editPart(patch){
-      if(!state.placed[selected]||finished||look||demoActive)return;
+      if(!selectedPart())return;
       stopGesture();
       if(transform(state,selected,patch)){render();renderView();hint(buildHint());}
     }
     $('rotate-left').addEventListener('click',()=>editPart({angle:shapeOf(state.placed[selected]).angle-45}));$('rotate-right').addEventListener('click',()=>editPart({angle:shapeOf(state.placed[selected]).angle+45}));$('part-flip').addEventListener('click',()=>editPart({flipX:!shapeOf(state.placed[selected]).flipX}));$('part-original').addEventListener('click',()=>editPart({widthScale:1,heightScale:1,angle:0,flipX:false}));
-    $('grid').addEventListener('click',()=>{grid=!grid;renderGrid();syncButtons();});
+    $('grid').addEventListener('click',()=>{if(state.locked)return;grid=!grid;renderGrid();syncButtons();});
     function reset(){
-      cancel();onReset();state=create($('variant').value,state.age);view=null;armed=false;pendingScale=null;selected=null;page=0;finished=false;keyboard=false;cursor={x:424,y:632};$('part-axis').value='both';setLook(false);render();fitCanvas();pose().parts.forEach(warmMask);
-      $('reference').src=pose().reference;$('reference').alt=`Completed ${pose().label.toLowerCase()} reference`;
+      cancel();onReset();state=create(state.age);picture=null;view=null;selected=null;storePick=null;page=0;keyboard=false;cursor=null;
+      $('part-axis').value='both';
+      setLook(false);
+      updateReference();
     }
-    $('variant').addEventListener('change',()=>{reset();hint('Choose a loose part and fit it into the '+pose().label.toLowerCase()+'.');});
+    function updateReference(){
+      if(!pose())return;
+      $('reference').src=pose().reference;
+      $('reference').alt=`${pose().label} reference`;
+      pose().parts.forEach(warmMask);
+    }
+    $('variant').addEventListener('change',()=>{
+      if(state.locked||demoActive){$('variant').value=pose()?.id||'';return;}
+      const next=catalogue.poses[$('variant').value];
+      if(!next||!availableModels.includes(next))return;
+      cancel();
+      deselect();
+      storeModel=next;
+      page=0;
+      updateReference();
+      setLook(false);
+      hint(`Pick a ${pose().label.toLowerCase()} part. ${buildHint()}`);
+    });
+    // Only the finished age-five robot artwork is available in this trial.
+    const availableModels=Object.values(catalogue.poses).filter(item=>(item.category||'robots')==='robots'&&(item.age==null||item.age===5));
     function configureAge(age){
       const enabled=Number(age)===5,category=$('category'),variant=$('variant');
-      if(!enabled){category.innerHTML='<option value="">No models for this age yet</option>';category.value='';category.disabled=true;variant.innerHTML='<option value="">No models for this age yet</option>';variant.value='';variant.disabled=true;return;}
+      if(!enabled){storeModel=null;category.innerHTML='<option value="">No models for this age yet</option>';category.value='';category.disabled=true;variant.innerHTML='<option value="">No models for this age yet</option>';variant.value='';variant.disabled=true;return;}
       category.innerHTML='<option value="robots">Robots</option><option disabled>Cars — later</option><option disabled>Ships — later</option><option disabled>Planes — later</option><option disabled>Rockets — later</option>';category.value='robots';category.disabled=false;
-      const choices=Object.values(catalogue.poses).filter(item=>(item.category||'robots')==='robots'&&(item.age==null||item.age===5));
-      variant.innerHTML=choices.map(item=>'<option value="'+esc(item.id)+'">'+esc(item.label)+'</option>').join('');variant.disabled=!choices.length;
-      const ageTrial=choices.find(item=>item.age===5);
-      variant.value=ageTrial?.id||(choices.some(item=>item.id==='standing')?'standing':choices[0]?.id||'');
+      variant.innerHTML=availableModels.map(item=>'<option value="'+esc(item.id)+'">'+esc(item.label)+'</option>').join('');
+      storeModel=storeModel||availableModels.find(item=>item.age===5)||availableModels[0];
+      variant.value=storeModel?.id||'';
     }
-    $('category').addEventListener('change',()=>{configureAge(state.age);state=create($('variant').value,state.age);reset();hint('Choose a loose part for the '+pose().label.toLowerCase()+'.');});
     $('clear').addEventListener('click',()=>{
-      if(finished)return;
-      reset();hint('Fresh assembly. Choose a '+pose().label.toLowerCase()+' part.');
+      if(state.locked||demoActive||pointer)return;
+      reset();hint(buildHint());
     });
-    $('remove').addEventListener('click',()=>{if(selected&&!finished){remove(state,selected);deselect();render();hint(`Part returned to Stores. ${fitProgress()}`);}});
+    $('remove').addEventListener('click',()=>{
+      if(!selectedPart()||pointer)return;
+      remove(state,selected);deselect();render();hint(buildHint());
+    });
     $('done').addEventListener('click',()=>{
-      if(!canFinish())return;
-      finished=true;
+      if(!canFinish()||!lock(state))return;
       stopGesture();
       deselect();
-      render();
-      complete('Assembly locked. Tap Save to keep the picture.');
+      if(look)setLook(false);
+      else render();
+      complete('Design locked. Preparing your picture…');
+      void preparePicture();
     });
-    $('snapshot').addEventListener('click',async()=>{
-      if(!canSave())return;
-      const snapshotState=state, snapshotPose=pose(), snapshotBounds=assemblyBounds(state);
-      const stillViewing=()=>active&&state===snapshotState;
-      savingState=snapshotState;
+    async function preparePicture(){
+      const finishedDesign=state;
+      const result={pending:true,blob:null};
+      picture=result;
       syncButtons();
-      hint('Preparing your picture…');
-      let url;
       try{
-        const canvas=document.createElement('canvas');canvas.width=Math.ceil(snapshotBounds.width);canvas.height=Math.ceil(snapshotBounds.height);const ctx=canvas.getContext('2d');
-        const images=await Promise.all(snapshotPose.parts.map(async part=>{const image=new Image();image.src=part.asset;await image.decode();return{part,image};}));
-        for(const {part,image} of images){
-          ctx.drawImage(image,part.x-snapshotBounds.x,part.y-snapshotBounds.y,part.width,part.height);
+        const bounds=designBounds(finishedDesign),padding=12;
+        const width=bounds.width+2*padding,height=bounds.height+2*padding;
+        const scale=Math.min(1,3072/Math.max(width,height));
+        const canvas=document.createElement('canvas');
+        canvas.width=Math.ceil(width*scale);canvas.height=Math.ceil(height*scale);
+        const ctx=canvas.getContext('2d');
+        ctx.scale(scale,scale);
+        const images=new Map();
+        const pieces=Object.values(finishedDesign.placed);
+        for(const {part} of pieces)if(!images.has(part.asset)){
+          const image=new Image();image.src=part.asset;
+          images.set(part.asset,image);
         }
-        const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw Error('Picture unavailable');
-        if(!stillViewing())return;
-        url=URL.createObjectURL(blob);
-        const link=document.createElement('a');
-        link.href=url;
-        link.download=`SaNa-${snapshotPose.id}-v2.20.png`;
-        document.body.append(link);
-        link.click();
-        link.remove();
-        hint('Picture sent to your device’s downloads.');
-      }catch{if(stillViewing())hint('Picture could not be saved. Please try again.');}
-      finally{
-        if(url)setTimeout(()=>URL.revokeObjectURL(url),30000);
-        if(savingState===snapshotState)savingState=null;
-        if(stillViewing())syncButtons();
+        await Promise.all([...images.values()].map(image=>image.decode()));
+        if(!active||state!==finishedDesign)return;
+        for(const at of pieces){
+          const {part}=at,shape=shapeOf(at);
+          ctx.save();
+          ctx.translate(at.x+part.width/2-bounds.x+padding,at.y+part.height/2-bounds.y+padding);
+          ctx.rotate(shape.angle*Math.PI/180);
+          ctx.scale(shape.widthScale*shape.baseScale*(shape.flipX?-1:1),shape.heightScale*shape.baseScale);
+          ctx.drawImage(images.get(part.asset),-part.width/2,-part.height/2,part.width,part.height);
+          ctx.restore();
+        }
+        result.blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+        if(!result.blob)throw Error('Picture unavailable');
+        if(active&&state===finishedDesign)hint('Design locked. Tap Save to keep your picture.');
+      }catch{
+        if(active&&state===finishedDesign)hint('The picture could not be prepared. Tap Save to retry.');
+      }finally{
+        result.pending=false;
+        if(active&&state===finishedDesign)syncButtons();
       }
+    }
+    $('snapshot').addEventListener('click',()=>{
+      if(!canSave())return;
+      if(!picture?.blob){void preparePicture();return;}
+      // Use the Save tap itself to start the download on touch browsers.
+      const url=URL.createObjectURL(picture.blob);
+      const link=document.createElement('a');
+      link.href=url;link.download='SaNa-Machine-Design-v2.22.png';
+      document.body.append(link);link.click();link.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),30000);
+      hint('Picture sent to your device’s downloads.');
     });
     function demo(){
-      if(!ready()||finished)return;if(demoActive){cancel();hint('Your turn. Your machine pieces are still here.');return;}
+      if(!ready()||state.locked||!view)return;if(demoActive){cancel();hint(buildHint());return;}
       stopGesture();setLook(false);demoSavedView={...view,basis:{...view.basis}};viewport.reset(view);renderView();demoActive=true;demoParts=[];document.getElementById('show-me').setAttribute('aria-pressed','true');
       const sample=(pose().category==='cars'?pose().parts.slice(0,3):['chest','head','upper_arm_L'].map(id=>pose().parts.find(p=>p.id===id))).filter(Boolean);let step=0;
       const next=()=>{
         if(!active||!demoActive)return;
-        if(step===sample.length){cancel();hint('Your turn. Drag a part close to its place to fit it.');return;}
-        const part=sample[step++];demoParts.push({part,offset:150});renderBoard();hint(`${part.name}: move close, then it fits.`);
+        if(step===sample.length){cancel();hint(buildHint());return;}
+        const part=sample[step++];demoParts.push({part,offset:150});renderBoard();hint(`Drag ${part.name.toLowerCase()} to a place you choose.`);
         demoTimer=setTimeout(()=>{if(!demoActive)return;demoParts[demoParts.length-1].offset=0;renderBoard();demoTimer=setTimeout(next,900);},700);
       };next();
     }
     function start(age){
-      active=true;app?.classList.add('robot-active');configureAge(age);state=create($('variant').value,age);room.hidden=false;
+      cancel();active=true;app?.classList.add('robot-active');configureAge(age);state=create(age);room.hidden=false;
       $('age-note').hidden=ready();room.querySelector('.robot-workspace').hidden=!ready();reset();
-      if(ready())hint('Choose a '+pose().label.toLowerCase()+' part. Drag or tap to place it; move it near its matching place to fit.');
+      if(ready())hint(buildHint());
       else hint('Choose age 5 for the machine assembly trial.');
     }
     function leave(){cancel();active=false;room.hidden=true;app?.classList.remove('robot-active');}
