@@ -112,3 +112,18 @@
 
 
 #robot-machines-room[data-page-size="4"] #robot-parts{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}
+
+/* v2.24: toddler-friendly precision controls; keep the assembly visible. */
+#robot-machines-room .robot-board-wrap{position:relative}
+#robot-machines-room .robot-dpad[hidden]{display:none!important}
+#robot-machines-room .robot-dpad{position:absolute;z-index:8;bottom:8px;right:8px;display:flex;align-items:center;gap:8px;padding:6px;border:2px solid #688b9e;border-radius:14px;background:#f4faf3ee;box-shadow:0 2px 8px #0003;touch-action:none;user-select:none;max-width:calc(100% - 16px)}
+#robot-machines-room .robot-dpad-move{display:flex;flex-direction:column;align-items:center;gap:2px}
+#robot-machines-room .robot-dpad-move>div{display:flex;gap:30px}
+#robot-machines-room .robot-dpad button{min-width:34px;min-height:34px;border:1px solid #6087a4;border-radius:8px;background:#e2f2ff;color:#173d5a;font-weight:900;font-size:16px;touch-action:none;cursor:pointer}
+#robot-machines-room .robot-dpad button:active{background:#8dc6f2}
+#robot-machines-room .robot-dpad-turn{display:flex;flex-direction:column;gap:5px}
+#robot-machines-room .robot-dpad-turn button{font-size:13px;min-width:58px}
+#robot-machines-room #robot-view-fit.robot-group-active{background:#2674ba!important;color:white!important;border-color:#144d81!important}
+#robot-machines-room #robot-done.robot-frozen{background:#24854c!important;color:white!important;border-color:#176437!important}
+#robot-machines-room #robot-done.robot-editing{background:#f8b55e!important;color:#30230b!important;border-color:#a66d22!important}
+@media(max-height:430px){#robot-machines-room .robot-dpad{transform:scale(.82);transform-origin:bottom right;bottom:2px;right:2px}}

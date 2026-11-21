@@ -85,12 +85,12 @@
         <section class="robot-assemble" aria-label="Assemble">
           <div class="robot-heading robot-assemble-title"><h2>Assemble</h2><output id="robot-progress" aria-live="polite"></output></div>
           <div class="robot-toolbar" role="group" aria-label="Assembly tools">
-            <div class="robot-tool-row robot-heading robot-control-heading"><button id="robot-look" type="button" class="soft-button" aria-pressed="false">Look</button><select id="robot-part-axis" aria-label="Part dimension"><option value="both">Both</option><option value="width">Width</option><option value="height">Height</option></select><button id="robot-rotate-left" class="soft-button" type="button" aria-label="Rotate selected part counterclockwise 45 degrees">↶</button><button id="robot-rotate-right" class="soft-button" type="button" aria-label="Rotate selected part clockwise 45 degrees">↷</button><button id="robot-part-flip" class="soft-button" type="button" aria-pressed="false">Flip</button><button id="robot-remove" type="button" class="soft-button" aria-label="Remove" title="Remove selected part" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><span>Remove</span></button><button id="robot-clear" type="button" class="soft-button" disabled>Clear</button></div>
-            <div class="robot-tool-row robot-view-tools"><button id="robot-zoom-out" class="soft-button" type="button" aria-label="Zoom out">−</button><button id="robot-zoom-level" class="soft-button" type="button" aria-label="Reset canvas to reference 100 percent">100%</button><button id="robot-zoom-in" class="soft-button" type="button" aria-label="Zoom in">+</button><button id="robot-view-fit" class="soft-button" type="button" aria-label="Fit canvas">Fit</button><button id="robot-grid" class="soft-button" type="button" aria-pressed="false">Grid</button><button id="robot-done" type="button" class="soft-button" disabled>Done</button><button id="robot-snapshot" type="button" class="soft-button" disabled aria-label="Save picture" title="Save picture">Save</button></div>
+            <div class="robot-tool-row robot-heading robot-control-heading"><button id="robot-look" type="button" class="soft-button" aria-pressed="false">Look</button><select id="robot-part-axis" aria-label="Part dimension"><option value="both">Both</option><option value="width">Width</option><option value="height">Height</option></select><button id="robot-rotate-left" class="soft-button" type="button" aria-label="Rotate selected part counterclockwise 45 degrees">↶</button><button id="robot-rotate-right" class="soft-button" type="button" aria-label="Rotate selected part clockwise 45 degrees">↷</button><button id="robot-remove" type="button" class="soft-button" aria-label="Remove" title="Remove selected part" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><span>Remove</span></button><button id="robot-clear" type="button" class="soft-button" disabled>Clear</button></div>
+            <div class="robot-tool-row robot-view-tools"><button id="robot-zoom-out" class="soft-button" type="button" aria-label="Zoom out">−</button><button id="robot-zoom-level" class="soft-button" type="button" aria-label="Reset canvas to reference 100 percent">100%</button><button id="robot-zoom-in" class="soft-button" type="button" aria-label="Zoom in">+</button><button id="robot-view-fit" class="soft-button" type="button" aria-label="Fit view and toggle whole assembly editing" aria-pressed="false">Fit</button><button id="robot-grid" class="soft-button" type="button" aria-pressed="false">Grid</button><button id="robot-done" type="button" class="soft-button" disabled>Done</button><button id="robot-snapshot" type="button" class="soft-button" disabled aria-label="Save picture" title="Save picture">Save</button></div>
             <button hidden id="robot-part-original" class="soft-button" type="button">Original</button>
           </div>
           <div class="robot-selection-row robot-sr"><output id="robot-selected-label" aria-live="polite">Canvas · zoom</output></div>
-          <div class="robot-board-wrap"><svg id="robot-board" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 848 1264" preserveAspectRatio="xMidYMid meet" role="group" tabindex="0" aria-label="Assembly canvas. Tap or drag a part into place; drag empty space to pan."></svg><img id="robot-reference" alt="Completed machine reference" hidden></div>
+          <div class="robot-board-wrap"><div id="robot-dpad" class="robot-dpad" hidden aria-label="Precision positioning controls"><div class="robot-dpad-move"><button type="button" data-robot-nudge="up" aria-label="Move up">↑</button><div><button type="button" data-robot-nudge="left" aria-label="Move left">←</button><button type="button" data-robot-nudge="right" aria-label="Move right">→</button></div><button type="button" data-robot-nudge="down" aria-label="Move down">↓</button></div><div class="robot-dpad-turn"><button type="button" data-robot-turn="-15" aria-label="Rotate left 15 degrees">↶ 15°</button><button type="button" data-robot-turn="15" aria-label="Rotate right 15 degrees">↷ 15°</button></div></div><svg id="robot-board" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 848 1264" preserveAspectRatio="xMidYMid meet" role="group" tabindex="0" aria-label="Assembly canvas. Tap or drag a part into place; drag empty space to pan."></svg><img id="robot-reference" alt="Completed machine reference" hidden></div>
         </section>
       </div>`;
     scene.after(room);
@@ -99,7 +99,7 @@
     let page=0,pointer=null,ghost=null,look=false,demoTimer=null,demoActive=false,demoParts=[];
     let keyboard=false,cursor=null,canvasFrame=0,view=null,pendingLayout=false,grid=false;
     const touches=new Map(),masks=new Map();
-    let demoSavedView=null,picture=null;
+    let demoSavedView=null,picture=null,groupMode=false,editRevision=0,saveSerial=0;
     const pose=()=>storeModel,ready=()=>active&&state.age===5&&!!storeModel;
     const shelfOrder=new Map(['head','chest','waist','hip','upper_arm_L','upper_arm_R','forearm_L','forearm_R','hand_L','hand_R','thigh_L','thigh_R','shin_L','shin_R','foot_L','foot_R'].map((id,index)=>[id,index]));
     const shelfIndex=part=>shelfOrder.get(part.id)??shelfOrder.size;
@@ -107,37 +107,52 @@
     const pageCount=()=>ready()?Math.max(1,Math.ceil(pose().parts.length/pageCapacity())):1;
     const pageRange=()=>{const total=ready()?pose().parts.length:0,pages=pageCount(),base=Math.floor(total/pages),extra=total%pages,start=page*base+Math.min(page,extra);return{start,end:start+base+(page<extra?1:0),size:base+(page<extra?1:0)};};
     const partCount=()=>Object.keys(state.placed).length;
-    const selectedPart=()=>!look&&!state.locked&&!demoActive?state.placed[selected]:null;
+    const selectedPart=()=>!groupMode&&!look&&!state.locked&&!demoActive?state.placed[selected]:null;
     const canFinish=()=>ready()&&!state.locked&&!demoActive&&!pointer&&partCount()>0;
-    const canSave=()=>ready()&&state.locked&&!picture?.pending;
+    const canSave=()=>ready()&&partCount()>0&&!demoActive&&!pointer&&!picture?.pending;
     const canMoveCanvas=()=>ready()&&!!view&&!state.locked&&!demoActive;
+    const dirty=()=>{editRevision++;picture=null;};
+    const groupCenter=()=>{const b=designBounds(state);return{x:b.x+b.width/2,y:b.y+b.height/2};};
+    function groupTransform(dx=0,dy=0,degrees=0,factor=1){
+      if(!groupMode||!canMoveCanvas()||!partCount())return;
+      const center=groupCenter(),rad=degrees*Math.PI/180,c=Math.cos(rad),si=Math.sin(rad);
+      for(const at of Object.values(state.placed)){
+        const px=at.x+at.part.width/2-center.x,py=at.y+at.part.height/2-center.y;
+        at.x=center.x+(px*c-py*si)*factor+dx-at.part.width/2;
+        at.y=center.y+(px*si+py*c)*factor+dy-at.part.height/2;
+        at.angle=((shapeOf(at).angle+degrees)%360+360)%360;
+        at.widthScale=Math.max(.25,Math.min(4,shapeOf(at).widthScale*factor));
+        at.heightScale=Math.max(.25,Math.min(4,shapeOf(at).heightScale*factor));
+      }
+      dirty();renderBoard();
+    }
     const buildHint=()=>partCount()?'Build your way. Tap Done when you’re ready.':'Pick any part from Stores and place it where you like.';
     function syncButtons(){
       const count=partCount();
       $('progress').textContent=state.locked?'Locked':`${count} ${count===1?'part':'parts'}`;
-      $('done').disabled=!canFinish();
+      $('done').disabled=state.locked?false:!canFinish();$('done').textContent=state.locked?'Edit':'Done';$('done').classList.toggle('robot-frozen',state.locked);$('done').classList.toggle('robot-editing',!state.locked);
       $('remove').disabled=!selectedPart()||!!pointer;
       $('clear').disabled=state.locked||!count||demoActive||!!pointer;
       $('snapshot').disabled=!canSave();
-      $('snapshot').textContent=picture?.pending?'Preparing…':'Save';
+      $('snapshot').textContent=picture?.pending?'Preparing…':'Save';$('view-fit').classList.toggle('robot-group-active',groupMode);$('view-fit').setAttribute('aria-pressed',String(groupMode));$('view-fit').textContent=groupMode?'Fit ✓':'Fit';$('dpad').hidden=!(canMoveCanvas()&&partCount()&&(groupMode||!!selectedPart())&&!look);$('dpad').querySelectorAll('button').forEach(b=>b.disabled=state.locked||demoActive||!!pointer);
       $('category').disabled=$('variant').disabled=$('look').disabled=!ready()||state.locked||demoActive;
       const at=selectedPart(),editable=!!at&&!pointer,s=shapeOf(at),axis=$('part-axis').value,scales=axis==='both'?[s.widthScale,s.heightScale]:[axis==='width'?s.widthScale:s.heightScale];
       $('zoom-level').textContent=at?(axis==='both'&&s.widthScale!==s.heightScale?`${Math.round(s.widthScale*100)}×${Math.round(s.heightScale*100)}%`:`${Math.round(scales[0]*100)}%`):`${Math.round((view?.zoom||1)*100)}%`;
       $('zoom-level').setAttribute('aria-label',at?'Reset selected dimension to 100 percent':'Reset canvas to reference 100 percent');
       const target=at?`${at.part.name} ${axis==='both'?'size':axis}`:null;$('zoom-in').setAttribute('aria-label',target?`Increase ${target}`:'Zoom in');$('zoom-out').setAttribute('aria-label',target?`Decrease ${target}`:'Zoom out');
-      $('selected-label').textContent=at?`${at.part.name} · size`:'Canvas · zoom';
+      $('selected-label').textContent=groupMode?'Whole assembly · edit':at?`${at.part.name} · size`:'Canvas · zoom';
       const viewControlsDisabled=!canMoveCanvas()||!!pointer;
       $('zoom-in').disabled=viewControlsDisabled||(at?scales.every(n=>n>=4-.000001):view.zoom>=8);
       $('zoom-out').disabled=viewControlsDisabled||(at?scales.every(n=>n<=.25+.000001):view.zoom<=.5);
       $('zoom-level').disabled=viewControlsDisabled;
       $('view-fit').disabled=viewControlsDisabled;
-      for(const id of ['part-axis','part-original','rotate-left','rotate-right','part-flip'])$(id).disabled=!editable;
-      $('part-flip').setAttribute('aria-pressed',String(s.flipX));$('grid').setAttribute('aria-pressed',String(grid));$('grid').disabled=state.locked||demoActive;
+      for(const id of ['part-axis','part-original','rotate-left','rotate-right'])$(id).disabled=!editable;
+      $('grid').setAttribute('aria-pressed',String(grid));$('grid').disabled=state.locked||demoActive;
     }
     function renderShelf(){
       page=Math.min(page,pageCount()-1);const range=pageRange();room.dataset.pageSize=range.size;
       const parts=ready()?[...pose().parts].sort((a,b)=>shelfIndex(a)-shelfIndex(b)).slice(range.start,range.end):[];
-      $('parts').innerHTML=parts.map(part=>`<button type="button" data-robot-part="${part.id}" aria-label="${esc(part.name)}" aria-pressed="${storePick===part}" ${state.locked||look||demoActive?'disabled':''}><img src="${part.asset}" alt="" draggable="false"><span>${esc(part.name)}</span></button>`).join('');
+      $('parts').innerHTML=parts.map(part=>`<button type="button" data-robot-part="${part.id}" aria-label="${esc(part.name)}" aria-pressed="${storePick===part}" ${state.locked||look||groupMode||demoActive?'disabled':''}><img src="${part.asset}" alt="" draggable="false"><span>${esc(part.name)}</span></button>`).join('');
       $('page-label').textContent=`${page+1} / ${pageCount()}`;$('previous-page').disabled=state.locked||page===0;$('next-page').disabled=state.locked||page===pageCount()-1;
       sizeShelfParts();
     }
@@ -210,7 +225,7 @@
     }
     function cancelPointer(){keyboard=false;stopGesture();if(storePick)deselect(true);if(active)renderBoard();}
     function choose(part,id=null){
-      if(!canMoveCanvas()||look||!part)return;
+      if(!canMoveCanvas()||look||groupMode||!part)return;
       if(selected!==id)$('part-axis').value='both';
       selected=id;
       storePick=id===null?part:null;
@@ -234,7 +249,7 @@
     }
     function point(x,y){const matrix=svg.getScreenCTM();return matrix?new DOMPoint(x,y).matrixTransform(matrix.inverse()):null;}
     function placeSelected(p){
-      if(!canMoveCanvas()||look||!p)return;
+      if(!canMoveCanvas()||look||!p||groupMode)return;
       if(storePick){
         const id=addPart(state,storePick,p);
         if(!id)return;
@@ -243,7 +258,7 @@
         feedback();
       }else if(!movePart(state,selected,p))return;
       keyboard=false;
-      cursor=p;
+      cursor=p;dirty();
       render();hint(buildHint());
     }
     function makeGhost(part,x,y){
@@ -278,6 +293,7 @@
     }
     function down(event){
       if(!canMoveCanvas()||event.button>0)return;
+      if(groupMode&&!event.target.closest('[data-robot-part]')){const pt=point(event.clientX,event.clientY);if(!pt)return;pointer={kind:'group',id:event.pointerId,owner:svg,startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastY:event.clientY,moved:false,type:event.pointerType};svg.setPointerCapture(event.pointerId);event.preventDefault();return;}
       const source=event.target.closest('[data-robot-part]'),owner=source||svg;
       if(source&&(look||source.disabled||pointer))return;
       if(event.pointerType==='touch')touches.set(event.pointerId,{x:event.clientX,y:event.clientY,owner});
@@ -308,7 +324,8 @@
       if(!pointer||pointer.id!==event.pointerId)return;
       if(Math.hypot(event.clientX-pointer.startX,event.clientY-pointer.startY)>(pointer.type==='touch'?4:2))pointer.moved=true;
       if(!pointer.moved)return;
-      if(pointer.kind==='pan'){viewport.pan(view,event.clientX-pointer.lastX,event.clientY-pointer.lastY);renderView();}
+      if(pointer.kind==='group'){const before=point(pointer.lastX,pointer.lastY),after=point(event.clientX,event.clientY);if(before&&after)groupTransform(after.x-before.x,after.y-before.y);}
+      else if(pointer.kind==='pan'){viewport.pan(view,event.clientX-pointer.lastX,event.clientY-pointer.lastY);renderView();}
       else{
         if(!ghost){makeGhost(pointer.part,event.clientX,event.clientY);svg.dataset.dragging='true';}
         else moveGhost(event.clientX,event.clientY);
@@ -343,13 +360,13 @@
     function zoom(factor){
       if(!canMoveCanvas())return;
       stopGesture();
-      if(selectedPart())resizeSelected(factor);
+      if(groupMode)groupTransform(0,0,0,factor);else if(selectedPart())resizeSelected(factor);
       else{viewport.zoomAt(view,factor);renderView();}
     }
     $('zoom-in').addEventListener('click',()=>zoom(1.25));$('zoom-out').addEventListener('click',()=>zoom(.8));
     $('view-fit').addEventListener('click',()=>{
       if(!canMoveCanvas())return;
-      stopGesture();deselect(true);viewport.fit(view,partCount()?designBounds(state):referenceBounds);renderView();
+      stopGesture();groupMode=!groupMode;deselect();viewport.fit(view,partCount()?designBounds(state):referenceBounds);renderView();render();hint(groupMode?'Whole assembly selected. Move, rotate or resize together.':'Select any part to edit independently.');
     });
     $('zoom-level').addEventListener('click',()=>{
       if(!canMoveCanvas())return;
@@ -392,12 +409,38 @@
     function editPart(patch){
       if(!selectedPart())return;
       stopGesture();
-      if(transform(state,selected,patch)){render();renderView();hint(buildHint());}
+      if(transform(state,selected,patch)){dirty();render();renderView();hint(buildHint());}
     }
-    $('rotate-left').addEventListener('click',()=>editPart({angle:shapeOf(state.placed[selected]).angle-45}));$('rotate-right').addEventListener('click',()=>editPart({angle:shapeOf(state.placed[selected]).angle+45}));$('part-flip').addEventListener('click',()=>editPart({flipX:!shapeOf(state.placed[selected]).flipX}));$('part-original').addEventListener('click',()=>editPart({widthScale:1,heightScale:1,angle:0,flipX:false}));
+    $('rotate-left').addEventListener('click',()=>editPart({angle:shapeOf(state.placed[selected]).angle-45}));$('rotate-right').addEventListener('click',()=>editPart({angle:shapeOf(state.placed[selected]).angle+45}));$('part-original').addEventListener('click',()=>editPart({widthScale:1,heightScale:1,angle:0,flipX:false}));
+    function nudge(direction){
+      if(!canMoveCanvas()||look)return;
+      const deltas={up:[0,-18],down:[0,18],left:[-18,0],right:[18,0]};
+      const delta=deltas[direction];if(!delta)return;
+      if(groupMode)groupTransform(...delta);
+      else if(selectedPart()){const at=selectedPart();movePart(state,selected,{x:at.x+at.part.width/2+delta[0],y:at.y+at.part.height/2+delta[1]});dirty();renderBoard();}
+    }
+    function turn(degrees){
+      if(!canMoveCanvas()||look)return;
+      if(groupMode)groupTransform(0,0,degrees);
+      else if(selectedPart())editPart({angle:shapeOf(selectedPart()).angle+degrees});
+    }
+    let holdDelay=null,holdRepeat=null,holdTriggered=false;
+    function endHold(){clearTimeout(holdDelay);clearInterval(holdRepeat);holdDelay=holdRepeat=null;}
+    $('dpad').addEventListener('pointerdown',event=>{
+      const button=event.target.closest('button');if(!button||button.disabled)return;
+      event.preventDefault();holdTriggered=false;
+      const act=()=>{holdTriggered=true;if(button.dataset.robotNudge)nudge(button.dataset.robotNudge);else turn(Number(button.dataset.robotTurn));};
+      act();holdDelay=setTimeout(()=>{holdRepeat=setInterval(act,100);},350);
+    });
+    for(const name of ['pointerup','pointercancel','pointerleave'])$('dpad').addEventListener(name,endHold);
+    $('dpad').addEventListener('click',event=>{
+      const button=event.target.closest('button');if(!button||button.disabled)return;
+      if(holdTriggered){holdTriggered=false;return;}
+      if(button.dataset.robotNudge)nudge(button.dataset.robotNudge);else turn(Number(button.dataset.robotTurn));
+    });
     $('grid').addEventListener('click',()=>{if(state.locked)return;grid=!grid;renderGrid();syncButtons();});
     function reset(){
-      cancel();onReset();state=create(state.age);picture=null;view=null;selected=null;storePick=null;page=0;keyboard=false;cursor=null;
+      cancel();onReset();state=create(state.age);dirty();groupMode=false;view=null;selected=null;storePick=null;page=0;keyboard=false;cursor=null;
       $('part-axis').value='both';
       setLook(false);
       updateReference();
@@ -444,20 +487,17 @@
     });
     $('remove').addEventListener('click',()=>{
       if(!selectedPart()||pointer)return;
-      remove(state,selected);deselect();render();hint(buildHint());
+      remove(state,selected);dirty();deselect();render();hint(buildHint());
     });
     $('done').addEventListener('click',()=>{
+      if(state.locked){state.locked=false;picture=null;render();hint('Edit mode. Change any posture and save again.');return;}
       if(!canFinish()||!lock(state))return;
-      stopGesture();
-      deselect();
-      if(look)setLook(false);
-      else render();
-      complete('Design locked. Preparing your picture…');
-      void preparePicture();
+      stopGesture();deselect();if(look)setLook(false);else render();
+      hint('Frozen posture. Save now, or tap Edit to change it.');
     });
     async function preparePicture(){
-      const finishedDesign=state;
-      const result={pending:true,blob:null};
+      const finishedDesign=state,revision=editRevision;
+      const result={pending:true,blob:null,revision};
       picture=result;
       syncButtons();
       try{
@@ -475,7 +515,7 @@
           images.set(part.asset,image);
         }
         await Promise.all([...images.values()].map(image=>image.decode()));
-        if(!active||state!==finishedDesign)return;
+        if(!active||state!==finishedDesign||revision!==editRevision)return;
         for(const at of pieces){
           const {part}=at,shape=shapeOf(at);
           ctx.save();
@@ -487,21 +527,22 @@
         }
         result.blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
         if(!result.blob)throw Error('Picture unavailable');
-        if(active&&state===finishedDesign)hint('Design locked. Tap Save to keep your picture.');
+        if(active&&state===finishedDesign&&revision===editRevision)hint('Picture ready to save.');
       }catch{
-        if(active&&state===finishedDesign)hint('The picture could not be prepared. Tap Save to retry.');
+        if(active&&state===finishedDesign&&revision===editRevision)hint('Picture could not be prepared. Try Save again.');
       }finally{
         result.pending=false;
         if(active&&state===finishedDesign)syncButtons();
       }
     }
-    $('snapshot').addEventListener('click',()=>{
+    $('snapshot').addEventListener('click',async()=>{
       if(!canSave())return;
-      if(!picture?.blob){void preparePicture();return;}
+      if(!picture?.blob||picture.revision!==editRevision)await preparePicture();
+      if(!picture?.blob||picture.revision!==editRevision)return;
       // Use the Save tap itself to start the download on touch browsers.
       const url=URL.createObjectURL(picture.blob);
       const link=document.createElement('a');
-      link.href=url;link.download='SaNa-Machine-Design-v2.23.png';
+      link.href=url;link.download=`SaNa-Machine-Design-v2.24-${++saveSerial}.png`;
       document.body.append(link);link.click();link.remove();
       setTimeout(()=>URL.revokeObjectURL(url),30000);
       hint('Picture sent to your device’s downloads.');
@@ -518,7 +559,7 @@
       };next();
     }
     function start(age){
-      cancel();active=true;app?.classList.add('robot-active');configureAge(age);state=create(age);room.hidden=false;
+      cancel();active=true;groupMode=false;app?.classList.add('robot-active');configureAge(age);state=create(age);room.hidden=false;
       $('age-note').hidden=ready();room.querySelector('.robot-workspace').hidden=!ready();reset();
       if(ready())hint(buildHint());
       else hint('Choose age 5 for the machine assembly trial.');
