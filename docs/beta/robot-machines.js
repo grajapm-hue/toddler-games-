@@ -40,7 +40,7 @@
   function addPart(state,part,center){
     if(state.locked||!part||![center.x,center.y].every(Number.isFinite))return null;
     const id=String(state.nextId++);
-    state.placed[id]={id,part,x:center.x-part.width/2,y:center.y-part.height/2,baseScale:part.storeScale||1};
+    state.placed[id]={id,part,x:center.x-part.width/2,y:center.y-part.height/2,baseScale:part.assemblyScale||part.storeScale||1};
     return id;
   }
 
@@ -96,14 +96,21 @@
           <div class="robot-heading robot-assemble-title"><h2>Assemble</h2><output id="robot-progress" aria-live="polite"></output></div>
           <div class="robot-toolbar" role="group" aria-label="Assembly tools">
             <div class="robot-tool-row robot-heading robot-control-heading"><button id="robot-look" type="button" class="soft-button" aria-pressed="false">Look</button><select id="robot-part-axis" aria-label="Part dimension"><option value="both">Both</option><option value="width">Width</option><option value="height">Height</option></select><button id="robot-rotate-left" class="soft-button" type="button" aria-label="Rotate selected part counterclockwise 45 degrees">↶</button><button id="robot-rotate-right" class="soft-button" type="button" aria-label="Rotate selected part clockwise 45 degrees">↷</button><button id="robot-copy" type="button" class="soft-button" disabled>Copy</button><button id="robot-paste" type="button" class="soft-button" disabled>Paste</button><button id="robot-remove" type="button" class="soft-button" aria-label="Remove" title="Remove selected part" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><span>Remove</span></button><button id="robot-clear" type="button" class="soft-button" disabled>Clear</button></div>
-            <div class="robot-tool-row robot-view-tools"><button id="robot-zoom-out" class="soft-button" type="button" aria-label="Zoom out">−</button><button id="robot-zoom-level" class="soft-button" type="button" aria-label="Reset canvas to reference 100 percent">100%</button><button id="robot-zoom-in" class="soft-button" type="button" aria-label="Zoom in">+</button><button id="robot-view-fit" class="soft-button" type="button" aria-label="Fit view and toggle whole assembly editing" aria-pressed="false">Fit</button><button id="robot-grid" class="soft-button" type="button" aria-pressed="false">Grid</button><button id="robot-done" type="button" class="soft-button" disabled>Done</button><button id="robot-snapshot" type="button" class="soft-button" disabled aria-label="Save picture" title="Save picture">Save</button></div>
-            <div class="robot-tool-row robot-edit-tools" role="group" aria-label="Selected part editing"><label class="robot-select-label">Select <select id="robot-selection-mode" aria-label="Selection shape"><option value="part">Tap part</option><option value="rect">Rectangle</option><option value="oval">Oval / Tube</option><option value="free">Free Select</option></select></label><label class="robot-color-label">Color <input id="robot-color" type="color" value="#8c55e9" aria-label="Choose color for selected part"/></label><button id="robot-apply-color" type="button" class="soft-button" title="Apply this color again to the selected part">Apply</button><button id="robot-part-original" class="soft-button" type="button">Original</button><button id="robot-part-mirror" class="soft-button" type="button" aria-label="Mirror selected part horizontally" aria-pressed="false" title="Flip selected part left or right">⇄ Mirror</button></div>
+            <div class="robot-tool-row robot-view-tools"><button id="robot-zoom-out" class="soft-button" type="button" aria-label="Zoom out">−</button><button id="robot-zoom-level" class="soft-button" type="button" aria-label="Reset canvas to reference 100 percent">100%</button><button id="robot-zoom-in" class="soft-button" type="button" aria-label="Zoom in">+</button><button id="robot-view-fit" class="soft-button" type="button" aria-label="Fit the current assembly within the canvas" title="Fit assembly to screen">Fit</button><button id="robot-grid" class="soft-button" type="button" aria-pressed="false">Grid</button><button id="robot-done" type="button" class="soft-button" disabled>Done</button><button id="robot-snapshot" type="button" class="soft-button" disabled aria-label="Save picture" title="Save picture">Save</button></div>
+            <div class="robot-tool-row robot-edit-tools" role="group" aria-label="Selected part editing"><label class="robot-select-label">Select <select id="robot-selection-mode" aria-label="Selection shape"><option value="part">Tap part</option><option value="rect">Rectangle</option><option value="oval">Oval / Tube</option><option value="free" aria-label="Free Selection" title="Free Selection · dotted-square boundary">▧</option></select></label><label class="robot-color-label">Color <input id="robot-color" type="color" value="#8c55e9" aria-label="Choose color for selected part"/></label><button id="robot-apply-color" type="button" class="soft-button" title="Apply this color again to the selected part">Apply</button><button id="robot-part-original" class="soft-button" type="button">Original</button><button id="robot-help" class="soft-button" type="button" aria-label="How to Play Kids Assemble" title="How to Play">?</button><button id="robot-part-mirror" class="soft-button" type="button" aria-label="Mirror selected part horizontally" aria-pressed="false" title="Flip selected part left or right">⇄ Mirror</button></div>
           </div>
           <div class="robot-selection-row robot-sr"><output id="robot-selected-label" aria-live="polite">Canvas · zoom</output></div>
           <div class="robot-board-wrap"><svg id="robot-board" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 848 1264" preserveAspectRatio="xMidYMid meet" role="group" tabindex="0" aria-label="Assembly canvas. Tap or drag a part into place; drag empty space to pan."></svg><img id="robot-reference" alt="Completed machine reference" hidden></div>
         </section>
       </div>`;
     scene.after(room);
+    const help=document.createElement('div');help.className='robot-help-shade';help.hidden=true;
+    help.innerHTML=`<section class="robot-help-panel" role="dialog" aria-modal="true" aria-labelledby="robot-help-title" tabindex="-1"><h2 id="robot-help-title">How to Play · Kids Assemble</h2><div class="robot-help-content"><p><b>Stores:</b> Choose Robots or Cars, Parts or Connectors, and a model. Tap or drag a piece into Assemble. The name appears below each store picture.</p><p><b>Tap Part:</b> Tap a placed part to select it, then drag to move it. Use + / − to resize the selected part and ↶ / ↷ to rotate it by 45°. Choose Both, Width, or Height for resizing.</p><p><b>▧ Free Selection:</b> Choose the dotted-square icon in Select. Tap around the desired area to place red boundary points; tap the green starting point to close. Then tap Copy and Paste to create an independent copy. Rectangle and Oval select regions in the same menu.</p><p><b>Copy / Paste:</b> Copy a selected part or closed selection, then Paste. The pasted copy can be moved, recolored, or mirrored independently.</p><p><b>Color:</b> Select a part and choose a color. Tap Apply to use the same color on another part. Original restores the selected part's original colors. ⇄ Mirror flips only the selected part.</p><p><b>Connectors:</b> Choose Connectors in Stores to link robot parts. Connectors are layered behind solid parts.</p><p><b>Zoom / Fit / Grid:</b> With no part selected, + / − zoom the canvas. Fit shows the current assembly within the canvas without moving or grouping parts; use it again after rearranging pieces. Grid toggles guide lines.</p><p><b>Look:</b> View the model reference. <b>Remove:</b> Delete a selected piece. <b>Clear:</b> Clear the current assembly with confirmation.</p><p><b>Done:</b> Freeze the completed assembly. <b>Edit:</b> Unlock every piece for independent changes. <b>Save:</b> Export the assembly as shown. <b>New:</b> Start a fresh assembly after confirmation.</p></div><button id="robot-help-close" class="soft-button" type="button">Close</button></section>`;
+    room.append(help);
+    room.querySelector('#robot-help').addEventListener('click',()=>{help.hidden=false;help.querySelector('.robot-help-panel').focus();});
+    room.querySelector('#robot-help-close').addEventListener('click',()=>{help.hidden=true;room.querySelector('#robot-help').focus();});
+    help.addEventListener('click',e=>{if(e.target===help)help.hidden=true;});
+    help.addEventListener('keydown',e=>{if(e.key==='Escape'){help.hidden=true;room.querySelector('#robot-help').focus();}});
     const $=name=>room.querySelector('#robot-'+name),svg=$('board'),app=scene.closest('#app');
     let state=create(),active=false,selected=null,storePick=null,storeModel=null;
     let page=0,pointer=null,ghost=null,look=false,demoTimer=null,demoActive=false,demoParts=[];
@@ -111,6 +118,15 @@
     const touches=new Map(),masks=new Map();
     let demoSavedView=null,picture=null,groupMode=false,editRevision=0,saveSerial=0,clipboard=null,selectionStroke=null;
     const pose=()=>storeModel,ready=()=>active&&state.age===5&&!!storeModel;
+    const displayScale=part=>{
+      const base=part.storeScale||1;
+      if(!part||!/(^|[_ -])head($|[_ -])/i.test(`${part.id} ${part.name}`)||!pose()?.parts)return base;
+      const chest=pose().parts.find(p=>/(^|[_ -])(chest|torso)($|[_ -])/i.test(`${p.id} ${p.name}`));
+      if(!chest)return base;
+      const chestScale=chest.storeScale||1;
+      const maxWidth=chest.width*chestScale*.90,maxHeight=chest.height*chestScale*.88;
+      return Math.min(base,maxWidth/Math.max(1,part.width),maxHeight/Math.max(1,part.height));
+    };
     const shelfOrder=new Map(['head','chest','waist','hip','upper_arm_L','upper_arm_R','forearm_L','forearm_R','hand_L','hand_R','thigh_L','thigh_R','shin_L','shin_R','foot_L','foot_R'].map((id,index)=>[id,index]));
     const shelfIndex=part=>shelfOrder.get(part.id)??shelfOrder.size;
     const pageCapacity=()=>window.matchMedia('(max-height:650px) and (max-width:360px) and (orientation:portrait)').matches?3:6;
@@ -152,18 +168,18 @@
       $('part-mirror').setAttribute('aria-pressed',String(!!selectedPart()&&shapeOf(selectedPart()).flipX));
       $('clear').disabled=state.locked||!count||demoActive||!!pointer;
       $('snapshot').disabled=!canSave();
-      $('snapshot').textContent=picture?.pending?'Preparing…':'Save';$('view-fit').classList.toggle('robot-group-active',groupMode);$('view-fit').setAttribute('aria-pressed',String(groupMode));$('view-fit').textContent=groupMode?'Fit ON':'Fit OFF';$('view-fit').setAttribute('title',groupMode?'Whole assembly mode: tap to edit individual parts':'Individual part mode: tap to edit whole assembly');
+      $('snapshot').textContent=picture?.pending?'Preparing…':'Save';$('view-fit').textContent='Fit';$('view-fit').setAttribute('title','Fit current assembly to canvas without changing parts');
       $('category').disabled=$('store').disabled=$('variant').disabled=$('look').disabled=!ready()||state.locked||demoActive;
       const at=selectedPart(),editable=!!at&&!pointer,s=shapeOf(at),axis=$('part-axis').value,scales=axis==='both'?[s.widthScale,s.heightScale]:[axis==='width'?s.widthScale:s.heightScale];
       $('zoom-level').textContent=at?(axis==='both'&&s.widthScale!==s.heightScale?`${Math.round(s.widthScale*100)}×${Math.round(s.heightScale*100)}%`:`${Math.round(scales[0]*100)}%`):`${Math.round((view?.zoom||1)*100)}%`;
       $('zoom-level').setAttribute('aria-label',at?'Reset selected dimension to 100 percent':'Reset canvas to reference 100 percent');
       const target=at?`${at.part.name} ${axis==='both'?'size':axis}`:null;$('zoom-in').setAttribute('aria-label',target?`Increase ${target}`:'Zoom in');$('zoom-out').setAttribute('aria-label',target?`Decrease ${target}`:'Zoom out');
-      $('selected-label').textContent=groupMode?'Whole assembly · edit':at?`${at.part.name} · size`:'Canvas · zoom';
+      $('selected-label').textContent=at?`${at.part.name} · size`:'Canvas · zoom';
       const viewControlsDisabled=!canMoveCanvas()||!!pointer;
       $('zoom-in').disabled=viewControlsDisabled||(at?scales.every(n=>n>=4-.000001):view.zoom>=8);
       $('zoom-out').disabled=viewControlsDisabled||(at?scales.every(n=>n<=.25+.000001):view.zoom<=.5);
       $('zoom-level').disabled=viewControlsDisabled;
-      $('view-fit').disabled=viewControlsDisabled;
+      $('view-fit').disabled=!ready()||!view||demoActive||!!pointer;
       for(const id of ['part-axis','part-original','rotate-left','rotate-right'])$(id).disabled=!editable;
       $('grid').setAttribute('aria-pressed',String(grid));$('grid').disabled=state.locked||demoActive;
     }
@@ -177,7 +193,7 @@
     /** Stores and the reference share the same native scale at canvas 100%. */
     function sizeShelfParts(){
       if(!view)return;const m=svg.getScreenCTM(),base=m?Math.hypot(m.a,m.b)/(view.zoom||1):0;if(!(base>0))return;
-      for(const image of $('parts').querySelectorAll('img')){const part=pose().parts.find(p=>p.id===image.closest('[data-robot-part]').dataset.robotPart),storeScale=part.storeScale||1;image.style.width=`${part.width*base*storeScale}px`;image.style.height=`${part.height*base*storeScale}px`;}
+      for(const image of $('parts').querySelectorAll('img')){const part=pose().parts.find(p=>p.id===image.closest('[data-robot-part]').dataset.robotPart),storeScale=displayScale(part);image.style.width=`${part.width*base*storeScale}px`;image.style.height=`${part.height*base*storeScale}px`;}
     }
     const pieceImage=(part,placed,extra='')=>{const s=shapeOf(placed),cx=placed.x+part.width/2,cy=placed.y+part.height/2;return `<image href="${part.asset}" x="${placed.x}" y="${placed.y}" width="${part.width}" height="${part.height}" transform="translate(${cx} ${cy}) rotate(${s.angle}) scale(${s.baseScale*s.widthScale*(s.flipX?-1:1)} ${s.baseScale*s.heightScale}) translate(${-cx} ${-cy})" preserveAspectRatio="xMidYMid meet" ${extra}/>`;};
     function renderSelection(){
@@ -294,7 +310,7 @@
     function placeSelected(p){
       if(!canMoveCanvas()||look||!p||groupMode)return;
       if(storePick){
-        const id=addPart(state,storePick,p);
+        const id=addPart(state,{...storePick,assemblyScale:displayScale(storePick)},p);
         if(!id)return;
         selected=id;
         storePick=null;
@@ -306,7 +322,7 @@
     }
     function makeGhost(part,x,y){
       ghost=document.createElement('img');ghost.className='robot-drag-ghost';ghost.src=part.asset;ghost.alt='';ghost.draggable=false;
-      const scale=viewport.scale(view),s=shapeOf(state.placed[pointer.placedId]||{baseScale:part.storeScale||1});ghost.style.width=`${part.width*scale}px`;ghost.style.height=`${part.height*scale}px`;ghost.style.transform=`translate(-50%,-50%) rotate(${s.angle}deg) scale(${s.baseScale*s.widthScale*(s.flipX?-1:1)},${s.baseScale*s.heightScale})`;document.body.append(ghost);moveGhost(x,y);
+      const scale=viewport.scale(view),s=shapeOf(state.placed[pointer.placedId]||{baseScale:displayScale(part)});ghost.style.width=`${part.width*scale}px`;ghost.style.height=`${part.height*scale}px`;ghost.style.transform=`translate(-50%,-50%) rotate(${s.angle}deg) scale(${s.baseScale*s.widthScale*(s.flipX?-1:1)},${s.baseScale*s.heightScale})`;document.body.append(ghost);moveGhost(x,y);
     }
     function moveGhost(x,y){if(ghost){const m=svg.getScreenCTM(),dx=(pointer?.offsetX||0),dy=(pointer?.offsetY||0);ghost.style.left=(x-dx*m.a-dy*m.c)+'px';ghost.style.top=(y-dx*m.b-dy*m.d)+'px';}}
     function clientInside(x,y){const r=svg.getBoundingClientRect();return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom;}
@@ -438,8 +454,8 @@
     }
     $('zoom-in').addEventListener('click',()=>zoom(1.25));$('zoom-out').addEventListener('click',()=>zoom(.8));
     $('view-fit').addEventListener('click',()=>{
-      if(!canMoveCanvas())return;
-      stopGesture();groupMode=!groupMode;deselect();viewport.fit(view,partCount()?designBounds(state):referenceBounds);renderView();render();hint(groupMode?'Whole assembly selected. Move, rotate or resize together.':'Select any part to edit independently.');
+      if(!ready()||!view||demoActive||pointer)return;
+      stopGesture();groupMode=false;selectionStroke=null;$('selection-mode').value='part';viewport.fit(view,partCount()?designBounds(state):referenceBounds);renderView();render();hint('Assembly fitted to screen. Tap any part to continue editing.');
     });
     $('zoom-level').addEventListener('click',()=>{
       if(!canMoveCanvas())return;
@@ -599,7 +615,7 @@
       remove(state,selected);dirty();deselect();render();hint(buildHint());
     });
     $('done').addEventListener('click',()=>{
-      if(state.locked){state.locked=false;picture=null;render();hint('Edit mode. Change any posture and save again.');return;}
+      if(state.locked){state.locked=false;picture=null;groupMode=false;selectionStroke=null;stopGesture();$('selection-mode').value='part';render();hint('Edit mode. Tap any part to move, rotate, resize or recolor it.');return;}
       if(!canFinish()||!lock(state))return;
       stopGesture();deselect();if(look)setLook(false);else render();
       hint('Frozen posture. Save now, or tap Edit to change it.');

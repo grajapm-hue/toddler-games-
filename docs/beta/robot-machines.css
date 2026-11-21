@@ -175,3 +175,13 @@
 /* v2.31: reusable selected-object color application in compact edit row */
 #robot-machines-room #robot-apply-color{min-height:30px;padding:3px 7px;font-size:12px;flex:none}
 #robot-machines-room .robot-edit-tools{gap:3px;align-items:center;flex-wrap:wrap}
+
+/* v2.32: Fit is an action, not a whole-assembly mode. */
+#robot-machines-room #robot-view-fit,#robot-machines-room #robot-view-fit:not(.robot-group-active){background:#c8e8d5!important;color:#153b2b!important;border-color:#729c85!important}
+#robot-machines-room .robot-help-shade[hidden]{display:none!important}
+#robot-machines-room .robot-help-shade{position:absolute;inset:0;z-index:100;display:grid;place-items:center;padding:12px;background:#10242dbb}
+#robot-machines-room .robot-help-panel{width:min(660px,96%);max-height:92%;overflow:auto;padding:16px 20px;border-radius:16px;background:#fffdf3;color:#203a46;box-shadow:0 10px 36px #0006}
+#robot-machines-room .robot-help-panel h2{font-size:21px;margin:0 0 8px}
+#robot-machines-room .robot-help-content p{font-size:14px;line-height:1.45;margin:8px 0}
+#robot-machines-room #robot-help-close{float:right}
+#robot-machines-room #robot-help{min-width:32px;font-weight:900}
