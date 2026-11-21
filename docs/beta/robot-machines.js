@@ -97,7 +97,7 @@
           <div class="robot-toolbar" role="group" aria-label="Assembly tools">
             <div class="robot-tool-row robot-heading robot-control-heading"><button id="robot-look" type="button" class="soft-button" aria-pressed="false">Look</button><select id="robot-part-axis" aria-label="Part dimension"><option value="both">Both</option><option value="width">Width</option><option value="height">Height</option></select><button id="robot-rotate-left" class="soft-button" type="button" aria-label="Rotate selected part counterclockwise 45 degrees">↶</button><button id="robot-rotate-right" class="soft-button" type="button" aria-label="Rotate selected part clockwise 45 degrees">↷</button><button id="robot-copy" type="button" class="soft-button" disabled>Copy</button><button id="robot-paste" type="button" class="soft-button" disabled>Paste</button><button id="robot-remove" type="button" class="soft-button" aria-label="Remove" title="Remove selected part" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><span>Remove</span></button><button id="robot-clear" type="button" class="soft-button" disabled>Clear</button></div>
             <div class="robot-tool-row robot-view-tools"><button id="robot-zoom-out" class="soft-button" type="button" aria-label="Zoom out">−</button><button id="robot-zoom-level" class="soft-button" type="button" aria-label="Reset canvas to reference 100 percent">100%</button><button id="robot-zoom-in" class="soft-button" type="button" aria-label="Zoom in">+</button><button id="robot-view-fit" class="soft-button" type="button" aria-label="Fit view and toggle whole assembly editing" aria-pressed="false">Fit</button><button id="robot-grid" class="soft-button" type="button" aria-pressed="false">Grid</button><button id="robot-done" type="button" class="soft-button" disabled>Done</button><button id="robot-snapshot" type="button" class="soft-button" disabled aria-label="Save picture" title="Save picture">Save</button></div>
-            <div class="robot-tool-row robot-edit-tools" role="group" aria-label="Selected part editing"><label class="robot-select-label">Select <select id="robot-selection-mode" aria-label="Selection shape"><option value="part">Tap part</option><option value="rect">Rectangle</option><option value="oval">Oval / Tube</option><option value="free">Free Select</option></select></label><label class="robot-color-label">Color <input id="robot-color" type="color" value="#8c55e9" aria-label="Recolor dominant surface of selected part"/></label><button id="robot-part-original" class="soft-button" type="button">Original</button><button id="robot-part-mirror" class="soft-button" type="button" aria-label="Mirror selected part horizontally" aria-pressed="false" title="Flip selected part left or right">⇄ Mirror</button></div>
+            <div class="robot-tool-row robot-edit-tools" role="group" aria-label="Selected part editing"><label class="robot-select-label">Select <select id="robot-selection-mode" aria-label="Selection shape"><option value="part">Tap part</option><option value="rect">Rectangle</option><option value="oval">Oval / Tube</option><option value="free">Free Select</option></select></label><label class="robot-color-label">Color <input id="robot-color" type="color" value="#8c55e9" aria-label="Choose color for selected part"/></label><button id="robot-apply-color" type="button" class="soft-button" title="Apply this color again to the selected part">Apply</button><button id="robot-part-original" class="soft-button" type="button">Original</button><button id="robot-part-mirror" class="soft-button" type="button" aria-label="Mirror selected part horizontally" aria-pressed="false" title="Flip selected part left or right">⇄ Mirror</button></div>
           </div>
           <div class="robot-selection-row robot-sr"><output id="robot-selected-label" aria-live="polite">Canvas · zoom</output></div>
           <div class="robot-board-wrap"><svg id="robot-board" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 848 1264" preserveAspectRatio="xMidYMid meet" role="group" tabindex="0" aria-label="Assembly canvas. Tap or drag a part into place; drag empty space to pan."></svg><img id="robot-reference" alt="Completed machine reference" hidden></div>
@@ -146,6 +146,7 @@
       $('copy').disabled=!selectedPart()||!!pointer;
       $('paste').disabled=!clipboard||state.locked||groupMode||look||demoActive||!!pointer;
       $('color').disabled=!selectedPart()||!!pointer;
+       $('apply-color').disabled=!selectedPart()||!!pointer||state.locked;
       $('part-original').disabled=!selectedPart()||!!pointer;
       $('part-mirror').disabled=!selectedPart()||!!pointer;
       $('part-mirror').setAttribute('aria-pressed',String(!!selectedPart()&&shapeOf(selectedPart()).flipX));
@@ -485,10 +486,13 @@
     }
     $('part-mirror').addEventListener('click',()=>{const at=selectedPart();if(!at)return;editPart({flipX:!shapeOf(at).flipX});hint('Selected part mirrored. Drag or rotate it to create a new pose.');});
     $('rotate-left').addEventListener('click',()=>editPart({angle:shapeOf(state.placed[selected]).angle-45}));$('rotate-right').addEventListener('click',()=>editPart({angle:shapeOf(state.placed[selected]).angle+45}));$('part-original').addEventListener('click',()=>{
+      recolorRequest++;
       const at=selectedPart();if(!at)return;
       if(at.originalAsset){at.part={...at.part,asset:at.originalAsset};delete at.originalAsset;dirty();render();hint('Original colors restored.');}
     });
+    let recolorRequest=0;
     const recolorSelection=async(color)=>{
+      const request=++recolorRequest;
       const at=selectedPart();if(!at)return;
       const recolorId=at.id;
       const original=at.originalAsset||at.part.asset,source=new Image();source.src=original;
@@ -504,10 +508,11 @@
       const stroke=selectionStroke?.placedId===at.id&&selectionStroke.closed?selectionStroke:null;
       const inside=(x,y)=>{if(!stroke)return true;const pts=stroke.points.map(pt=>localPoint(at.part,at,pt));if(stroke.mode==='rect'){const a=pts[0],b=pts.at(-1);return x>=Math.min(a.x,b.x)&&x<=Math.max(a.x,b.x)&&y>=Math.min(a.y,b.y)&&y<=Math.max(a.y,b.y);}if(stroke.mode==='oval'){const a=pts[0],b=pts.at(-1),rx=Math.abs(a.x-b.x)/2,ry=Math.abs(a.y-b.y)/2;return rx>0&&ry>0&&((x-(a.x+b.x)/2)/rx)**2+((y-(a.y+b.y)/2)/ry)**2<=1;}let hit=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const a=pts[i],b=pts[j];if((a.y>y)!==(b.y>y)&&x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x)hit=!hit;}return hit;};
       for(let i=0;i<d.length;i+=4){const idx=i/4,x=idx%canvas.width,y=Math.floor(idx/canvas.width);if(!inside(x,y)||d[i+3]<180)continue;const r=d[i],g=d[i+1],b=d[i+2],max=Math.max(r,g,b),min=Math.min(r,g,b);if(max-min<45||max<65)continue;const h=Math.atan2(Math.sqrt(3)*(g-b),2*r-g-b),bucket=Math.floor(((h+Math.PI)/(2*Math.PI))*12)%12;if(Math.min((bucket-family+12)%12,(family-bucket+12)%12)>1)continue;const brightness=luma(r,g,b),factor=Math.max(.3,Math.min(1.8,brightness/Math.max(35,targetLum)));const mix=Math.min(.9,(max-min)/Math.max(1,max)*.9);d[i]=Math.round(r*(1-mix)+Math.min(255,nr*factor)*mix);d[i+1]=Math.round(g*(1-mix)+Math.min(255,ng*factor)*mix);d[i+2]=Math.round(b*(1-mix)+Math.min(255,nb*factor)*mix);}
-      if(!selectedPart()||selectedPart().id!==recolorId||state.placed[recolorId]!==at)return;
+      if(request!==recolorRequest||state.locked||!selectedPart()||selectedPart().id!==recolorId||state.placed[recolorId]!==at)return;
       ctx.putImageData(pixels,0,0);at.originalAsset=original;at.part={...at.part,asset:canvas.toDataURL('image/png')};selectionStroke=null;dirty();render();hint('Main surface recolored; details and highlights retained.');
     };
-    $('color').addEventListener('change',e=>{if(!state.locked)recolorSelection(e.target.value);});
+    $('color').addEventListener('input',e=>{if(!state.locked)recolorSelection(e.target.value);});
+    $('apply-color').addEventListener('click',()=>{if(!state.locked)recolorSelection($('color').value);});
     $('selection-mode').addEventListener('change',()=>{selectionStroke=null;renderBoard();hint(selectedShape()==='part'?'Tap a complete part to select it.':'Draw a selection starting on a placed part, then tap Copy.');});
     $('copy').addEventListener('click',async()=>{
       const at=selectedPart();if(!at)return;

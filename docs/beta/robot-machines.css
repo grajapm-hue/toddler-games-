@@ -171,3 +171,7 @@
  #robot-machines-room .robot-assemble .robot-board-wrap{grid-column:1;grid-row:5}
 }
 @media(max-width:380px){#robot-machines-room .robot-edit-tools{gap:3px}#robot-machines-room .robot-edit-tools .soft-button{padding-inline:5px;font-size:11px}#robot-machines-room .robot-edit-tools #robot-selection-mode{max-width:105px;font-size:11px}}
+
+/* v2.31: reusable selected-object color application in compact edit row */
+#robot-machines-room #robot-apply-color{min-height:30px;padding:3px 7px;font-size:12px;flex:none}
+#robot-machines-room .robot-edit-tools{gap:3px;align-items:center;flex-wrap:wrap}
