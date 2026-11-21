@@ -97,7 +97,7 @@
           <div class="robot-toolbar" role="group" aria-label="Assembly tools">
             <div class="robot-tool-row robot-heading robot-control-heading"><button id="robot-look" type="button" class="soft-button" aria-pressed="false">Look</button><select id="robot-part-axis" aria-label="Part dimension"><option value="both">Both</option><option value="width">Width</option><option value="height">Height</option></select><button id="robot-rotate-left" class="soft-button" type="button" aria-label="Rotate selected part counterclockwise 45 degrees">↶</button><button id="robot-rotate-right" class="soft-button" type="button" aria-label="Rotate selected part clockwise 45 degrees">↷</button><button id="robot-copy" type="button" class="soft-button" disabled>Copy</button><button id="robot-paste" type="button" class="soft-button" disabled>Paste</button><button id="robot-remove" type="button" class="soft-button" aria-label="Remove" title="Remove selected part" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><span>Remove</span></button><button id="robot-clear" type="button" class="soft-button" disabled>Clear</button></div>
             <div class="robot-tool-row robot-view-tools"><button id="robot-zoom-out" class="soft-button" type="button" aria-label="Zoom out">−</button><button id="robot-zoom-level" class="soft-button" type="button" aria-label="Reset canvas to reference 100 percent">100%</button><button id="robot-zoom-in" class="soft-button" type="button" aria-label="Zoom in">+</button><button id="robot-view-fit" class="soft-button" type="button" aria-label="Fit the current assembly within the canvas" title="Fit assembly to screen">Fit</button><button id="robot-grid" class="soft-button" type="button" aria-pressed="false">Grid</button><button id="robot-done" type="button" class="soft-button" disabled>Done</button><button id="robot-snapshot" type="button" class="soft-button" disabled aria-label="Save picture" title="Save picture">Save</button></div>
-            <div class="robot-tool-row robot-edit-tools" role="group" aria-label="Selected part editing"><label class="robot-select-label">Select <select id="robot-selection-mode" aria-label="Selection shape"><option value="part">Tap part</option><option value="rect">Rectangle</option><option value="oval">Oval / Tube</option><option value="free" aria-label="Free Selection" title="Free Selection · dotted-square boundary">▧</option></select></label><label class="robot-color-label">Color <input id="robot-color" type="color" value="#8c55e9" aria-label="Choose color for selected part"/></label><button id="robot-apply-color" type="button" class="soft-button" title="Apply this color again to the selected part">Apply</button><button id="robot-part-original" class="soft-button" type="button">Original</button><button id="robot-help" class="soft-button" type="button" aria-label="How to Play Kids Assemble" title="How to Play">?</button><button id="robot-part-mirror" class="soft-button" type="button" aria-label="Mirror selected part horizontally" aria-pressed="false" title="Flip selected part left or right">⇄ Mirror</button></div>
+            <div class="robot-tool-row robot-edit-tools" role="group" aria-label="Selected part editing"><label class="robot-select-label">Select <select id="robot-selection-mode" aria-label="Selection shape · Rectangle selects all enclosed parts for color, move and resize"><option value="part">Tap part</option><option value="rect">Rectangle</option><option value="oval">Oval / Tube</option><option value="free" aria-label="Free Selection" title="Free Selection · dotted-square boundary">▧</option></select></label><label class="robot-color-label">Color <input id="robot-color" type="color" value="#8c55e9" aria-label="Choose color for selected part"/></label><button id="robot-apply-color" type="button" class="soft-button" title="Apply this color again to the selected part">Apply</button><button id="robot-part-original" class="soft-button" type="button">Original</button><button id="robot-help" class="soft-button" type="button" aria-label="How to Play Kids Assemble" title="How to Play">?</button><button id="robot-part-mirror" class="soft-button" type="button" aria-label="Mirror selected part horizontally" aria-pressed="false" title="Flip selected part left or right">⇄ Mirror</button></div>
           </div>
           <div class="robot-selection-row robot-sr"><output id="robot-selected-label" aria-live="polite">Canvas · zoom</output></div>
           <div class="robot-board-wrap"><svg id="robot-board" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 848 1264" preserveAspectRatio="xMidYMid meet" role="group" tabindex="0" aria-label="Assembly canvas. Tap or drag a part into place; drag empty space to pan."></svg><img id="robot-reference" alt="Completed machine reference" hidden></div>
@@ -105,7 +105,7 @@
       </div>`;
     scene.after(room);
     const help=document.createElement('div');help.className='robot-help-shade';help.hidden=true;
-    help.innerHTML=`<section class="robot-help-panel" role="dialog" aria-modal="true" aria-labelledby="robot-help-title" tabindex="-1"><h2 id="robot-help-title">How to Play · Kids Assemble</h2><div class="robot-help-content"><p><b>Stores:</b> Choose Robots or Cars, Parts or Connectors, and a model. Tap or drag a piece into Assemble. The name appears below each store picture.</p><p><b>Tap Part:</b> Tap a placed part to select it, then drag to move it. Use + / − to resize the selected part and ↶ / ↷ to rotate it by 45°. Choose Both, Width, or Height for resizing.</p><p><b>▧ Free Selection:</b> Choose the dotted-square icon in Select. Tap around the desired area to place red boundary points; tap the green starting point to close. Then tap Copy and Paste to create an independent copy. Rectangle and Oval select regions in the same menu.</p><p><b>Copy / Paste:</b> Copy a selected part or closed selection, then Paste. The pasted copy can be moved, recolored, or mirrored independently.</p><p><b>Color:</b> Select a part and choose a color. Tap Apply to use the same color on another part. Original restores the selected part's original colors. ⇄ Mirror flips only the selected part.</p><p><b>Connectors:</b> Choose Connectors in Stores to link robot parts. Connectors are layered behind solid parts.</p><p><b>Zoom / Fit / Grid:</b> With no part selected, + / − zoom the canvas. Fit shows the current assembly within the canvas without moving or grouping parts; use it again after rearranging pieces. Grid toggles guide lines.</p><p><b>Look:</b> View the model reference. <b>Remove:</b> Delete a selected piece. <b>Clear:</b> Clear the current assembly with confirmation.</p><p><b>Done:</b> Freeze the completed assembly. <b>Edit:</b> Unlock every piece for independent changes. <b>Save:</b> Export the assembly as shown. <b>New:</b> Start a fresh assembly after confirmation.</p></div><button id="robot-help-close" class="soft-button" type="button">Close</button></section>`;
+    help.innerHTML=`<section class="robot-help-panel" role="dialog" aria-modal="true" aria-labelledby="robot-help-title" tabindex="-1"><h2 id="robot-help-title">How to Play · Kids Assemble</h2><div class="robot-help-content"><p><b>Stores:</b> Choose Robots or Cars, Parts or Connectors, and a model. Tap or drag a piece into Assemble. The name appears below each store picture.</p><p><b>Tap Part:</b> Tap a placed part to select it, then drag to move it. Use + / − to resize the selected part and ↶ / ↷ to rotate it by 45°. Choose Both, Width, or Height for resizing.</p><p><b>▧ Free Selection:</b> Choose the dotted-square icon in Select. Tap around the desired area to place red boundary points; tap the green starting point to close. Then tap Copy and Paste to create an independent copy. Rectangle: drag a dotted box around one or more parts to select them together. Use Apply to recolor, + / − to resize in 5% steps, or drag inside the box to move the selection. Tap outside to draw a new selection. Oval selects a region for copying.</p><p><b>Copy / Paste:</b> Copy a selected part or closed selection, then Paste. The pasted copy can be moved, recolored, or mirrored independently.</p><p><b>Color:</b> Select a part and choose a color. Tap Apply to use the same color on another part. Original restores the selected part's original colors. ⇄ Mirror flips only the selected part.</p><p><b>Connectors:</b> Choose Connectors in Stores to link robot parts. Connectors are layered behind solid parts.</p><p><b>Zoom / Fit / Grid:</b> The same + / − controls change the canvas zoom when nothing is selected, resize one part when it is selected, or resize all parts enclosed in a Rectangle. Each press changes the percentage by 5 points. Fit shows the current assembly within the canvas without moving or grouping parts; use it again after rearranging pieces. Grid toggles guide lines.</p><p><b>Look:</b> View the model reference. <b>Remove:</b> Delete a selected piece. <b>Clear:</b> Clear the current assembly with confirmation.</p><p><b>Done:</b> Freeze the completed assembly. <b>Edit:</b> Unlock every piece for independent changes. <b>Save:</b> Export the assembly as shown. <b>New:</b> Start a fresh assembly after confirmation.</p></div><button id="robot-help-close" class="soft-button" type="button">Close</button></section>`;
     room.append(help);
     room.querySelector('#robot-help').addEventListener('click',()=>{help.hidden=false;help.querySelector('.robot-help-panel').focus();});
     room.querySelector('#robot-help-close').addEventListener('click',()=>{help.hidden=true;room.querySelector('#robot-help').focus();});
@@ -116,7 +116,7 @@
     let page=0,pointer=null,ghost=null,look=false,demoTimer=null,demoActive=false,demoParts=[];
     let keyboard=false,cursor=null,canvasFrame=0,view=null,pendingLayout=false,grid=false;
     const touches=new Map(),masks=new Map();
-    let demoSavedView=null,picture=null,groupMode=false,editRevision=0,saveSerial=0,clipboard=null,selectionStroke=null;
+    let demoSavedView=null,picture=null,groupMode=false,editRevision=0,saveSerial=0,clipboard=null,selectionStroke=null,rectangleIds=[];
     const pose=()=>storeModel,ready=()=>active&&state.age===5&&!!storeModel;
     const displayScale=part=>{
       const base=part.storeScale||1;
@@ -134,6 +134,21 @@
     const pageRange=()=>{const total=ready()?pose().parts.length:0,pages=pageCount(),base=Math.floor(total/pages),extra=total%pages,start=page*base+Math.min(page,extra);return{start,end:start+base+(page<extra?1:0),size:base+(page<extra?1:0)};};
     const partCount=()=>Object.keys(state.placed).length;
     const selectedShape=()=>$('selection-mode').value;
+    const rectangleParts=()=>rectangleIds.map(id=>state.placed[id]).filter(Boolean);
+    const selectionTargets=()=>rectangleParts().length?rectangleParts():selectedPart()?[selectedPart()]:[];
+    const clearRectangle=()=>{rectangleIds=[];selectionStroke=null;};
+    function rectangleSelect(){
+      if(!selectionStroke||selectionStroke.mode!=='rect'||selectionStroke.points.length<2)return;
+      const a=selectionStroke.points[0],b=selectionStroke.points.at(-1),left=Math.min(a.x,b.x),right=Math.max(a.x,b.x),top=Math.min(a.y,b.y),bottom=Math.max(a.y,b.y);
+      rectangleIds=Object.values(state.placed).filter(at=>{const c={x:at.x+at.part.width/2,y:at.y+at.part.height/2};return c.x>=left&&c.x<=right&&c.y>=top&&c.y<=bottom;}).map(at=>at.id);
+      selectionStroke.closed=true;
+    }
+    function resizeRectangle(factor){
+      const parts=rectangleParts();if(!parts.length)return;
+      const cx=parts.reduce((v,p)=>v+p.x+p.part.width/2,0)/parts.length,cy=parts.reduce((v,p)=>v+p.y+p.part.height/2,0)/parts.length;
+      for(const at of parts){const sh=shapeOf(at),nx=Math.max(.25,Math.min(4,sh.widthScale*factor)),ny=Math.max(.25,Math.min(4,sh.heightScale*factor));const actual=Math.min(nx/sh.widthScale,ny/sh.heightScale);at.x=cx+(at.x+at.part.width/2-cx)*actual-at.part.width/2;at.y=cy+(at.y+at.part.height/2-cy)*actual-at.part.height/2;at.widthScale=nx;at.heightScale=ny;}
+      dirty();render();
+    }
     const selectedPart=()=>!groupMode&&!look&&!state.locked&&!demoActive?state.placed[selected]:null;
     const canFinish=()=>ready()&&!state.locked&&!demoActive&&!pointer&&partCount()>0;
     const canSave=()=>ready()&&partCount()>0&&!demoActive&&!pointer&&!picture?.pending;
@@ -161,8 +176,8 @@
       $('remove').disabled=!selectedPart()||!!pointer;
       $('copy').disabled=!selectedPart()||!!pointer;
       $('paste').disabled=!clipboard||state.locked||groupMode||look||demoActive||!!pointer;
-      $('color').disabled=!selectedPart()||!!pointer;
-       $('apply-color').disabled=!selectedPart()||!!pointer||state.locked;
+      $('color').disabled=!selectionTargets().length||!!pointer;
+       $('apply-color').disabled=!selectionTargets().length||!!pointer||state.locked;
       $('part-original').disabled=!selectedPart()||!!pointer;
       $('part-mirror').disabled=!selectedPart()||!!pointer;
       $('part-mirror').setAttribute('aria-pressed',String(!!selectedPart()&&shapeOf(selectedPart()).flipX));
@@ -170,14 +185,14 @@
       $('snapshot').disabled=!canSave();
       $('snapshot').textContent=picture?.pending?'Preparing…':'Save';$('view-fit').textContent='Fit';$('view-fit').setAttribute('title','Fit current assembly to canvas without changing parts');
       $('category').disabled=$('store').disabled=$('variant').disabled=$('look').disabled=!ready()||state.locked||demoActive;
-      const at=selectedPart(),editable=!!at&&!pointer,s=shapeOf(at),axis=$('part-axis').value,scales=axis==='both'?[s.widthScale,s.heightScale]:[axis==='width'?s.widthScale:s.heightScale];
-      $('zoom-level').textContent=at?(axis==='both'&&s.widthScale!==s.heightScale?`${Math.round(s.widthScale*100)}×${Math.round(s.heightScale*100)}%`:`${Math.round(scales[0]*100)}%`):`${Math.round((view?.zoom||1)*100)}%`;
+      const at=selectedPart(),multi=rectangleParts().length>0,editable=!!at&&!pointer&&!multi,s=shapeOf(at),axis=$('part-axis').value,scales=axis==='both'?[s.widthScale,s.heightScale]:[axis==='width'?s.widthScale:s.heightScale];
+      $('zoom-level').textContent=multi?`${Math.round(shapeOf(rectangleParts()[0]).widthScale*100)}%`:at?(axis==='both'&&s.widthScale!==s.heightScale?`${Math.round(s.widthScale*100)}×${Math.round(s.heightScale*100)}%`:`${Math.round(scales[0]*100)}%`):`${Math.round((view?.zoom||1)*100)}%`;
       $('zoom-level').setAttribute('aria-label',at?'Reset selected dimension to 100 percent':'Reset canvas to reference 100 percent');
-      const target=at?`${at.part.name} ${axis==='both'?'size':axis}`:null;$('zoom-in').setAttribute('aria-label',target?`Increase ${target}`:'Zoom in');$('zoom-out').setAttribute('aria-label',target?`Decrease ${target}`:'Zoom out');
-      $('selected-label').textContent=at?`${at.part.name} · size`:'Canvas · zoom';
+      const target=multi?`${rectangleIds.length} selected parts`:at?`${at.part.name} ${axis==='both'?'size':axis}`:null;$('zoom-in').setAttribute('aria-label',target?`Increase ${target}`:'Zoom in');$('zoom-out').setAttribute('aria-label',target?`Decrease ${target}`:'Zoom out');
+      $('selected-label').textContent=multi?`${rectangleIds.length} parts · size`:at?`${at.part.name} · size`:'Canvas · zoom';
       const viewControlsDisabled=!canMoveCanvas()||!!pointer;
-      $('zoom-in').disabled=viewControlsDisabled||(at?scales.every(n=>n>=4-.000001):view.zoom>=8);
-      $('zoom-out').disabled=viewControlsDisabled||(at?scales.every(n=>n<=.25+.000001):view.zoom<=.5);
+      $('zoom-in').disabled=viewControlsDisabled||(multi?rectangleParts().every(p=>shapeOf(p).widthScale>=4-.000001):at?scales.every(n=>n>=4-.000001):view.zoom>=8);
+      $('zoom-out').disabled=viewControlsDisabled||(multi?rectangleParts().every(p=>shapeOf(p).widthScale<=.25+.000001):at?scales.every(n=>n<=.25+.000001):view.zoom<=.5);
       $('zoom-level').disabled=viewControlsDisabled;
       $('view-fit').disabled=!ready()||!view||demoActive||!!pointer;
       for(const id of ['part-axis','part-original','rotate-left','rotate-right'])$(id).disabled=!editable;
@@ -284,7 +299,7 @@
     function cancelPointer(){keyboard=false;stopGesture();if(storePick)deselect(true);if(active)renderBoard();}
     function choose(part,id=null){
       if(!canMoveCanvas()||look||groupMode||!part)return;
-      if(selected!==id)$('part-axis').value='both';
+      if(selected!==id)$('part-axis').value='both';if(rectangleIds.length)clearRectangle();
       if(selectionStroke&&selectionStroke.placedId!==id)selectionStroke=null;
       selected=id;
       storePick=id===null?part:null;
@@ -298,7 +313,7 @@
       hint(at?`${part.name} selected.`:`Place ${part.name} anywhere in Assemble.`);
     }
     function deselect(announce=false){
-      selected=null;storePick=null;keyboard=false;
+      selected=null;storePick=null;keyboard=false;rectangleIds=[];
       svg.querySelector('[data-robot-keyboard-preview]')?.remove();
       $('part-axis').value='both';
       for(const button of $('parts').querySelectorAll('[data-robot-part]'))button.setAttribute('aria-pressed','false');
@@ -354,6 +369,13 @@
       if(!canMoveCanvas()||event.button>0)return;
       if(event.currentTarget===svg&&selectedShape()!=='part'&&!groupMode&&!look&&!storePick){
         const p=point(event.clientX,event.clientY);if(!p)return;
+        if(selectedShape()==='rect'&&rectangleIds.length&&selectionStroke?.closed){
+          const a=selectionStroke.points[0],b=selectionStroke.points.at(-1);
+          if(p.x>=Math.min(a.x,b.x)&&p.x<=Math.max(a.x,b.x)&&p.y>=Math.min(a.y,b.y)&&p.y<=Math.max(a.y,b.y)){
+            pointer={kind:'rectangle-drag',id:event.pointerId,owner:svg,startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastY:event.clientY,moved:false,type:event.pointerType};svg.setPointerCapture(event.pointerId);event.preventDefault();return;
+          }
+        }
+        rectangleIds=[];
         if(selectedShape()==='free'){
           if(selectionStroke?.mode==='free'&&!selectionStroke.closed){
             const start=selectionStroke.points[0],near=Math.hypot(p.x-start.x,p.y-start.y)<22/viewport.scale(view);
@@ -406,7 +428,11 @@
         event.preventDefault();return;
       }
       if(!pointer.moved)return;
-      if(pointer.kind==='group'){const before=point(pointer.lastX,pointer.lastY),after=point(event.clientX,event.clientY);if(before&&after)groupTransform(after.x-before.x,after.y-before.y);}
+      if(pointer.kind==='rectangle-drag'){
+        const before=point(pointer.lastX,pointer.lastY),after=point(event.clientX,event.clientY);
+        if(before&&after){const dx=after.x-before.x,dy=after.y-before.y;for(const at of rectangleParts()){at.x+=dx;at.y+=dy;}for(const pt of selectionStroke.points){pt.x+=dx;pt.y+=dy;}dirty();renderBoard();}
+      }
+      else if(pointer.kind==='group'){const before=point(pointer.lastX,pointer.lastY),after=point(event.clientX,event.clientY);if(before&&after)groupTransform(after.x-before.x,after.y-before.y);}
       else if(pointer.kind==='pan'){viewport.pan(view,event.clientX-pointer.lastX,event.clientY-pointer.lastY);renderView();}
       else{
         if(!ghost){makeGhost(pointer.part,event.clientX,event.clientY);svg.dataset.dragging='true';}
@@ -425,7 +451,12 @@
       if(pointer.kind==='selection'){
         const p=point(event.clientX,event.clientY);if(p)selectionStroke.points.push(p);
         const at=state.placed[selectionStroke.placedId];
-        stopGesture();if(at){choose(at.part,at.id);renderStroke();hint('Selection ready. Tap Copy to copy the enclosed shape.');}
+        stopGesture();
+        if(selectionStroke.mode==='rect'){
+          rectangleSelect();selected=null;storePick=null;render();
+          hint(rectangleIds.length?`${rectangleIds.length} parts selected. Apply color, drag inside rectangle, or use + / − to resize.`:'No part centers inside rectangle. Draw a larger rectangle.');return;
+        }
+        if(at){choose(at.part,at.id);renderStroke();hint('Selection ready. Tap Copy to copy the enclosed shape.');}
         else{selectionStroke=null;renderBoard();hint('Draw over an existing part to select an area.');}
         return;
       }
@@ -449,18 +480,27 @@
     function zoom(factor){
       if(!canMoveCanvas())return;
       stopGesture();
-      if(groupMode)groupTransform(0,0,0,factor);else if(selectedPart())resizeSelected(factor);
+      if(rectangleParts().length)resizeRectangle(factor);else if(groupMode)groupTransform(0,0,0,factor);else if(selectedPart())resizeSelected(factor);
       else{viewport.zoomAt(view,factor);renderView();}
     }
-    $('zoom-in').addEventListener('click',()=>zoom(1.25));$('zoom-out').addEventListener('click',()=>zoom(.8));
+    function zoomStep(delta){
+      if(!canMoveCanvas())return;
+      const parts=rectangleParts();
+      if(parts.length){const n=shapeOf(parts[0]).widthScale;resizeRectangle(Math.max(.25,Math.min(4,n+delta))/n);}
+      else if(selectedPart()){const at=selectedPart(),axis=$('part-axis').value,sh=shapeOf(at),patch={};if(axis!=='height')patch.widthScale=Math.max(.25,Math.min(4,sh.widthScale+delta));if(axis!=='width')patch.heightScale=Math.max(.25,Math.min(4,sh.heightScale+delta));editPart(patch);}
+      else{const target=Math.max(.5,Math.min(8,view.zoom+delta));viewport.zoomAt(view,target/view.zoom);renderView();}
+      syncButtons();
+    }
+    $('zoom-in').addEventListener('click',()=>zoomStep(.05));$('zoom-out').addEventListener('click',()=>zoomStep(-.05));
     $('view-fit').addEventListener('click',()=>{
       if(!ready()||!view||demoActive||pointer)return;
-      stopGesture();groupMode=false;selectionStroke=null;$('selection-mode').value='part';viewport.fit(view,partCount()?designBounds(state):referenceBounds);renderView();render();hint('Assembly fitted to screen. Tap any part to continue editing.');
+      stopGesture();groupMode=false;clearRectangle();$('selection-mode').value='part';viewport.fit(view,partCount()?designBounds(state):referenceBounds);renderView();render();hint('Assembly fitted to screen. Tap any part to continue editing.');
     });
     $('zoom-level').addEventListener('click',()=>{
       if(!canMoveCanvas())return;
       stopGesture();
-      if(selectedPart()){
+      if(rectangleParts().length){const first=rectangleParts()[0];resizeRectangle(1/Math.max(.25,shapeOf(first).widthScale));}
+      else if(selectedPart()){
         const axis=$('part-axis').value;
         editPart({...(axis!=='height'?{widthScale:1}:{}),...(axis!=='width'?{heightScale:1}:{})});
       }else{viewport.reset(view);renderView();}
@@ -507,29 +547,43 @@
       if(at.originalAsset){at.part={...at.part,asset:at.originalAsset};delete at.originalAsset;dirty();render();hint('Original colors restored.');}
     });
     let recolorRequest=0;
-    const recolorSelection=async(color)=>{
-      const request=++recolorRequest;
-      const at=selectedPart();if(!at)return;
-      const recolorId=at.id;
+    async function recolorPart(at,color,request,region=null){
       const original=at.originalAsset||at.part.asset,source=new Image();source.src=original;
-      try{await source.decode();}catch{hint('Could not load this part for recoloring.');return;}
+      try{await source.decode();}catch{return false;}
       const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(at.part.width));canvas.height=Math.max(1,Math.round(at.part.height));
       const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(source,0,0,canvas.width,canvas.height);
-      let pixels;try{pixels=ctx.getImageData(0,0,canvas.width,canvas.height);}catch{hint('This part cannot be recolored because its image is restricted.');return;}
-      const d=pixels.data,hueSamples=new Array(12).fill(0),luma=(r,g,b)=>.2126*r+.7152*g+.0722*b;
-      // Select the most common vivid color family, protecting white, black, silver and fine outlines.
-      for(let i=0;i<d.length;i+=4){const r=d[i],g=d[i+1],b=d[i+2],max=Math.max(r,g,b),min=Math.min(r,g,b),sat=max-min;if(d[i+3]<180||sat<45||max<65)continue;const h=Math.atan2(Math.sqrt(3)*(g-b),2*r-g-b);hueSamples[Math.floor(((h+Math.PI)/(2*Math.PI))*12)%12]++;}
-      const family=hueSamples.indexOf(Math.max(...hueSamples));if(!hueSamples[family]){hint('No dominant colored surface found; original details preserved.');return;}
-      const nr=parseInt(color.slice(1,3),16),ng=parseInt(color.slice(3,5),16),nb=parseInt(color.slice(5,7),16),targetLum=luma(nr,ng,nb);
-      const stroke=selectionStroke?.placedId===at.id&&selectionStroke.closed?selectionStroke:null;
-      const inside=(x,y)=>{if(!stroke)return true;const pts=stroke.points.map(pt=>localPoint(at.part,at,pt));if(stroke.mode==='rect'){const a=pts[0],b=pts.at(-1);return x>=Math.min(a.x,b.x)&&x<=Math.max(a.x,b.x)&&y>=Math.min(a.y,b.y)&&y<=Math.max(a.y,b.y);}if(stroke.mode==='oval'){const a=pts[0],b=pts.at(-1),rx=Math.abs(a.x-b.x)/2,ry=Math.abs(a.y-b.y)/2;return rx>0&&ry>0&&((x-(a.x+b.x)/2)/rx)**2+((y-(a.y+b.y)/2)/ry)**2<=1;}let hit=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const a=pts[i],b=pts[j];if((a.y>y)!==(b.y>y)&&x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x)hit=!hit;}return hit;};
-      for(let i=0;i<d.length;i+=4){const idx=i/4,x=idx%canvas.width,y=Math.floor(idx/canvas.width);if(!inside(x,y)||d[i+3]<180)continue;const r=d[i],g=d[i+1],b=d[i+2],max=Math.max(r,g,b),min=Math.min(r,g,b);if(max-min<45||max<65)continue;const h=Math.atan2(Math.sqrt(3)*(g-b),2*r-g-b),bucket=Math.floor(((h+Math.PI)/(2*Math.PI))*12)%12;if(Math.min((bucket-family+12)%12,(family-bucket+12)%12)>1)continue;const brightness=luma(r,g,b),factor=Math.max(.3,Math.min(1.8,brightness/Math.max(35,targetLum)));const mix=Math.min(.9,(max-min)/Math.max(1,max)*.9);d[i]=Math.round(r*(1-mix)+Math.min(255,nr*factor)*mix);d[i+1]=Math.round(g*(1-mix)+Math.min(255,ng*factor)*mix);d[i+2]=Math.round(b*(1-mix)+Math.min(255,nb*factor)*mix);}
-      if(request!==recolorRequest||state.locked||!selectedPart()||selectedPart().id!==recolorId||state.placed[recolorId]!==at)return;
-      ctx.putImageData(pixels,0,0);at.originalAsset=original;at.part={...at.part,asset:canvas.toDataURL('image/png')};selectionStroke=null;dirty();render();hint('Main surface recolored; details and highlights retained.');
+      let pixels;try{pixels=ctx.getImageData(0,0,canvas.width,canvas.height);}catch{return false;}
+      const d=pixels.data,hist=new Array(24).fill(0);
+      const hue=(r,g,b)=>{const max=Math.max(r,g,b),min=Math.min(r,g,b),delta=max-min;if(!delta)return 0;let h=max===r?((g-b)/delta)%6:max===g?(b-r)/delta+2:(r-g)/delta+4;return (h*60+360)%360;};
+      for(let i=0;i<d.length;i+=4){const r=d[i],g=d[i+1],b=d[i+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b);if(d[i+3]<170||mx-mn<35||mx<60)continue;hist[Math.floor(hue(r,g,b)/15)%24]++;}
+      const family=hist.indexOf(Math.max(...hist));if(!hist[family])return false;
+      const target=[1,3,5].map(n=>parseInt(color.slice(n,n+2),16));
+      const pts=region?.points.map(pt=>localPoint(at.part,at,pt));
+      const inside=(x,y)=>{if(!pts)return true;const a=pts[0],b=pts.at(-1);if(region.mode==='rect')return x>=Math.min(a.x,b.x)&&x<=Math.max(a.x,b.x)&&y>=Math.min(a.y,b.y)&&y<=Math.max(a.y,b.y);if(region.mode==='oval'){const rx=Math.abs(a.x-b.x)/2,ry=Math.abs(a.y-b.y)/2;return rx>0&&ry>0&&((x-(a.x+b.x)/2)/rx)**2+((y-(a.y+b.y)/2)/ry)**2<=1;}let hit=false;for(let j=0,k=pts.length-1;j<pts.length;k=j++){const a=pts[j],b=pts[k];if((a.y>y)!==(b.y>y)&&x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x)hit=!hit;}return hit;};
+      let changed=0;
+      for(let i=0;i<d.length;i+=4){const x=(i/4)%canvas.width,y=Math.floor(i/4/canvas.width);if(d[i+3]<170||!inside(x,y))continue;
+        const r=d[i],g=d[i+1],b=d[i+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b),sat=mx-mn;
+        if(sat<35||mx<60)continue;
+        const bucket=Math.floor(hue(r,g,b)/15)%24,dist=Math.min((bucket-family+24)%24,(family-bucket+24)%24);
+        if(dist>2)continue;
+        // Recolor vivid painted surfaces strongly; retain light/shadow variation and metallic neutral details.
+        const light=Math.max(.43,Math.min(1.22,(mx+mn)/2/155));const mix=Math.min(.99,Math.max(.94,sat/Math.max(mx,1)));
+        for(let c=0;c<3;c++)d[i+c]=Math.round(Math.min(255,Math.max(0,target[c]*light))*mix+d[i+c]*(1-mix));changed++;
+      }
+      if(!changed||request!==recolorRequest||state.locked||state.placed[at.id]!==at)return false;
+      ctx.putImageData(pixels,0,0);at.originalAsset=original;at.part={...at.part,asset:canvas.toDataURL('image/png')};return true;
+    }
+    const recolorSelection=async color=>{
+      const targets=selectionTargets(),request=++recolorRequest;if(!targets.length)return;
+      const region=rectangleParts().length?null:selectionStroke?.closed?{mode:selectionStroke.mode,points:[...selectionStroke.points]}:null;
+      const changed=await Promise.all(targets.map(at=>recolorPart(at,color,request,region)));
+      if(request!==recolorRequest)return;
+      if(changed.some(Boolean)){dirty();render();hint(`${changed.filter(Boolean).length} selected part(s) recolored. Painted surfaces match the chosen color; details preserved.`);}
+      else hint('No eligible colored surface found. Try a different part or selection.');
     };
     $('color').addEventListener('input',e=>{if(!state.locked)recolorSelection(e.target.value);});
     $('apply-color').addEventListener('click',()=>{if(!state.locked)recolorSelection($('color').value);});
-    $('selection-mode').addEventListener('change',()=>{selectionStroke=null;renderBoard();hint(selectedShape()==='part'?'Tap a complete part to select it.':'Draw a selection starting on a placed part, then tap Copy.');});
+    $('selection-mode').addEventListener('change',()=>{clearRectangle();renderBoard();hint(selectedShape()==='part'?'Tap a complete part to select it.':'Draw a selection starting on a placed part, then tap Copy.');});
     $('copy').addEventListener('click',async()=>{
       const at=selectedPart();if(!at)return;
       const stroke=selectionStroke?.placedId===at.id&&(selectionStroke.mode!=='free'||selectionStroke.closed)?{mode:selectionStroke.mode,points:[...selectionStroke.points]}:null;
@@ -615,7 +669,7 @@
       remove(state,selected);dirty();deselect();render();hint(buildHint());
     });
     $('done').addEventListener('click',()=>{
-      if(state.locked){state.locked=false;picture=null;groupMode=false;selectionStroke=null;stopGesture();$('selection-mode').value='part';render();hint('Edit mode. Tap any part to move, rotate, resize or recolor it.');return;}
+      if(state.locked){state.locked=false;picture=null;groupMode=false;clearRectangle();stopGesture();$('selection-mode').value='part';render();hint('Edit mode. Tap any part to move, rotate, resize or recolor it.');return;}
       if(!canFinish()||!lock(state))return;
       stopGesture();deselect();if(look)setLook(false);else render();
       hint('Frozen posture. Save now, or tap Edit to change it.');
