@@ -134,7 +134,7 @@
 #robot-machines-room .robot-board-wrap{min-height:0}
 @media(max-width:500px){#robot-machines-room .robot-control-heading .soft-button{min-width:38px;min-height:32px;padding:4px 6px;font-size:12px}#robot-machines-room #robot-selection-mode{max-width:114px;font-size:12px}}
 
-/* v2.27: three adjacent store controls; preserve the board and separate part captions. */
+/* v2.28: three adjacent store controls; preserve the board and separate part captions. */
 #robot-machines-room .robot-stores{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
 #robot-machines-room .robot-stores .robot-heading{grid-column:1;min-width:0}
 #robot-machines-room .robot-store-label{grid-column:2;grid-row:1;min-width:0;align-self:center}
@@ -152,3 +152,6 @@
 #app.portrait #robot-machines-room .robot-store-label{grid-column:2;grid-row:1}
 #app.portrait #robot-machines-room .robot-variant-label{grid-column:3;grid-row:1}
 @media(max-width:420px){#robot-machines-room .robot-stores select{font-size:11px;padding:3px 1px}#robot-machines-room .robot-heading h2{font-size:13px}}
+
+/* v2.28 compact recolor control */
+.robot-color-label{display:inline-flex;align-items:center;gap:4px;font-weight:700;font-size:12px;white-space:nowrap}.robot-color-label input{width:32px;height:29px;padding:1px;border-radius:7px;border:1px solid #688c90;background:#fff}.robot-toolbar .robot-select-label{display:inline-flex;align-items:center;gap:4px}

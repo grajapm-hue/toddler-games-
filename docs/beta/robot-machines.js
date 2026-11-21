@@ -8,10 +8,11 @@
   'use strict';
   // Standalone SVG connector artwork; no network assets or third-party libraries.
   const connectorSVG=(kind,color)=>{
-    const rings=Array.from({length:7},(_,i)=>`<ellipse cx="60" cy="${36+i*18}" rx="${kind==='spring'?26:34}" ry="9" fill="none" stroke="${color}" stroke-width="${kind==='spring'?7:12}"/>`).join('');
-    const collars=`<rect x="26" y="12" width="68" height="22" rx="6" fill="#87959f" stroke="#3c4b57" stroke-width="3"/><rect x="26" y="145" width="68" height="22" rx="6" fill="#87959f" stroke="#3c4b57" stroke-width="3"/>`;
-    let body=kind==='spring'?`<path d="M60 22 V158" stroke="#596773" stroke-width="3"/>${rings}`:kind==='elbow45'?`<path d="M37 151 L37 99 Q37 73 61 60 L94 40" fill="none" stroke="${color}" stroke-width="35" stroke-linecap="round"/><path d="M37 151 L37 99 Q37 73 61 60 L94 40" fill="none" stroke="#fff" opacity=".15" stroke-width="9" stroke-dasharray="8 10"/>`:kind==='elbow90'?`<path d="M35 151 V85 Q35 49 74 49 H101" fill="none" stroke="${color}" stroke-width="38" stroke-linecap="round"/><path d="M35 151 V85 Q35 49 74 49 H101" fill="none" stroke="#fff" opacity=".16" stroke-width="10" stroke-dasharray="9 10"/>`:kind==='coupler'?`<rect x="27" y="54" width="66" height="72" rx="18" fill="${color}"/><rect x="22" y="51" width="76" height="15" rx="5" fill="#aab7be"/><rect x="22" y="116" width="76" height="15" rx="5" fill="#aab7be"/>`:`<rect x="30" y="24" width="60" height="133" rx="12" fill="${color}"/>${rings}`;
-    return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="120" height="180" viewBox="0 0 120 180">${body}${kind==='straight'||kind==='spring'?collars:''}</svg>`);
+    const ribs=Array.from({length:7},(_,i)=>`<ellipse cx="60" cy="${36+i*18}" rx="${kind==='spring'?25:32}" ry="9" fill="none" stroke="url(#metal)" stroke-width="${kind==='spring'?8:11}"/><path d="M${kind==='spring'?40:32} ${33+i*18} Q60 ${25+i*18} ${kind==='spring'?80:88} ${33+i*18}" fill="none" stroke="#fff" opacity=".72" stroke-width="3"/>`).join('');
+    const tube=kind==='elbow45'?'M37 151 L37 99 Q37 73 61 60 L94 40':kind==='elbow90'?'M35 151 V85 Q35 49 74 49 H101':'';
+    const body=tube?`<path d="${tube}" fill="none" stroke="#183d5c" stroke-width="43" stroke-linecap="round"/><path d="${tube}" fill="none" stroke="url(#metal)" stroke-width="35" stroke-linecap="round"/><path d="${tube}" fill="none" stroke="#fff" stroke-width="8" opacity=".8" stroke-dasharray="12 9"/>`:kind==='coupler'?`<rect x="25" y="48" width="70" height="83" rx="17" fill="url(#metal)" stroke="#20405b" stroke-width="4"/><path d="M40 54V125" stroke="white" opacity=".8" stroke-width="8"/><rect x="19" y="46" width="82" height="16" rx="5" fill="url(#silver)"/><rect x="19" y="117" width="82" height="16" rx="5" fill="url(#silver)"/>`:`<rect x="29" y="22" width="62" height="138" rx="13" fill="url(#metal)" stroke="#1e455d" stroke-width="4"/>${ribs}`;
+    const collars=(!tube&&kind!=='coupler')?`<rect x="23" y="11" width="74" height="23" rx="7" fill="url(#silver)" stroke="#26455d" stroke-width="3"/><rect x="23" y="145" width="74" height="23" rx="7" fill="url(#silver)" stroke="#26455d" stroke-width="3"/>`:'';
+    return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="120" height="180" viewBox="0 0 120 180"><defs><linearGradient id="metal"><stop stop-color="#14364f"/><stop offset=".16" stop-color="#fff"/><stop offset=".32" stop-color="${color}"/><stop offset=".55" stop-color="#e9ffff"/><stop offset=".72" stop-color="${color}"/><stop offset="1" stop-color="#163a58"/></linearGradient><linearGradient id="silver"><stop stop-color="#3e687d"/><stop offset=".25" stop-color="#fff"/><stop offset=".55" stop-color="#8feaff"/><stop offset=".8" stop-color="#fff"/><stop offset="1" stop-color="#37516b"/></linearGradient></defs>${body}${collars}</svg>`);
   };
   const connectorParts=[['straight','Straight bellows','#3677b9'],['spring','Spring','#4c8790'],['coupler','Short coupler','#c45c42'],['elbow45','45° elbow','#427cb9'],['elbow90','90° elbow','#d18b31'],['straight','Red bellows','#b83d38'],['straight','Black bellows','#383e47'],['coupler','Blue coupler','#3a77ad']].map(([kind,name,color],i)=>({id:'connector-'+i,name,width:120,height:180,storeScale:.8,asset:connectorSVG(kind,color)}));
   const connectorPose={id:'connectors',label:'Flexible connectors',category:'connectors',age:5,width:848,height:1264,reference:'',parts:connectorParts};
@@ -94,9 +95,9 @@
         <section class="robot-assemble" aria-label="Assemble">
           <div class="robot-heading robot-assemble-title"><h2>Assemble</h2><output id="robot-progress" aria-live="polite"></output></div>
           <div class="robot-toolbar" role="group" aria-label="Assembly tools">
-            <div class="robot-tool-row robot-heading robot-control-heading"><button id="robot-look" type="button" class="soft-button" aria-pressed="false">Look</button><select id="robot-part-axis" aria-label="Part dimension"><option value="both">Both</option><option value="width">Width</option><option value="height">Height</option></select><button id="robot-rotate-left" class="soft-button" type="button" aria-label="Rotate selected part counterclockwise 45 degrees">↶</button><button id="robot-rotate-right" class="soft-button" type="button" aria-label="Rotate selected part clockwise 45 degrees">↷</button><button id="robot-copy" type="button" class="soft-button" disabled>Copy</button><button id="robot-paste" type="button" class="soft-button" disabled>Paste</button><button id="robot-backward" type="button" class="soft-button" disabled aria-label="Send behind">Back</button><button id="robot-forward" type="button" class="soft-button" disabled aria-label="Bring forward">Front</button><button id="robot-remove" type="button" class="soft-button" aria-label="Remove" title="Remove selected part" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><span>Remove</span></button><button id="robot-clear" type="button" class="soft-button" disabled>Clear</button></div>
+            <div class="robot-tool-row robot-heading robot-control-heading"><button id="robot-look" type="button" class="soft-button" aria-pressed="false">Look</button><select id="robot-part-axis" aria-label="Part dimension"><option value="both">Both</option><option value="width">Width</option><option value="height">Height</option></select><button id="robot-rotate-left" class="soft-button" type="button" aria-label="Rotate selected part counterclockwise 45 degrees">↶</button><button id="robot-rotate-right" class="soft-button" type="button" aria-label="Rotate selected part clockwise 45 degrees">↷</button><button id="robot-copy" type="button" class="soft-button" disabled>Copy</button><button id="robot-paste" type="button" class="soft-button" disabled>Paste</button><button id="robot-remove" type="button" class="soft-button" aria-label="Remove" title="Remove selected part" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><span>Remove</span></button><button id="robot-clear" type="button" class="soft-button" disabled>Clear</button></div>
             <div class="robot-tool-row robot-view-tools"><button id="robot-zoom-out" class="soft-button" type="button" aria-label="Zoom out">−</button><button id="robot-zoom-level" class="soft-button" type="button" aria-label="Reset canvas to reference 100 percent">100%</button><button id="robot-zoom-in" class="soft-button" type="button" aria-label="Zoom in">+</button><button id="robot-view-fit" class="soft-button" type="button" aria-label="Fit view and toggle whole assembly editing" aria-pressed="false">Fit</button><button id="robot-grid" class="soft-button" type="button" aria-pressed="false">Grid</button><button id="robot-done" type="button" class="soft-button" disabled>Done</button><button id="robot-snapshot" type="button" class="soft-button" disabled aria-label="Save picture" title="Save picture">Save</button></div>
-            <label class="robot-select-label">Select <select id="robot-selection-mode" aria-label="Selection shape"><option value="part">Tap part</option><option value="rect">Rectangle</option><option value="oval">Oval / Tube</option><option value="free">Free Select</option></select></label><button hidden id="robot-part-original" class="soft-button" type="button">Original</button>
+            <label class="robot-select-label">Select <select id="robot-selection-mode" aria-label="Selection shape"><option value="part">Tap part</option><option value="rect">Rectangle</option><option value="oval">Oval / Tube</option><option value="free">Free Select</option></select></label><label class="robot-color-label">Color <input id="robot-color" type="color" value="#8c55e9" aria-label="Recolor dominant surface of selected part"/></label><button id="robot-part-original" class="soft-button" type="button">Original</button>
           </div>
           <div class="robot-selection-row robot-sr"><output id="robot-selected-label" aria-live="polite">Canvas · zoom</output></div>
           <div class="robot-board-wrap"><svg id="robot-board" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 848 1264" preserveAspectRatio="xMidYMid meet" role="group" tabindex="0" aria-label="Assembly canvas. Tap or drag a part into place; drag empty space to pan."></svg><img id="robot-reference" alt="Completed machine reference" hidden></div>
@@ -144,8 +145,8 @@
       $('remove').disabled=!selectedPart()||!!pointer;
       $('copy').disabled=!selectedPart()||!!pointer;
       $('paste').disabled=!clipboard||state.locked||groupMode||look||demoActive||!!pointer;
-      $('backward').disabled=!selectedPart()||!!pointer;
-      $('forward').disabled=!selectedPart()||!!pointer;
+      $('color').disabled=!selectedPart()||!!pointer;
+      $('part-original').disabled=!selectedPart()||!!pointer;
       $('clear').disabled=state.locked||!count||demoActive||!!pointer;
       $('snapshot').disabled=!canSave();
       $('snapshot').textContent=picture?.pending?'Preparing…':'Save';$('view-fit').classList.toggle('robot-group-active',groupMode);$('view-fit').setAttribute('aria-pressed',String(groupMode));$('view-fit').textContent=groupMode?'Fit ON':'Fit OFF';$('view-fit').setAttribute('title',groupMode?'Whole assembly mode: tap to edit individual parts':'Individual part mode: tap to edit whole assembly');
@@ -211,7 +212,7 @@
     function renderBoard(){
       svg.dataset.assembly=JSON.stringify(state.placed);
       svg.dataset.canvasBounds=JSON.stringify(view?viewport.rect(view):referenceBounds);
-      svg.innerHTML=look?pose().parts.map(part=>pieceImage(part,{x:part.x+(referenceBounds.width-pose().width)/2,y:part.y+(referenceBounds.height-pose().height)/2,baseScale:1},'pointer-events="none" aria-hidden="true"')).join(''):Object.values(state.placed).map(at=>pieceImage(at.part,at,`data-robot-placed="${at.id}" class="${selected===at.id?'robot-selected':''}" aria-label="${esc(at.part.name)}"`)).join('');
+      svg.innerHTML=look?pose().parts.map(part=>pieceImage(part,{x:part.x+(referenceBounds.width-pose().width)/2,y:part.y+(referenceBounds.height-pose().height)/2,baseScale:1},'pointer-events="none" aria-hidden="true"')).join(''):Object.values(state.placed).sort((a,b)=>Number(b.part.id.startsWith('connector-'))-Number(a.part.id.startsWith('connector-'))).map(at=>pieceImage(at.part,at,`data-robot-placed="${at.id}" class="${selected===at.id?'robot-selected':''}" aria-label="${esc(at.part.name)}"`)).join('');
       renderGrid();renderStroke();
       const at=selectedPart(),preview=storePick||at?.part;
       if(keyboard&&preview&&!look){
@@ -480,7 +481,28 @@
       stopGesture();
       if(transform(state,selected,patch)){dirty();render();renderView();hint(buildHint());}
     }
-    $('rotate-left').addEventListener('click',()=>editPart({angle:shapeOf(state.placed[selected]).angle-45}));$('rotate-right').addEventListener('click',()=>editPart({angle:shapeOf(state.placed[selected]).angle+45}));$('part-original').addEventListener('click',()=>editPart({widthScale:1,heightScale:1,angle:0,flipX:false}));
+    $('rotate-left').addEventListener('click',()=>editPart({angle:shapeOf(state.placed[selected]).angle-45}));$('rotate-right').addEventListener('click',()=>editPart({angle:shapeOf(state.placed[selected]).angle+45}));$('part-original').addEventListener('click',()=>{
+      const at=selectedPart();if(!at)return;
+      if(at.originalAsset){at.part={...at.part,asset:at.originalAsset};delete at.originalAsset;dirty();render();hint('Original colors restored.');}
+    });
+    const recolorSelection=async(color)=>{
+      const at=selectedPart();if(!at)return;
+      const original=at.originalAsset||at.part.asset,source=new Image();source.src=original;
+      try{await source.decode();}catch{hint('Could not load this part for recoloring.');return;}
+      const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(at.part.width));canvas.height=Math.max(1,Math.round(at.part.height));
+      const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(source,0,0,canvas.width,canvas.height);
+      let pixels;try{pixels=ctx.getImageData(0,0,canvas.width,canvas.height);}catch{hint('This part cannot be recolored because its image is restricted.');return;}
+      const d=pixels.data,hueSamples=new Array(12).fill(0),luma=(r,g,b)=>.2126*r+.7152*g+.0722*b;
+      // Select the most common vivid color family, protecting white, black, silver and fine outlines.
+      for(let i=0;i<d.length;i+=4){const r=d[i],g=d[i+1],b=d[i+2],max=Math.max(r,g,b),min=Math.min(r,g,b),sat=max-min;if(d[i+3]<180||sat<45||max<65)continue;const h=Math.atan2(Math.sqrt(3)*(g-b),2*r-g-b);hueSamples[Math.floor(((h+Math.PI)/(2*Math.PI))*12)%12]++;}
+      const family=hueSamples.indexOf(Math.max(...hueSamples));if(!hueSamples[family]){hint('No dominant colored surface found; original details preserved.');return;}
+      const nr=parseInt(color.slice(1,3),16),ng=parseInt(color.slice(3,5),16),nb=parseInt(color.slice(5,7),16),targetLum=luma(nr,ng,nb);
+      const stroke=selectionStroke?.placedId===at.id&&selectionStroke.closed?selectionStroke:null;
+      const inside=(x,y)=>{if(!stroke)return true;const pts=stroke.points.map(pt=>localPoint(at.part,at,pt));if(stroke.mode==='rect'){const a=pts[0],b=pts.at(-1);return x>=Math.min(a.x,b.x)&&x<=Math.max(a.x,b.x)&&y>=Math.min(a.y,b.y)&&y<=Math.max(a.y,b.y);}if(stroke.mode==='oval'){const a=pts[0],b=pts.at(-1),rx=Math.abs(a.x-b.x)/2,ry=Math.abs(a.y-b.y)/2;return rx>0&&ry>0&&((x-(a.x+b.x)/2)/rx)**2+((y-(a.y+b.y)/2)/ry)**2<=1;}let hit=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const a=pts[i],b=pts[j];if((a.y>y)!==(b.y>y)&&x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x)hit=!hit;}return hit;};
+      for(let i=0;i<d.length;i+=4){const idx=i/4,x=idx%canvas.width,y=Math.floor(idx/canvas.width);if(!inside(x,y)||d[i+3]<180)continue;const r=d[i],g=d[i+1],b=d[i+2],max=Math.max(r,g,b),min=Math.min(r,g,b);if(max-min<45||max<65)continue;const h=Math.atan2(Math.sqrt(3)*(g-b),2*r-g-b),bucket=Math.floor(((h+Math.PI)/(2*Math.PI))*12)%12;if(Math.min((bucket-family+12)%12,(family-bucket+12)%12)>1)continue;const brightness=luma(r,g,b),factor=Math.max(.3,Math.min(1.8,brightness/Math.max(35,targetLum)));const mix=Math.min(.9,(max-min)/Math.max(1,max)*.9);d[i]=Math.round(r*(1-mix)+Math.min(255,nr*factor)*mix);d[i+1]=Math.round(g*(1-mix)+Math.min(255,ng*factor)*mix);d[i+2]=Math.round(b*(1-mix)+Math.min(255,nb*factor)*mix);}
+      ctx.putImageData(pixels,0,0);at.originalAsset=original;at.part={...at.part,asset:canvas.toDataURL('image/png')};selectionStroke=null;dirty();render();hint('Main surface recolored; details and highlights retained.');
+    };
+    $('color').addEventListener('change',e=>{if(!state.locked)recolorSelection(e.target.value);});
     $('selection-mode').addEventListener('change',()=>{selectionStroke=null;renderBoard();hint(selectedShape()==='part'?'Tap a complete part to select it.':'Draw a selection starting on a placed part, then tap Copy.');});
     $('copy').addEventListener('click',async()=>{
       const at=selectedPart();if(!at)return;
@@ -499,16 +521,6 @@
       Object.assign(state.placed[id],clipboard.shape);selected=id;storePick=null;selectionStroke=null;$('selection-mode').value='part';renderStroke();
       dirty();render();hint('Pasted. Drag or resize this copy independently.');
     });
-    function reorderSelected(direction){
-      if(!selectedPart())return;
-      const keys=Object.keys(state.placed),index=keys.indexOf(selected),target=index+direction;
-      if(target<0||target>=keys.length)return;
-      [keys[index],keys[target]]=[keys[target],keys[index]];
-      state.placed=Object.fromEntries(keys.map(key=>[key,state.placed[key]]));
-      dirty();renderBoard();hint(direction>0?'Moved one layer forward.':'Moved one layer backward.');
-    }
-    $('backward').addEventListener('click',()=>reorderSelected(-1));
-    $('forward').addEventListener('click',()=>reorderSelected(1));
     $('grid').addEventListener('click',()=>{if(state.locked)return;grid=!grid;renderGrid();syncButtons();});
     function reset(){
       cancel();onReset();state=create(state.age);clipboard=null;selectionStroke=null;dirty();groupMode=false;view=null;selected=null;storePick=null;page=0;keyboard=false;cursor=null;
