@@ -125,3 +125,11 @@
 #robot-machines-room #robot-view-fit.robot-group-active{background:#2674ba!important;color:#fff!important}
 #robot-machines-room #robot-done.robot-frozen{background:#24854c!important;color:#fff!important}
 #robot-machines-room #robot-done.robot-editing{background:#f8b55e!important;color:#30230b!important}
+/* v2.26: compact kid-friendly creative tools; never overlay the assembly canvas. */
+#robot-machines-room .robot-control-heading{display:flex!important;flex-wrap:wrap!important;align-items:center;justify-content:flex-start;gap:4px}
+#robot-machines-room .robot-control-heading .soft-button{flex:0 0 auto;min-width:44px;min-height:36px;padding:5px 8px;font-weight:700}
+#robot-machines-room .robot-select-label{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;min-height:36px}
+#robot-machines-room #robot-selection-mode{width:auto;max-width:140px;min-height:34px;padding:3px 5px}
+#robot-machines-room #robot-part-axis{width:auto;max-width:94px;min-height:34px}
+#robot-machines-room .robot-board-wrap{min-height:0}
+@media(max-width:500px){#robot-machines-room .robot-control-heading .soft-button{min-width:38px;min-height:32px;padding:4px 6px;font-size:12px}#robot-machines-room #robot-selection-mode{max-width:114px;font-size:12px}}
