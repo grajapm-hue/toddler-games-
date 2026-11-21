@@ -155,3 +155,19 @@
 
 /* v2.28 compact recolor control */
 .robot-color-label{display:inline-flex;align-items:center;gap:4px;font-weight:700;font-size:12px;white-space:nowrap}.robot-color-label input{width:32px;height:29px;padding:1px;border-radius:7px;border:1px solid #688c90;background:#fff}.robot-toolbar .robot-select-label{display:inline-flex;align-items:center;gap:4px}
+
+/* v2.30: one compact selected-object tool row; no full-width Original button. */
+#robot-machines-room .robot-edit-tools{display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:4px;min-width:0;min-height:34px}
+#robot-machines-room .robot-edit-tools .robot-select-label,#robot-machines-room .robot-edit-tools .robot-color-label{display:inline-flex;align-items:center;gap:4px;min-width:0;min-height:32px;white-space:nowrap}
+#robot-machines-room .robot-edit-tools #robot-selection-mode{max-width:124px;min-height:32px}
+#robot-machines-room .robot-edit-tools #robot-color{width:32px;height:32px;flex:0 0 32px}
+#robot-machines-room .robot-edit-tools .soft-button{display:inline-flex;align-items:center;justify-content:center;width:auto!important;max-width:max-content;min-width:0!important;min-height:32px;padding:4px 7px;flex:0 0 auto;font-size:12px}
+#robot-machines-room #robot-part-mirror[aria-pressed="true"]{background:#b6e5f4;border-color:#287f9a;color:#123f54}
+#robot-machines-room .robot-assemble .robot-edit-tools{grid-column:1/-1;grid-row:3}
+#robot-machines-room .robot-assemble .robot-board-wrap{grid-row:4}
+@media(orientation:portrait){
+ #robot-machines-room .robot-assemble{grid-template-rows:auto auto auto auto minmax(0,1fr)}
+ #robot-machines-room .robot-assemble .robot-edit-tools{grid-column:1;grid-row:4}
+ #robot-machines-room .robot-assemble .robot-board-wrap{grid-column:1;grid-row:5}
+}
+@media(max-width:380px){#robot-machines-room .robot-edit-tools{gap:3px}#robot-machines-room .robot-edit-tools .soft-button{padding-inline:5px;font-size:11px}#robot-machines-room .robot-edit-tools #robot-selection-mode{max-width:105px;font-size:11px}}
