@@ -158,7 +158,7 @@
     function renderBoard(){
       svg.dataset.assembly=JSON.stringify(state.placed);
       svg.dataset.canvasBounds=JSON.stringify(view?viewport.rect(view):referenceBounds);
-      svg.innerHTML=look?'':Object.values(state.placed).map(at=>pieceImage(at.part,at,`data-robot-placed="${at.id}" class="${selected===at.id?'robot-selected':''}" aria-label="${esc(at.part.name)}"`)).join('');
+      svg.innerHTML=look?pose().parts.map(part=>pieceImage(part,{x:part.x+(referenceBounds.width-pose().width)/2,y:part.y+(referenceBounds.height-pose().height)/2,baseScale:1},'pointer-events="none" aria-hidden="true"')).join(''):Object.values(state.placed).map(at=>pieceImage(at.part,at,`data-robot-placed="${at.id}" class="${selected===at.id?'robot-selected':''}" aria-label="${esc(at.part.name)}"`)).join('');
       renderGrid();
       const at=selectedPart(),preview=storePick||at?.part;
       if(keyboard&&preview&&!look){
@@ -192,7 +192,7 @@
     const canvasSizes=new ResizeObserver(()=>{cancelAnimationFrame(canvasFrame);canvasFrame=requestAnimationFrame(fitCanvas);});
     canvasSizes.observe(room.querySelector('.robot-board-wrap'));
     function setLook(value){
-      if(value)deselect();look=value;$('reference').hidden=!value;svg.hidden=false;
+      if(value)deselect();look=value;$('reference').hidden=true;svg.hidden=false;
       $('look').textContent=value?'Build':'Look';$('look').setAttribute('aria-label',value?'Back to build':'Look');$('look').setAttribute('aria-pressed',String(value));render();fitCanvas();
     }
     function stopGesture(){
@@ -421,15 +421,23 @@
       hint(`Pick a ${pose().label.toLowerCase()} part. ${buildHint()}`);
     });
     // Only the finished age-five robot artwork is available in this trial.
-    const availableModels=Object.values(catalogue.poses).filter(item=>(item.category||'robots')==='robots'&&(item.age==null||item.age===5));
+    const availableModels=Object.values(catalogue.poses).filter(item=>item.age==null||item.age===5);
     function configureAge(age){
       const enabled=Number(age)===5,category=$('category'),variant=$('variant');
       if(!enabled){storeModel=null;category.innerHTML='<option value="">No models for this age yet</option>';category.value='';category.disabled=true;variant.innerHTML='<option value="">No models for this age yet</option>';variant.value='';variant.disabled=true;return;}
-      category.innerHTML='<option value="robots">Robots</option><option disabled>Cars — later</option><option disabled>Ships — later</option><option disabled>Planes — later</option><option disabled>Rockets — later</option>';category.value='robots';category.disabled=false;
-      variant.innerHTML=availableModels.map(item=>'<option value="'+esc(item.id)+'">'+esc(item.label)+'</option>').join('');
+      category.innerHTML=['robots','cars','ships','planes','rockets'].map(key=>{const present=availableModels.some(item=>(item.category||'robots')===key);return '<option value="'+key+'" '+(present?'':'disabled')+'>'+key[0].toUpperCase()+key.slice(1)+(present?'':' — later')+'</option>';}).join('');category.value=(storeModel?.category||'robots');category.disabled=false;
+      variant.innerHTML=availableModels.filter(item=>(item.category||'robots')===category.value).map(item=>'<option value="'+esc(item.id)+'">'+esc(item.label)+'</option>').join('');
       storeModel=storeModel||availableModels.find(item=>item.age===5)||availableModels[0];
-      variant.value=storeModel?.id||'';
+      variant.innerHTML=availableModels.filter(item=>(item.category||'robots')===category.value).map(item=>'<option value="'+esc(item.id)+'">'+esc(item.label)+'</option>').join('');variant.value=storeModel?.id||'';
     }
+    $('category').addEventListener('change',()=>{
+      if(state.locked||demoActive)return;
+      const models=availableModels.filter(item=>(item.category||'robots')===$('category').value);
+      if(!models.length)return;
+      cancel();deselect();storeModel=models[0];page=0;
+      $('variant').innerHTML=models.map(item=>'<option value="'+esc(item.id)+'">'+esc(item.label)+'</option>').join('');
+      $('variant').value=storeModel.id;updateReference();setLook(false);hint(buildHint());
+    });
     $('clear').addEventListener('click',()=>{
       if(state.locked||demoActive||pointer)return;
       reset();hint(buildHint());
@@ -493,7 +501,7 @@
       // Use the Save tap itself to start the download on touch browsers.
       const url=URL.createObjectURL(picture.blob);
       const link=document.createElement('a');
-      link.href=url;link.download='SaNa-Machine-Design-v2.22.png';
+      link.href=url;link.download='SaNa-Machine-Design-v2.23.png';
       document.body.append(link);link.click();link.remove();
       setTimeout(()=>URL.revokeObjectURL(url),30000);
       hint('Picture sent to your device’s downloads.');
