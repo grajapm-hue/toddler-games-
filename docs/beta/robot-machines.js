@@ -90,7 +90,7 @@
             <button hidden id="robot-part-original" class="soft-button" type="button">Original</button>
           </div>
           <div class="robot-selection-row robot-sr"><output id="robot-selected-label" aria-live="polite">Canvas · zoom</output></div>
-          <div class="robot-board-wrap"><div id="robot-dpad" class="robot-dpad" hidden aria-label="Precision positioning controls"><div class="robot-dpad-move"><button type="button" data-robot-nudge="up" aria-label="Move up">↑</button><div><button type="button" data-robot-nudge="left" aria-label="Move left">←</button><button type="button" data-robot-nudge="right" aria-label="Move right">→</button></div><button type="button" data-robot-nudge="down" aria-label="Move down">↓</button></div><div class="robot-dpad-turn"><button type="button" data-robot-turn="-15" aria-label="Rotate left 15 degrees">↶ 15°</button><button type="button" data-robot-turn="15" aria-label="Rotate right 15 degrees">↷ 15°</button></div></div><svg id="robot-board" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 848 1264" preserveAspectRatio="xMidYMid meet" role="group" tabindex="0" aria-label="Assembly canvas. Tap or drag a part into place; drag empty space to pan."></svg><img id="robot-reference" alt="Completed machine reference" hidden></div>
+          <div class="robot-board-wrap"><svg id="robot-board" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 848 1264" preserveAspectRatio="xMidYMid meet" role="group" tabindex="0" aria-label="Assembly canvas. Tap or drag a part into place; drag empty space to pan."></svg><img id="robot-reference" alt="Completed machine reference" hidden></div>
         </section>
       </div>`;
     scene.after(room);
@@ -130,11 +130,11 @@
     function syncButtons(){
       const count=partCount();
       $('progress').textContent=state.locked?'Locked':`${count} ${count===1?'part':'parts'}`;
-      $('done').disabled=state.locked?false:!canFinish();$('done').textContent=state.locked?'Edit':'Done';$('done').classList.toggle('robot-frozen',state.locked);$('done').classList.toggle('robot-editing',!state.locked);
+      $('done').disabled=state.locked?false:!canFinish();$('done').textContent=state.locked?'Edit':'Done';$('done').setAttribute('aria-pressed',String(state.locked));$('done').setAttribute('title',state.locked?'Frozen: tap to edit again':'Editing: tap to freeze');$('done').classList.toggle('robot-frozen',state.locked);$('done').classList.toggle('robot-editing',!state.locked);
       $('remove').disabled=!selectedPart()||!!pointer;
       $('clear').disabled=state.locked||!count||demoActive||!!pointer;
       $('snapshot').disabled=!canSave();
-      $('snapshot').textContent=picture?.pending?'Preparing…':'Save';$('view-fit').classList.toggle('robot-group-active',groupMode);$('view-fit').setAttribute('aria-pressed',String(groupMode));$('view-fit').textContent=groupMode?'Fit ✓':'Fit';$('dpad').hidden=!(canMoveCanvas()&&partCount()&&(groupMode||!!selectedPart())&&!look);$('dpad').querySelectorAll('button').forEach(b=>b.disabled=state.locked||demoActive||!!pointer);
+      $('snapshot').textContent=picture?.pending?'Preparing…':'Save';$('view-fit').classList.toggle('robot-group-active',groupMode);$('view-fit').setAttribute('aria-pressed',String(groupMode));$('view-fit').textContent=groupMode?'Fit ON':'Fit OFF';$('view-fit').setAttribute('title',groupMode?'Whole assembly mode: tap to edit individual parts':'Individual part mode: tap to edit whole assembly');
       $('category').disabled=$('variant').disabled=$('look').disabled=!ready()||state.locked||demoActive;
       const at=selectedPart(),editable=!!at&&!pointer,s=shapeOf(at),axis=$('part-axis').value,scales=axis==='both'?[s.widthScale,s.heightScale]:[axis==='width'?s.widthScale:s.heightScale];
       $('zoom-level').textContent=at?(axis==='both'&&s.widthScale!==s.heightScale?`${Math.round(s.widthScale*100)}×${Math.round(s.heightScale*100)}%`:`${Math.round(scales[0]*100)}%`):`${Math.round((view?.zoom||1)*100)}%`;
@@ -412,32 +412,6 @@
       if(transform(state,selected,patch)){dirty();render();renderView();hint(buildHint());}
     }
     $('rotate-left').addEventListener('click',()=>editPart({angle:shapeOf(state.placed[selected]).angle-45}));$('rotate-right').addEventListener('click',()=>editPart({angle:shapeOf(state.placed[selected]).angle+45}));$('part-original').addEventListener('click',()=>editPart({widthScale:1,heightScale:1,angle:0,flipX:false}));
-    function nudge(direction){
-      if(!canMoveCanvas()||look)return;
-      const deltas={up:[0,-18],down:[0,18],left:[-18,0],right:[18,0]};
-      const delta=deltas[direction];if(!delta)return;
-      if(groupMode)groupTransform(...delta);
-      else if(selectedPart()){const at=selectedPart();movePart(state,selected,{x:at.x+at.part.width/2+delta[0],y:at.y+at.part.height/2+delta[1]});dirty();renderBoard();}
-    }
-    function turn(degrees){
-      if(!canMoveCanvas()||look)return;
-      if(groupMode)groupTransform(0,0,degrees);
-      else if(selectedPart())editPart({angle:shapeOf(selectedPart()).angle+degrees});
-    }
-    let holdDelay=null,holdRepeat=null,holdTriggered=false;
-    function endHold(){clearTimeout(holdDelay);clearInterval(holdRepeat);holdDelay=holdRepeat=null;}
-    $('dpad').addEventListener('pointerdown',event=>{
-      const button=event.target.closest('button');if(!button||button.disabled)return;
-      event.preventDefault();holdTriggered=false;
-      const act=()=>{holdTriggered=true;if(button.dataset.robotNudge)nudge(button.dataset.robotNudge);else turn(Number(button.dataset.robotTurn));};
-      act();holdDelay=setTimeout(()=>{holdRepeat=setInterval(act,100);},350);
-    });
-    for(const name of ['pointerup','pointercancel','pointerleave'])$('dpad').addEventListener(name,endHold);
-    $('dpad').addEventListener('click',event=>{
-      const button=event.target.closest('button');if(!button||button.disabled)return;
-      if(holdTriggered){holdTriggered=false;return;}
-      if(button.dataset.robotNudge)nudge(button.dataset.robotNudge);else turn(Number(button.dataset.robotTurn));
-    });
     $('grid').addEventListener('click',()=>{if(state.locked)return;grid=!grid;renderGrid();syncButtons();});
     function reset(){
       cancel();onReset();state=create(state.age);dirty();groupMode=false;view=null;selected=null;storePick=null;page=0;keyboard=false;cursor=null;
