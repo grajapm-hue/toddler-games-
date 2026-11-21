@@ -133,3 +133,22 @@
 #robot-machines-room #robot-part-axis{width:auto;max-width:94px;min-height:34px}
 #robot-machines-room .robot-board-wrap{min-height:0}
 @media(max-width:500px){#robot-machines-room .robot-control-heading .soft-button{min-width:38px;min-height:32px;padding:4px 6px;font-size:12px}#robot-machines-room #robot-selection-mode{max-width:114px;font-size:12px}}
+
+/* v2.27: three adjacent store controls; preserve the board and separate part captions. */
+#robot-machines-room .robot-stores{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
+#robot-machines-room .robot-stores .robot-heading{grid-column:1;min-width:0}
+#robot-machines-room .robot-store-label{grid-column:2;grid-row:1;min-width:0;align-self:center}
+#robot-machines-room .robot-variant-label{grid-column:3;grid-row:1;min-width:0}
+#robot-machines-room .robot-store-label select{width:100%;min-width:0}
+#robot-machines-room #robot-parts button{grid-template-rows:minmax(0,1fr) minmax(23px,auto);overflow:visible;align-content:stretch}
+#robot-machines-room #robot-parts button img{max-height:100%;object-fit:contain;min-height:0}
+#robot-machines-room #robot-parts button span{position:relative;display:block;line-height:1.15;min-height:18px;padding:2px 1px;background:#e4efdf;border-radius:4px;align-self:end;z-index:1}
+#robot-machines-room .robot-toolbar{gap:3px}
+#robot-machines-room .robot-control-heading{gap:3px}
+#robot-machines-room .robot-control-heading .soft-button{min-width:34px;padding:3px 5px}
+#robot-machines-room .robot-select-label{min-height:30px}
+#robot-machines-room #robot-selection-mode{min-height:30px}
+#app.portrait #robot-machines-room .robot-stores{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
+#app.portrait #robot-machines-room .robot-store-label{grid-column:2;grid-row:1}
+#app.portrait #robot-machines-room .robot-variant-label{grid-column:3;grid-row:1}
+@media(max-width:420px){#robot-machines-room .robot-stores select{font-size:11px;padding:3px 1px}#robot-machines-room .robot-heading h2{font-size:13px}}

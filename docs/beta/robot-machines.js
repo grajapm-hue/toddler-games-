@@ -87,7 +87,7 @@
       <div class="robot-workspace">
         <section class="robot-stores" aria-label="Stores">
           <div class="robot-heading"><h2>Stores</h2><label class="robot-category-label"><span class="robot-sr">Machine collection</span><select id="robot-category" aria-label="Machine collection"><option value="robots">Robots</option><option value="cars">Cars</option><option disabled>Ships — later</option><option disabled>Planes — later</option><option disabled>Rockets — later</option></select></label></div>
-          <label class="robot-variant-label"><span class="robot-sr">Machine model</span><select id="robot-variant" aria-label="Machine model">${Object.values(catalogue.poses).map(p=>`<option value="${p.id}">${p.label}</option>`).join('')}</select></label>
+          <label class="robot-store-label"><span class="robot-sr">Parts store</span><select id="robot-store" aria-label="Parts store"><option value="parts">Parts</option><option value="connectors">Connectors</option></select></label><label class="robot-variant-label"><span class="robot-sr">Machine model</span><select id="robot-variant" aria-label="Machine model">${Object.values(catalogue.poses).map(p=>`<option value="${p.id}">${p.label}</option>`).join('')}</select></label>
           <div id="robot-parts" aria-label="Loose machine parts"></div>
           <nav class="robot-pages" aria-label="Stores pages"><button id="robot-previous-page" type="button" class="soft-button">Previous</button><output id="robot-page-label">1 / 2</output><button id="robot-next-page" type="button" class="soft-button">Next</button></nav>
         </section>
@@ -149,7 +149,7 @@
       $('clear').disabled=state.locked||!count||demoActive||!!pointer;
       $('snapshot').disabled=!canSave();
       $('snapshot').textContent=picture?.pending?'Preparing…':'Save';$('view-fit').classList.toggle('robot-group-active',groupMode);$('view-fit').setAttribute('aria-pressed',String(groupMode));$('view-fit').textContent=groupMode?'Fit ON':'Fit OFF';$('view-fit').setAttribute('title',groupMode?'Whole assembly mode: tap to edit individual parts':'Individual part mode: tap to edit whole assembly');
-      $('category').disabled=$('variant').disabled=$('look').disabled=!ready()||state.locked||demoActive;
+      $('category').disabled=$('store').disabled=$('variant').disabled=$('look').disabled=!ready()||state.locked||demoActive;
       const at=selectedPart(),editable=!!at&&!pointer,s=shapeOf(at),axis=$('part-axis').value,scales=axis==='both'?[s.widthScale,s.heightScale]:[axis==='width'?s.widthScale:s.heightScale];
       $('zoom-level').textContent=at?(axis==='both'&&s.widthScale!==s.heightScale?`${Math.round(s.widthScale*100)}×${Math.round(s.heightScale*100)}%`:`${Math.round(scales[0]*100)}%`):`${Math.round((view?.zoom||1)*100)}%`;
       $('zoom-level').setAttribute('aria-label',at?'Reset selected dimension to 100 percent':'Reset canvas to reference 100 percent');
@@ -184,14 +184,15 @@
       svg.insertAdjacentHTML('beforeend',`<rect data-robot-selection="${at.id}" class="robot-selection-outline" x="${bounds.x-pad}" y="${bounds.y-pad}" width="${bounds.width+pad*2}" height="${bounds.height+pad*2}" rx="${3/scale}" fill="none" stroke="#775400" stroke-width="${2/scale}" stroke-dasharray="${5/scale} ${4/scale}" pointer-events="none" aria-hidden="true"/>`);
     }
     function renderStroke(){
-      svg.querySelector('[data-selection-stroke]')?.remove();
+      svg.querySelectorAll('[data-selection-stroke]').forEach(el=>el.remove());
       if(!selectionStroke||!selectionStroke.points.length||!view)return;
       const pts=selectionStroke.points,first=pts[0],last=pts[pts.length-1],mode=selectionStroke.mode;
       let markup='';
       if(mode==='rect')markup=`<rect x="${Math.min(first.x,last.x)}" y="${Math.min(first.y,last.y)}" width="${Math.abs(last.x-first.x)}" height="${Math.abs(last.y-first.y)}"`;
       else if(mode==='oval')markup=`<ellipse cx="${(first.x+last.x)/2}" cy="${(first.y+last.y)/2}" rx="${Math.abs(last.x-first.x)/2}" ry="${Math.abs(last.y-first.y)/2}"`;
       else markup=`<path d="M${pts.map(p=>`${p.x},${p.y}`).join(' L')} Z"`;
-      svg.insertAdjacentHTML('beforeend',markup+` data-selection-stroke="" fill="none" stroke="#e43d3d" stroke-width="${3/viewport.scale(view)}" stroke-dasharray="${8/viewport.scale(view)} ${5/viewport.scale(view)}" pointer-events="none"/>`);
+      svg.insertAdjacentHTML('beforeend',markup+` data-selection-stroke="" fill="${selectionStroke.closed?'#ffe887':'none'}" fill-opacity=".24" stroke="#e43d3d" stroke-width="${3/viewport.scale(view)}" stroke-dasharray="${8/viewport.scale(view)} ${5/viewport.scale(view)}" pointer-events="none"/>`);
+      if(mode==='free')svg.insertAdjacentHTML('beforeend',pts.map((p,i)=>`<circle data-selection-stroke="" cx="${p.x}" cy="${p.y}" r="${(i===0?9:6)/viewport.scale(view)}" fill="${i===0?'#19b968':'#e43d3d'}" stroke="white" stroke-width="${2/viewport.scale(view)}" pointer-events="none"/>`).join(''));
     }
     async function copySelection(at,stroke){
       if(!at||!stroke||stroke.points.length<2)return null;
@@ -333,8 +334,20 @@
       if(!canMoveCanvas()||event.button>0)return;
       if(event.currentTarget===svg&&selectedShape()!=='part'&&!groupMode&&!look&&!storePick){
         const p=point(event.clientX,event.clientY);if(!p)return;
+        if(selectedShape()==='free'){
+          if(selectionStroke?.mode==='free'&&!selectionStroke.closed){
+            const start=selectionStroke.points[0],near=Math.hypot(p.x-start.x,p.y-start.y)<22/viewport.scale(view);
+            if(near&&selectionStroke.points.length>=3){selectionStroke.closed=true;const at=state.placed[selectionStroke.placedId];if(at)choose(at.part,at.id);hint('Shape selected. Tap Copy, then Paste.');}
+            else selectionStroke.points.push(p);
+          }else{
+            const at=pickPart(p,event.pointerType);
+            selectionStroke={mode:'free',points:[p],placedId:at?.id||selected,closed:false};
+            hint('Tap red points around the shape, then tap the green start point to close.');
+          }
+          renderStroke();event.preventDefault();return;
+        }
         const at=pickPart(p,event.pointerType);
-        selectionStroke={mode:selectedShape(),points:[p],placedId:at?.id||selected};
+        selectionStroke={mode:selectedShape(),points:[p],placedId:at?.id||selected,closed:false};
         pointer={kind:'selection',id:event.pointerId,owner:svg,startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastY:event.clientY,moved:false,type:event.pointerType};
         svg.setPointerCapture(event.pointerId);renderStroke();event.preventDefault();return;
       }
@@ -471,7 +484,7 @@
     $('selection-mode').addEventListener('change',()=>{selectionStroke=null;renderBoard();hint(selectedShape()==='part'?'Tap a complete part to select it.':'Draw a selection starting on a placed part, then tap Copy.');});
     $('copy').addEventListener('click',async()=>{
       const at=selectedPart();if(!at)return;
-      const stroke=selectionStroke?.placedId===at.id?{mode:selectionStroke.mode,points:[...selectionStroke.points]}:null;
+      const stroke=selectionStroke?.placedId===at.id&&(selectionStroke.mode!=='free'||selectionStroke.closed)?{mode:selectionStroke.mode,points:[...selectionStroke.points]}:null;
       try{
         clipboard=stroke?await copySelection(at,stroke):{part:at.part,shape:{...shapeOf(at)}};
         if(!clipboard)return;selectionStroke=null;renderBoard();syncButtons();
@@ -480,9 +493,10 @@
     });
     $('paste').addEventListener('click',()=>{
       if(!clipboard||state.locked||groupMode||look||demoActive)return;
-      const b=viewport.rect(view),center={x:b.x+b.width/2,y:b.y+b.height/2};
+      const b=viewport.rect(view),last=state.placed[selected],offset=Math.max(clipboard.part.width*.8,95);
+      const center=last?{x:last.x+last.part.width/2+offset,y:last.y+last.part.height/2+Math.max(35,clipboard.part.height*.3)}:{x:b.x+b.width/2+offset/2,y:b.y+b.height/2};
       const id=addPart(state,clipboard.part,center);if(!id)return;
-      Object.assign(state.placed[id],clipboard.shape);selected=id;storePick=null;
+      Object.assign(state.placed[id],clipboard.shape);selected=id;storePick=null;selectionStroke=null;$('selection-mode').value='part';renderStroke();
       dirty();render();hint('Pasted. Drag or resize this copy independently.');
     });
     function reorderSelected(direction){
@@ -510,7 +524,7 @@
     }
     $('variant').addEventListener('change',()=>{
       if(state.locked||demoActive){$('variant').value=pose()?.id||'';return;}
-      const next=$('variant').value==='connectors'?connectorPose:catalogue.poses[$('variant').value];
+      const next=$('store').value==='connectors'?connectorPose:catalogue.poses[$('variant').value];
       if(!next||(next!==connectorPose&&!availableModels.includes(next)))return;
       cancel();
       deselect();
@@ -523,16 +537,32 @@
     // Only the finished age-five robot artwork is available in this trial.
     const availableModels=Object.values(catalogue.poses).filter(item=>item.age==null||item.age===5);
     function configureAge(age){
-      const enabled=Number(age)===5,category=$('category'),variant=$('variant');
+      const enabled=Number(age)===5,category=$('category'),variant=$('variant');$('store').value='parts';$('store').disabled=!enabled;
       if(!enabled){storeModel=null;category.innerHTML='<option value="">No models for this age yet</option>';category.value='';category.disabled=true;variant.innerHTML='<option value="">No models for this age yet</option>';variant.value='';variant.disabled=true;return;}
-      category.innerHTML=['robots','connectors','cars','ships','planes','rockets'].map(key=>{const present=key==='connectors'||availableModels.some(item=>(item.category||'robots')===key);return '<option value="'+key+'" '+(present?'':'disabled')+'>'+key[0].toUpperCase()+key.slice(1)+(present?'':' — later')+'</option>';}).join('');category.value=(storeModel?.category||'robots');category.disabled=false;
+      category.innerHTML=['robots','cars','ships','planes','rockets'].map(key=>{const present=availableModels.some(item=>(item.category||'robots')===key);return '<option value="'+key+'" '+(present?'':'disabled')+'>'+key[0].toUpperCase()+key.slice(1)+(present?'':' — later')+'</option>';}).join('');category.value=(storeModel?.category||'robots');category.disabled=false;
       variant.innerHTML=availableModels.filter(item=>(item.category||'robots')===category.value).map(item=>'<option value="'+esc(item.id)+'">'+esc(item.label)+'</option>').join('');
       storeModel=storeModel||availableModels.find(item=>item.age===5)||availableModels[0];
       variant.innerHTML=availableModels.filter(item=>(item.category||'robots')===category.value).map(item=>'<option value="'+esc(item.id)+'">'+esc(item.label)+'</option>').join('');variant.value=storeModel?.id||'';
     }
+    $('store').addEventListener('change',()=>{
+      if(state.locked||demoActive)return;
+      cancel();deselect();page=0;
+      if($('store').value==='connectors'){
+        storeModel=connectorPose;
+        $('variant').innerHTML='<option value="connectors">Flexible connectors</option>';
+        $('variant').value='connectors';
+      }else{
+        const models=availableModels.filter(item=>(item.category||'robots')===$('category').value);
+        storeModel=models[0]||availableModels[0];
+        $('variant').innerHTML=models.map(item=>'<option value="'+esc(item.id)+'">'+esc(item.label)+'</option>').join('');
+        $('variant').value=storeModel.id;
+      }
+      updateReference();setLook(false);hint('Choose a part from this store.');
+    });
     $('category').addEventListener('change',()=>{
       if(state.locked||demoActive)return;
-      const models=$('category').value==='connectors'?[connectorPose]:availableModels.filter(item=>(item.category||'robots')===$('category').value);
+      $('store').value='parts';
+      const models=$('store').value==='connectors'?[connectorPose]:availableModels.filter(item=>(item.category||'robots')===$('category').value);
       if(!models.length)return;
       cancel();deselect();storeModel=models[0];page=0;
       $('variant').innerHTML=models.map(item=>'<option value="'+esc(item.id)+'">'+esc(item.label)+'</option>').join('');
