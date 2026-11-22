@@ -398,22 +398,39 @@
   });
   const boardsByAge=new Map();
   let boardStroke=null,activeBoard=null,traceMaskId=0;
-  function populateGuideOptions(){
+  let selectedGuide='',previousBrushPaintMode=false;
+  function guideChoices(category){
     const profile=guideProfiles[state.age]||guideProfiles[5];
-    const letters=Array.from({length:profile.letters},(_,i)=>String.fromCharCode(65+i));
-    const numbers=Array.from({length:profile.numbers},(_,i)=>String(i+1));
-    const groups=[['🔤 Uppercase',letters],['🔤 Lowercase',letters.map(letter=>letter.toLowerCase())],['🔢 123',numbers],['➕ Signs',profile.signs]];
-    guideSelect.replaceChildren(new Option('⬜ Blank Board',''));
-    for(const [label,values] of groups){
-      const group=document.createElement('optgroup');
-      group.label=label;
-      group.append(...values.map(value=>new Option(guideSigns[value]?value+'  '+guideSigns[value]:value,value)));
-      guideSelect.append(group);
+    if(category==='numbers')return Array.from({length:profile.numbers},(_,i)=>String(i+1));
+    if(category==='signs')return profile.signs;
+    if(category==='upper'||category==='lower'){
+      const start=category==='upper'?65:97;
+      return Array.from({length:profile.letters},(_,i)=>String.fromCharCode(start+i));
     }
-    updateTracingGuide();
+    return [];
+  }
+  function showBoardChoices(){
+    const strip=$('item-progress-strip');
+    const category=guideSelect.value,items=guideChoices(category);
+    const key=state.age+'/'+category;
+    strip.hidden=false;
+    strip.setAttribute('aria-label','White Board and '+(category||'blank drawing'));
+    if(strip.dataset.boardChoices!==key){
+      strip.dataset.boardChoices=key;
+      const middle=Math.ceil(items.length/2);
+      const buttons=values=>values.map(value=>'<button type="button" class="item-chip" data-board-guide="'+value+'" aria-label="'+(guideSigns[value]||value)+'" aria-pressed="false">'+value+'</button>').join('');
+      strip.innerHTML='<div class="white-board-guide-items" role="group" aria-label="First choices">'+buttons(items.slice(0,middle))+'</div>'
+        +'<button type="button" class="item-chip brush-choice white-board-choice is-current" data-brush-choice="white-board" aria-pressed="true">White Board</button>'
+        +'<div class="white-board-guide-items" role="group" aria-label="More choices">'+buttons(items.slice(middle))+'</div>';
+    }
+    for(const button of strip.querySelectorAll('[data-board-guide]')){
+      const selected=button.dataset.boardGuide===selectedGuide;
+      button.classList.toggle('is-current',selected);
+      button.setAttribute('aria-pressed',String(selected));
+    }
   }
   function positionTracingGuide(){
-    if(!guideSelect.value)return;
+    if(!selectedGuide)return;
     const surface=boardSurface.getBoundingClientRect();
     if(!surface.width||!surface.height)return;
     const {width}=boardSurface.viewBox.baseVal;
@@ -435,7 +452,7 @@
     if(activeBoard?.guide)activeBoard.layer.setAttribute('transform',transform);
   }
   function updateDirections(){
-    directions.hidden=!guideSelect.value;
+    directions.hidden=!selectedGuide;
     directions.setAttribute('aria-pressed',String(showDirections));
     guideOrder.style.display=showDirections?'':'none';
   }
@@ -476,7 +493,7 @@
     });
   }
   function updateTracingGuide(){
-    const value=guideSelect.value;
+    const value=selectedGuide;
     whiteBoard.toggleAttribute('data-tracing',Boolean(value));
     showGuideExample(value);
     const strokes=tracingStrokes(value);
@@ -510,7 +527,7 @@
     positionTracingGuide();
   }
   function guideStepMarker(x,y,step){
-    return '<g transform="translate('+x+' '+y+')"><circle r="3.6"/><text>'+step+'</text></g>';
+    return '<g transform="translate('+x+' '+y+')"><circle r="4.8"/><text>'+step+'</text></g>';
   }
   function updateTracingBoundary(strokes){
     guideHit.clearRect(0,0,hitCanvas.width,hitCanvas.height);
@@ -538,16 +555,21 @@
   function insideTracingBoundary(x,y){
     return guideHit.getImageData(x+hitCanvas.width/2,y+hitCanvas.height/2,1,1).data[3]>127;
   }
-  guideSelect.addEventListener('change',()=>{
+  function chooseBoardGuide(value){
     finishBoardStroke();
+    selectedGuide=value;
     updateTracingGuide();
     selectAgeBoard();
-    const value=guideSelect.value;
+    showBoardChoices();
     hint(value==='÷'?'Draw a flat line, then tap a dot above it and a dot below it.':value?'Trace the gray guide.':'Write or draw anywhere on the White Board.');
+  }
+  guideSelect.addEventListener('change',()=>{
+    if(!onWhiteBoard())return;
+    chooseBoardGuide(guideChoices(guideSelect.value)[0]||'');
   });
   function selectAgeBoard(){
     if(!boardsByAge.has(state.age))boardsByAge.set(state.age,new Map());
-    const boards=boardsByAge.get(state.age),guide=guideSelect.value;
+    const boards=boardsByAge.get(state.age),guide=selectedGuide;
     if(!boards.has(guide)){
       const layer=document.createElementNS('http://www.w3.org/2000/svg','g');
       if(guide)layer.setAttribute('mask','url(#white-board-boundary)');
@@ -584,10 +606,15 @@
     if(!active)finishBoardStroke();
     app.toggleAttribute('data-white-board',active);
     whiteBoard.hidden=!active;
-    guideSelect.hidden=!active;
+    guideSelect.hidden=state.activity!=='brush';
+    guideSelect.disabled=!active;
     if(!active)directions.hidden=true;
     if(active){
-      if(opening||activeBoard?.age!==state.age)populateGuideOptions();
+      if(opening||activeBoard?.age!==state.age){
+        guideSelect.value='';
+        selectedGuide='';
+        updateTracingGuide();
+      }
       selectAgeBoard();
     }
     $('white-board-heading').hidden=!active||!full;
@@ -1114,6 +1141,7 @@
   // Shared, game-specific progress strip. Never moves to a side in immersive mode.
   function showItemStrip(items){
     const strip=$('item-progress-strip');if(!strip)return;
+    delete strip.dataset.boardChoices;
     strip.setAttribute('aria-label','Available items and completion status');
     strip.hidden=!state.activity||!items.length;
     if(strip.hidden){strip.innerHTML='';return;}
@@ -1133,13 +1161,20 @@
   // The shared visible strip replaces the hidden legacy brush thumbnail row.
   // Handle manual choice in both Brush Clean and Finger Paint modes.
   $('item-progress-strip').addEventListener('click',event=>{
+    if(state.activity!=='brush')return;
+    const guideButton=event.target.closest('[data-board-guide]');
+    if(guideButton&&onWhiteBoard()){
+      chooseBoardGuide(guideButton.dataset.boardGuide);
+      return;
+    }
     const button=event.target.closest('[data-brush-choice]');
-    if(!button||state.activity!=='brush')return;
+    if(!button)return;
     if(button.dataset.brushChoice==='white-board'){
-      whiteBoardSelected=true;
-      state.paintMode=true;
+      if(!whiteBoardSelected)previousBrushPaintMode=state.paintMode;
+      whiteBoardSelected=!whiteBoardSelected;
+      state.paintMode=whiteBoardSelected||previousBrushPaintMode;
       resetRound();
-      $('item-progress-strip').querySelector('.white-board-choice').focus({preventScroll:true});
+      if(event.detail===0)$('item-progress-strip').querySelector('.white-board-choice').focus({preventScroll:true});
       return;
     }
     const index=Number(button.dataset.brushChoice);
@@ -1153,6 +1188,7 @@
   function updateGameItemStrip(){
     if(state.activity==='puzzle'){picturePuzzle.syncStrip();return;}
     if(objectFeedback)return;
+    if(onWhiteBoard()){showBoardChoices();return;}
     if(state.activity==='drag'){
       const limit=shapeLevelLimits[state.age]||4;
       showItemStrip(shapes.slice(0,limit).map((shape,i)=>({label:shape.id,icon:`<svg viewBox="-68 -68 136 136" aria-hidden="true">${primitive(shape.id,shape.color,'#274b44')}</svg>`,later:i>=limit,done:!!state.shapes?.find(x=>x.id===shape.id&&x.placed),current:state.selected===shape.id})));
