@@ -376,6 +376,11 @@
   const boardClear=$('white-board-clear'),boardUndo=$('white-board-undo'),boardRedo=$('white-board-redo');
   const boardFullscreen=$('white-board-fullscreen'),boardHaptics=$('white-board-haptics');
   const guideSelect=$('white-board-guide'),guideArt=$('white-board-template');
+  const guideBoundary=$('white-board-boundary');
+  const hitCanvas=document.createElement('canvas');
+  hitCanvas.width=200;
+  hitCanvas.height=140;
+  const guideHit=hitCanvas.getContext('2d',{willReadFrequently:true});
   const guideProfiles={
     2:{letters:5,numbers:3,signs:['●','—','|']},
     3:{letters:10,numbers:10,signs:['○','+','—']},
@@ -394,7 +399,7 @@
     '÷':['Division','<path d="M-35 -3H35"/><circle cy="-27" r="4.5"/><circle cy="21" r="4.5"/>']
   };
   const boardsByAge=new Map();
-  let boardStroke=null,activeBoard=null;
+  let boardStroke=null,activeBoard=null,traceMaskId=0;
   function populateGuideOptions(){
     const profile=guideProfiles[state.age]||guideProfiles[5];
     const letters=Array.from({length:profile.letters},(_,i)=>String.fromCharCode(65+i));
@@ -413,11 +418,14 @@
     const {width,height}=boardSurface.viewBox.baseVal;
     const wide=guideSelect.value.length>1;
     const scale=Math.min(height*.008,width*(wide?.0045:.006));
-    guideArt.setAttribute('transform','translate('+width/2+' '+height/2+') scale('+scale+')');
+    const transform='translate('+width/2+' '+height/2+') scale('+scale+')';
+    guideArt.setAttribute('transform',transform);
+    if(activeBoard?.guide)activeBoard.layer.setAttribute('transform',transform);
   }
   function updateTracingGuide(){
     const value=guideSelect.value;
     const sign=guideSigns[value];
+    whiteBoard.toggleAttribute('data-tracing',Boolean(value));
     guideArt.replaceChildren();
     if(sign)guideArt.innerHTML=sign[1];
     else if(value){
@@ -427,21 +435,60 @@
       text.textContent=value;
       guideArt.append(text);
     }
+    updateTracingBoundary();
     boardSurface.setAttribute('aria-label',value?'White Board tracing guide: '+(sign?.[0]||value):'Draw or write on the white board');
     positionTracingGuide();
+  }
+  function updateTracingBoundary(){
+    guideBoundary.replaceChildren();
+    guideHit.clearRect(0,0,hitCanvas.width,hitCanvas.height);
+    guideHit.save();
+    guideHit.translate(hitCanvas.width/2,hitCanvas.height/2);
+    guideHit.lineWidth=12;
+    guideHit.lineCap='round';
+    guideHit.lineJoin='round';
+    for(const shape of guideArt.children){
+      const maskShape=shape.cloneNode(true);
+      maskShape.setAttribute('fill','white');
+      if(shape.localName==='path'){
+        maskShape.setAttribute('fill','none');
+        maskShape.setAttribute('stroke','white');
+        maskShape.setAttribute('stroke-width',String(guideHit.lineWidth));
+        maskShape.setAttribute('stroke-linecap',guideHit.lineCap);
+        maskShape.setAttribute('stroke-linejoin',guideHit.lineJoin);
+        guideHit.stroke(new Path2D(shape.getAttribute('d')));
+      }else if(shape.localName==='circle'){
+        guideHit.beginPath();
+        guideHit.arc(0,Number(shape.getAttribute('cy')),Number(shape.getAttribute('r')),0,Math.PI*2);
+        guideHit.fill();
+      }else{
+        guideHit.font='700 100px system-ui,sans-serif';
+        guideHit.textAlign='center';
+        guideHit.fillText(shape.textContent,0,Number(shape.getAttribute('y')));
+      }
+      guideBoundary.append(maskShape);
+    }
+    guideHit.restore();
+  }
+  function insideTracingBoundary(x,y){
+    return guideHit.getImageData(x+hitCanvas.width/2,y+hitCanvas.height/2,1,1).data[3]>127;
   }
   guideSelect.addEventListener('change',()=>{
     finishBoardStroke();
     updateTracingGuide();
+    selectAgeBoard();
     const value=guideSelect.value;
     hint(value==='÷'?'Draw a flat line, then tap a dot above it and a dot below it.':value?'Trace the gray guide.':'Write or draw anywhere on the White Board.');
   });
   function selectAgeBoard(){
-    if(!boardsByAge.has(state.age)){
+    if(!boardsByAge.has(state.age))boardsByAge.set(state.age,new Map());
+    const boards=boardsByAge.get(state.age),guide=guideSelect.value;
+    if(!boards.has(guide)){
       const layer=document.createElementNS('http://www.w3.org/2000/svg','g');
-      boardsByAge.set(state.age,{layer,undo:[],redo:[]});
+      if(guide)layer.setAttribute('mask','url(#white-board-boundary)');
+      boards.set(guide,{layer,guide,age:state.age,undo:[],redo:[]});
     }
-    const board=boardsByAge.get(state.age);
+    const board=boards.get(guide);
     if(board===activeBoard)return;
     finishBoardStroke();
     activeBoard=board;
@@ -455,7 +502,7 @@
     if(!width||!height)return;
     // Use uniform scaling and extend the drawable area to fill the viewport.
     // Keep the farthest marks in view when returning from a larger layout.
-    const bounds=boardInk.getBBox();
+    const bounds=activeBoard?.guide?{x:0,y:0,width:0,height:0}:boardInk.getBBox();
     const scale=Math.min(width/Math.max(1000,bounds.x+bounds.width+40),height/Math.max(440,bounds.y+bounds.height+40));
     boardSurface.setAttribute('viewBox',`0 0 ${width/scale} ${height/scale}`);
     positionTracingGuide();
@@ -474,7 +521,7 @@
     whiteBoard.hidden=!active;
     guideSelect.hidden=!active;
     if(active){
-      if(opening||activeBoard!==boardsByAge.get(state.age))populateGuideOptions();
+      if(opening||activeBoard?.age!==state.age)populateGuideOptions();
       selectAgeBoard();
     }
     $('white-board-heading').hidden=!active||!full;
@@ -504,9 +551,34 @@
     updateBoardActions();
   }
   function boardPoint(event){
-    const {x,y}=new DOMPoint(event.clientX,event.clientY).matrixTransform(boardSurface.getScreenCTM().inverse());
+    const {x,y}=new DOMPoint(event.clientX,event.clientY).matrixTransform(activeBoard.layer.getScreenCTM().inverse());
+    if(activeBoard.guide)return {x,y};
     const {width,height}=boardSurface.viewBox.baseVal;
     return {x:Math.max(0,Math.min(width,x)),y:Math.max(0,Math.min(height,y))};
+  }
+  function startTracingErase(layer,path){
+    const drawing=[...layer.children];
+    if(!drawing.length)return null;
+    const namespace='http://www.w3.org/2000/svg';
+    const group=document.createElementNS(namespace,'g');
+    const maskedInk=document.createElementNS(namespace,'g');
+    const mask=document.createElementNS(namespace,'mask');
+    mask.id='white-board-eraser-'+ ++traceMaskId;
+    mask.setAttribute('maskUnits','userSpaceOnUse');
+    mask.style.maskType='luminance';
+    mask.setAttribute('x','-100');
+    mask.setAttribute('y','-70');
+    mask.setAttribute('width','200');
+    mask.setAttribute('height','140');
+    mask.innerHTML='<rect x="-100" y="-70" width="200" height="140" fill="white"/>';
+    path.setAttribute('stroke','black');
+    mask.append(path);
+    maskedInk.setAttribute('mask','url(#'+mask.id+')');
+    group.append(maskedInk);
+    return {
+      undo:()=>{ mask.remove(); group.remove(); for(const item of drawing)layer.append(item); },
+      redo:()=>{ boardSurface.querySelector('defs').append(mask); for(const item of drawing)maskedInk.append(item); layer.append(group); }
+    };
   }
   new ResizeObserver(()=>{
     finishBoardStroke();
@@ -516,18 +588,25 @@
     if(boardStroke||event.button!==0)return;
     if(!boardSurface.hasAttribute('viewBox'))fitWhiteBoard();
     const {x,y}=boardPoint(event);
-    const width={small:6,medium:14,large:30}[state.brushSize];
+    const tracing=Boolean(activeBoard.guide);
+    if(tracing&&!insideTracingBoundary(x,y))return;
+    const widths=tracing?{small:2,medium:5,large:10}:{small:6,medium:14,large:30};
+    const width=widths[state.brushSize];
     const path=strokePath(state.erase?'white':state.paintColor,width);
     const d=`M${x.toFixed(1)} ${y.toFixed(1)}l.1 .1`;
     path.setAttribute('d',d);
     const {layer}=activeBoard;
-    layer.append(path);
+    const action=tracing&&state.erase
+      ?startTracingErase(layer,path)
+      :{undo:()=>path.remove(),redo:()=>layer.append(path)};
+    if(!action)return;
+    action.redo();
     boardStroke={id:event.pointerId,path,d};
-    recordBoardAction({undo:()=>path.remove(),redo:()=>layer.append(path)});
+    recordBoardAction(action);
     boardSurface.setPointerCapture(event.pointerId);
     if(event.pointerType!=='mouse')haptic(18);
   });
-  boardSurface.addEventListener('pointermove',event=>{
+  function extendBoardStroke(event){
     if(boardStroke?.id!==event.pointerId)return;
     const samples=event.getCoalescedEvents?.();
     for(const sample of samples?.length?samples:[event]){
@@ -535,8 +614,14 @@
       boardStroke.d+=`L${x.toFixed(1)} ${y.toFixed(1)}`;
     }
     boardStroke.path.setAttribute('d',boardStroke.d);
+  }
+  boardSurface.addEventListener('pointermove',extendBoardStroke);
+  boardSurface.addEventListener('pointerup',event=>{
+    if(boardStroke?.id!==event.pointerId)return;
+    extendBoardStroke(event);
+    finishBoardStroke();
   });
-  for(const type of ['pointerup','pointercancel','lostpointercapture']){
+  for(const type of ['pointercancel','lostpointercapture']){
     boardSurface.addEventListener(type,event=>{if(boardStroke?.id===event.pointerId)finishBoardStroke();});
   }
   boardClear.addEventListener('click',()=>{
