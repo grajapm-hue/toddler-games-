@@ -54,18 +54,43 @@
     holder.style.width=Math.ceil(width*scale+4)+'px';holder.style.height=Math.ceil(height*scale+4)+'px';
     visual.setAttribute('aria-hidden','true');holder.append(visual);return holder;
   }
+  // Compact, recognizable control chips.  Use the live control's SVG or label
+  // where possible; the chips are inert and never take focus or trigger gameplay.
+  function controlChip(selector){
+    const source=app.querySelector(selector);
+    if(!source)return null;
+    const chip=document.createElement('span');chip.className='guide-control-chip';
+    const computed=getComputedStyle(source);
+    chip.style.backgroundColor=computed.backgroundColor==='rgba(0, 0, 0, 0)'?'#dcebdd':computed.backgroundColor;
+    chip.style.color=computed.color||'#173e35';
+    chip.style.borderColor=computed.borderColor||'#8aa67a';
+    const svg=source.matches('svg')?source:source.querySelector('svg');
+    if(svg){const icon=svg.cloneNode(true);icon.removeAttribute('id');icon.removeAttribute('class');icon.removeAttribute('style');icon.setAttribute('aria-hidden','true');chip.append(icon);}
+    let label='';
+    if(source.matches('select'))label=source.selectedOptions?.[0]?.textContent||source.getAttribute('aria-label')||'Select';
+    else if(source.matches('input[type=color]')){chip.classList.add('guide-color-chip');chip.style.backgroundColor=source.value;chip.setAttribute('aria-label','Color picker');}
+    else if(source.matches('button,input'))label=source.querySelector('[data-update-label]')?.textContent||source.textContent?.trim()||source.getAttribute('aria-label')||source.value||'';
+    else label=source.getAttribute('aria-label')||source.textContent?.trim()||'';
+    if(label){const span=document.createElement('span');span.textContent=label.slice(0,18);chip.append(span);}
+    if(!chip.childNodes.length)return null;
+    chip.setAttribute('aria-hidden','true');return chip;
+  }
   function step(parent,sources,title,text){
     const item=document.createElement('li');item.className='guide-step';
-    const pictures=document.createElement('div');pictures.className='guide-pictures';
-    for(const selector of Array.isArray(sources)?sources:[sources]){const image=preview(selector);if(image)pictures.append(image);}
-    // Some game controls are hidden while the guide is open. Keep a compact,
-    // meaningful control cue instead of reserving a blank preview column.
-    if(!pictures.children.length){
-      const cue=document.createElement('span');cue.className='guide-control-cue';
-      cue.textContent=title.replace(/^\d+\.\s*/, '').replace(/ and /g,' / ').slice(0,24);
-      pictures.append(cue);
+    const words=document.createElement('div');words.className='guide-words';
+    const heading=document.createElement('h3');heading.className='guide-step-heading';
+    const icons=document.createElement('span');icons.className='guide-inline-controls';
+    const selectors=Array.isArray(sources)?sources:[sources];
+    for(const selector of selectors){if(icons.childElementCount>=3)break;try{const chip=controlChip(selector);if(chip)icons.append(chip);}catch{/* optional preview */}}
+    if(!icons.childElementCount){
+      const fallback=document.createElement('span');fallback.className='guide-control-chip guide-fallback-chip';
+      fallback.textContent=title.replace(/^\d+\.\s*/,'').split(/\s+(?:and|or)\s+|\s*\/\s*/)[0].slice(0,16);
+      fallback.setAttribute('aria-hidden','true');icons.append(fallback);
     }
-    const words=document.createElement('div'),heading=document.createElement('h3'),copy=document.createElement('p');heading.textContent=title;copy.textContent=text;words.append(heading,copy);item.append(pictures,words);parent.append(item);
+    const name=document.createElement('span');name.className='guide-step-title';name.textContent=title;
+    heading.append(icons,name);
+    const copy=document.createElement('p');copy.textContent=text;
+    words.append(heading,copy);item.append(words);parent.append(item);
   }
   const list=parent=>{const ol=document.createElement('ol');ol.className='guide-steps';parent.append(ol);return ol;};
   function common(parent,home=false){
