@@ -38,8 +38,9 @@
     });
     return copy;
   }
-  function preview(selector){
+  function preview(selector,{value,showOptions=false}={}){
     const source=app.querySelector(selector);if(!source)return null;
+    const machine=shade.dataset.guideFor==='machines';
     const holder=document.createElement('div');holder.className='guide-preview';holder.dataset.guideSource=selector;holder.setAttribute('role','img');holder.setAttribute('aria-label',source.getAttribute('aria-label')||source.textContent.trim()||'Game control');holder.inert=true;
     let visual=copyVisual(source),width,height;
     if(source instanceof SVGGraphicsElement&&source.tagName.toLowerCase()!=='svg'){
@@ -49,10 +50,30 @@
     }else{
       const style=getComputedStyle(source);width=source.offsetWidth||parseFloat(style.width)||84;height=source.offsetHeight||parseFloat(style.height)||36;
     }
+    if(machine&&source instanceof HTMLSelectElement)width=Math.max(width,116);
     const scale=Math.min(1,118/width,58/height);
     Object.entries({position:'relative',inset:'auto',margin:'0',flex:'none',width:width+'px',height:height+'px','min-width':width+'px','min-height':height+'px','max-width':'none','max-height':'none',transform:`scale(${scale})`,'transform-origin':'center center'}).forEach(([key,value])=>visual.style.setProperty(key,value,'important'));
     holder.style.width=Math.ceil(width*scale+4)+'px';holder.style.height=Math.ceil(height*scale+4)+'px';
-    visual.setAttribute('aria-hidden','true');holder.append(visual);return holder;
+    visual.setAttribute('aria-hidden','true');holder.append(visual);
+    if(source instanceof HTMLSelectElement){
+      visual.value=value??source.value;
+      holder.setAttribute('aria-label',`${source.getAttribute('aria-label')||'Select'}: ${visual.selectedOptions[0]?.textContent||''}`);
+      if(showOptions){
+        const menu=document.createElement('ul');menu.className='guide-select-options';menu.setAttribute('aria-hidden','true');
+        for(const option of source.options){
+          const entry=document.createElement('li');entry.textContent=option.textContent;
+          const label=option.getAttribute('aria-label');
+          if(label&&label!==option.textContent)entry.append(` ${label}`);
+          entry.classList.toggle('guide-option-selected',option.value===visual.value);
+          menu.append(entry);
+        }
+        const example=document.createElement('div');example.className='guide-select-example';example.append(holder,menu);return example;
+      }
+    }
+    if(machine&&source instanceof HTMLButtonElement&&parseFloat(getComputedStyle(source).fontSize)===0&&visual.textContent.trim()&&!visual.querySelector('svg,span')){
+      visual.style.setProperty('font-size','11px','important');
+    }
+    return holder;
   }
   // Compact, recognizable control chips.  Use the live control's SVG or label
   // where possible; the chips are inert and never take focus or trigger gameplay.
@@ -76,14 +97,14 @@
     chip.setAttribute('aria-hidden','true');return chip;
   }
   // Render the same real controls children see in the game, as inert snapshots.
-  // Keep previews outside the text column so the row never collapses to a narrow strip.
-  function step(parent,sources,title,text){
+  function step(parent,sources,title,text,maxControls=3){
     const item=document.createElement('li');item.className='guide-step';
     const controls=document.createElement('div');controls.className='guide-pictures';
     const selectors=Array.isArray(sources)?sources:[sources];
-    for(const selector of selectors){
-      if(controls.childElementCount>=3)break;
-      try{const visual=preview(selector);if(visual)controls.append(visual);}catch{/* An unavailable game control must not break the guide. */}
+    for(const source of selectors){
+      if(controls.childElementCount>=maxControls)break;
+      const options=typeof source==='string'?{selector:source}:source;
+      try{const visual=preview(options.selector,options);if(visual)controls.append(visual);}catch{/* An unavailable game control must not break the guide. */}
     }
     if(!controls.childElementCount){
       const fallback=document.createElement('span');fallback.className='guide-control-cue';
@@ -95,6 +116,19 @@
     words.append(heading,copy);item.append(controls,words);parent.append(item);
   }
   const list=parent=>{const ol=document.createElement('ol');ol.className='guide-steps';parent.append(ol);return ol;};
+  function machineGuide(notes){
+    const row=(sources,title,description)=>step(notes,sources,title,description,5);
+    row(['#robot-category','#robot-store','#robot-variant'],'Stores and models','Choose Robots or Cars, Parts or Connectors, then a model. Tap or drag a part into Assemble. Previous and Next show more parts.');
+    row({selector:'#robot-selection-mode',value:'part',showOptions:true},'Select and move','Choose Tap part. Tap a placed part and drag it. Drag empty space to pan the canvas.');
+    row({selector:'#robot-selection-mode',value:'rect'},'Rectangle selection','Draw around the centres of the parts you want. Drag inside the rectangle to move them together. Apply changes their color, and + / − resizes them in 5% steps. The parts stay separate.');
+    row([{selector:'#robot-selection-mode',value:'free'},{selector:'#robot-selection-mode',value:'oval'}],'Free Selection and Oval / Tube','Choose ▧ and start on the part you want to copy. Tap to place red points, then tap the green starting point to close the outline. Use Copy and Paste. With Oval / Tube, start on a part and drag.');
+    row(['#robot-copy','#robot-paste','#robot-remove','#robot-clear'],'Copy, Paste, Remove and Clear','Copy a selected part or outlined region, then Paste a separate copy. Remove deletes the selected part. Clear empties the canvas after confirmation.');
+    row(['#robot-color','#robot-apply-color','#robot-part-original'],'Color, Apply and Original','Select a part or rectangle, pick a color, and tap Apply. Reuse it on another selection with Apply. Original restores a part’s colors. Eyes, outlines, and metallic details keep their appearance.');
+    row(['#robot-rotate-left','#robot-rotate-right','#robot-part-mirror','#robot-part-axis'],'Rotate, Mirror and size','↶ and ↷ turn a part by 45°. Mirror flips it left to right. Choose Both, Width or Height before resizing a selected part with + / −.');
+    row(['#robot-zoom-out','#robot-zoom-in','#robot-zoom-level','#robot-view-fit','#robot-grid'],'Zoom, Fit and Grid','With the canvas selected, + / − zooms in 5% steps. Fit brings the assembly into view and keeps each part editable. Grid shows or hides guide lines.');
+    row([{selector:'#robot-store',value:'connectors'},'#robot-look'],'Connectors and Look','Connectors appear behind solid parts. Look shows the assembled model for reference. Build takes you back to your assembly.');
+    row(['#robot-done','#robot-snapshot','#again'],'Done, Edit, Save and New','Done freezes the assembly. Edit unlocks the individual parts and returns to Tap part. Save exports the picture. New starts a fresh assembly after confirmation.');
+  }
   function common(parent,home=false){
     const notes=list(parent);
     if(home){
@@ -122,6 +156,7 @@
     shade.dataset.guideFor=game==='abacus'?({2:'count-apples',3:'count-carrots',4:'count-train',5:'count-beads'}[age]||'count-beads'):game;shade.dataset.guideMode=game==='brush'?(paint?'paint':'clean'):'';
     document.getElementById('guide-title').textContent='How to Play · '+titles[game];
     const lead=document.createElement('p');lead.className='guide-lead';lead.textContent=game==='home'?'Play together at your child’s pace. These notes match the controls on this page.':'Follow these steps together. The pictures below show the controls in this game.';body.append(lead);
+    if(game==='machines')lead.textContent=age===5?'Build and customize a robot or car together.':'Choose age 5 to build and customize a robot or car together.';
     if(game==='home'){common(body,true);return;}
     const notes=list(body);
     if(game==='drag'){
@@ -160,20 +195,7 @@
       step(notes,['[data-color-label]','[data-abacus-total]'],'3. Watch the monitor','The matching color, number word, sums and total update as beads move to the counted side. Move them back to subtract.');
       step(notes,'#item-progress-strip .item-chip','4. Enjoy the rainbow','A color lights up when that row has counted beads. The rainbow is a monitor; you can keep sliding after it is full.');
     }else if(game==='machines'){
-      step(notes,['#robot-category','#robot-store','#robot-variant'],"Stores / Parts","Choose a robot, category and part. Tap or drag a part into Assemble.");
-      step(notes,['#robot-previous-page','#robot-next-page'],"Browse parts","Move through the available part pages.");
-      step(notes,'#robot-look',"Look / Build","Preview the reference robot; return to your own assembly.");
-      step(notes,'#robot-selection-mode',"Select","Tap Part for individual editing; choose Rectangle, Oval or Free Selection for regions.");
-      step(notes,'#robot-board',"Select and move","Tap a part, then drag it. Draw a rectangle to select multiple parts together.");
-      step(notes,['#robot-copy','#robot-paste'],"Copy / Paste","Copy the selected part or region and paste an independent copy.");
-      step(notes,['#robot-color','#robot-apply-color'],"Color / Apply","Choose a color and apply it to the selection. Reuse the same color on other parts.");
-      step(notes,['#robot-part-original','#robot-part-mirror'],"Original / Mirror","Restore the original color or flip the selected part horizontally.");
-      step(notes,['#robot-rotate-left','#robot-rotate-right'],"Rotate","Turn the selected part left or right.");
-      step(notes,['#robot-zoom-out','#robot-zoom-in','#robot-zoom-level'],"\u2212 / + / %","Without a selection, zoom the canvas in small steps; with a selection, resize it.");
-      step(notes,'#robot-view-fit',"Fit","Fit the current assembly inside the canvas. It does not group or lock parts.");
-      step(notes,'#robot-grid',"Grid","Show or hide the placement guide.");
-      step(notes,['#robot-remove','#robot-clear'],"Remove / Clear","Remove selected parts, or clear the assembly after confirmation.");
-      step(notes,['#robot-done','#robot-snapshot'],"Done / Edit / Save","Done freezes the design; Edit unlocks individual parts. Save the current picture.");
+      if(age===5)machineGuide(notes);
     }else if(game==='glossy'){
       step(notes,'#glossy-category-toggle','1. Choose blocks','Open Blocks to choose Shapes, Letters, Numbers or another collection. Swipe the Stores pages for more pieces. The number of choices increases with age.');
       step(notes,'[data-glossy-item]','2. Build together','Drag a block into Assemble, or tap a block and then its destination. Grid snaps pieces into cells; turn Grid off to place them freely.');

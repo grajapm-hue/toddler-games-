@@ -75,27 +75,6 @@
 #app.compact #first-games{width:150px;min-height:30px;font-size:12px}
 #app.narrow[data-view="home"] .companion-bar #hint{display:none}
 
-/* v2.35: compact control-and-description rows in the top How to Play panel. */
-#parent-guide[data-guide-for="machines"] #guide-body{padding:5px 9px 8px}
-#parent-guide[data-guide-for="machines"] .guide-lead{margin:0 0 4px;font-size:12px;line-height:1.2}
-#parent-guide[data-guide-for="machines"] .guide-step{grid-template-columns:minmax(92px,27%) minmax(0,1fr);gap:7px;padding:3px 0;min-height:32px;align-items:center}
-#parent-guide[data-guide-for="machines"] .guide-pictures{justify-content:flex-start;min-height:26px;gap:2px;flex-wrap:nowrap;overflow:hidden}
-#parent-guide[data-guide-for="machines"] .guide-preview{transform-origin:left center;max-width:100%}
-#parent-guide[data-guide-for="machines"] .guide-step h3{font-size:12px;line-height:1.15;margin:0 0 1px}
-#parent-guide[data-guide-for="machines"] .guide-step p{font-size:11px;line-height:1.2;margin:0;overflow-wrap:anywhere}
-#parent-guide[data-guide-for="machines"] #guide-body details{margin-top:5px;padding-top:5px}
-#app.narrow #parent-guide[data-guide-for="machines"] .guide-step{grid-template-columns:minmax(76px,28%) minmax(0,1fr);gap:5px;padding:3px 0}
-@media(max-width:400px){#parent-guide[data-guide-for="machines"] .guide-step h3{font-size:11px}#parent-guide[data-guide-for="machines"] .guide-step p{font-size:10px}}
-
-/* v2.36: prevent empty second column and narrow text in mobile guides. */
-#parent-guide[data-guide-for="machines"] .guide-step{display:flex!important;flex-direction:row!important;align-items:flex-start!important;gap:8px!important;width:100%;box-sizing:border-box;padding:6px 0!important;min-height:0!important}
-#parent-guide[data-guide-for="machines"] .guide-pictures{display:flex!important;flex:0 0 96px!important;width:96px!important;max-width:96px!important;min-width:0!important;min-height:28px!important;align-items:flex-start!important;justify-content:flex-start!important;overflow:hidden!important}
-#parent-guide[data-guide-for="machines"] .guide-step>div:last-child{display:block!important;flex:1 1 0!important;min-width:0!important;width:auto!important;max-width:none!important;overflow-wrap:break-word!important}
-#parent-guide[data-guide-for="machines"] .guide-step h3{font-size:13px!important;line-height:1.25!important;margin:0 0 2px!important}
-#parent-guide[data-guide-for="machines"] .guide-step p{font-size:12px!important;line-height:1.35!important;margin:0!important;max-width:none!important;overflow-wrap:normal!important;word-break:normal!important}
-#parent-guide[data-guide-for="machines"] .guide-control-cue{display:inline-block;max-width:90px;padding:4px 5px;border:1px solid #8aa67a;border-radius:6px;background:#e0eede;color:#173e35;font-size:10px;font-weight:700;line-height:1.2;overflow-wrap:break-word}
-@media(max-width:430px){#parent-guide[data-guide-for="machines"] .guide-pictures{flex-basis:78px!important;width:78px!important;max-width:78px!important}#parent-guide[data-guide-for="machines"] .guide-control-cue{max-width:72px}#parent-guide[data-guide-for="machines"] .guide-step{gap:6px!important}}
-
 /* v2.37: all game books use full-width, compact, visible icon-and-label rows. */
 #parent-guide .guide-step{display:block!important;width:100%!important;min-height:0!important;padding:6px 0!important;box-sizing:border-box!important}
 #parent-guide .guide-words{display:block!important;width:100%!important;min-width:0!important;max-width:none!important}
@@ -120,3 +99,43 @@
 #parent-guide .guide-step p{font-size:13px!important;line-height:1.35!important;margin:0!important;max-width:none!important;overflow-wrap:break-word!important;word-break:normal!important}
 #parent-guide .guide-control-cue{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-height:27px!important;max-width:100%!important;padding:3px 5px!important;background:#d8eadd!important;border:1px solid #8cae94!important;border-radius:8px!important;font-size:11px!important;font-weight:700!important;text-align:center!important}
 @media(max-width:440px){#parent-guide .guide-step{grid-template-columns:92px minmax(0,1fr)!important;gap:7px!important;padding:7px 0!important}#parent-guide .guide-step h3{font-size:13px!important}#parent-guide .guide-step p{font-size:12px!important}}
+
+/* Keep each machine control example with its heading and its full-width explanation. */
+#parent-guide[data-guide-for="machines"] #guide-panel{width:min(860px,100%)}
+#parent-guide[data-guide-for="machines"] .guide-step{
+  grid-template-columns:minmax(0,1fr) fit-content(60%)!important;
+  grid-template-areas:'title controls' 'description description';
+  align-items:center!important;
+  gap:4px 10px!important;
+  padding:7px 0!important;
+}
+#parent-guide[data-guide-for="machines"] .guide-words{display:contents!important}
+#parent-guide[data-guide-for="machines"] .guide-step h3{grid-area:title;margin:0!important}
+#parent-guide[data-guide-for="machines"] .guide-step p{grid-area:description}
+#parent-guide[data-guide-for="machines"] .guide-pictures{
+  grid-area:controls;
+  justify-content:flex-end!important;
+  min-height:0!important;
+  align-items:center!important;
+}
+.guide-select-example{display:flex;align-items:center;gap:5px;flex-wrap:wrap;max-width:100%}
+.guide-select-options{
+  display:grid;
+  grid-template-columns:repeat(2,max-content);
+  list-style:none;
+  margin:0;
+  padding:2px;
+  border:1px solid #8aa67a;
+  border-radius:6px;
+  background:#fffaf0;
+  font-size:11px;
+}
+.guide-select-options li{padding:2px 5px;border-radius:4px}
+.guide-option-selected{background:#d5e9ef;font-weight:700}
+@media(max-width:520px){
+  #parent-guide[data-guide-for="machines"] .guide-step{
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-areas:'title' 'controls' 'description';
+  }
+  #parent-guide[data-guide-for="machines"] .guide-pictures{justify-content:flex-start!important}
+}

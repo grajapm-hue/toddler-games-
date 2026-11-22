@@ -104,37 +104,6 @@
         </section>
       </div>`;
     scene.after(room);
-    // The top-row How to Play is the sole guide for Kids Assemble.
-    // Extend its existing machine instructions after the shared guide renders.
-    const assemblyGuideSteps=[
-      ['Stores and models','Choose Robots or Cars, Parts or Connectors, then a model. Tap or drag a store picture into Assemble; use Previous and Next to browse more parts.'],
-      ['Select and move','Choose Tap part, then tap any placed part and drag it. Empty-canvas dragging pans the view.'],
-      ['Rectangle selection','Choose Rectangle and draw around one or more parts. Drag the selection to move them together; Apply recolors them and + / − resizes them in 5% steps without merging the parts.'],
-      ['Free Selection ▧','Choose the dotted-square symbol. Tap around an area to place red points, then tap the green starting point to close the outline. Use Copy and Paste for an independent copy. Oval / Tube also selects an area.'],
-      ['Copy, Paste, Remove and Clear','Copy the selected part or completed region and Paste a separate copy. Remove deletes a selected part; Clear empties the assembly after confirmation.'],
-      ['Color, Apply and Original','Select a part or rectangle, choose a color, and press Apply. Press Apply again to reuse the same color on another selection. Original restores a selected part’s original colors; eyes, outlines and metallic details are protected.'],
-      ['Rotate, Mirror and size','↶ and ↷ rotate the selected part by 45°. ⇄ Mirror flips it horizontally. Choose Both, Width or Height before resizing. With a selection, + / − changes object size; without a selection it zooms the canvas.'],
-      ['Zoom, Fit and Grid','The + / − controls change by 5% each press. Fit only adjusts the view so the current assembly is visible; it never groups, locks or moves parts. Grid shows or hides guide lines.'],
-      ['Connectors and Look','Choose Connectors in Stores to join parts; connectors appear behind solid robot parts. Look shows the model reference, then Build returns to your own assembly.'],
-      ['Done, Edit, Save and New','Done freezes the completed assembly. Edit unlocks the individual parts and returns to Tap part. Save exports the current appearance. New / Again starts a fresh assembly after confirmation.']
-    ];
-    document.addEventListener('click',event=>{
-      if(!event.target.closest('#how-to-play, #how-to-play-full'))return;
-      queueMicrotask(()=>{
-        const guide=document.querySelector('#parent-guide');
-        if(!guide||guide.hidden||app?.dataset.view!=='machines')return;
-        const body=guide.querySelector('#guide-body'),list=body?.querySelector('.guide-steps');
-        if(!list)return;
-        list.replaceChildren();
-        for(const [heading,description] of assemblyGuideSteps){
-          const item=document.createElement('li');item.className='guide-step';
-          const words=document.createElement('div'),title=document.createElement('h3'),copy=document.createElement('p');
-          title.textContent=heading;copy.textContent=description;words.append(title,copy);item.append(words);list.append(item);
-        }
-        const lead=body.querySelector('.guide-lead');
-        if(lead)lead.textContent='Build and customize a robot or car. These instructions match the current Kids Assemble controls.';
-      });
-    });
     const $=name=>room.querySelector('#robot-'+name),svg=$('board'),app=scene.closest('#app');
     let state=create(),active=false,selected=null,storePick=null,storeModel=null;
     let page=0,pointer=null,ghost=null,look=false,demoTimer=null,demoActive=false,demoParts=[];
