@@ -417,11 +417,11 @@
     strip.setAttribute('aria-label','White Board and '+(category||'blank drawing'));
     if(strip.dataset.boardChoices!==key){
       strip.dataset.boardChoices=key;
-      const middle=Math.ceil(items.length/2);
-      const buttons=values=>values.map(value=>'<button type="button" class="item-chip" data-board-guide="'+value+'" aria-label="'+(guideSigns[value]||value)+'" aria-pressed="false">'+value+'</button>').join('');
-      strip.innerHTML='<div class="white-board-guide-items" role="group" aria-label="First choices">'+buttons(items.slice(0,middle))+'</div>'
-        +'<button type="button" class="item-chip brush-choice white-board-choice is-current" data-brush-choice="white-board" aria-pressed="true">White Board</button>'
-        +'<div class="white-board-guide-items" role="group" aria-label="More choices">'+buttons(items.slice(middle))+'</div>';
+      const buttons=items.map(value=>'<button type="button" class="item-chip" data-board-guide="'+value+'" aria-label="'+(guideSigns[value]||value)+'" aria-pressed="false">'+value+'</button>').join('');
+      strip.innerHTML='<div class="white-board-guide-items" role="group" aria-label="First choices"></div>'
+        +'<button type="button" class="item-chip brush-choice white-board-choice is-current" data-brush-choice="white-board" aria-pressed="true">White Board ON</button>'
+        +'<div class="white-board-guide-items" role="group" aria-label="More choices">'+buttons+'</div>';
+      fitBoardChoices();
     }
     for(const button of strip.querySelectorAll('[data-board-guide]')){
       const selected=button.dataset.boardGuide===selectedGuide;
@@ -429,6 +429,18 @@
       button.setAttribute('aria-pressed',String(selected));
     }
   }
+  function fitBoardChoices(){
+    if(!onWhiteBoard())return;
+    const [left,right]=$('item-progress-strip').querySelectorAll('.white-board-guide-items');
+    if(!left||!right)return;
+    const style=getComputedStyle(left);
+    const gap=parseFloat(style.columnGap);
+    const chipWidth=parseFloat(style.getPropertyValue('--white-board-chip-width'));
+    const fits=Math.floor((left.clientWidth+gap)/(chipWidth+gap));
+    while(left.childElementCount>fits)right.prepend(left.lastElementChild);
+    while(left.childElementCount<fits&&right.firstElementChild)left.append(right.firstElementChild);
+  }
+  new ResizeObserver(fitBoardChoices).observe($('item-progress-strip'));
   function positionTracingGuide(){
     if(!selectedGuide)return;
     const surface=boardSurface.getBoundingClientRect();
@@ -502,25 +514,30 @@
       :'<circle cx="'+(x+stroke[0])+'" cy="'+stroke[1]+'" r="5.2"/>';
     guideArt.innerHTML=strokes.filter(({stroke})=>typeof stroke==='string').map(item=>shape(item,'guide-outline')).join('')
       +strokes.map(item=>shape(item,'guide-interior')).join('');
-    guideOrder.innerHTML=strokes.map(item=>{
-      if(typeof item.stroke==='string')return shape(item,'guide-arrow guide-dashes');
-      if(item.stroke[2]===false)return '<g/>';
-      return guideStepMarker(item.x+item.stroke[0],item.stroke[1],item.step);
-    }).join('');
-    const markers=[];
+    guideOrder.innerHTML=strokes.map(item=>typeof item.stroke==='string'
+      ?shape(item,'guide-arrow guide-dashes'):'<g/>').join('');
+    const arrows=[],markers=[],positions=[];
     for(const [i,node] of [...guideOrder.children].entries()){
-      if(node.localName!=='path')continue;
-      const {x,step,earlyArrow}=strokes[i];
+      const {x,step,earlyArrow,stroke}=strokes[i];
+      if(node.localName!=='path'){
+        if(stroke[2]!==false)markers.push(guideStepMarker(x+stroke[0],stroke[1],step));
+        continue;
+      }
       const length=node.getTotalLength();
       let start=node.getPointAtLength(0);
-      if(markers.some(p=>Math.hypot(p.x-x-start.x,p.y-start.y)<8))start=node.getPointAtLength(Math.min(length*.45,12));
-      markers.push({x:x+start.x,y:start.y});
+      for(let distance=12;distance<length*.65&&positions.some(p=>Math.hypot(p.x-x-start.x,p.y-start.y)<11);distance+=6){
+        start=node.getPointAtLength(distance);
+      }
+      positions.push({x:x+start.x,y:start.y});
+      markers.push(guideStepMarker(x+start.x,start.y,step));
       const arrow=length*(earlyArrow?.18:.87);
       const tip=node.getPointAtLength(arrow);
       const tail=node.getPointAtLength(Math.max(0,arrow-3));
       const angle=Math.atan2(tip.y-tail.y,tip.x-tail.x)*180/Math.PI;
-      node.insertAdjacentHTML('afterend','<path class="guide-arrow" d="M-4 -2.3L0 0L-4 2.3" transform="translate('+(x+tip.x)+' '+tip.y+') rotate('+angle+')"/>'+guideStepMarker(x+start.x,start.y,step));
+      arrows.push('<path class="guide-arrow" d="M-4 -2.3L0 0L-4 2.3" transform="translate('+(x+tip.x)+' '+tip.y+') rotate('+angle+')"/>');
     }
+    // Paint every label after every path so crossing strokes cannot obscure it.
+    guideOrder.insertAdjacentHTML('beforeend',arrows.join('')+markers.join(''));
     updateTracingBoundary(strokes);
     updateDirections();
     boardSurface.setAttribute('aria-label',value?'White Board tracing guide: '+(guideSigns[value]||value):'Draw or write on the white board');
@@ -606,7 +623,7 @@
     if(!active)finishBoardStroke();
     app.toggleAttribute('data-white-board',active);
     whiteBoard.hidden=!active;
-    guideSelect.hidden=state.activity!=='brush';
+    guideSelect.hidden=!active;
     guideSelect.disabled=!active;
     if(!active)directions.hidden=true;
     if(active){
@@ -1150,7 +1167,7 @@
     strip.style.setProperty('--thumb-count',String(items.length));
     strip.innerHTML=items.map(({label,icon='',current=false,done=false,later=false,brushChoice})=>{
       const safe=String(label).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
-      if(brushChoice==='white-board')return `<button type="button" class="item-chip brush-choice white-board-choice ${current?'is-current':''}" data-brush-choice="white-board" aria-pressed="${current}">White Board</button>`;
+      if(brushChoice==='white-board')return `<button type="button" class="item-chip brush-choice white-board-choice ${current?'is-current':''}" data-brush-choice="white-board" aria-pressed="${current}">White Board ${current?'ON':'OFF'}</button>`;
       if(state.activity==='brush')return `<button type="button" class="item-chip brush-choice ${current?'is-current':''} ${done?'is-done':''}" data-brush-choice="${brushChoice}" aria-label="Select ${safe} drawing${done?', completed':''}" aria-pressed="${current}" title="Tap to draw ${safe}">${icon||safe}</button>`;
       return `<span class="item-chip ${current?'is-current':''} ${done?'is-done':''} ${later?'is-later':''}" role="listitem" aria-label="${safe} ${done?'completed':current?'current':later?'later level':'available'}" title="${safe}">${icon||safe}</span>`;
     }).join('');
