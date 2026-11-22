@@ -110,3 +110,13 @@
 #parent-guide #guide-body{padding:7px 10px 10px!important}
 #parent-guide .guide-lead{margin-bottom:6px!important}
 @media(max-width:430px){#parent-guide .guide-step{padding:5px 0!important}#parent-guide .guide-step-heading{font-size:12px!important}#parent-guide .guide-control-chip{font-size:10px!important;min-height:24px!important;padding:2px 5px!important}}
+
+/* v2.38: genuine, non-interactive copies of each game control before its explanation. */
+#parent-guide .guide-step{display:grid!important;grid-template-columns:clamp(76px,25%,132px) minmax(0,1fr)!important;align-items:start!important;gap:9px!important;padding:8px 0!important;width:100%!important;box-sizing:border-box!important}
+#parent-guide .guide-pictures{display:flex!important;flex-wrap:wrap!important;align-items:flex-start!important;justify-content:center!important;gap:4px!important;min-height:28px!important;min-width:0!important;width:100%!important;overflow:visible!important}
+#parent-guide .guide-preview{display:flex!important;max-width:100%!important;overflow:visible!important;pointer-events:none!important}
+#parent-guide .guide-words{min-width:0!important;width:auto!important;max-width:none!important;display:block!important;flex:auto!important}
+#parent-guide .guide-step h3{font-size:14px!important;line-height:1.25!important;margin:0 0 3px!important}
+#parent-guide .guide-step p{font-size:13px!important;line-height:1.35!important;margin:0!important;max-width:none!important;overflow-wrap:break-word!important;word-break:normal!important}
+#parent-guide .guide-control-cue{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-height:27px!important;max-width:100%!important;padding:3px 5px!important;background:#d8eadd!important;border:1px solid #8cae94!important;border-radius:8px!important;font-size:11px!important;font-weight:700!important;text-align:center!important}
+@media(max-width:440px){#parent-guide .guide-step{grid-template-columns:92px minmax(0,1fr)!important;gap:7px!important;padding:7px 0!important}#parent-guide .guide-step h3{font-size:13px!important}#parent-guide .guide-step p{font-size:12px!important}}

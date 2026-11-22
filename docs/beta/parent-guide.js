@@ -75,22 +75,24 @@
     if(!chip.childNodes.length)return null;
     chip.setAttribute('aria-hidden','true');return chip;
   }
+  // Render the same real controls children see in the game, as inert snapshots.
+  // Keep previews outside the text column so the row never collapses to a narrow strip.
   function step(parent,sources,title,text){
     const item=document.createElement('li');item.className='guide-step';
-    const words=document.createElement('div');words.className='guide-words';
-    const heading=document.createElement('h3');heading.className='guide-step-heading';
-    const icons=document.createElement('span');icons.className='guide-inline-controls';
+    const controls=document.createElement('div');controls.className='guide-pictures';
     const selectors=Array.isArray(sources)?sources:[sources];
-    for(const selector of selectors){if(icons.childElementCount>=3)break;try{const chip=controlChip(selector);if(chip)icons.append(chip);}catch{/* optional preview */}}
-    if(!icons.childElementCount){
-      const fallback=document.createElement('span');fallback.className='guide-control-chip guide-fallback-chip';
-      fallback.textContent=title.replace(/^\d+\.\s*/,'').split(/\s+(?:and|or)\s+|\s*\/\s*/)[0].slice(0,16);
-      fallback.setAttribute('aria-hidden','true');icons.append(fallback);
+    for(const selector of selectors){
+      if(controls.childElementCount>=3)break;
+      try{const visual=preview(selector);if(visual)controls.append(visual);}catch{/* An unavailable game control must not break the guide. */}
     }
-    const name=document.createElement('span');name.className='guide-step-title';name.textContent=title;
-    heading.append(icons,name);
+    if(!controls.childElementCount){
+      const fallback=document.createElement('span');fallback.className='guide-control-cue';
+      fallback.textContent=title.replace(/^\d+\.\s*/,'').slice(0,22);controls.append(fallback);
+    }
+    const words=document.createElement('div');words.className='guide-words';
+    const heading=document.createElement('h3');heading.textContent=title;
     const copy=document.createElement('p');copy.textContent=text;
-    words.append(heading,copy);item.append(words);parent.append(item);
+    words.append(heading,copy);item.append(controls,words);parent.append(item);
   }
   const list=parent=>{const ol=document.createElement('ol');ol.className='guide-steps';parent.append(ol);return ol;};
   function common(parent,home=false){
@@ -173,10 +175,10 @@
       step(notes,['#robot-remove','#robot-clear'],"Remove / Clear","Remove selected parts, or clear the assembly after confirmation.");
       step(notes,['#robot-done','#robot-snapshot'],"Done / Edit / Save","Done freezes the design; Edit unlocks individual parts. Save the current picture.");
     }else if(game==='glossy'){
-      step(notes,'#glossy-category-toggle','1. Choose blocks','Choose a collection from the compact Blocks menu. Its white menu shows every choice without scrolling, and long category names fit inside the tab. Ages 2, 3, 4 and 5 use 2×2, 3×3, 4×4 and 6×6 block sets per Stores page. Every page fits inside Stores without scrolling. Shapes combines the original silhouettes with new pieces: 4, 18, 32 and 36 unique choices by age. Each number, character or object appears once in its collection; tap or swipe the Blocks count to browse pages. Letters includes the alphabet and extra symbols.');
-      step(notes,'[data-glossy-item]','2. Build together','Each piece keeps the same visible size from Stores to Assemble. Drag a block across, or tap a block and then any place, including over another block. Square Grid starts on by default. Its cells fill the Assemble pane and adapt to its shape in portrait, landscape and fullscreen; the age level sets the base grid density. Turn Grid off for free placement anywhere in the pane. New and moved pieces snap into cells while Grid is on. With a keyboard, Enter on a shelf block adds it to an empty spot; arrow keys move a focused board block.');
-      step(notes,['#glossy-colour','#glossy-remove'],'3. Change your idea','Select a placed block to recolour or remove it. Rotate turns the selected piece 45° clockwise each time; keyboard R does the same. Size opens − and +: choose Width, Height or Both before resizing the selected Assemble piece. Both keeps its current proportions. Stores templates stay unchanged. Grid limits enlargement to one cell; use Free to grow further. Grid mode fits the rotated piece inside its cell. Open Colour for named swatches or a custom colour. Colour-word blocks update their name to match the chosen colour. Clear and Again start a fresh board. Categories, settings and rotation keep your construction.');
-      step(notes,['#glossy-finish'],'4. Finish your design','Grid changes the guide and future placement without clearing your construction. Stores fits each page in its pane in portrait, landscape and fullscreen layouts. In short portrait windows, swipe an empty part of Assemble to reach more rows. Done celebrates while keeping your blocks ready for a snapshot. Demo shows a separate example without changing your work.');
+      step(notes,'#glossy-category-toggle','1. Choose blocks','Open Blocks to choose Shapes, Letters, Numbers or another collection. Swipe the Stores pages for more pieces. The number of choices increases with age.');
+      step(notes,'[data-glossy-item]','2. Build together','Drag a block into Assemble, or tap a block and then its destination. Grid snaps pieces into cells; turn Grid off to place them freely.');
+      step(notes,['#glossy-colour','#glossy-remove'],'3. Change your idea','Select a placed block to change its Colour, Rotate it 45°, adjust Size, or Remove it. Use Clear or Again to start over.');
+      step(notes,['#glossy-finish'],'4. Finish your design','Tap Done to celebrate your design. Use Demo to see an example without changing your blocks.');
     }else if(game==='puzzle'){
       step(notes,'#puzzle-upload','1. Add your pictures','Tap Picture and choose one or several images from the device. They stay in this browser; they are not uploaded.');
       step(notes,'#puzzle-gallery [data-puzzle-choice]','2. Choose a thumbnail','Tap any picture in the top row. Swipe the row for more. Switching pictures keeps their placed pieces during this play session.');
