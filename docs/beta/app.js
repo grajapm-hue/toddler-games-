@@ -387,29 +387,27 @@
     4:{letters:16,numbers:15,signs:['+','−','=']},
     5:{letters:26,numbers:20,signs:['+','−','×','÷','=']}
   };
-  const guideSigns={
-    '●':['Dot','<circle cy="-3" r="5"/>'],
-    '—':['Flat line','<path d="M-36 -3H36"/>'],
-    '|':['Standing line','<path d="M0 -40V34"/>'],
-    '○':['Circle','<path d="M0 -40a37 37 0 1 1 0 74 37 37 0 1 1 0 -74Z"/>'],
-    '+':['Plus','<path d="M-35 -3H35M0 -38V32"/>'],
-    '−':['Minus','<path d="M-35 -3H35"/>'],
-    '=':['Equals','<path d="M-35 -16H35M-35 10H35"/>'],
-    '×':['Times','<path d="m-28 -31 56 56m0 -56 -56 56"/>'],
-    '÷':['Division','<path d="M-35 -3H35"/><circle cy="-27" r="4.5"/><circle cy="21" r="4.5"/>']
-  };
+  const guideSigns={'●':'Dot','—':'Flat line','|':'Standing line','○':'Circle','+':'Plus','−':'Minus','=':'Equals','×':'Times','÷':'Division'};
+  const guideOrder=$('white-board-order'),directions=$('white-board-directions');
+  const example=$('white-board-example'),exampleImage=$('white-board-example-image'),quantityGrid=$('white-board-quantity');
+  const alphabetExamples=['Apple','Bee','Car','Duck','Elephant','Fish','Grapes','House','Ice cream','Jellyfish','Koala','Ladybug','Milk','Nest','Octopus','Pizza','Queen','Rabbit','Sun','Tree','Umbrella','Volcano','Watermelon','Xylophone','Yarn','Zebra'];
+  let showDirections=true;
+  directions.addEventListener('click',()=>{
+    showDirections=!showDirections;
+    updateDirections();
+  });
   const boardsByAge=new Map();
   let boardStroke=null,activeBoard=null,traceMaskId=0;
   function populateGuideOptions(){
     const profile=guideProfiles[state.age]||guideProfiles[5];
     const letters=Array.from({length:profile.letters},(_,i)=>String.fromCharCode(65+i));
     const numbers=Array.from({length:profile.numbers},(_,i)=>String(i+1));
-    const groups=[['🔤 ABC',letters],['🔢 123',numbers],['➕ Signs',profile.signs]];
+    const groups=[['🔤 Uppercase',letters],['🔤 Lowercase',letters.map(letter=>letter.toLowerCase())],['🔢 123',numbers],['➕ Signs',profile.signs]];
     guideSelect.replaceChildren(new Option('⬜ Blank Board',''));
     for(const [label,values] of groups){
       const group=document.createElement('optgroup');
       group.label=label;
-      group.append(...values.map(value=>new Option(guideSigns[value]?value+'  '+guideSigns[value][0]:value,value)));
+      group.append(...values.map(value=>new Option(guideSigns[value]?value+'  '+guideSigns[value]:value,value)));
       guideSelect.append(group);
     }
     updateTracingGuide();
@@ -417,57 +415,106 @@
   function positionTracingGuide(){
     const {width,height}=boardSurface.viewBox.baseVal;
     const wide=guideSelect.value.length>1;
-    const scale=Math.min(height*.008,width*(wide?.0045:.006));
-    const transform='translate('+width/2+' '+height/2+') scale('+scale+')';
+    const withPicture=example.dataset.kind==='letter';
+    const withQuantity=example.dataset.kind==='quantity';
+    const widthScale=withQuantity?.0036:wide?.0045:withPicture?.0047:.006;
+    const center=withQuantity?.68:withPicture?.59:.5;
+    const scale=Math.min(height*.008,width*widthScale);
+    const transform='translate('+width*center+' '+height/2+') scale('+scale+')';
     guideArt.setAttribute('transform',transform);
+    guideOrder.setAttribute('transform',transform);
     if(activeBoard?.guide)activeBoard.layer.setAttribute('transform',transform);
+  }
+  function updateDirections(){
+    directions.hidden=!guideSelect.value;
+    directions.setAttribute('aria-pressed',String(showDirections));
+    guideOrder.style.display=showDirections?'':'none';
+  }
+  function showGuideExample(value){
+    const isLetter=/^[A-Za-z]$/.test(value);
+    const quantity=/^[1-9][0-9]*$/.test(value)?Number(value):0;
+    const caption=example.querySelector('figcaption');
+    example.dataset.kind=isLetter?'letter':quantity?'quantity':'';
+    example.hidden=!isLetter&&!quantity;
+    exampleImage.hidden=!isLetter;
+    quantityGrid.hidden=!quantity;
+    quantityGrid.replaceChildren();
+    if(quantity){
+      const columns=Math.min(5,quantity);
+      quantityGrid.style.setProperty('--quantity-columns',String(columns));
+      quantityGrid.style.width=columns*20+'%';
+      quantityGrid.append(...Array.from({length:quantity},()=>document.createElement('span')));
+      caption.textContent=quantity+(quantity===1?' apple':' apples');
+      return;
+    }
+    if(!isLetter)return;
+    const index=value.toUpperCase().charCodeAt(0)-65;
+    const first=index<16;
+    const tile=first?index:index-16;
+    const rows=first?4:3;
+    const word=alphabetExamples[index];
+    exampleImage.style.backgroundImage='url(alphabet-art-'+(first?'a-p':'q-z')+'.png)';
+    exampleImage.style.backgroundSize='400% '+rows*100+'%';
+    exampleImage.style.backgroundPosition=(tile%4)*100/3+'% '+Math.floor(tile/4)*100/(rows-1)+'%';
+    exampleImage.setAttribute('aria-label',word);
+    caption.textContent=value.toUpperCase()+' · '+word;
+  }
+  function tracingStrokes(value){
+    if(!value)return [];
+    return [...value].flatMap((character,i)=>{
+      const x=(i-(value.length-1)/2)*68;
+      return (window.sanaHandwriting[character]||[]).map(stroke=>({x,stroke}));
+    });
   }
   function updateTracingGuide(){
     const value=guideSelect.value;
-    const sign=guideSigns[value];
     whiteBoard.toggleAttribute('data-tracing',Boolean(value));
-    guideArt.replaceChildren();
-    if(sign)guideArt.innerHTML=sign[1];
-    else if(value){
-      const text=document.createElementNS('http://www.w3.org/2000/svg','text');
-      text.setAttribute('text-anchor','middle');
-      text.setAttribute('y','32');
-      text.textContent=value;
-      guideArt.append(text);
+    showGuideExample(value);
+    const strokes=tracingStrokes(value);
+    const shape=({x,stroke},className)=>typeof stroke==='string'
+      ?'<path class="'+className+'" transform="translate('+x+' 0)" d="'+stroke+'"/>'
+      :'<circle cx="'+(x+stroke[0])+'" cy="'+stroke[1]+'" r="5.2"/>';
+    guideArt.innerHTML=strokes.filter(({stroke})=>typeof stroke==='string').map(item=>shape(item,'guide-outline')).join('')
+      +strokes.map(item=>shape(item,'guide-interior')).join('');
+    guideOrder.innerHTML=strokes.map((item,i)=>typeof item.stroke==='string'
+      ?shape(item,'guide-arrow guide-dashes')
+      :'<g transform="translate('+(item.x+item.stroke[0])+' '+item.stroke[1]+')"><circle r="3.6"/><text>'+(i+1)+'</text></g>').join('');
+    for(const [i,node] of [...guideOrder.children].entries()){
+      if(node.localName!=='path')continue;
+      const length=node.getTotalLength();
+      const start=node.getPointAtLength(0);
+      const tip=node.getPointAtLength(length*.87);
+      const tail=node.getPointAtLength(Math.max(0,length*.87-3));
+      const angle=Math.atan2(tip.y-tail.y,tip.x-tail.x)*180/Math.PI;
+      const x=strokes[i].x;
+      node.insertAdjacentHTML('afterend','<path class="guide-arrow" d="M-4 -2.3L0 0L-4 2.3" transform="translate('+(x+tip.x)+' '+tip.y+') rotate('+angle+')"/><g transform="translate('+(x+start.x)+' '+start.y+')"><circle r="3.6"/><text>'+(i+1)+'</text></g>');
     }
-    updateTracingBoundary();
-    boardSurface.setAttribute('aria-label',value?'White Board tracing guide: '+(sign?.[0]||value):'Draw or write on the white board');
+    updateTracingBoundary(strokes);
+    updateDirections();
+    boardSurface.setAttribute('aria-label',value?'White Board tracing guide: '+(guideSigns[value]||value):'Draw or write on the white board');
     positionTracingGuide();
   }
-  function updateTracingBoundary(){
-    guideBoundary.replaceChildren();
+  function updateTracingBoundary(strokes){
     guideHit.clearRect(0,0,hitCanvas.width,hitCanvas.height);
     guideHit.save();
     guideHit.translate(hitCanvas.width/2,hitCanvas.height/2);
-    guideHit.lineWidth=12;
+    guideHit.lineWidth=13;
     guideHit.lineCap='round';
     guideHit.lineJoin='round';
-    for(const shape of guideArt.children){
-      const maskShape=shape.cloneNode(true);
-      maskShape.setAttribute('fill','white');
-      if(shape.localName==='path'){
-        maskShape.setAttribute('fill','none');
-        maskShape.setAttribute('stroke','white');
-        maskShape.setAttribute('stroke-width',String(guideHit.lineWidth));
-        maskShape.setAttribute('stroke-linecap',guideHit.lineCap);
-        maskShape.setAttribute('stroke-linejoin',guideHit.lineJoin);
-        guideHit.stroke(new Path2D(shape.getAttribute('d')));
-      }else if(shape.localName==='circle'){
-        guideHit.beginPath();
-        guideHit.arc(0,Number(shape.getAttribute('cy')),Number(shape.getAttribute('r')),0,Math.PI*2);
-        guideHit.fill();
-      }else{
-        guideHit.font='700 100px system-ui,sans-serif';
-        guideHit.textAlign='center';
-        guideHit.fillText(shape.textContent,0,Number(shape.getAttribute('y')));
+    guideBoundary.innerHTML=strokes.map(({x,stroke})=>{
+      if(typeof stroke==='string'){
+        guideHit.save();
+        guideHit.translate(x,0);
+        guideHit.stroke(new Path2D(stroke));
+        guideHit.restore();
+        return '<path transform="translate('+x+' 0)" d="'+stroke+'" fill="none" stroke="white" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>';
       }
-      guideBoundary.append(maskShape);
-    }
+      const cx=x+stroke[0],cy=stroke[1];
+      guideHit.beginPath();
+      guideHit.arc(cx,cy,5.2,0,Math.PI*2);
+      guideHit.fill();
+      return '<circle cx="'+cx+'" cy="'+cy+'" r="5.2" fill="white"/>';
+    }).join('');
     guideHit.restore();
   }
   function insideTracingBoundary(x,y){
@@ -520,6 +567,7 @@
     app.toggleAttribute('data-white-board',active);
     whiteBoard.hidden=!active;
     guideSelect.hidden=!active;
+    if(!active)directions.hidden=true;
     if(active){
       if(opening||activeBoard?.age!==state.age)populateGuideOptions();
       selectAgeBoard();
