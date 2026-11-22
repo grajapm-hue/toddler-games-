@@ -413,14 +413,23 @@
     updateTracingGuide();
   }
   function positionTracingGuide(){
-    const {width,height}=boardSurface.viewBox.baseVal;
-    const wide=guideSelect.value.length>1;
-    const withPicture=example.dataset.kind==='letter';
-    const withQuantity=example.dataset.kind==='quantity';
-    const widthScale=withQuantity?.0036:wide?.0045:withPicture?.0047:.006;
-    const center=withQuantity?.68:withPicture?.59:.5;
-    const scale=Math.min(height*.008,width*widthScale);
-    const transform='translate('+width*center+' '+height/2+') scale('+scale+')';
+    if(!guideSelect.value)return;
+    const surface=boardSurface.getBoundingClientRect();
+    if(!surface.width||!surface.height)return;
+    const {width}=boardSurface.viewBox.baseVal;
+    const units=width/surface.width;
+    if(!units)return;
+    const picture=example.hidden?null:example.getBoundingClientRect();
+    const portrait=app.classList.contains('portrait');
+    const left=picture&&!portrait?picture.right-surface.left+10:8;
+    const top=picture&&portrait?picture.bottom-surface.top+10:8;
+    const right=surface.width-boardClear.offsetWidth-15;
+    const bottom=surface.height-12;
+    const box=guideArt.getBBox();
+    const scale=Math.max(.1,Math.min((right-left)/(box.width+18),(bottom-top)/(box.height+18)));
+    const tx=((left+right)/2-(box.x+box.width/2)*scale)*units;
+    const ty=((top+bottom)/2-(box.y+box.height/2)*scale)*units;
+    const transform='translate('+tx+' '+ty+') scale('+(scale*units)+')';
     guideArt.setAttribute('transform',transform);
     guideOrder.setAttribute('transform',transform);
     if(activeBoard?.guide)activeBoard.layer.setAttribute('transform',transform);
@@ -442,7 +451,7 @@
     if(quantity){
       const columns=Math.min(5,quantity);
       quantityGrid.style.setProperty('--quantity-columns',String(columns));
-      quantityGrid.style.width=columns*20+'%';
+      quantityGrid.style.setProperty('--portrait-quantity-columns',String(Math.min(10,quantity)));
       quantityGrid.append(...Array.from({length:quantity},()=>document.createElement('span')));
       caption.textContent=quantity+(quantity===1?' apple':' apples');
       return;
@@ -463,7 +472,7 @@
     if(!value)return [];
     return [...value].flatMap((character,i)=>{
       const x=(i-(value.length-1)/2)*68;
-      return (window.sanaHandwriting[character]||[]).map(stroke=>({x,stroke}));
+      return (window.sanaHandwriting[character]||[]).map((stroke,i)=>({x,stroke,step:i+1,earlyArrow:i===0&&/^[OoQ]$/.test(character)}));
     });
   }
   function updateTracingGuide(){
@@ -476,23 +485,32 @@
       :'<circle cx="'+(x+stroke[0])+'" cy="'+stroke[1]+'" r="5.2"/>';
     guideArt.innerHTML=strokes.filter(({stroke})=>typeof stroke==='string').map(item=>shape(item,'guide-outline')).join('')
       +strokes.map(item=>shape(item,'guide-interior')).join('');
-    guideOrder.innerHTML=strokes.map((item,i)=>typeof item.stroke==='string'
-      ?shape(item,'guide-arrow guide-dashes')
-      :'<g transform="translate('+(item.x+item.stroke[0])+' '+item.stroke[1]+')"><circle r="3.6"/><text>'+(i+1)+'</text></g>').join('');
+    guideOrder.innerHTML=strokes.map(item=>{
+      if(typeof item.stroke==='string')return shape(item,'guide-arrow guide-dashes');
+      if(item.stroke[2]===false)return '<g/>';
+      return guideStepMarker(item.x+item.stroke[0],item.stroke[1],item.step);
+    }).join('');
+    const markers=[];
     for(const [i,node] of [...guideOrder.children].entries()){
       if(node.localName!=='path')continue;
+      const {x,step,earlyArrow}=strokes[i];
       const length=node.getTotalLength();
-      const start=node.getPointAtLength(0);
-      const tip=node.getPointAtLength(length*.87);
-      const tail=node.getPointAtLength(Math.max(0,length*.87-3));
+      let start=node.getPointAtLength(0);
+      if(markers.some(p=>Math.hypot(p.x-x-start.x,p.y-start.y)<8))start=node.getPointAtLength(Math.min(length*.45,12));
+      markers.push({x:x+start.x,y:start.y});
+      const arrow=length*(earlyArrow?.18:.87);
+      const tip=node.getPointAtLength(arrow);
+      const tail=node.getPointAtLength(Math.max(0,arrow-3));
       const angle=Math.atan2(tip.y-tail.y,tip.x-tail.x)*180/Math.PI;
-      const x=strokes[i].x;
-      node.insertAdjacentHTML('afterend','<path class="guide-arrow" d="M-4 -2.3L0 0L-4 2.3" transform="translate('+(x+tip.x)+' '+tip.y+') rotate('+angle+')"/><g transform="translate('+(x+start.x)+' '+start.y+')"><circle r="3.6"/><text>'+(i+1)+'</text></g>');
+      node.insertAdjacentHTML('afterend','<path class="guide-arrow" d="M-4 -2.3L0 0L-4 2.3" transform="translate('+(x+tip.x)+' '+tip.y+') rotate('+angle+')"/>'+guideStepMarker(x+start.x,start.y,step));
     }
     updateTracingBoundary(strokes);
     updateDirections();
     boardSurface.setAttribute('aria-label',value?'White Board tracing guide: '+(guideSigns[value]||value):'Draw or write on the white board');
     positionTracingGuide();
+  }
+  function guideStepMarker(x,y,step){
+    return '<g transform="translate('+x+' '+y+')"><circle r="3.6"/><text>'+step+'</text></g>';
   }
   function updateTracingBoundary(strokes){
     guideHit.clearRect(0,0,hitCanvas.width,hitCanvas.height);
@@ -628,10 +646,12 @@
       redo:()=>{ boardSurface.querySelector('defs').append(mask); for(const item of drawing)maskedInk.append(item); layer.append(group); }
     };
   }
-  new ResizeObserver(()=>{
+  const boardResize=new ResizeObserver(()=>{
     finishBoardStroke();
     fitWhiteBoard();
-  }).observe(boardSurface);
+  });
+  boardResize.observe(boardSurface);
+  boardResize.observe(example);
   boardSurface.addEventListener('pointerdown',event=>{
     if(boardStroke||event.button!==0)return;
     if(!boardSurface.hasAttribute('viewBox'))fitWhiteBoard();
