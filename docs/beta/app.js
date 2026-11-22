@@ -371,6 +371,95 @@
     ['crown','<path d="M322 150L397 239L500 98L603 239L678 150L647 350H353Z"/>']
   ];
   let brushIndex=0,brushAge=null;const brushFinished=new Set();
+  let whiteBoardSelected=false;
+  const whiteBoard=$('white-board'),boardSurface=$('white-board-surface'),boardInk=$('white-board-ink');
+  const boardClear=$('white-board-clear'),boardUndo=$('white-board-undo');
+  const boardFullscreen=$('white-board-fullscreen'),boardHaptics=$('white-board-haptics');
+  let boardStroke=null,undoBoard=null;
+  const onWhiteBoard=()=>state.activity==='brush'&&whiteBoardSelected;
+  function fitWhiteBoard(){
+    const {clientWidth:width,clientHeight:height}=boardSurface;
+    if(!width||!height)return;
+    // Use uniform scaling and extend the drawable area to fill the viewport.
+    // Keep the farthest marks in view when returning from a larger layout.
+    const bounds=boardInk.getBBox();
+    const scale=Math.min(width/Math.max(1000,bounds.x+bounds.width+40),height/Math.max(440,bounds.y+bounds.height+40));
+    boardSurface.setAttribute('viewBox',`0 0 ${width/scale} ${height/scale}`);
+  }
+  function finishBoardStroke(){
+    if(!boardStroke)return;
+    const {id}=boardStroke;
+    boardStroke=null;
+    if(boardSurface.hasPointerCapture(id))boardSurface.releasePointerCapture(id);
+  }
+  function updateWhiteBoard(){
+    const active=onWhiteBoard(),full=app.classList.contains('immersive');
+    if(!active)finishBoardStroke();
+    app.toggleAttribute('data-white-board',active);
+    whiteBoard.hidden=!active;
+    $('white-board-heading').hidden=!active||!full;
+    boardFullscreen.setAttribute('aria-pressed',String(full));
+    boardFullscreen.setAttribute('aria-label',full?'Exit White Board full screen':'White Board full screen');
+    boardFullscreen.title=boardFullscreen.getAttribute('aria-label');
+    boardFullscreen.querySelector('use').setAttribute('href',full?'#exit-fullscreen-icon':'#fullscreen-icon');
+  }
+  function updateBoardActions(){
+    boardClear.disabled=!boardInk.childElementCount;
+    boardUndo.disabled=!undoBoard;
+  }
+  function boardPoint(event){
+    const {x,y}=new DOMPoint(event.clientX,event.clientY).matrixTransform(boardSurface.getScreenCTM().inverse());
+    const {width,height}=boardSurface.viewBox.baseVal;
+    return {x:Math.max(0,Math.min(width,x)),y:Math.max(0,Math.min(height,y))};
+  }
+  new ResizeObserver(()=>{
+    finishBoardStroke();
+    fitWhiteBoard();
+  }).observe(boardSurface);
+  boardSurface.addEventListener('pointerdown',event=>{
+    if(boardStroke||event.button!==0)return;
+    if(!boardSurface.hasAttribute('viewBox'))fitWhiteBoard();
+    const {x,y}=boardPoint(event);
+    const width={small:6,medium:14,large:30}[state.brushSize];
+    const path=strokePath(state.erase?'white':state.paintColor,width);
+    const d=`M${x.toFixed(1)} ${y.toFixed(1)}l.1 .1`;
+    path.setAttribute('d',d);
+    boardInk.append(path);
+    boardStroke={id:event.pointerId,path,d};
+    undoBoard=()=>path.remove();
+    updateBoardActions();
+    boardSurface.setPointerCapture(event.pointerId);
+    if(event.pointerType!=='mouse')haptic(18);
+  });
+  boardSurface.addEventListener('pointermove',event=>{
+    if(boardStroke?.id!==event.pointerId)return;
+    const samples=event.getCoalescedEvents?.();
+    for(const sample of samples?.length?samples:[event]){
+      const {x,y}=boardPoint(sample);
+      boardStroke.d+=`L${x.toFixed(1)} ${y.toFixed(1)}`;
+    }
+    boardStroke.path.setAttribute('d',boardStroke.d);
+  });
+  for(const type of ['pointerup','pointercancel','lostpointercapture']){
+    boardSurface.addEventListener(type,event=>{if(boardStroke?.id===event.pointerId)finishBoardStroke();});
+  }
+  boardClear.addEventListener('click',()=>{
+    finishBoardStroke();
+    const drawing=[...boardInk.children];
+    undoBoard=()=>boardInk.append(...drawing);
+    boardInk.replaceChildren();
+    updateBoardActions();
+    boardUndo.focus({preventScroll:true});
+  });
+  boardUndo.addEventListener('click',()=>{
+    finishBoardStroke();
+    undoBoard?.();
+    undoBoard=null;
+    fitWhiteBoard();
+    updateBoardActions();
+  });
+  boardHaptics.addEventListener('click',()=>$('vibration-toggle').click());
+  boardFullscreen.addEventListener('click',()=>{void immersiveMode(!app.classList.contains('immersive'));});
   const brushCount=()=>brushLimits[state.age]||16;
   const brushPicture=()=>{const [name,region]=brushPictures[brushIndex%brushCount()];return {name,region,target:.97,dirt:[[420,155],[520,155],[600,185],[390,245],[500,240],[600,275],[450,320],[560,330]]};};
   const brushThumbColors={apple:'#ee5651',flower:'#55bdf4',star:'#ffcd43',car:'#6ad765',butterfly:'#bd83ef',fish:'#ffac54',sun:'#ffc94e',tree:'#60b66c',house:'#f09c6b',heart:'#f06e90',balloon:'#8e9ff2',bird:'#71b9e4',cat:'#d9aa77',dog:'#d8aa79',rainbow:'#e8a2d9',boat:'#75b4ee'};
@@ -459,10 +548,10 @@
       chooseParentAge(ageOptions[next].dataset.ageOption);ageOptions[next].focus({preventScroll:true});
     });
   });
-  function home(){playSettings.open=false;glossy.leave();robots.leave();picturePuzzle.leave();cancelCountAdvance();stopBubbles();cancelGesture();clearEffects();artGeneration++;artState('ready');state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('sound'),$('music-toggle'),$('vibration-toggle'));app.dataset.view='home';parentAgeControls();$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;$('item-progress-strip').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
+  function home(){whiteBoardSelected=false;updateWhiteBoard();playSettings.open=false;glossy.leave();robots.leave();picturePuzzle.leave();cancelCountAdvance();stopBubbles();cancelGesture();clearEffects();artGeneration++;artState('ready');state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('sound'),$('music-toggle'),$('vibration-toggle'));app.dataset.view='home';parentAgeControls();$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;$('item-progress-strip').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
   function levelControls(){document.querySelectorAll('[data-level]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.level)===state.level)));}
   function setLevel(level,reset=true){cancelGesture();const changed=state.level!==level;state.level=level;if(changed)state.brushSize=profile().brushSize;levelControls();save();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');if(reset&&state.activity)resetRound();else if(reset)hint(level===2?'Medium level: choose a picture and play together!':level===1?'Easy level: fewer, bigger things to try.':'Challenge level: a few more things to discover.');}
-  function startActivity(id,paintMode=false){setChooserPage(['glossy','machines'].includes(id)?1:0);closeAgeMenu();playSettings.open=false;$('play-settings-panel').append($('sound'),$('music-toggle'),$('vibration-toggle'));$('game-mid-controls').insertBefore($('fullscreen'),playSettings);state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
+  function startActivity(id,paintMode=false){whiteBoardSelected=false;setChooserPage(['glossy','machines'].includes(id)?1:0);closeAgeMenu();playSettings.open=false;$('play-settings-panel').append($('sound'),$('music-toggle'),$('vibration-toggle'));$('game-mid-controls').insertBefore($('fullscreen'),playSettings);state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
   function resetRound(){
     roundSerial++;
     clearTimeout(slideAdvanceTimer);slideDoorAnimating=false;cancelCountAdvance();$('art-reward').hidden=true;stopBubbles();cancelGesture();clearEffects();state.done=false;state.selected=null;state.strokes=[];
@@ -478,9 +567,22 @@
     state.erase=false;updateArtTools();
     scene.setAttribute('aria-label','Play area');
     if(state.activity==='brush'){if(brushAge!==state.age){brushAge=state.age;brushIndex=0;brushFinished.clear();}$('activity-name').textContent=`Little art studio · ${artPicture().name[0].toUpperCase()+artPicture().name.slice(1)} · ${brushIndex+1}/${brushCount()}`;}
+    updateWhiteBoard();
+    $('again').hidden=onWhiteBoard();
+    $('show-me').hidden=onWhiteBoard();
     updateBrushThumbnails();
     $('clean-mode').setAttribute('aria-pressed',String(!state.paintMode));$('paint-mode').setAttribute('aria-pressed',String(state.paintMode));
     scene.style.background='transparent';
+    if(onWhiteBoard()){
+      $('activity-name').textContent='White Board';
+      scene.replaceChildren();
+      progress(0,0);
+      artGeneration++;
+      artState('ready');
+      hint('Write or draw anywhere on the White Board.');
+      updateGameNavigation();
+      return;
+    }
     if(state.activity==='machines'){scene.replaceChildren();robots.start(state.age);}
     else if(state.activity==='glossy'){scene.replaceChildren();glossy.start(state.age,state.level,'blocks');}
     else if(state.activity==='abacus'){if(state.age===5){state.abacusRows=abacusColors.map(()=>Array(10).fill(false));state.abacusSelectedRow=0;renderAbacus();}else resetCountAdventure();}
@@ -774,9 +876,10 @@
 
     // Every item gets a column in the fitted row, including the Demo copy.
     strip.style.setProperty('--thumb-count',String(items.length));
-    strip.innerHTML=items.map(({label,icon='',current=false,done=false,later=false},i)=>{
+    strip.innerHTML=items.map(({label,icon='',current=false,done=false,later=false,brushChoice})=>{
       const safe=String(label).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
-      if(state.activity==='brush')return `<button type="button" class="item-chip brush-choice ${current?'is-current':''} ${done?'is-done':''}" data-brush-choice="${i}" aria-label="Select ${safe} drawing${done?', completed':''}" aria-pressed="${current}" title="Tap to draw ${safe}">${icon||safe}</button>`;
+      if(brushChoice==='white-board')return `<button type="button" class="item-chip brush-choice white-board-choice ${current?'is-current':''}" data-brush-choice="white-board" aria-pressed="${current}">White Board</button>`;
+      if(state.activity==='brush')return `<button type="button" class="item-chip brush-choice ${current?'is-current':''} ${done?'is-done':''}" data-brush-choice="${brushChoice}" aria-label="Select ${safe} drawing${done?', completed':''}" aria-pressed="${current}" title="Tap to draw ${safe}">${icon||safe}</button>`;
       return `<span class="item-chip ${current?'is-current':''} ${done?'is-done':''} ${later?'is-later':''}" role="listitem" aria-label="${safe} ${done?'completed':current?'current':later?'later level':'available'}" title="${safe}">${icon||safe}</span>`;
     }).join('');
     glossThumbnails(strip);
@@ -788,8 +891,16 @@
   $('item-progress-strip').addEventListener('click',event=>{
     const button=event.target.closest('[data-brush-choice]');
     if(!button||state.activity!=='brush')return;
+    if(button.dataset.brushChoice==='white-board'){
+      whiteBoardSelected=true;
+      state.paintMode=true;
+      resetRound();
+      $('item-progress-strip').querySelector('.white-board-choice').focus({preventScroll:true});
+      return;
+    }
     const index=Number(button.dataset.brushChoice);
     if(!Number.isInteger(index)||index<0||index>=brushCount())return;
+    whiteBoardSelected=false;
     brushIndex=index;
     resetRound();
     hint(`Selected ${artPicture().name}. ${state.paintMode?'Choose a color and paint inside the lines!':'Brush away the dirt to reveal the colors!'}`);
@@ -808,7 +919,10 @@
         const tokens=bubbleItems();showItemStrip(tokens.map(token=>({label:String(token),done:state.bubbleHits.has(token),current:!state.bubbleHits.has(token)&&token===tokens.find(t=>!state.bubbleHits.has(t)),icon:state.bubbleMode==='shapes'?`<svg viewBox="-68 -68 136 136" aria-hidden="true">${primitive(token,shapeById(token)?.color||'#ffcf64','#274b44')}</svg>`:''})));
       }
     }else if(state.activity==='brush'){
-      showItemStrip(brushPictures.slice(0,brushCount()).map(([name,region],i)=>({label:name,icon:`<svg viewBox="250 55 500 345" aria-hidden="true"><g fill="${brushThumbColor(name)}" stroke="#45675d" stroke-width="10">${region}</g></svg>`,current:i===brushIndex,done:brushFinished.has(i)})));
+      const items=brushPictures.slice(0,brushCount()).map(([name,region],i)=>({label:name,icon:`<svg viewBox="250 55 500 345" aria-hidden="true"><g fill="${brushThumbColor(name)}" stroke="#45675d" stroke-width="10">${region}</g></svg>`,current:!onWhiteBoard()&&i===brushIndex,done:brushFinished.has(i),brushChoice:i}));
+      $('item-progress-strip').style.setProperty('--brush-side-count',String(items.length/2));
+      items.splice(items.length/2,0,{label:'White Board',current:onWhiteBoard(),brushChoice:'white-board'});
+      showItemStrip(items);
     }else if(state.activity==='slide'){
       showItemStrip(slideObjects.slice(0,slideTotal()).map(([name,emoji],i)=>({label:`Room ${i+1}: ${name}`,icon:`<span class="item-emoji">${emoji}</span><small class="item-index">${i+1}</small>`,current:i===state.slideIndex,done:i<state.slideIndex||(i===state.slideIndex&&state.slideRevealed)})));
     }else if(state.activity==='abacus'&&state.age!==5){
@@ -1262,6 +1376,9 @@
   function updateHapticButton(){
     const button=$('vibration-toggle');
     button.hidden=false;
+    const enabled=hapticAvailable?state.haptics:touchWaves;
+    boardHaptics.textContent=(hapticAvailable?'Haptics':'Touch waves')+(enabled?' on':' off');
+    boardHaptics.setAttribute('aria-pressed',String(enabled));
     if(!hapticAvailable){button.setAttribute('aria-pressed',String(touchWaves));button.setAttribute('aria-label',`Vibration unavailable. Touch wave ${touchWaves?'on':'off'}. Tap to turn touch waves ${touchWaves?'off':'on'}`);button.title=`Touch wave ${touchWaves?'ON':'OFF'} · sound button enables chirps`;button.textContent=touchWaves?'◉':'○';return;}
     button.setAttribute('aria-pressed',String(state.haptics));
     button.setAttribute('aria-label',state.haptics?'Vibration on. Tap to turn off':'Vibration off. Tap to turn on');
@@ -1552,7 +1669,7 @@
   $('paint-mode').addEventListener('click',()=>{state.paintMode=true;resetRound();});$('clean-mode').addEventListener('click',()=>{state.paintMode=false;resetRound();});
   document.querySelectorAll('[data-paint]').forEach(button=>button.addEventListener('click',()=>{if(demoActive)stopDemo();cancelGesture();if(state.paintMode){state.erase=false;state.paintColor=button.dataset.paint;}else state.brushColor=button.dataset.paint;updateArtTools();tone(620);popObject(button,'paint-color');}));
   document.querySelectorAll('[data-brush-size]').forEach(button=>button.addEventListener('click',()=>{if(demoActive)stopDemo();cancelGesture();state.brushSize=button.dataset.brushSize;updateArtTools();}));
-  $('erase-paint').addEventListener('click',()=>{cancelGesture();state.erase=!state.erase;updateArtTools();hint(state.erase?'Rub over the paint to erase. The picture stays safe.':`Choose a color and paint inside the ${artPicture().name}.`);});
+  $('erase-paint').addEventListener('click',()=>{cancelGesture();state.erase=!state.erase;updateArtTools();hint(onWhiteBoard()?(state.erase?'Rub over your marks to erase.':'Write or draw anywhere on the White Board.'):state.erase?'Rub over the paint to erase. The picture stays safe.':`Choose a color and paint inside the ${artPicture().name}.`);});
   function soundButton(){$('sound').setAttribute('aria-pressed',String(state.sound));$('sound').setAttribute('aria-label',state.sound?'All sound on':'All sound off');$('sound').title=state.sound?'Sound on · gentle touch chirps enabled':'Sound off · turn on for gentle touch chirps';$('sound').style.opacity='1';window.dispatchEvent(new CustomEvent('sana-sound-change',{detail:{enabled:state.sound}}));}
   $('sound').addEventListener('click',()=>{state.sound=!state.sound;save();soundButton();if(state.sound)tone(600);else{demoVoiceCancel?.();if(audio?.state==='running')audio.suspend().catch(()=>{});}});
   function fitFrame(){
@@ -1594,7 +1711,8 @@
     picturePuzzle.stopDemo();
     if(demoActive){stopDemo();hint('Your turn! Play the game.');}
     if(active&&!app.classList.contains('immersive'))normalSceneSize();
-    cancelGesture();app.classList.toggle('immersive',active);
+    cancelGesture();finishBoardStroke();app.classList.toggle('immersive',active);
+    updateWhiteBoard();
     placeArtTools(app,active);
     if(active)app.querySelector('.play-mat').append($('vibration-toggle'));
     else if(state.activity)$('play-settings-panel').append($('vibration-toggle'));
@@ -1607,7 +1725,7 @@
     else{
       clearTimeout(immersiveNoticeTimer);
       const notice=document.getElementById('sana-immersive-notice');if(notice)notice.hidden=true;
-      button.focus({preventScroll:true});
+      (onWhiteBoard()?boardFullscreen:button).focus({preventScroll:true});
     }
     fitFrame();
     refreshSceneTextTabs();
