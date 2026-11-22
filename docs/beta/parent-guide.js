@@ -126,12 +126,20 @@
       step(notes,['[data-color-label]','[data-abacus-total]'],'3. Watch the monitor','The matching color, number word, sums and total update as beads move to the counted side. Move them back to subtract.');
       step(notes,'#item-progress-strip .item-chip','4. Enjoy the rainbow','A color lights up when that row has counted beads. The rainbow is a monitor; you can keep sliding after it is full.');
     }else if(game==='machines'){
-      step(notes,['#robot-category','#robot-variant'],'1. Pick a model in Stores','At age 5, pick parts from Standing robot, Waving robot or Red robot. Switch models whenever you want more parts for the same design.');
-      step(notes,'[data-robot-part]','2. Place a part anywhere','Drag a part over, or tap a part in Stores and then tap anywhere in Assemble. Pick the same part again for another copy. Previous and Next show more parts.');
-      step(notes,'#robot-look','3. Look at the robot','Look shows the selected model for ideas. Tap Build to return to your own design.');
-      step(notes,['#robot-board','#robot-view-fit'],'4. Move and zoom','Tap empty space to use + and − for the whole canvas. Drag empty canvas in any direction; two fingers pan and pinch. Fit shows every piece. Tap the percentage between − and + to return the canvas to 100%.');
-      step(notes,['#robot-part-axis','#robot-zoom-level'],'5. Make your own design','Tap a part for a flashing dotted border. Now + and − change only that part. Choose Both, Width or Height, turn either way or Flip. Tap the percentage between − and + to return the selected dimensions to 100% of their dropped size; the range is 25%–400%. Try a bigger head, hands or legs!');
-      step(notes,['#robot-done','#robot-snapshot'],'6. Finish and save','Tap Done when you like your design. This locks every piece in place. Tap Save when the picture is ready. It includes your parts, turns, sizes and flips on a transparent background. Tap Again to start a new design.');
+      step(notes,['#robot-category','#robot-store','#robot-variant'],"Stores / Parts","Choose a robot, category and part. Tap or drag a part into Assemble.");
+      step(notes,['#robot-previous-page','#robot-next-page'],"Browse parts","Move through the available part pages.");
+      step(notes,'#robot-look',"Look / Build","Preview the reference robot; return to your own assembly.");
+      step(notes,'#robot-selection-mode',"Select","Tap Part for individual editing; choose Rectangle, Oval or Free Selection for regions.");
+      step(notes,'#robot-board',"Select and move","Tap a part, then drag it. Draw a rectangle to select multiple parts together.");
+      step(notes,['#robot-copy','#robot-paste'],"Copy / Paste","Copy the selected part or region and paste an independent copy.");
+      step(notes,['#robot-color','#robot-apply-color'],"Color / Apply","Choose a color and apply it to the selection. Reuse the same color on other parts.");
+      step(notes,['#robot-part-original','#robot-part-mirror'],"Original / Mirror","Restore the original color or flip the selected part horizontally.");
+      step(notes,['#robot-rotate-left','#robot-rotate-right'],"Rotate","Turn the selected part left or right.");
+      step(notes,['#robot-zoom-out','#robot-zoom-in','#robot-zoom-level'],"\u2212 / + / %","Without a selection, zoom the canvas in small steps; with a selection, resize it.");
+      step(notes,'#robot-view-fit',"Fit","Fit the current assembly inside the canvas. It does not group or lock parts.");
+      step(notes,'#robot-grid',"Grid","Show or hide the placement guide.");
+      step(notes,['#robot-remove','#robot-clear'],"Remove / Clear","Remove selected parts, or clear the assembly after confirmation.");
+      step(notes,['#robot-done','#robot-snapshot'],"Done / Edit / Save","Done freezes the design; Edit unlocks individual parts. Save the current picture.");
     }else if(game==='glossy'){
       step(notes,'#glossy-category-toggle','1. Choose blocks','Choose a collection from the compact Blocks menu. Its white menu shows every choice without scrolling, and long category names fit inside the tab. Ages 2, 3, 4 and 5 use 2×2, 3×3, 4×4 and 6×6 block sets per Stores page. Every page fits inside Stores without scrolling. Shapes combines the original silhouettes with new pieces: 4, 18, 32 and 36 unique choices by age. Each number, character or object appears once in its collection; tap or swipe the Blocks count to browse pages. Letters includes the alphabet and extra symbols.');
       step(notes,'[data-glossy-item]','2. Build together','Each piece keeps the same visible size from Stores to Assemble. Drag a block across, or tap a block and then any place, including over another block. Square Grid starts on by default. Its cells fill the Assemble pane and adapt to its shape in portrait, landscape and fullscreen; the age level sets the base grid density. Turn Grid off for free placement anywhere in the pane. New and moved pieces snap into cells while Grid is on. With a keyboard, Enter on a shelf block adds it to an empty spot; arrow keys move a focused board block.');

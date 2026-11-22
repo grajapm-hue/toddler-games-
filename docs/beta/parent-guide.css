@@ -74,3 +74,15 @@
 #first-games:disabled svg{opacity:.45}
 #app.compact #first-games{width:150px;min-height:30px;font-size:12px}
 #app.narrow[data-view="home"] .companion-bar #hint{display:none}
+
+/* v2.35: compact control-and-description rows in the top How to Play panel. */
+#parent-guide[data-guide-for="machines"] #guide-body{padding:5px 9px 8px}
+#parent-guide[data-guide-for="machines"] .guide-lead{margin:0 0 4px;font-size:12px;line-height:1.2}
+#parent-guide[data-guide-for="machines"] .guide-step{grid-template-columns:minmax(92px,27%) minmax(0,1fr);gap:7px;padding:3px 0;min-height:32px;align-items:center}
+#parent-guide[data-guide-for="machines"] .guide-pictures{justify-content:flex-start;min-height:26px;gap:2px;flex-wrap:nowrap;overflow:hidden}
+#parent-guide[data-guide-for="machines"] .guide-preview{transform-origin:left center;max-width:100%}
+#parent-guide[data-guide-for="machines"] .guide-step h3{font-size:12px;line-height:1.15;margin:0 0 1px}
+#parent-guide[data-guide-for="machines"] .guide-step p{font-size:11px;line-height:1.2;margin:0;overflow-wrap:anywhere}
+#parent-guide[data-guide-for="machines"] #guide-body details{margin-top:5px;padding-top:5px}
+#app.narrow #parent-guide[data-guide-for="machines"] .guide-step{grid-template-columns:minmax(76px,28%) minmax(0,1fr);gap:5px;padding:3px 0}
+@media(max-width:400px){#parent-guide[data-guide-for="machines"] .guide-step h3{font-size:11px}#parent-guide[data-guide-for="machines"] .guide-step p{font-size:10px}}
