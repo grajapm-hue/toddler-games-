@@ -375,8 +375,67 @@
   const whiteBoard=$('white-board'),boardSurface=$('white-board-surface'),boardInk=$('white-board-ink');
   const boardClear=$('white-board-clear'),boardUndo=$('white-board-undo'),boardRedo=$('white-board-redo');
   const boardFullscreen=$('white-board-fullscreen'),boardHaptics=$('white-board-haptics');
+  const guideSelect=$('white-board-guide'),guideArt=$('white-board-template');
+  const guideProfiles={
+    2:{letters:5,numbers:3,signs:['●','—','|']},
+    3:{letters:10,numbers:10,signs:['○','+','—']},
+    4:{letters:16,numbers:15,signs:['+','−','=']},
+    5:{letters:26,numbers:20,signs:['+','−','×','÷','=']}
+  };
+  const guideSigns={
+    '●':['Dot','<circle cy="-3" r="5"/>'],
+    '—':['Flat line','<path d="M-36 -3H36"/>'],
+    '|':['Standing line','<path d="M0 -40V34"/>'],
+    '○':['Circle','<path d="M0 -40a37 37 0 1 1 0 74 37 37 0 1 1 0 -74Z"/>'],
+    '+':['Plus','<path d="M-35 -3H35M0 -38V32"/>'],
+    '−':['Minus','<path d="M-35 -3H35"/>'],
+    '=':['Equals','<path d="M-35 -16H35M-35 10H35"/>'],
+    '×':['Times','<path d="m-28 -31 56 56m0 -56 -56 56"/>'],
+    '÷':['Division','<path d="M-35 -3H35"/><circle cy="-27" r="4.5"/><circle cy="21" r="4.5"/>']
+  };
   const boardsByAge=new Map();
   let boardStroke=null,activeBoard=null;
+  function populateGuideOptions(){
+    const profile=guideProfiles[state.age]||guideProfiles[5];
+    const letters=Array.from({length:profile.letters},(_,i)=>String.fromCharCode(65+i));
+    const numbers=Array.from({length:profile.numbers},(_,i)=>String(i+1));
+    const groups=[['🔤 ABC',letters],['🔢 123',numbers],['➕ Signs',profile.signs]];
+    guideSelect.replaceChildren(new Option('⬜ Blank Board',''));
+    for(const [label,values] of groups){
+      const group=document.createElement('optgroup');
+      group.label=label;
+      group.append(...values.map(value=>new Option(guideSigns[value]?value+'  '+guideSigns[value][0]:value,value)));
+      guideSelect.append(group);
+    }
+    updateTracingGuide();
+  }
+  function positionTracingGuide(){
+    const {width,height}=boardSurface.viewBox.baseVal;
+    const wide=guideSelect.value.length>1;
+    const scale=Math.min(height*.008,width*(wide?.0045:.006));
+    guideArt.setAttribute('transform','translate('+width/2+' '+height/2+') scale('+scale+')');
+  }
+  function updateTracingGuide(){
+    const value=guideSelect.value;
+    const sign=guideSigns[value];
+    guideArt.replaceChildren();
+    if(sign)guideArt.innerHTML=sign[1];
+    else if(value){
+      const text=document.createElementNS('http://www.w3.org/2000/svg','text');
+      text.setAttribute('text-anchor','middle');
+      text.setAttribute('y','32');
+      text.textContent=value;
+      guideArt.append(text);
+    }
+    boardSurface.setAttribute('aria-label',value?'White Board tracing guide: '+(sign?.[0]||value):'Draw or write on the white board');
+    positionTracingGuide();
+  }
+  guideSelect.addEventListener('change',()=>{
+    finishBoardStroke();
+    updateTracingGuide();
+    const value=guideSelect.value;
+    hint(value==='÷'?'Draw a flat line, then tap a dot above it and a dot below it.':value?'Trace the gray guide.':'Write or draw anywhere on the White Board.');
+  });
   function selectAgeBoard(){
     if(!boardsByAge.has(state.age)){
       const layer=document.createElementNS('http://www.w3.org/2000/svg','g');
@@ -399,6 +458,7 @@
     const bounds=boardInk.getBBox();
     const scale=Math.min(width/Math.max(1000,bounds.x+bounds.width+40),height/Math.max(440,bounds.y+bounds.height+40));
     boardSurface.setAttribute('viewBox',`0 0 ${width/scale} ${height/scale}`);
+    positionTracingGuide();
   }
   function finishBoardStroke(){
     if(!boardStroke)return;
@@ -408,10 +468,15 @@
   }
   function updateWhiteBoard(){
     const active=onWhiteBoard(),full=app.classList.contains('immersive');
+    const opening=whiteBoard.hidden;
     if(!active)finishBoardStroke();
     app.toggleAttribute('data-white-board',active);
     whiteBoard.hidden=!active;
-    if(active)selectAgeBoard();
+    guideSelect.hidden=!active;
+    if(active){
+      if(opening||activeBoard!==boardsByAge.get(state.age))populateGuideOptions();
+      selectAgeBoard();
+    }
     $('white-board-heading').hidden=!active||!full;
     boardFullscreen.setAttribute('aria-pressed',String(full));
     boardFullscreen.setAttribute('aria-label',full?'Exit White Board full screen':'White Board full screen');
