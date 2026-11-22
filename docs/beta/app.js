@@ -373,9 +373,23 @@
   let brushIndex=0,brushAge=null;const brushFinished=new Set();
   let whiteBoardSelected=false;
   const whiteBoard=$('white-board'),boardSurface=$('white-board-surface'),boardInk=$('white-board-ink');
-  const boardClear=$('white-board-clear'),boardUndo=$('white-board-undo');
+  const boardClear=$('white-board-clear'),boardUndo=$('white-board-undo'),boardRedo=$('white-board-redo');
   const boardFullscreen=$('white-board-fullscreen'),boardHaptics=$('white-board-haptics');
-  let boardStroke=null,undoBoard=null;
+  const boardsByAge=new Map();
+  let boardStroke=null,activeBoard=null;
+  function selectAgeBoard(){
+    if(!boardsByAge.has(state.age)){
+      const layer=document.createElementNS('http://www.w3.org/2000/svg','g');
+      boardsByAge.set(state.age,{layer,undo:[],redo:[]});
+    }
+    const board=boardsByAge.get(state.age);
+    if(board===activeBoard)return;
+    finishBoardStroke();
+    activeBoard=board;
+    boardInk.replaceChildren(board.layer);
+    fitWhiteBoard();
+    updateBoardActions();
+  }
   const onWhiteBoard=()=>state.activity==='brush'&&whiteBoardSelected;
   function fitWhiteBoard(){
     const {clientWidth:width,clientHeight:height}=boardSurface;
@@ -397,6 +411,7 @@
     if(!active)finishBoardStroke();
     app.toggleAttribute('data-white-board',active);
     whiteBoard.hidden=!active;
+    if(active)selectAgeBoard();
     $('white-board-heading').hidden=!active||!full;
     boardFullscreen.setAttribute('aria-pressed',String(full));
     boardFullscreen.setAttribute('aria-label',full?'Exit White Board full screen':'White Board full screen');
@@ -404,8 +419,24 @@
     boardFullscreen.querySelector('use').setAttribute('href',full?'#exit-fullscreen-icon':'#fullscreen-icon');
   }
   function updateBoardActions(){
-    boardClear.disabled=!boardInk.childElementCount;
-    boardUndo.disabled=!undoBoard;
+    boardClear.disabled=!activeBoard.layer.childElementCount;
+    boardUndo.disabled=!activeBoard.undo.length;
+    boardRedo.disabled=!activeBoard.redo.length;
+  }
+  function recordBoardAction(action){
+    activeBoard.undo.push(action);
+    activeBoard.redo.length=0;
+    updateBoardActions();
+  }
+  function stepBoardHistory(direction){
+    finishBoardStroke();
+    const other=direction==='undo'?'redo':'undo';
+    const action=activeBoard[direction].pop();
+    if(!action)return;
+    action[direction]();
+    activeBoard[other].push(action);
+    fitWhiteBoard();
+    updateBoardActions();
   }
   function boardPoint(event){
     const {x,y}=new DOMPoint(event.clientX,event.clientY).matrixTransform(boardSurface.getScreenCTM().inverse());
@@ -424,10 +455,10 @@
     const path=strokePath(state.erase?'white':state.paintColor,width);
     const d=`M${x.toFixed(1)} ${y.toFixed(1)}l.1 .1`;
     path.setAttribute('d',d);
-    boardInk.append(path);
+    const {layer}=activeBoard;
+    layer.append(path);
     boardStroke={id:event.pointerId,path,d};
-    undoBoard=()=>path.remove();
-    updateBoardActions();
+    recordBoardAction({undo:()=>path.remove(),redo:()=>layer.append(path)});
     boardSurface.setPointerCapture(event.pointerId);
     if(event.pointerType!=='mouse')haptic(18);
   });
@@ -445,19 +476,14 @@
   }
   boardClear.addEventListener('click',()=>{
     finishBoardStroke();
-    const drawing=[...boardInk.children];
-    undoBoard=()=>boardInk.append(...drawing);
-    boardInk.replaceChildren();
-    updateBoardActions();
+    const {layer}=activeBoard;
+    const drawing=[...layer.children];
+    layer.replaceChildren();
+    recordBoardAction({undo:()=>{for(const path of drawing)layer.append(path);},redo:()=>layer.replaceChildren()});
     boardUndo.focus({preventScroll:true});
   });
-  boardUndo.addEventListener('click',()=>{
-    finishBoardStroke();
-    undoBoard?.();
-    undoBoard=null;
-    fitWhiteBoard();
-    updateBoardActions();
-  });
+  boardUndo.addEventListener('click',()=>stepBoardHistory('undo'));
+  boardRedo.addEventListener('click',()=>stepBoardHistory('redo'));
   boardHaptics.addEventListener('click',()=>$('vibration-toggle').click());
   boardFullscreen.addEventListener('click',()=>{void immersiveMode(!app.classList.contains('immersive'));});
   const brushCount=()=>brushLimits[state.age]||16;
@@ -532,13 +558,13 @@
   function chooseParentAge(value){
     if(app.classList.contains('immersive'))return;
     if(String(state.age??'')===String(value))return;
-    const activity=state.activity,paintMode=state.paintMode;
+    const activity=state.activity,paintMode=state.paintMode,showWhiteBoard=onWhiteBoard();
     save();ageProfiles.select(value);state.age=ageProfiles.getAge();const selected=preferences();
     state.level=1;
     state.bubbleSpeed=Object.hasOwn(bubbleSpeeds,selected.bubbleSpeed)?selected.bubbleSpeed:null;state.bubbleSize=Object.hasOwn(bubbleDiameters,selected.bubbleSize)?selected.bubbleSize:null;
     state.bubbleSet=selected.bubbleSet==='full'||state.age===null?'full':'starter';state.bubbleMode=profile().bubbleMode;state.brushSize=profile().brushSize;
     try{history.replaceState(null,'',ageProfiles.navigation(location.pathname+location.search));}catch{/* The current page choice still works without history access. */}
-    save();levelControls();parentAgeControls();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');if(activity)startActivity(activity,paintMode);else hint('Choose any picture and play together. Every game is open.');
+    save();levelControls();parentAgeControls();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');if(activity)startActivity(activity,paintMode,showWhiteBoard);else hint('Choose any picture and play together. Every game is open.');
   }
   ageOptions.forEach((option,index)=>{
     option.addEventListener('click',()=>chooseParentAge(option.dataset.ageOption));
@@ -551,7 +577,7 @@
   function home(){whiteBoardSelected=false;updateWhiteBoard();playSettings.open=false;glossy.leave();robots.leave();picturePuzzle.leave();cancelCountAdvance();stopBubbles();cancelGesture();clearEffects();artGeneration++;artState('ready');state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('sound'),$('music-toggle'),$('vibration-toggle'));app.dataset.view='home';parentAgeControls();$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;$('item-progress-strip').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
   function levelControls(){document.querySelectorAll('[data-level]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.level)===state.level)));}
   function setLevel(level,reset=true){cancelGesture();const changed=state.level!==level;state.level=level;if(changed)state.brushSize=profile().brushSize;levelControls();save();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');if(reset&&state.activity)resetRound();else if(reset)hint(level===2?'Medium level: choose a picture and play together!':level===1?'Easy level: fewer, bigger things to try.':'Challenge level: a few more things to discover.');}
-  function startActivity(id,paintMode=false){whiteBoardSelected=false;setChooserPage(['glossy','machines'].includes(id)?1:0);closeAgeMenu();playSettings.open=false;$('play-settings-panel').append($('sound'),$('music-toggle'),$('vibration-toggle'));$('game-mid-controls').insertBefore($('fullscreen'),playSettings);state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
+  function startActivity(id,paintMode=false,showWhiteBoard=false){whiteBoardSelected=showWhiteBoard;setChooserPage(['glossy','machines'].includes(id)?1:0);closeAgeMenu();playSettings.open=false;$('play-settings-panel').append($('sound'),$('music-toggle'),$('vibration-toggle'));$('game-mid-controls').insertBefore($('fullscreen'),playSettings);state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
   function resetRound(){
     roundSerial++;
     clearTimeout(slideAdvanceTimer);slideDoorAnimating=false;cancelCountAdvance();$('art-reward').hidden=true;stopBubbles();cancelGesture();clearEffects();state.done=false;state.selected=null;state.strokes=[];
