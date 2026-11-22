@@ -6,7 +6,7 @@
   // Keep art settings together rather than taking a second row from the board.
   $('art-tools').append($('brush-modes'));
   const playSettings=document.createElement('details');playSettings.id='play-settings';
-  playSettings.innerHTML='<summary aria-label="Play settings" title="Play settings">⚙</summary><div id="play-settings-panel" role="group" aria-label="Sound and vibration settings"></div>';
+  playSettings.innerHTML='<summary aria-label="Play settings" title="Play settings">⚙</summary><div id="play-settings-panel" role="group" aria-label="Sound and touch feedback settings"></div>';
   $('game-mid-controls').append(playSettings);
   const captionTints={
     cream:['#f5efdf','#ad9e83'],sky:['#dfedf6','#7e9fb7'],sage:['#dcebdd','#8aa67a'],
@@ -716,7 +716,6 @@
     boardStroke={id:event.pointerId,path,d};
     recordBoardAction(action);
     boardSurface.setPointerCapture(event.pointerId);
-    if(event.pointerType!=='mouse')haptic(18);
   });
   function extendBoardStroke(event){
     if(boardStroke?.id!==event.pointerId)return;
@@ -1654,62 +1653,83 @@
     }else if(pointer.kind==='paint'&&!state.done)hint(pointer.erase?'All tidy! Choose a color to paint again.':`Lovely colors! Keep coloring the ${artPicture().name}. SaNa is watching!`);
     scene.querySelector('#brush-cursor')?.remove();
   }
-  // v0.99: haptics are independent of sound, bounded, and rate-limited.
-  let lastHaptic=0,lastSlideHaptic=0,lastHapticPoint=null,feedbackPointerId=null;
-  let hapticAvailable=typeof navigator.vibrate==='function',touchWaves=true;
-  try{const savedWaves=localStorage.getItem('sanaTouchWavesV1');if(savedWaves!==null)touchWaves=savedWaves==='true';}catch{/* Touch waves stay available for this visit. */}
+  const feedbackKey='sanaTouchFeedbackV2';
+  const hasVibration=typeof navigator.vibrate==='function';
+  let lastHaptic=-Infinity,lastFeedbackWave=-Infinity,lastFeedbackPoint=null,feedbackPointer=null;
+  try{
+    const oldVibration=localStorage.getItem('sanaHapticsV1');
+    const oldWaves=localStorage.getItem('sanaTouchWavesV1');
+    const saved=localStorage.getItem(feedbackKey)??(hasVibration?oldVibration??oldWaves:oldWaves??oldVibration);
+    if(saved!==null)state.haptics=saved==='true';
+  }catch{/* Keep the default when storage is unavailable. */}
   function haptic(duration=30,spacing=95){
-    if(!state.haptics||!hapticAvailable||document.hidden)return false;
-    const now=performance.now();if(now-lastHaptic<spacing)return;
-    lastHaptic=now;
-    try{if(navigator.vibrate(Math.min(55,Math.max(12,duration)))===false){hapticAvailable=false;updateHapticButton();return false;}return true;}catch{hapticAvailable=false;updateHapticButton();return false;}
+    if(!state.haptics||!hasVibration||document.hidden)return false;
+    const now=performance.now();
+    if(now-lastHaptic<spacing)return true;
+    try{
+      if(!navigator.vibrate(Math.min(55,Math.max(12,duration))))return false;
+      lastHaptic=now;
+      return true;
+    }catch{return false;}
   }
   function showTouchWave(event){
-    if(!touchWaves||document.hidden)return;
-    const wave=document.createElement('span');wave.className='sana-touch-wave';wave.style.left=`${event.clientX}px`;wave.style.top=`${event.clientY}px`;
-    touchFeedbackLayer.append(wave);wave.addEventListener('animationend',()=>wave.remove(),{once:true});
+    if(!state.haptics||document.hidden)return;
+    lastFeedbackWave=performance.now();
+    const wave=document.createElement('span');
+    wave.className='sana-touch-wave';
+    wave.style.left=event.clientX+'px';
+    wave.style.top=event.clientY+'px';
+    touchFeedbackLayer.append(wave);
+    wave.addEventListener('animationend',()=>wave.remove(),{once:true});
     while(touchFeedbackLayer.childElementCount>4)touchFeedbackLayer.firstElementChild?.remove();
   }
-  function updateHapticButton(){
-    const button=$('vibration-toggle');
-    button.hidden=false;
-    const enabled=hapticAvailable?state.haptics:touchWaves;
-    boardHaptics.textContent=(hapticAvailable?'Haptics':'Touch waves')+(enabled?' on':' off');
-    boardHaptics.setAttribute('aria-pressed',String(enabled));
-    if(!hapticAvailable){button.setAttribute('aria-pressed',String(touchWaves));button.setAttribute('aria-label',`Vibration unavailable. Touch wave ${touchWaves?'on':'off'}. Tap to turn touch waves ${touchWaves?'off':'on'}`);button.title=`Touch wave ${touchWaves?'ON':'OFF'} · sound button enables chirps`;button.textContent=touchWaves?'◉':'○';return;}
-    button.setAttribute('aria-pressed',String(state.haptics));
-    button.setAttribute('aria-label',state.haptics?'Vibration on. Tap to turn off':'Vibration off. Tap to turn on');
-    button.title=state.haptics?'Vibration ON':'Vibration OFF';
-    button.textContent=state.haptics?'▥':'▤';
+  function updateHapticButtons(){
+    for(const button of [$('vibration-toggle'),boardHaptics]){
+      button.setAttribute('aria-pressed',String(state.haptics));
+      button.title='Touch feedback '+(state.haptics?'on':'off');
+    }
   }
   $('vibration-toggle').addEventListener('click',()=>{
-    if(!hapticAvailable){touchWaves=!touchWaves;try{localStorage.setItem('sanaTouchWavesV1',String(touchWaves));}catch{/* Keep the fallback preference for this visit. */}updateHapticButton();return;}
     state.haptics=!state.haptics;
-    try{localStorage.setItem('sanaHapticsV1',String(state.haptics));}catch{}
-    updateHapticButton();
-    if(state.haptics)haptic(45,0);else try{navigator.vibrate?.(0);}catch{}
+    try{localStorage.setItem(feedbackKey,String(state.haptics));}catch{}
+    updateHapticButtons();
+    if(state.haptics)haptic(30,90);
+    else{
+      touchFeedbackLayer.replaceChildren();
+      if(hasVibration)try{navigator.vibrate(0);}catch{}
+    }
   });
-  try{const setting=localStorage.getItem('sanaHapticsV1');if(setting!==null)state.haptics=setting==='true';}catch{}
-  updateHapticButton();
+  updateHapticButtons();
   app.addEventListener('pointerdown',event=>{
-    if(!event.isPrimary||!['touch','pen'].includes(event.pointerType))return;
+    if(!event.isPrimary||event.button!==0)return;
     const target=event.target instanceof Element?event.target:null;
-    if(!target?.closest('button,a[href],summary,input,select,[role="button"],[role="radio"],[role="slider"],#scene,#glossy-board,#glossy-store,[data-glossy-item],[data-puzzle-tile]'))return;
-    feedbackPointerId=event.pointerId;
-    lastHapticPoint={x:event.clientX,y:event.clientY};
-    haptic(38,90);
-    showTouchWave(event);
-    if(state.sound)tone(520);
+    if(!target?.closest('.play-mat,button,a[href],summary,input,select,[role="button"],[role="radio"],[role="slider"]'))return;
+    const touch=event.pointerType==='touch'||event.pointerType==='pen';
+    if(state.haptics){
+      feedbackPointer={id:event.pointerId,touch,retry:touch&&hasVibration&&!haptic(38,90)};
+      lastFeedbackPoint={x:event.clientX,y:event.clientY};
+      showTouchWave(event);
+    }
+    if(touch&&state.sound)tone(520);
   },true);
   app.addEventListener('pointermove',event=>{
-    if(event.pointerId!==feedbackPointerId||!event.isPrimary||!state.haptics||!hapticAvailable)return;
-    const pt={x:event.clientX,y:event.clientY};
-    if(!lastHapticPoint){lastHapticPoint=pt;return;}
-    const moved=Math.hypot(pt.x-lastHapticPoint.x,pt.y-lastHapticPoint.y);
-    if(moved>=15){lastHapticPoint=pt;haptic(25,105);}
+    if(event.pointerId!==feedbackPointer?.id||!lastFeedbackPoint||!state.haptics)return;
+    if(performance.now()-lastFeedbackWave<105)return;
+    const point={x:event.clientX,y:event.clientY};
+    if(Math.hypot(point.x-lastFeedbackPoint.x,point.y-lastFeedbackPoint.y)<18)return;
+    lastFeedbackPoint=point;
+    showTouchWave(event);
+    if(feedbackPointer.touch&&haptic(25,105))feedbackPointer.retry=false;
   },true);
-  const finishTouchFeedback=event=>{if(event.pointerId===feedbackPointerId){feedbackPointerId=null;lastHapticPoint=null;}};
-  app.addEventListener('pointerup',finishTouchFeedback,true);app.addEventListener('pointercancel',finishTouchFeedback,true);
+  const finishTouchFeedback=event=>{
+    if(event.pointerId!==feedbackPointer?.id)return;
+    // Some browsers grant touch activation at pointerup instead of pointerdown.
+    if(event.type==='pointerup'&&feedbackPointer.retry)haptic(38,90);
+    feedbackPointer=null;
+    lastFeedbackPoint=null;
+  };
+  window.addEventListener('pointerup',finishTouchFeedback,true);
+  window.addEventListener('pointercancel',finishTouchFeedback,true);
   scene.addEventListener('pointerdown',pointerDown);scene.addEventListener('pointermove',pointerMove);scene.addEventListener('pointerup',pointerUp);scene.addEventListener('pointercancel',cancelGesture);scene.addEventListener('lostpointercapture',()=>{if(state.pointer)cancelGesture();});scene.addEventListener('contextmenu',e=>e.preventDefault());
   scene.addEventListener('keydown',event=>{
     if(!gameReady()||demoActive){event.preventDefault();return;}
