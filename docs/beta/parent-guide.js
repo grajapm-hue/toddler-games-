@@ -58,6 +58,13 @@
     const item=document.createElement('li');item.className='guide-step';
     const pictures=document.createElement('div');pictures.className='guide-pictures';
     for(const selector of Array.isArray(sources)?sources:[sources]){const image=preview(selector);if(image)pictures.append(image);}
+    // Some game controls are hidden while the guide is open. Keep a compact,
+    // meaningful control cue instead of reserving a blank preview column.
+    if(!pictures.children.length){
+      const cue=document.createElement('span');cue.className='guide-control-cue';
+      cue.textContent=title.replace(/^\d+\.\s*/, '').replace(/ and /g,' / ').slice(0,24);
+      pictures.append(cue);
+    }
     const words=document.createElement('div'),heading=document.createElement('h3'),copy=document.createElement('p');heading.textContent=title;copy.textContent=text;words.append(heading,copy);item.append(pictures,words);parent.append(item);
   }
   const list=parent=>{const ol=document.createElement('ol');ol.className='guide-steps';parent.append(ol);return ol;};

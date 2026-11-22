@@ -86,3 +86,12 @@
 #parent-guide[data-guide-for="machines"] #guide-body details{margin-top:5px;padding-top:5px}
 #app.narrow #parent-guide[data-guide-for="machines"] .guide-step{grid-template-columns:minmax(76px,28%) minmax(0,1fr);gap:5px;padding:3px 0}
 @media(max-width:400px){#parent-guide[data-guide-for="machines"] .guide-step h3{font-size:11px}#parent-guide[data-guide-for="machines"] .guide-step p{font-size:10px}}
+
+/* v2.36: prevent empty second column and narrow text in mobile guides. */
+#parent-guide[data-guide-for="machines"] .guide-step{display:flex!important;flex-direction:row!important;align-items:flex-start!important;gap:8px!important;width:100%;box-sizing:border-box;padding:6px 0!important;min-height:0!important}
+#parent-guide[data-guide-for="machines"] .guide-pictures{display:flex!important;flex:0 0 96px!important;width:96px!important;max-width:96px!important;min-width:0!important;min-height:28px!important;align-items:flex-start!important;justify-content:flex-start!important;overflow:hidden!important}
+#parent-guide[data-guide-for="machines"] .guide-step>div:last-child{display:block!important;flex:1 1 0!important;min-width:0!important;width:auto!important;max-width:none!important;overflow-wrap:break-word!important}
+#parent-guide[data-guide-for="machines"] .guide-step h3{font-size:13px!important;line-height:1.25!important;margin:0 0 2px!important}
+#parent-guide[data-guide-for="machines"] .guide-step p{font-size:12px!important;line-height:1.35!important;margin:0!important;max-width:none!important;overflow-wrap:normal!important;word-break:normal!important}
+#parent-guide[data-guide-for="machines"] .guide-control-cue{display:inline-block;max-width:90px;padding:4px 5px;border:1px solid #8aa67a;border-radius:6px;background:#e0eede;color:#173e35;font-size:10px;font-weight:700;line-height:1.2;overflow-wrap:break-word}
+@media(max-width:430px){#parent-guide[data-guide-for="machines"] .guide-pictures{flex-basis:78px!important;width:78px!important;max-width:78px!important}#parent-guide[data-guide-for="machines"] .guide-control-cue{max-width:72px}#parent-guide[data-guide-for="machines"] .guide-step{gap:6px!important}}
