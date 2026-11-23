@@ -874,6 +874,28 @@
       redo:()=>{ boardSurface.querySelector('defs').append(mask); for(const item of drawing)maskedInk.append(item); layer.append(group); }
     };
   }
+  let traceRainbowId=0;
+  function createTracingRainbow(path,x,y){
+    const drawing=document.createElementNS(path.namespaceURI,'g');
+    const gradient=$('white-board-rainbow-ink').cloneNode(true);
+    gradient.id='trace-rainbow-'+ ++traceRainbowId;
+    gradient.setAttribute('x1',x);
+    gradient.setAttribute('y1',y);
+    gradient.setAttribute('x2',x+20);
+    gradient.setAttribute('y2',y);
+    path.setAttribute('stroke','url(#'+gradient.id+')');
+    drawing.append(gradient,path);
+    return {drawing,gradient,x,y,reach:0};
+  }
+  function orientTracingRainbow(rainbow,x,y){
+    const dx=x-rainbow.x,dy=y-rainbow.y,distance=Math.hypot(dx,dy);
+    if(distance<=rainbow.reach||distance<1)return;
+    rainbow.reach=distance;
+    // One cycle spans 20 guide units, even when a small glyph fills the board.
+    // Follow the stroke direction so diagonals and vertical strokes show all hues.
+    rainbow.gradient.setAttribute('x2',rainbow.x+20*dx/distance);
+    rainbow.gradient.setAttribute('y2',rainbow.y+20*dy/distance);
+  }
   const boardResize=new ResizeObserver(()=>{
     finishBoardStroke();
     fitWhiteBoard();
@@ -893,12 +915,14 @@
     const d=`M${x.toFixed(1)} ${y.toFixed(1)}l.1 .1`;
     path.setAttribute('d',d);
     const {layer}=activeBoard;
+    const rainbow=tracing&&rainbowBrush&&!state.erase?createTracingRainbow(path,x,y):null;
+    const drawing=rainbow?.drawing||path;
     const action=tracing&&state.erase
       ?startTracingErase(layer,path)
-      :{undo:()=>path.remove(),redo:()=>layer.append(path)};
+      :{undo:()=>drawing.remove(),redo:()=>layer.append(drawing)};
     if(!action)return;
     action.redo();
-    boardStroke={id:event.pointerId,path,d};
+    boardStroke={id:event.pointerId,path,d,rainbow};
     recordBoardAction(action);
     boardSurface.setPointerCapture(event.pointerId);
   });
@@ -907,6 +931,7 @@
     const samples=event.getCoalescedEvents?.();
     for(const sample of samples?.length?samples:[event]){
       const {x,y}=boardPoint(sample);
+      if(boardStroke.rainbow)orientTracingRainbow(boardStroke.rainbow,x,y);
       boardStroke.d+=`L${x.toFixed(1)} ${y.toFixed(1)}`;
     }
     boardStroke.path.setAttribute('d',boardStroke.d);
