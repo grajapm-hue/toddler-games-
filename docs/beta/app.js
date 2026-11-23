@@ -908,7 +908,7 @@
     const {x,y}=boardPoint(event);
     const tracing=Boolean(activeBoard.guide);
     if(tracing&&!insideTracingBoundary(x,y))return;
-    const widths=tracing?{small:2,medium:5,large:10}:{small:6,medium:14,large:30};
+    const widths=tracing?{small:2,medium:5,large:10}:{small:6,medium:14,large:44};
     const width=widths[state.brushSize];
     const color=rainbowBrush?'url(#white-board-rainbow-ink)':state.paintColor;
     const path=strokePath(state.erase?'white':color,width);
