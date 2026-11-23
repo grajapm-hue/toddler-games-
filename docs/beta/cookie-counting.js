@@ -8,7 +8,7 @@
     Flower:'M32 10C41-3 57 6 54 21C67 27 64 44 52 45C51 60 38 65 32 54C24 65 10 60 12 45C-1 44-3 27 10 21C7 6 23-3 32 10Z',
     Bear:'M13 19C2 8 16-2 25 11Q32 8 39 11C48-2 62 8 51 19C66 39 54 60 32 60C10 60-2 39 13 19Z'
   };
-  const batches=[[1,2,3,4,5,6],[7,8,9,10,11,12]];
+  const batches=[[1,2,3,4],[5,6,7,8],[9,10,11,12]];
   // The countable holes use stable, spaced rows inside every silhouette.
   const holeRows=[20,29,38,47];
   const smallPatterns=[
@@ -50,7 +50,7 @@
 
     function report(text){
       message.textContent=text;
-      progress(batch*6+placed.size,text);
+      progress(batch*batches[0].length+placed.size,text);
     }
 
     function showShapes(){
@@ -111,8 +111,9 @@
       const done=placed.size===batches[batch].length;
       if(done){
         next.hidden=false;
-        next.textContent=batch===0?'Next batch':'Play again';
-        report(batch===0?'All six matched! Cookies 7 to 12 are next.':'You matched all twelve cookies! A new board is coming.');
+        const last=batch===batches.length-1;
+        next.textContent=last?'Play again':'Next batch';
+        report(last?'You matched all twelve cookies!':'All four matched! Here comes the next board.');
         queueNext();
       }else{
         report(number+' matched! Pick another cookie.');
