@@ -178,6 +178,45 @@
   const state={age:ageProfiles.getAge(),level:1,activity:null,done:false,pointer:null,selected:null,paintMode:false,paintColor:colors[0],brushColor:colors[4],strokes:[],shapes:[],bubbles:[],sliders:[],slideIndex:0,slideRevealed:false,dirt:[],sound:saved.sound===true,haptics:saved.haptics!==false};
   Object.assign(state,{brushSize:profile().brushSize,erase:false,coverage:[],bubbleMode:profile().bubbleMode,bubbleSet:initial.bubbleSet==='full'||state.age===null?'full':'starter',bubbleHits:new Map(),bubblePops:0,bubbleRecent:[],bubbleEffects:[],bubbleSerial:0,bubbleWidth:1000});
   const picturePuzzle=window.SaNaPicturePuzzle.mount({app,scene,strip:$('item-progress-strip'),hint:words=>hint(words),complete:words=>{celebrate(words);applause();clearTimeout(rewardTimer);rewardTimer=setTimeout(()=>{$('celebrate').hidden=true;$('art-reward').hidden=true;},1500);},onReset:()=>{clearEffects();state.done=false;},status:words=>{$('game-results').hidden=false;$('result-score').hidden=false;$('result-score').textContent=words;$('progress').hidden=true;},readyChanged:()=>{if(state.activity==='puzzle')$('show-me').disabled=!gameReady();}});
+  const countRoomPicker=$('count-room-picker'),cookieRoom=$('cookie-room');
+  countRoomPicker.value='abacus';
+  const onCookies=()=>state.activity==='abacus'&&state.age===5&&countRoomPicker.value==='cookies';
+  const cookies=window.SaNaCookieCounting.mount(cookieRoom,$('item-progress-strip'),{
+    progress:done=>{
+      progress(done,12);
+      $('cookie-score').textContent=done+' / 12';
+    },
+    feedback:()=>{tone(580);haptic(25,95);}
+  });
+  function updateCountRooms(){
+    const active=onCookies();
+    countRoomPicker.hidden=state.activity!=='abacus'||state.age!==5;
+    if(!active&&!cookieRoom.hidden)cookies.leave();
+    cookieRoom.hidden=!active;
+    app.toggleAttribute('data-cookie-room',active);
+  }
+  function openCookies(reset){
+    $('activity-name').textContent='Cookie Counting';
+    artGeneration++;
+    artState('ready');
+    hint('Count the holes and match each cookie to its number.');
+    if(reset)cookies.reset();else cookies.show();
+  }
+  countRoomPicker.addEventListener('change',()=>{
+    if(state.activity!=='abacus'||state.age!==5)return;
+    stopDemo();
+    cancelGesture();
+    clearEffects();
+    state.done=false;
+    updateCountRooms();
+    if(onCookies())openCookies(false);
+    else{
+      $('activity-name').textContent='Abacus';
+      if(!state.abacusRows)resetAbacus();
+      else renderAbacus();
+      abacusHint();
+    }
+  });
   const glossy=window.SaNaGlossyBlocks.mount({app,scene,hint:words=>hint(words),feedback:()=>{tone(580);haptic(25,0);},complete:words=>{celebrate(words);applause();scheduleNextRound();},onReset:()=>{clearEffects();state.done=false;}});
   const robots=window.SaNaRobotMachines.mount({scene,hint:words=>hint(words),feedback:()=>{tone(580);haptic(25,0);},complete:words=>{celebrate(words);applause();},onReset:()=>{clearEffects();state.done=false;}});
   const bubbleModes={plain:{label:'Plain',items:[]},numbers:{label:'1–20',items:Array.from({length:20},(_,i)=>String(i+1))},letters:{label:'A–Z',items:Array.from({length:26},(_,i)=>String.fromCharCode(65+i))},shapes:{label:'Shapes',items:shapes.map(shape=>shape.id)}};
@@ -835,7 +874,7 @@
       chooseParentAge(ageOptions[next].dataset.ageOption);ageOptions[next].focus({preventScroll:true});
     });
   });
-  function home(){whiteBoardSelected=false;updateWhiteBoard();playSettings.open=false;glossy.leave();robots.leave();picturePuzzle.leave();cancelCountAdvance();stopBubbles();cancelGesture();clearEffects();artGeneration++;artState('ready');state.activity=null;state.selected=null;const header=app.querySelector('.topbar');header.append($('sound'),$('music-toggle'),$('vibration-toggle'));app.dataset.view='home';parentAgeControls();$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;$('item-progress-strip').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
+  function home(){whiteBoardSelected=false;updateWhiteBoard();playSettings.open=false;glossy.leave();robots.leave();picturePuzzle.leave();cancelCountAdvance();stopBubbles();cancelGesture();clearEffects();artGeneration++;artState('ready');state.activity=null;updateCountRooms();state.selected=null;const header=app.querySelector('.topbar');header.append($('sound'),$('music-toggle'),$('vibration-toggle'));app.dataset.view='home';parentAgeControls();$('home-view').hidden=false;$('activity-view').hidden=true;$('again').hidden=true;$('show-me').hidden=true;$('bubble-tracker').hidden=true;$('item-progress-strip').hidden=true;progress(0,0);hint('Choose a picture. I’ll play with you!');}
   function levelControls(){document.querySelectorAll('[data-level]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.level)===state.level)));}
   function setLevel(level,reset=true){cancelGesture();const changed=state.level!==level;state.level=level;if(changed)state.brushSize=profile().brushSize;levelControls();save();document.querySelector('[data-activity="brush"] .card-art').innerHTML=preview('brush');if(reset&&state.activity)resetRound();else if(reset)hint(level===2?'Medium level: choose a picture and play together!':level===1?'Easy level: fewer, bigger things to try.':'Challenge level: a few more things to discover.');}
   function startActivity(id,paintMode=false,showWhiteBoard=false){whiteBoardSelected=showWhiteBoard;setChooserPage(['glossy','machines'].includes(id)?1:0);closeAgeMenu();playSettings.open=false;$('play-settings-panel').append($('sound'),$('music-toggle'),$('vibration-toggle'));$('game-mid-controls').insertBefore($('fullscreen'),playSettings);state.activity=id;state.paintMode=paintMode;app.dataset.view=id;$('home-view').hidden=true;$('activity-view').hidden=false;$('again').hidden=false;$('show-me').hidden=false;$('activity-name').textContent=activities[id].title;$('step-note').textContent=activities[id].note;resetRound();}
@@ -855,11 +894,17 @@
     scene.setAttribute('aria-label','Play area');
     if(state.activity==='brush'){if(brushAge!==state.age){brushAge=state.age;brushIndex=0;brushFinished.clear();}$('activity-name').textContent=`Little art studio · ${artPicture().name[0].toUpperCase()+artPicture().name.slice(1)} · ${brushIndex+1}/${brushCount()}`;}
     updateWhiteBoard();
+    updateCountRooms();
     $('again').hidden=onWhiteBoard();
     $('show-me').hidden=onWhiteBoard();
     updateBrushThumbnails();
     $('clean-mode').setAttribute('aria-pressed',String(!state.paintMode));$('paint-mode').setAttribute('aria-pressed',String(state.paintMode));
     scene.style.background='transparent';
+    if(onCookies()){
+      openCookies(true);
+      updateGameNavigation();
+      return;
+    }
     if(onWhiteBoard()){
       $('activity-name').textContent='White Board';
       scene.replaceChildren();
@@ -872,7 +917,7 @@
     }
     if(state.activity==='machines'){scene.replaceChildren();robots.start(state.age);}
     else if(state.activity==='glossy'){scene.replaceChildren();glossy.start(state.age,state.level,'blocks');}
-    else if(state.activity==='abacus'){if(state.age===5){state.abacusRows=abacusColors.map(()=>Array(10).fill(false));state.abacusSelectedRow=0;renderAbacus();}else resetCountAdventure();}
+    else if(state.activity==='abacus'){if(state.age===5)resetAbacus();else resetCountAdventure();}
     else if(state.activity==='drag'){
       if(shapeAge!==state.age){shapeAge=state.age;shapeRound=0;shapeCompleted=0;}
       const pool=shapes.slice(0,shapeLevelLimits[state.age]||4);
@@ -1078,8 +1123,13 @@
   function abacusBeadPoint(row,index,g=abacusGeometry()){const count=abacusCount(row);return {x:index>=10-count?g.end-(9-index)*g.pitch:g.start+index*g.pitch,y:abacusY(row)};}
   function abacusLabel(row,count){return `${count} ${abacusWords[count]} ${abacusColors[row][0]}`;}
   /** Build the scene only on entry, reset or resize. Ordinary slides retain every bead node. */
+  function resetAbacus(){
+    state.abacusRows=abacusColors.map(()=>Array(10).fill(false));
+    state.abacusSelectedRow=0;
+    renderAbacus();
+  }
   function renderAbacus(){
-    if(state.activity!=='abacus'||!state.abacusRows)return;
+    if(state.activity!=='abacus'||!state.abacusRows||onCookies())return;
     const g=abacusGeometry(),active=activeAbacusRow(),scale=600/Math.max(1,scene.clientHeight),font=Math.min(42,Math.max(20,14*scale));
     state.abacusSize=`${scene.clientWidth}/${scene.clientHeight}`;scene.setAttribute('viewBox',`0 0 ${g.width} 600`);scene.setAttribute('aria-label','Freely count abacus beads, rainbow and circle');
     const right=g.left+16,rw=g.width-right-12,radius=Math.min(204,rw*.32),cx=right+radius+6,base=214,circleR=Math.min(96,rw*.16),circleX=g.width-circleR-18,circleY=108,band=radius/10;
@@ -1130,7 +1180,7 @@
     if(count!==pointer.preview){pointer.preview=count;if(state.pointer===pointer&&!pointer.feedbackFrame)pointer.feedbackFrame=requestAnimationFrame(()=>{pointer.feedbackFrame=0;if(state.pointer===pointer)updateAbacusFeedback(pointer.row,pointer.preview);});}
   }
   new ResizeObserver(()=>refreshSceneTextTabs()).observe(scene);
-  new ResizeObserver(()=>{if(state.activity==='abacus'&&state.age===5&&state.abacusSize!==`${scene.clientWidth}/${scene.clientHeight}`){cancelGesture();renderAbacus();}}).observe(scene);
+  new ResizeObserver(()=>{if(state.activity==='abacus'&&state.age===5&&!onCookies()&&state.abacusSize!==`${scene.clientWidth}/${scene.clientHeight}`){cancelGesture();renderAbacus();}}).observe(scene);
   new ResizeObserver(()=>{if(state.activity==='abacus'&&state.age===4&&state.trainSize!==`${scene.clientWidth}/${scene.clientHeight}`){stopDemo();cancelGesture();renderCountAdventure();}}).observe(scene);
   function shadeColor(hex,amount){
     return '#'+[1,3,5].map(i=>{const value=parseInt(hex.slice(i,i+2),16);return Math.round(amount>0?value+(255-value)*amount:value*(1+amount)).toString(16).padStart(2,'0');}).join('');
@@ -1202,6 +1252,7 @@
     popObject($('item-progress-strip').querySelector(`[data-brush-choice="${index}"]`),'drawing');
   });
   function updateGameItemStrip(){
+    if(onCookies())return;
     if(state.activity==='puzzle'){picturePuzzle.syncStrip();return;}
     if(objectFeedback)return;
     if(onWhiteBoard()){showBoardChoices();return;}
@@ -1805,6 +1856,7 @@
     return{x:left+width/2,y:top+height/2,width,height};
   }
   async function showMe(){
+    if(onCookies()){cookies.demo();return;}
     if(state.activity==='machines'){robots.demo();return;}
     if(state.activity==='glossy'){glossy.demo();return;}
     if(state.activity==='puzzle'){void picturePuzzle.demo();return;}
@@ -2003,7 +2055,7 @@
   let fitRequest=0,fitSettleTimer=null;
   function scheduleFrameFit(){
     // Native pointer capture must end before any rotation or viewport reflow.
-    cancelGesture();cancelAnimationFrame(fitRequest);clearTimeout(fitSettleTimer);
+    cancelGesture();cookies.cancelDrag();cancelAnimationFrame(fitRequest);clearTimeout(fitSettleTimer);
     fitRequest=requestAnimationFrame(()=>{fitRequest=0;fitFrame();});
     // Orientation and visible viewport dimensions can settle on different frames.
     fitSettleTimer=setTimeout(()=>{fitFrame();fitRequest=requestAnimationFrame(()=>{fitRequest=0;fitFrame();});},180);
@@ -2028,7 +2080,7 @@
     picturePuzzle.stopDemo();
     if(demoActive){stopDemo();hint('Your turn! Play the game.');}
     if(active&&!app.classList.contains('immersive'))normalSceneSize();
-    cancelGesture();finishBoardStroke();app.classList.toggle('immersive',active);
+    cancelGesture();cookies.cancelDrag();finishBoardStroke();app.classList.toggle('immersive',active);
     updateWhiteBoard();
     placeArtTools(app,active);
     if(active)app.querySelector('.play-mat').append($('vibration-toggle'));
