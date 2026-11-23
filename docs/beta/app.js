@@ -437,7 +437,52 @@
   });
   const boardsByAge=new Map();
   let boardStroke=null,activeBoard=null,traceMaskId=0;
-  let selectedGuide='',previousBrushPaintMode=false;
+  let selectedGuide='',previousBrushPaintMode=false,rainbowBrush=false;
+  const rainbowButton=$('white-board-rainbow');
+  const studioButton=$('white-board-studio-toggle');
+  const studiosByAge=new Map();
+  let studioFrame=$('white-board-studio');
+  function toggleCreativeStudio(open){
+    finishBoardStroke();
+    if(open){
+      let frame=studiosByAge.get(state.age);
+      if(!frame){
+        frame=studiosByAge.size?studioFrame.cloneNode(false):studioFrame;
+        if(frame!==studioFrame){
+          frame.removeAttribute('id');
+          frame.removeAttribute('src');
+          whiteBoard.append(frame);
+        }
+        frame.src='whiteboard-creative-studio.html?v260';
+        studiosByAge.set(state.age,frame);
+      }
+      if(frame!==studioFrame){
+        studioFrame.removeAttribute('id');
+        studioFrame=frame;
+        studioFrame.id='white-board-studio';
+      }
+    }
+    app.toggleAttribute('data-creative-studio',open);
+    studioButton.setAttribute('aria-pressed',String(open));
+    studioFrame.inert=!open;
+    studioFrame.setAttribute('aria-hidden',String(!open));
+  }
+  studioButton.addEventListener('click',()=>{
+    const open=!app.hasAttribute('data-creative-studio');
+    if(open&&guideSelect.value){
+      guideSelect.value='';
+      chooseBoardGuide('');
+    }
+    toggleCreativeStudio(open);
+    hint(open?'Create and explore in the Creative Studio.':'Write or draw anywhere on the White Board.');
+  });
+  const boardControls=$('white-board-controls'),boardHistory=$('white-board-history'),boardActions=$('white-board-actions');
+  rainbowButton.addEventListener('click',()=>{
+    finishBoardStroke();
+    rainbowBrush=!rainbowBrush||state.erase;
+    state.erase=false;
+    updateArtTools();
+  });
   function guideChoices(category){
     const profile=guideProfiles[state.age]||guideProfiles[5];
     if(category==='numbers')return Array.from({length:profile.numbers},(_,i)=>String(i+1));
@@ -448,6 +493,9 @@
     }
     return [];
   }
+  function returnBoardControls(){
+    if(boardClear.parentElement!==boardControls)boardControls.append(boardClear,boardHistory,boardActions);
+  }
   function showBoardChoices(){
     const strip=$('item-progress-strip');
     const category=guideSelect.value,items=guideChoices(category);
@@ -455,12 +503,20 @@
     strip.hidden=false;
     strip.setAttribute('aria-label','White Board and '+(category||'blank drawing'));
     if(strip.dataset.boardChoices!==key){
+      returnBoardControls();
       strip.dataset.boardChoices=key;
+      strip.toggleAttribute('data-board-blank',!category);
       const buttons=items.map(value=>'<button type="button" class="item-chip" data-board-guide="'+value+'" aria-label="'+(guideSigns[value]||value)+'" aria-pressed="false">'+value+'</button>').join('');
-      strip.innerHTML='<div class="white-board-guide-items" role="group" aria-label="First choices"></div>'
-        +'<button type="button" class="item-chip brush-choice white-board-choice is-current" data-brush-choice="white-board" aria-pressed="true">White Board ON</button>'
-        +'<div class="white-board-guide-items" role="group" aria-label="More choices">'+buttons+'</div>';
-      fitBoardChoices();
+      const toggle='<button type="button" class="item-chip brush-choice white-board-choice is-current" data-brush-choice="white-board" aria-pressed="true">White Board ON</button>';
+      if(category){
+        strip.innerHTML='<div class="white-board-guide-items" role="group" aria-label="First choices"></div>'+toggle
+          +'<div class="white-board-guide-items" role="group" aria-label="More choices">'+buttons+'</div>';
+        fitBoardChoices();
+      }else{
+        strip.innerHTML='<div class="white-board-strip-left"></div>'+toggle+'<div class="white-board-strip-right"></div>';
+        strip.querySelector('.white-board-strip-left').append(boardHistory);
+        strip.querySelector('.white-board-strip-right').append(boardClear,boardActions);
+      }
     }
     for(const button of strip.querySelectorAll('[data-board-guide]')){
       const selected=button.dataset.boardGuide===selectedGuide;
@@ -621,6 +677,7 @@
   }
   guideSelect.addEventListener('change',()=>{
     if(!onWhiteBoard())return;
+    if(app.hasAttribute('data-creative-studio'))toggleCreativeStudio(false);
     chooseBoardGuide(guideChoices(guideSelect.value)[0]||'');
   });
   function selectAgeBoard(){
@@ -659,7 +716,12 @@
   function updateWhiteBoard(){
     const active=onWhiteBoard(),full=app.classList.contains('immersive');
     const opening=whiteBoard.hidden;
-    if(!active)finishBoardStroke();
+    if(!active){
+      toggleCreativeStudio(false);
+      returnBoardControls();
+    }
+    rainbowButton.hidden=!active;
+    studioButton.hidden=!active;
     app.toggleAttribute('data-white-board',active);
     whiteBoard.hidden=!active;
     guideSelect.hidden=!active;
@@ -667,6 +729,7 @@
     if(!active)directions.hidden=true;
     if(active){
       if(opening||activeBoard?.age!==state.age){
+        toggleCreativeStudio(false);
         guideSelect.value='';
         selectedGuide='';
         updateTracingGuide();
@@ -743,7 +806,8 @@
     if(tracing&&!insideTracingBoundary(x,y))return;
     const widths=tracing?{small:2,medium:5,large:10}:{small:6,medium:14,large:30};
     const width=widths[state.brushSize];
-    const path=strokePath(state.erase?'white':state.paintColor,width);
+    const color=rainbowBrush?'url(#white-board-rainbow-ink)':state.paintColor;
+    const path=strokePath(state.erase?'white':color,width);
     const d=`M${x.toFixed(1)} ${y.toFixed(1)}l.1 .1`;
     path.setAttribute('d',d);
     const {layer}=activeBoard;
@@ -1208,6 +1272,7 @@
   function showItemStrip(items){
     const strip=$('item-progress-strip');if(!strip)return;
     delete strip.dataset.boardChoices;
+    strip.removeAttribute('data-board-blank');
     strip.setAttribute('aria-label','Available items and completion status');
     strip.hidden=!state.activity||!items.length;
     if(strip.hidden){strip.innerHTML='';return;}
@@ -1571,10 +1636,12 @@
   }
   function insidePicture(point){return [...scene.querySelectorAll('#picture-clip > *')].some(shape=>shape.isPointInFill(new DOMPoint(point.x,point.y)));}
   function updateArtTools(){
+    const rainbowActive=onWhiteBoard()&&rainbowBrush&&!state.erase;
+    rainbowButton.setAttribute('aria-pressed',String(rainbowActive));
     document.querySelectorAll('[data-brush-size]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.brushSize===state.brushSize)));
     $('erase-paint').hidden=!state.paintMode;$('erase-paint').disabled=!state.paintMode;$('erase-paint').setAttribute('aria-pressed',String(state.paintMode&&state.erase));
     $('paint-tools').setAttribute('aria-label',state.paintMode?'Paint colour':'Brush colour');$('paint-tools').querySelector('.paint-label').textContent=state.paintMode?'Paint colour':'Brush colour';
-    document.querySelectorAll('[data-paint]').forEach((button,i)=>{button.setAttribute('aria-label',`${colorNames[i]} ${state.paintMode?'paint':'brush'}`);button.setAttribute('aria-pressed',String((!state.paintMode||!state.erase)&&button.dataset.paint===(state.paintMode?state.paintColor:state.brushColor)));});
+    document.querySelectorAll('[data-paint]').forEach((button,i)=>{button.setAttribute('aria-label',`${colorNames[i]} ${state.paintMode?'paint':'brush'}`);button.setAttribute('aria-pressed',String(!rainbowActive&&(!state.paintMode||!state.erase)&&button.dataset.paint===(state.paintMode?state.paintColor:state.brushColor)));});
   }
   function strokePath(color,width){
     const path=document.createElementNS('http://www.w3.org/2000/svg','path');
@@ -2036,7 +2103,7 @@
   document.querySelectorAll('[data-bubble-speed]').forEach(button=>button.addEventListener('click',()=>{state.bubbleSpeed=button.dataset.bubbleSpeed;updateBubbleSettings();save();}));
   document.querySelectorAll('[data-bubble-size]').forEach(button=>button.addEventListener('click',()=>{state.bubbleSize=button.dataset.bubbleSize;updateBubbleSettings();fitBubbleField();save();}));
   $('paint-mode').addEventListener('click',()=>{state.paintMode=true;resetRound();});$('clean-mode').addEventListener('click',()=>{state.paintMode=false;resetRound();});
-  document.querySelectorAll('[data-paint]').forEach(button=>button.addEventListener('click',()=>{if(demoActive)stopDemo();cancelGesture();if(state.paintMode){state.erase=false;state.paintColor=button.dataset.paint;}else state.brushColor=button.dataset.paint;updateArtTools();tone(620);popObject(button,'paint-color');}));
+  document.querySelectorAll('[data-paint]').forEach(button=>button.addEventListener('click',()=>{if(demoActive)stopDemo();cancelGesture();if(state.paintMode){state.erase=false;state.paintColor=button.dataset.paint;if(onWhiteBoard())rainbowBrush=false;}else state.brushColor=button.dataset.paint;updateArtTools();tone(620);popObject(button,'paint-color');}));
   document.querySelectorAll('[data-brush-size]').forEach(button=>button.addEventListener('click',()=>{if(demoActive)stopDemo();cancelGesture();state.brushSize=button.dataset.brushSize;updateArtTools();}));
   $('erase-paint').addEventListener('click',()=>{cancelGesture();state.erase=!state.erase;updateArtTools();hint(onWhiteBoard()?(state.erase?'Rub over your marks to erase.':'Write or draw anywhere on the White Board.'):state.erase?'Rub over the paint to erase. The picture stays safe.':`Choose a color and paint inside the ${artPicture().name}.`);});
   function soundButton(){$('sound').setAttribute('aria-pressed',String(state.sound));$('sound').setAttribute('aria-label',state.sound?'All sound on':'All sound off');$('sound').title=state.sound?'Sound on · gentle touch chirps enabled':'Sound off · turn on for gentle touch chirps';$('sound').style.opacity='1';window.dispatchEvent(new CustomEvent('sana-sound-change',{detail:{enabled:state.sound}}));}

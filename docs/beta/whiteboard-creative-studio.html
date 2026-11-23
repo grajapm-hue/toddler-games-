@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SaNa Creative Studio</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      overflow: hidden;
+      background: #0f172a;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    .toolbar {
+      position: relative;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 7px 8px;
+      background: #ffffff;
+      border-bottom: 2px solid #cbd5e1;
+      z-index: 50;
+    }
+
+    .color-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2.5px solid #cbd5e1;
+      cursor: pointer;
+    }
+
+    .color-btn.active {
+      border: 3.5px solid #0f172a;
+      box-shadow: 0 0 0 2px #38bdf8;
+    }
+
+    .rainbow-btn {
+      padding: 6px 10px;
+      border: 2px solid #0f172a;
+      border-radius: 8px;
+      background: linear-gradient(90deg, #ef4444 0%, #f59e0b 25%, #22c55e 50%, #3b82f6 75%, #a855f7 100%);
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .rainbow-btn span {
+      background: rgba(15, 23, 42, 0.78);
+      padding: 1px 5px;
+      border-radius: 4px;
+      pointer-events: none;
+    }
+
+    .rainbow-btn.active {
+      box-shadow: 0 0 0 2.5px #38bdf8;
+    }
+
+    .tool-group {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: #f1f5f9;
+      padding: 4px 8px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
+    }
+
+    input[type="range"] {
+      cursor: pointer;
+      accent-color: #2563eb;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 9px;
+      border: 1.5px solid #94a3b8;
+      border-radius: 8px;
+      background: #e2e8f0;
+      color: #0f172a;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .btn:disabled {
+      opacity: 0.42;
+      cursor: not-allowed;
+    }
+
+    .btn.active {
+      background: #2563eb;
+      color: #ffffff;
+      border-color: #1d4ed8;
+    }
+
+    .btn.btn-done {
+      background: #8b5cf6;
+      color: #ffffff;
+      border-color: #6d28d9;
+    }
+
+    .btn.btn-done.is-done {
+      background: #f59e0b;
+      color: #0f172a;
+      border-color: #b45309;
+      box-shadow: 0 0 0 2.5px #0f172a;
+    }
+
+    .bg-btn-white { background: #ffffff; color: #0f172a; border-color: #94a3b8; }
+    .bg-btn-black { background: #0f172a; color: #f8fafc; border-color: #0f172a; }
+    .bg-btn-grid  { background: #e0f2fe; color: #0369a1; border-color: #7dd3fc; }
+    .bg-selected  { box-shadow: 0 0 0 2.5px #38bdf8; }
+
+    .btn-undo { background: #e0e7ff; color: #1e1b4b; border-color: #a5b4fc; }
+    .btn-redo { background: #e0e7ff; color: #1e1b4b; border-color: #a5b4fc; }
+    .btn-photo { background: #7c3aed; color: #ffffff; border-color: #6d28d9; }
+    .btn-cut { background: #d97706; color: #ffffff; border-color: #b45309; }
+    .btn-finish { background: #16a34a; color: #ffffff; border-color: #15803d; }
+    .btn-scan { background: #06b6d4; color: #082f49; border-color: #0891b2; }
+    .btn-scan.active { background: #0891b2; color: #ffffff; box-shadow: 0 0 0 2px #0f172a; }
+    .btn-clear-cut { background: #f97316; color: #ffffff; border-color: #ea580c; }
+    .btn-clear-all { background: #ef4444; color: #ffffff; border-color: #dc2626; }
+    .btn-save { background: #10b981; color: #ffffff; border-color: #059669; }
+
+    #guideBar {
+      position: relative;
+      background: #1e293b;
+      color: #38bdf8;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 10px;
+      text-align: center;
+      border-bottom: 1px solid #334155;
+      z-index: 40;
+    }
+
+    #guideBar.locked-banner {
+      background: #451a03;
+      color: #fde68a;
+    }
+
+    #imageInput {
+      display: none;
+    }
+
+    #stage {
+      flex: 1;
+      position: relative;
+      background: #ffffff;
+      overflow: hidden;
+      z-index: 1;
+      touch-action: none;
+    }
+
+    #bgLayer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    #whiteboard {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+      background: transparent;
+      z-index: 2;
+    }
+
+    #object-stage {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      perspective: 1400px;
+      pointer-events: none;
+      z-index: 3;
+      background: transparent;
+    }
+
+    #extrusionGroup {
+      position: relative;
+      display: none;
+      transform-style: preserve-3d;
+      transform: scale(1) rotateX(0deg) rotateY(0deg) translateZ(0px);
+      will-change: transform;
+      background: transparent;
+    }
+
+    .slice-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: transparent;
+      pointer-events: none;
+    }
+
+    #lassoCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+      touch-action: none;
+      z-index: 10;
+      background: transparent;
+    }
+
+    @media (max-height: 450px) {
+      .toolbar { gap:3px; padding:3px 5px; }
+      .toolbar button { min-height:26px; padding:2px 5px; font-size:11px; }
+      .toolbar .color-btn { width:24px; height:24px; min-height:24px; padding:0; }
+      #guideBar { font-size:11px; padding:2px 4px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="toolbar" id="toolbar">
+    <button type="button" class="color-btn active" style="background:#111111;" data-color="#111111" data-name="Black" aria-label="Black"></button>
+    <button type="button" class="color-btn" style="background:#ef4444;" data-color="#ef4444" data-name="Red" aria-label="Red"></button>
+    <button type="button" class="color-btn" style="background:#3b82f6;" data-color="#3b82f6" data-name="Blue" aria-label="Blue"></button>
+    <button type="button" class="color-btn" style="background:#22c55e;" data-color="#22c55e" data-name="Green" aria-label="Green"></button>
+    <button type="button" class="color-btn" style="background:#eab308;" data-color="#eab308" data-name="Yellow" aria-label="Yellow"></button>
+    <button type="button" class="color-btn" style="background:#a855f7;" data-color="#a855f7" data-name="Purple" aria-label="Purple"></button>
+    <button type="button" class="color-btn" style="background:#ffffff;" data-color="#ffffff" data-name="White" aria-label="White"></button>
+    <button type="button" id="rainbowBtn" class="rainbow-btn"><span>Rainbow</span></button>
+
+    <button type="button" id="undoBtn" class="btn btn-undo" disabled>Undo</button>
+    <button type="button" id="redoBtn" class="btn btn-redo" disabled>Redo</button>
+
+    <div class="tool-group">
+      <label for="brushSize">Brush:</label>
+      <input type="range" id="brushSize" min="2" max="40" value="10" style="width:54px;">
+      <span id="sizeVal">10</span>
+    </div>
+
+    <div class="tool-group">
+      <span>BG:</span>
+      <button type="button" id="bgWhiteBtn" class="btn bg-btn-white bg-selected" style="padding:3px 7px;">White</button>
+      <button type="button" id="bgBlackBtn" class="btn bg-btn-black" style="padding:3px 7px;">Black</button>
+      <button type="button" id="bgGridBtn" class="btn bg-btn-grid" style="padding:3px 7px;">Grid</button>
+    </div>
+
+    <div class="tool-group">
+      <label for="rotY">Spin Y:</label>
+      <input type="range" id="rotY" min="-360" max="360" value="0" style="width:68px;">
+      <span id="yVal">0°</span>
+    </div>
+
+    <div class="tool-group">
+      <label for="rotX">Tilt X:</label>
+      <input type="range" id="rotX" min="-360" max="360" value="0" style="width:68px;">
+      <span id="xVal">0°</span>
+      <button type="button" id="centerBtn" class="btn" style="padding:3px 6px; font-size:11px;">0°</button>
+    </div>
+
+    <button type="button" id="doneBtn" class="btn btn-done">Done</button>
+
+    <input type="file" id="imageInput" accept="image/*">
+    <button type="button" id="addPhotoBtn" class="btn btn-photo">+ Photo</button>
+    <button type="button" id="dotCutBtn" class="btn btn-cut">Dot Cut</button>
+    <button type="button" id="finishCutBtn" class="btn btn-finish" style="display:none;">Finish Cut</button>
+    <button type="button" id="resetDotsBtn" class="btn" style="display:none;">Undo Dot</button>
+
+    <button type="button" id="scannerBtn" class="btn btn-scan" aria-pressed="false" title="Glow and a light beam between two fingers">Biometric Beam</button>
+    <button type="button" id="eraserBtn" class="btn">Eraser</button>
+    <button type="button" id="clearCutBtn" class="btn btn-clear-cut">Clear Cut</button>
+    <button type="button" id="clearAllBtn" class="btn btn-clear-all">Clear All</button>
+    <button type="button" id="saveBtn" class="btn btn-save">Save PNG</button>
+  </div>
+
+  <div id="guideBar">Ready — draw or add a photo, tap Done to lock &amp; spin/tilt by finger, then Save PNG</div>
+
+  <div id="stage">
+    <canvas id="bgLayer"></canvas>
+    <canvas id="whiteboard"></canvas>
+    <div id="object-stage">
+      <div id="extrusionGroup"></div>
+    </div>
+    <canvas id="lassoCanvas"></canvas>
+  </div>
+
+
+  <script>
+    (function () {
+      const stage = document.getElementById('stage');
+      const bgLayer = document.getElementById('bgLayer');
+      const bgCtx = bgLayer.getContext('2d');
+      const canvas = document.getElementById('whiteboard');
+      const ctx = canvas.getContext('2d');
+      const extrusionGroup = document.getElementById('extrusionGroup');
+      const lassoCanvas = document.getElementById('lassoCanvas');
+      const lassoCtx = lassoCanvas.getContext('2d');
+      const guideBar = document.getElementById('guideBar');
+      const doneBtn = document.getElementById('doneBtn');
+
+      const activePointers = new Map();
+      let strokeDirty = false;
+      let isDoneLocked = false;
+
+      // Gesture tracking for Done 3D spin/tilt/forward-back
+      const inspectPointers = new Map();
+      let prevTwoFingerDist = null;
+      let prevTwoFingerAngle = null;
+      let zDepthPx = 0;
+      let currentFitScale = 0.88;
+
+      let currentColor = '#111111';
+      let currentColorName = 'Black';
+      let brushSize = 10;
+      let isEraser = false;
+      let isScannerMode = false;
+      let isRainbowMode = false;
+      let bgMode = 'white';
+      let isLassoMode = false;
+      let hasCutout = false;
+      let isBoardWrappedFor3D = false;
+      let rainbowHue = 0;
+
+      let logicalWidth = 300;
+      let logicalHeight = 300;
+      let sourceCutCanvas = null;
+      let lassoPoints = [];
+
+      const historyStack = [];
+      let historyIndex = -1;
+      let historyRestore = 0;
+      const lassoRedo = [];
+      const MAX_HISTORY = 30;
+
+      const undoBtn = document.getElementById('undoBtn');
+      const redoBtn = document.getElementById('redoBtn');
+      const rotY = document.getElementById('rotY');
+      const rotX = document.getElementById('rotX');
+      const yVal = document.getElementById('yVal');
+      const xVal = document.getElementById('xVal');
+
+      function setGuide(msg) {
+        guideBar.textContent = msg;
+      }
+
+      function wrapAngle(deg) {
+        let v = Math.round(deg);
+        if (v > 360) v = ((v + 360) % 720) - 360;
+        if (v < -360) v = ((v - 360) % 720) + 360;
+        return Math.abs(v) <= 4 ? 0 : v;
+      }
+
+      function computeFitScale(yDeg, xDeg, zPx) {
+        const yawRad = (yDeg * Math.PI) / 180;
+        const pitchRad = (xDeg * Math.PI) / 180;
+        const absCosY = Math.abs(Math.cos(yawRad));
+        const absCosX = Math.abs(Math.cos(pitchRad));
+        const absSinY = Math.abs(Math.sin(yawRad));
+        const absSinX = Math.abs(Math.sin(pitchRad));
+
+        const projW = Math.max(0.45, absCosY + absSinX * absSinY * 0.45);
+        const projH = Math.max(0.45, absCosX + absSinY * absSinX * 0.45);
+        const maxProj = Math.max(projW, projH);
+
+        const persp = 1400;
+        const clampedZ = Math.max(-120, Math.min(140, zPx));
+        const zFactor = Math.max(0.65, Math.min(1.15, persp / (persp - clampedZ)));
+
+        return Math.max(0.42, Math.min(0.92, (0.88 * zFactor) / maxProj));
+      }
+
+      function syncHistoryButtons() {
+        undoBtn.disabled = isLassoMode ? lassoPoints.length === 0 : historyIndex <= 0;
+        redoBtn.disabled = isLassoMode ? lassoRedo.length === 0 : historyIndex >= historyStack.length - 1;
+      }
+
+      function captureSnapshot() {
+        const boardSnap = document.createElement('canvas');
+        boardSnap.width = canvas.width;
+        boardSnap.height = canvas.height;
+        if (canvas.width > 0 && canvas.height > 0) {
+          boardSnap.getContext('2d').drawImage(canvas, 0, 0);
+        }
+
+        const cutW = extrusionGroup.style.width ? Math.round(parseFloat(extrusionGroup.style.width)) : 0;
+        const cutH = extrusionGroup.style.height ? Math.round(parseFloat(extrusionGroup.style.height)) : 0;
+        let cutDataUrl = '';
+        const firstSlice = extrusionGroup.querySelector('canvas:last-child');
+        if (firstSlice && firstSlice.width > 0 && firstSlice.height > 0) {
+          const tmp = document.createElement('canvas');
+          tmp.width = firstSlice.width;
+          tmp.height = firstSlice.height;
+          tmp.getContext('2d').drawImage(firstSlice, 0, 0);
+          cutDataUrl = tmp.toDataURL();
+        }
+
+        const entry = {
+          boardDataUrl: boardSnap.toDataURL(),
+          bgMode,
+          hasCutout,
+          isBoardWrappedFor3D,
+          cutW,
+          cutH,
+          cutDataUrl,
+          rotY: parseInt(rotY.value, 10) || 0,
+          rotX: parseInt(rotX.value, 10) || 0,
+          zDepthPx
+        };
+
+        const previous = historyStack[historyIndex];
+        if (previous && Object.keys(entry).every(key => entry[key] === previous[key])) return;
+        historyRestore++;
+        if (historyIndex < historyStack.length - 1) {
+          historyStack.splice(historyIndex + 1);
+        }
+        historyStack.push(entry);
+        if (historyStack.length > MAX_HISTORY) {
+          historyStack.shift();
+        } else {
+          historyIndex++;
+        }
+        syncHistoryButtons();
+      }
+
+      async function restoreSnapshot(entry) {
+        if (!entry) return;
+        const request = ++historyRestore;
+        const board = new Image();
+        board.src = entry.boardDataUrl;
+        const cut = entry.hasCutout && entry.cutDataUrl ? new Image() : null;
+        if (cut) cut.src = entry.cutDataUrl;
+        try {
+          await Promise.all([board.decode(), cut?.decode()]);
+        } catch {
+          if (request === historyRestore) setGuide('Could not restore that step.');
+          return;
+        }
+        if (request !== historyRestore) return;
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        fitImage(board, ctx, canvas.width, canvas.height);
+        ctx.restore();
+
+        hasCutout = Boolean(cut);
+        isBoardWrappedFor3D = Boolean(cut && entry.isBoardWrappedFor3D);
+        if (cut) {
+          buildExtrusionSlicesFromImage(cut, entry.cutW, entry.cutH);
+          extrusionGroup.style.display = 'block';
+        } else {
+          extrusionGroup.replaceChildren();
+          extrusionGroup.style.display = 'none';
+        }
+        rotY.value = entry.rotY;
+        rotX.value = entry.rotX;
+        zDepthPx = entry.zDepthPx || 0;
+        if (bgMode !== entry.bgMode) setBgMode(entry.bgMode, false);
+        apply3D(false);
+        syncHistoryButtons();
+      }
+
+      function drawBackground() {
+        const dpr = window.devicePixelRatio || 1;
+        bgLayer.width = Math.round(logicalWidth * dpr);
+        bgLayer.height = Math.round(logicalHeight * dpr);
+        bgCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        if (bgMode === 'black') {
+          bgCtx.fillStyle = '#090d16';
+          bgCtx.fillRect(0, 0, logicalWidth, logicalHeight);
+        } else if (bgMode === 'grid') {
+          bgCtx.fillStyle = '#ffffff';
+          bgCtx.fillRect(0, 0, logicalWidth, logicalHeight);
+          bgCtx.strokeStyle = '#cbd5e1';
+          bgCtx.lineWidth = 1;
+          const step = 24;
+          for (let x = 0; x <= logicalWidth; x += step) {
+            bgCtx.beginPath();
+            bgCtx.moveTo(x, 0);
+            bgCtx.lineTo(x, logicalHeight);
+            bgCtx.stroke();
+          }
+          for (let y = 0; y <= logicalHeight; y += step) {
+            bgCtx.beginPath();
+            bgCtx.moveTo(0, y);
+            bgCtx.lineTo(logicalWidth, y);
+            bgCtx.stroke();
+          }
+        } else {
+          bgCtx.fillStyle = '#ffffff';
+          bgCtx.fillRect(0, 0, logicalWidth, logicalHeight);
+        }
+      }
+
+      function fitImage(image, target, width, height) {
+        const scale = Math.min(width / image.width, height / image.height);
+        const w = image.width * scale, h = image.height * scale;
+        const x = (width - w) / 2, y = (height - h) / 2;
+        target.drawImage(image, x, y, w, h);
+        return { x, y, scale };
+      }
+      function initCanvases() {
+        const tempBoard = document.createElement('canvas');
+        tempBoard.width = canvas.width;
+        tempBoard.height = canvas.height;
+        if (canvas.width > 0 && canvas.height > 0) {
+          tempBoard.getContext('2d').drawImage(canvas, 0, 0);
+        }
+
+        logicalWidth = Math.max(stage.clientWidth || window.innerWidth, 100);
+        logicalHeight = Math.max(stage.clientHeight || (window.innerHeight - 150), 100);
+        const dpr = window.devicePixelRatio || 1;
+
+        canvas.width = Math.round(logicalWidth * dpr);
+        canvas.height = Math.round(logicalHeight * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        lassoCanvas.width = Math.round(logicalWidth * dpr);
+        lassoCanvas.height = Math.round(logicalHeight * dpr);
+        lassoCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        drawBackground();
+
+        if (tempBoard.width > 0 && tempBoard.height > 0) {
+          fitImage(tempBoard, ctx, logicalWidth, logicalHeight);
+        }
+        if (sourceCutCanvas && (sourceCutCanvas.width !== logicalWidth || sourceCutCanvas.height !== logicalHeight)) {
+          const resized = document.createElement('canvas');
+          resized.width = logicalWidth;
+          resized.height = logicalHeight;
+          fitImage(sourceCutCanvas, resized.getContext('2d'), logicalWidth, logicalHeight);
+          sourceCutCanvas = resized;
+        }
+
+        renderDots();
+        if (historyStack.length === 0) {
+          captureSnapshot();
+        }
+      }
+
+      window.addEventListener('resize', () => {
+        if (isLassoMode) stopDotCut();
+        initCanvases();
+      });
+      initCanvases();
+
+      function getCoords(e, el) {
+        const r = el.getBoundingClientRect();
+        return { x: e.clientX - r.left, y: e.clientY - r.top };
+      }
+
+      // DONE TOGGLE: LOCKS EDITING & FITS SCREEN CLEANLY
+      function setDoneMode(active) {
+        isDoneLocked = active;
+        doneBtn.classList.toggle('is-done', isDoneLocked);
+        guideBar.classList.toggle('locked-banner', isDoneLocked);
+        inspectPointers.clear();
+        prevTwoFingerDist = null;
+        prevTwoFingerAngle = null;
+
+        if (isDoneLocked) {
+          stopDotCut();
+          ensure3DTargetReady();
+          apply3D(false);
+          setGuide('DONE LOCKED (Fit Screen) — slide finger Left/Right (Spin Y), Up/Down (Tilt X), or 2-finger round/depth');
+        } else {
+          restoreEditableBoard();
+          setGuide('EDIT UNLOCKED — draw, cut, or tap Done to lock & spin/tilt by finger');
+        }
+      }
+
+      doneBtn.addEventListener('click', () => {
+        setDoneMode(!isDoneLocked);
+      });
+
+      // Manual finger spin/tilt/forward-back when Done is active
+      stage.addEventListener('pointerdown', (e) => {
+        if (!isDoneLocked) return;
+        ensure3DTargetReady();
+        try { stage.setPointerCapture(e.pointerId); } catch (_) {}
+        inspectPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (inspectPointers.size === 2) {
+          const [a, b] = Array.from(inspectPointers.values());
+          prevTwoFingerDist = Math.hypot(b.x - a.x, b.y - a.y);
+          prevTwoFingerAngle = Math.atan2(b.y - a.y, b.x - a.x);
+        }
+      });
+
+      stage.addEventListener('pointermove', (e) => {
+        if (!isDoneLocked || !inspectPointers.has(e.pointerId)) return;
+        const prev = inspectPointers.get(e.pointerId);
+        const curr = { x: e.clientX, y: e.clientY };
+        inspectPointers.set(e.pointerId, curr);
+
+        let curY = parseInt(rotY.value, 10) || 0;
+        let curX = parseInt(rotX.value, 10) || 0;
+        let moved3D = false;
+
+        if (inspectPointers.size === 1) {
+          const dx = curr.x - prev.x;
+          const dy = curr.y - prev.y;
+          if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+            curY = wrapAngle(curY + dx * 0.75);
+            curX = wrapAngle(curX - dy * 0.75);
+            moved3D = true;
+          }
+        } else if (inspectPointers.size >= 2) {
+          const [a, b] = Array.from(inspectPointers.values());
+          const dist = Math.hypot(b.x - a.x, b.y - a.y);
+          const ang = Math.atan2(b.y - a.y, b.x - a.x);
+
+          if (prevTwoFingerDist !== null) {
+            const deltaDist = dist - prevTwoFingerDist;
+            if (Math.abs(deltaDist) > 0.5) {
+              zDepthPx = Math.max(-120, Math.min(140, zDepthPx + deltaDist * 0.5));
+              curX = wrapAngle(curX - deltaDist * 0.25);
+              moved3D = true;
+            }
+          }
+          if (prevTwoFingerAngle !== null) {
+            let deltaDeg = ((ang - prevTwoFingerAngle) * 180) / Math.PI;
+            if (deltaDeg > 180) deltaDeg -= 360;
+            if (deltaDeg < -180) deltaDeg += 360;
+            if (Math.abs(deltaDeg) > 0.4) {
+              curY = wrapAngle(curY + deltaDeg * 1.2);
+              moved3D = true;
+            }
+          }
+          prevTwoFingerDist = dist;
+          prevTwoFingerAngle = ang;
+        }
+
+        if (moved3D) {
+          ensure3DTargetReady();
+          rotY.value = curY;
+          rotX.value = curX;
+          apply3D(false);
+          setGuide(`Fit 3D View — Spin Y: ${curY}° | Tilt X: ${curX}° | Fit: ${Math.round(currentFitScale * 100)}%`);
+        }
+      });
+
+      function endInspectPointer(e) {
+        if (!isDoneLocked) return;
+        inspectPointers.delete(e.pointerId);
+        if (inspectPointers.size < 2) {
+          prevTwoFingerDist = null;
+          prevTwoFingerAngle = null;
+        }
+        try { if (stage.hasPointerCapture(e.pointerId)) stage.releasePointerCapture(e.pointerId); } catch (_) {}
+        if (inspectPointers.size === 0) {
+          captureSnapshot();
+        }
+      }
+
+      stage.addEventListener('pointerup', endInspectPointer);
+      stage.addEventListener('pointercancel', endInspectPointer);
+
+      // MULTI-TOUCH DRAWING (DISABLED WHEN DONE IS ACTIVE)
+      canvas.addEventListener('pointerdown', (e) => {
+        if (isDoneLocked || isLassoMode) return;
+        try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+        const pt = getCoords(e, canvas);
+        activePointers.set(e.pointerId, pt);
+        strokeDirty = true;
+        drawStroke(pt.x, pt.y, pt.x, pt.y);
+        drawScannerBridge();
+      });
+
+      canvas.addEventListener('pointermove', (e) => {
+        if (isDoneLocked || isLassoMode || !activePointers.has(e.pointerId)) return;
+        const prev = activePointers.get(e.pointerId);
+        const curr = getCoords(e, canvas);
+        drawStroke(prev.x, prev.y, curr.x, curr.y);
+        activePointers.set(e.pointerId, curr);
+        drawScannerBridge();
+      });
+
+      function endPointer(e) {
+        activePointers.delete(e.pointerId);
+        try {
+          if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+        } catch (_) {}
+        if (activePointers.size === 0 && strokeDirty) {
+          strokeDirty = false;
+          captureSnapshot();
+        }
+      }
+
+      canvas.addEventListener('pointerup', endPointer);
+      canvas.addEventListener('pointercancel', endPointer);
+
+      function drawRainbowSplashSegment(x1, y1, x2, y2) {
+        const dist = Math.hypot(x2 - x1, y2 - y1);
+        const steps = Math.max(Math.ceil(dist / 3), 1);
+
+        ctx.save();
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = brushSize * 1.45;
+        ctx.globalAlpha = 0.24;
+        const grad = ctx.createLinearGradient(x1, y1, x2, y2);
+        grad.addColorStop(0, `hsl(${rainbowHue % 360}, 95%, 52%)`);
+        grad.addColorStop(0.5, `hsl(${(rainbowHue + 90) % 360}, 95%, 52%)`);
+        grad.addColorStop(1, `hsl(${(rainbowHue + 180) % 360}, 95%, 52%)`);
+        ctx.strokeStyle = grad;
+        if (isScannerMode) {
+          ctx.shadowColor = `hsl(${rainbowHue % 360}, 95%, 55%)`;
+          ctx.shadowBlur = 12;
+        }
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.restore();
+
+        for (let i = 0; i < steps; i++) {
+          const t0 = i / steps;
+          const t1 = (i + 1) / steps;
+          const sx1 = x1 + (x2 - x1) * t0;
+          const sy1 = y1 + (y2 - y1) * t0;
+          const sx2 = x1 + (x2 - x1) * t1;
+          const sy2 = y1 + (y2 - y1) * t1;
+
+          rainbowHue = (rainbowHue + 5) % 360;
+          const segColor = `hsl(${rainbowHue}, 95%, 50%)`;
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(sx1, sy1);
+          ctx.lineTo(sx2, sy2);
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.lineWidth = brushSize;
+          ctx.strokeStyle = segColor;
+          if (isScannerMode) {
+            ctx.shadowColor = segColor;
+            ctx.shadowBlur = 12;
+          }
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      function drawStroke(x1, y1, x2, y2) {
+        if (isEraser) {
+          ctx.save();
+          ctx.globalCompositeOperation = 'destination-out';
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.lineWidth = brushSize * 1.4;
+          ctx.stroke();
+          ctx.restore();
+          return;
+        }
+
+        if (isRainbowMode) {
+          drawRainbowSplashSegment(x1, y1, x2, y2);
+          return;
+        }
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = brushSize;
+        ctx.strokeStyle = currentColor;
+
+        if (isScannerMode) {
+          ctx.shadowColor = currentColor === '#111111' ? '#06b6d4' : currentColor;
+          ctx.shadowBlur = 14;
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawScannerBridge() {
+        if (!isScannerMode || isEraser || activePointers.size < 2) return;
+        const pts = Array.from(activePointers.values());
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        ctx.lineTo(pts[1].x, pts[1].y);
+        ctx.strokeStyle = isRainbowMode
+          ? `hsla(${rainbowHue % 360}, 95%, 52%, 0.4)`
+          : (currentColor === '#ffffff' ? 'rgba(255,255,255,0.4)' : `${currentColor}55`);
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function buildExtrusionSlicesFromCanvas(sourceEl, w, h, drawFn) {
+        const dpr = window.devicePixelRatio || 1;
+        const LAYERS = 14;
+        const STEP = 1.4;
+        extrusionGroup.innerHTML = '';
+        extrusionGroup.style.width = `${w}px`;
+        extrusionGroup.style.height = `${h}px`;
+
+        const base = document.createElement('canvas');
+        base.width = Math.round(w * dpr);
+        base.height = Math.round(h * dpr);
+        const bCtx = base.getContext('2d');
+        bCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        if (drawFn) {
+          drawFn(bCtx, w, h);
+        } else if (sourceEl) {
+          bCtx.drawImage(sourceEl, 0, 0, w, h);
+        }
+
+        for (let i = 0; i < LAYERS; i++) {
+          const sCanvas = document.createElement('canvas');
+          sCanvas.className = 'slice-canvas';
+          sCanvas.width = base.width;
+          sCanvas.height = base.height;
+          sCanvas.style.width = `${w}px`;
+          sCanvas.style.height = `${h}px`;
+          const sCtx = sCanvas.getContext('2d');
+          sCtx.drawImage(base, 0, 0);
+
+          if (i < LAYERS - 1) {
+            sCtx.globalCompositeOperation = 'source-atop';
+            sCtx.fillStyle = 'rgba(15, 23, 42, 0.25)';
+            sCtx.fillRect(0, 0, sCanvas.width, sCanvas.height);
+          }
+
+          const z = (i - LAYERS / 2) * STEP;
+          sCanvas.style.transform = `translateZ(${z}px)`;
+          extrusionGroup.appendChild(sCanvas);
+        }
+      }
+
+      function buildExtrusionSlicesFromImage(img, w, h) {
+        buildExtrusionSlicesFromCanvas(null, w, h, (bCtx, dw, dh) => {
+          bCtx.drawImage(img, 0, 0, dw, dh);
+        });
+      }
+
+      function ensure3DTargetReady() {
+        if (hasCutout && extrusionGroup.style.display !== 'none') return true;
+
+        const w = Math.max(Math.round(logicalWidth), 100);
+        const h = Math.max(Math.round(logicalHeight), 100);
+        if (w <= 0 || h <= 0) return false;
+
+        buildExtrusionSlicesFromCanvas(null, w, h, (bCtx, dw, dh) => {
+          bCtx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, dw, dh);
+        });
+
+        ctx.clearRect(0, 0, logicalWidth, logicalHeight);
+        hasCutout = true;
+        isBoardWrappedFor3D = true;
+        extrusionGroup.style.display = 'block';
+        return true;
+      }
+
+      function restoreEditableBoard() {
+        if (!isBoardWrappedFor3D) return;
+        const top = extrusionGroup.querySelector('canvas:last-child');
+        if (top) {
+          const drawing = document.createElement('canvas');
+          drawing.width = canvas.width;
+          drawing.height = canvas.height;
+          fitImage(top, drawing.getContext('2d'), drawing.width, drawing.height);
+          drawing.getContext('2d').drawImage(canvas, 0, 0);
+          ctx.clearRect(0, 0, logicalWidth, logicalHeight);
+          ctx.drawImage(drawing, 0, 0, logicalWidth, logicalHeight);
+        }
+        extrusionGroup.replaceChildren();
+        extrusionGroup.style.display = 'none';
+        hasCutout = false;
+        isBoardWrappedFor3D = false;
+        rotY.value = 0;
+        rotX.value = 0;
+        zDepthPx = 0;
+        apply3D(false);
+      }
+
+      const centerBtn = document.getElementById('centerBtn');
+
+      function snapZero(v) {
+        return Math.abs(v) <= 6 ? 0 : v;
+      }
+
+      function apply3D(autoWrapIfNeeded = false) {
+        const y = snapZero(parseInt(rotY.value, 10) || 0);
+        const x = snapZero(parseInt(rotX.value, 10) || 0);
+        rotY.value = y;
+        rotX.value = x;
+        yVal.textContent = `${y > 0 ? '+' : ''}${y}°`;
+        xVal.textContent = `${x > 0 ? '+' : ''}${x}°`;
+
+        if (autoWrapIfNeeded && (y !== 0 || x !== 0 || zDepthPx !== 0)) {
+          ensure3DTargetReady();
+        }
+        currentFitScale = (isDoneLocked || y !== 0 || x !== 0 || zDepthPx !== 0)
+          ? computeFitScale(y, x, zDepthPx)
+          : 1;
+        // Move along the viewing axis after rotation to keep the on-screen pivot fixed.
+        extrusionGroup.style.transform = `translateZ(${zDepthPx}px) scale(${currentFitScale.toFixed(3)}) rotateX(${x}deg) rotateY(${y}deg)`;
+      }
+
+      rotY.addEventListener('input', () => {
+        apply3D(true);
+        setGuide(`Spin Y: ${rotY.value}° | Tilt X: ${rotX.value}°`);
+      });
+      rotX.addEventListener('input', () => {
+        apply3D(true);
+        setGuide(`Spin Y: ${rotY.value}° | Tilt X: ${rotX.value}°`);
+      });
+      rotY.addEventListener('change', () => captureSnapshot());
+      rotX.addEventListener('change', () => captureSnapshot());
+
+      centerBtn.addEventListener('click', () => {
+        rotY.value = 0;
+        rotX.value = 0;
+        zDepthPx = 0;
+        apply3D(false);
+        captureSnapshot();
+        setGuide('3D angles & depth centered');
+      });
+
+      undoBtn.addEventListener('click', () => {
+        if (isLassoMode) { stepDot(false); return; }
+        if (historyIndex > 0) {
+          historyIndex--;
+          restoreSnapshot(historyStack[historyIndex]);
+          setGuide('Undid last action');
+        }
+      });
+
+      redoBtn.addEventListener('click', () => {
+        if (isLassoMode) { stepDot(true); return; }
+        if (historyIndex < historyStack.length - 1) {
+          historyIndex++;
+          restoreSnapshot(historyStack[historyIndex]);
+          setGuide('Redid action');
+        }
+      });
+
+      const bgWhiteBtn = document.getElementById('bgWhiteBtn');
+      const bgBlackBtn = document.getElementById('bgBlackBtn');
+      const bgGridBtn = document.getElementById('bgGridBtn');
+
+      function setBgMode(mode, record = true) {
+        bgMode = mode;
+        bgWhiteBtn.classList.toggle('bg-selected', mode === 'white');
+        bgBlackBtn.classList.toggle('bg-selected', mode === 'black');
+        bgGridBtn.classList.toggle('bg-selected', mode === 'grid');
+        drawBackground();
+        renderDots();
+        setGuide(`Background: ${mode.toUpperCase()}`);
+        if (record) captureSnapshot();
+      }
+
+      bgWhiteBtn.addEventListener('click', () => setBgMode('white'));
+      bgBlackBtn.addEventListener('click', () => setBgMode('black'));
+      bgGridBtn.addEventListener('click', () => setBgMode('grid'));
+
+      const addPhotoBtn = document.getElementById('addPhotoBtn');
+      const imageInput = document.getElementById('imageInput');
+      const dotCutBtn = document.getElementById('dotCutBtn');
+      const finishCutBtn = document.getElementById('finishCutBtn');
+      const resetDotsBtn = document.getElementById('resetDotsBtn');
+
+      addPhotoBtn.addEventListener('click', () => {
+        if (isDoneLocked) {
+          setDoneMode(false);
+        }
+        setGuide('Select a photo...');
+        imageInput.click();
+      });
+
+      imageInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => {
+            sourceCutCanvas = document.createElement('canvas');
+            sourceCutCanvas.width = logicalWidth;
+            sourceCutCanvas.height = logicalHeight;
+            const sCtx = sourceCutCanvas.getContext('2d');
+
+            const scale = Math.min(
+              (logicalWidth * 0.86) / img.width,
+              (logicalHeight * 0.86) / img.height
+            );
+            const w = img.width * scale;
+            const h = img.height * scale;
+            const ox = (logicalWidth - w) / 2;
+            const oy = (logicalHeight - h) / 2;
+
+            ctx.drawImage(img, ox, oy, w, h);
+            sCtx.drawImage(img, ox, oy, w, h);
+            captureSnapshot();
+
+            stopDotCut();
+            setGuide('Photo loaded. Draw on it, use Dot Cut, or tap Done to spin and tilt.');
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+        imageInput.value = '';
+      });
+
+      function startDotCut() {
+        if (isDoneLocked) return;
+        isLassoMode = true;
+        lassoPoints = [];
+        lassoRedo.length = 0;
+        syncHistoryButtons();
+        dotCutBtn.classList.add('active');
+        lassoCanvas.style.display = 'block';
+        resetDotsBtn.style.display = 'inline-flex';
+        finishCutBtn.style.display = 'none';
+        renderDots();
+      }
+
+      function stopDotCut() {
+        isLassoMode = false;
+        lassoPoints = [];
+        lassoRedo.length = 0;
+        syncHistoryButtons();
+        dotCutBtn.classList.remove('active');
+        lassoCanvas.style.display = 'none';
+        resetDotsBtn.style.display = 'none';
+        finishCutBtn.style.display = 'none';
+        renderDots();
+      }
+
+      dotCutBtn.addEventListener('click', () => {
+        if (isDoneLocked) {
+          setGuide('Screen is in Done mode — tap Done to unlock editing');
+          return;
+        }
+        if (isLassoMode) {
+          stopDotCut();
+          setGuide('Dot Cut closed');
+          return;
+        }
+        sourceCutCanvas = document.createElement('canvas');
+        sourceCutCanvas.width = logicalWidth;
+        sourceCutCanvas.height = logicalHeight;
+        sourceCutCanvas.getContext('2d').drawImage(canvas, 0, 0, logicalWidth, logicalHeight);
+        startDotCut();
+        setGuide('Step 1: Tap on the object to place the GREEN start dot');
+      });
+
+      function stepDot(forward) {
+        const from = forward ? lassoRedo : lassoPoints;
+        const to = forward ? lassoPoints : lassoRedo;
+        if (!from.length) return;
+        to.push(from.pop());
+        finishCutBtn.style.display = lassoPoints.length >= 3 ? 'inline-flex' : 'none';
+        renderDots();
+        syncHistoryButtons();
+        setGuide(forward ? 'Restored one cut point.' : 'Removed one cut point.');
+      }
+      resetDotsBtn.addEventListener('click', () => stepDot(false));
+
+      finishCutBtn.addEventListener('click', () => {
+        if (lassoPoints.length >= 3) performCutout(lassoPoints);
+      });
+
+      lassoCanvas.addEventListener('pointerdown', (e) => {
+        if (isDoneLocked || !isLassoMode) return;
+        const pt = getCoords(e, lassoCanvas);
+
+        if (lassoPoints.length >= 3) {
+          const d = Math.hypot(pt.x - lassoPoints[0].x, pt.y - lassoPoints[0].y);
+          if (d <= 26) {
+            performCutout(lassoPoints);
+            return;
+          }
+        }
+
+        lassoPoints.push(pt);
+        lassoRedo.length = 0;
+        syncHistoryButtons();
+        renderDots();
+
+        if (lassoPoints.length === 1) {
+          setGuide('Step 2: Tap around the object to place RED dots');
+        } else if (lassoPoints.length < 3) {
+          setGuide(`Placed ${lassoPoints.length - 1} red dot(s) — add at least 2 red dots`);
+        } else {
+          finishCutBtn.style.display = 'inline-flex';
+          setGuide('Step 3: Tap the GREEN dot (or "Finish Cut") to cut out');
+        }
+      });
+
+      function renderDots() {
+        lassoCtx.clearRect(0, 0, logicalWidth, logicalHeight);
+        if (!lassoPoints.length) return;
+
+        lassoCtx.save();
+        lassoCtx.beginPath();
+        lassoCtx.moveTo(lassoPoints[0].x, lassoPoints[0].y);
+        for (let i = 1; i < lassoPoints.length; i++) {
+          lassoCtx.lineTo(lassoPoints[i].x, lassoPoints[i].y);
+        }
+        lassoCtx.setLineDash([6, 6]);
+        lassoCtx.lineWidth = 2.5;
+        lassoCtx.strokeStyle = bgMode === 'black' ? '#f8fafc' : '#0f172a';
+        lassoCtx.stroke();
+        lassoCtx.restore();
+
+        lassoPoints.forEach((pt, idx) => {
+          const isGreen = idx === 0;
+          lassoCtx.save();
+          lassoCtx.beginPath();
+          lassoCtx.arc(pt.x, pt.y, isGreen ? 10 : 7, 0, Math.PI * 2);
+          lassoCtx.fillStyle = isGreen ? '#22c55e' : '#ef4444';
+          lassoCtx.fill();
+          lassoCtx.lineWidth = 2.5;
+          lassoCtx.strokeStyle = '#ffffff';
+          lassoCtx.stroke();
+          lassoCtx.restore();
+        });
+      }
+
+      function performCutout(poly) {
+        if (!sourceCutCanvas) return;
+
+        let minX = logicalWidth, minY = logicalHeight, maxX = 0, maxY = 0;
+        poly.forEach((p) => {
+          if (p.x < minX) minX = p.x;
+          if (p.y < minY) minY = p.y;
+          if (p.x > maxX) maxX = p.x;
+          if (p.y > maxY) maxY = p.y;
+        });
+
+        const w = Math.max(Math.round(maxX - minX), 24);
+        const h = Math.max(Math.round(maxY - minY), 24);
+
+        buildExtrusionSlicesFromCanvas(null, w, h, (bCtx, dw, dh) => {
+          bCtx.save();
+          bCtx.beginPath();
+          poly.forEach((p, i) => {
+            const lx = (p.x - minX) * (dw / w);
+            const ly = (p.y - minY) * (dh / h);
+            if (i === 0) bCtx.moveTo(lx, ly);
+            else bCtx.lineTo(lx, ly);
+          });
+          bCtx.closePath();
+          bCtx.clip();
+          bCtx.drawImage(sourceCutCanvas, minX, minY, w, h, 0, 0, dw, dh);
+          bCtx.restore();
+        });
+
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.beginPath();
+        poly.forEach((p, i) => {
+          if (i === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        hasCutout = true;
+        isBoardWrappedFor3D = false;
+        extrusionGroup.style.display = 'block';
+        rotY.value = 0;
+        rotX.value = 0;
+        zDepthPx = 0;
+        apply3D(false);
+        stopDotCut();
+        captureSnapshot();
+        setGuide('Cutout ready — tap Done to spin/tilt by finger or slide Spin Y/Tilt X');
+      }
+
+      const clearCutBtn = document.getElementById('clearCutBtn');
+      const clearAllBtn = document.getElementById('clearAllBtn');
+
+      function clearCutoutOnly() {
+        extrusionGroup.innerHTML = '';
+        extrusionGroup.style.display = 'none';
+        hasCutout = false;
+        isBoardWrappedFor3D = false;
+        rotY.value = 0;
+        rotX.value = 0;
+        zDepthPx = 0;
+        apply3D(false);
+        captureSnapshot();
+        setGuide('3D object cleared');
+      }
+
+      function clearEverything() {
+        if (isDoneLocked) setDoneMode(false);
+        stopDotCut();
+        extrusionGroup.innerHTML = '';
+        extrusionGroup.style.display = 'none';
+        hasCutout = false;
+        isBoardWrappedFor3D = false;
+        sourceCutCanvas = null;
+        rotY.value = 0;
+        rotX.value = 0;
+        zDepthPx = 0;
+        apply3D(false);
+        ctx.clearRect(0, 0, logicalWidth, logicalHeight);
+        captureSnapshot();
+        setGuide('Board and 3D layer cleared');
+      }
+
+      clearCutBtn.addEventListener('click', clearCutoutOnly);
+      clearAllBtn.addEventListener('click', clearEverything);
+
+      const colorBtns = document.querySelectorAll('.color-btn');
+      const rainbowBtn = document.getElementById('rainbowBtn');
+      const eraserBtn = document.getElementById('eraserBtn');
+      const scannerBtn = document.getElementById('scannerBtn');
+      const brushSizeInput = document.getElementById('brushSize');
+      const sizeVal = document.getElementById('sizeVal');
+      const saveBtn = document.getElementById('saveBtn');
+
+      function clearBrushHighlights() {
+        colorBtns.forEach((b) => b.classList.remove('active'));
+        rainbowBtn.classList.remove('active');
+        eraserBtn.classList.remove('active');
+      }
+
+      colorBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          if (isDoneLocked) setDoneMode(false);
+          stopDotCut();
+          isEraser = false;
+          isRainbowMode = false;
+          clearBrushHighlights();
+          btn.classList.add('active');
+          currentColor = btn.dataset.color;
+          currentColorName = btn.dataset.name || 'Color';
+          setGuide(isScannerMode ? `Biometric Beam: ${currentColorName}` : `Brush: ${currentColorName}`);
+        });
+      });
+
+      rainbowBtn.addEventListener('click', () => {
+        if (isDoneLocked) setDoneMode(false);
+        stopDotCut();
+        isEraser = false;
+        isRainbowMode = true;
+        clearBrushHighlights();
+        rainbowBtn.classList.add('active');
+        setGuide(isScannerMode ? 'Biometric Beam: Rainbow Gradient Splash' : 'Rainbow Gradient Splash ON');
+      });
+
+      scannerBtn.addEventListener('click', () => {
+        stopDotCut();
+        isScannerMode = !isScannerMode;
+        scannerBtn.classList.toggle('active', isScannerMode);
+        scannerBtn.setAttribute('aria-pressed', String(isScannerMode));
+        setGuide(
+          isScannerMode
+            ? `Biometric Beam ON (${isRainbowMode ? 'Rainbow' : currentColorName})`
+            : `Biometric Beam OFF (${isRainbowMode ? 'Rainbow' : currentColorName})`
+        );
+      });
+
+      eraserBtn.addEventListener('click', () => {
+        if (isDoneLocked) setDoneMode(false);
+        stopDotCut();
+        isEraser = !isEraser;
+        isRainbowMode = false;
+        clearBrushHighlights();
+        if (isEraser) {
+          eraserBtn.classList.add('active');
+          setGuide('Eraser ON');
+        } else {
+          colorBtns[0].classList.add('active');
+          currentColor = colorBtns[0].dataset.color;
+          currentColorName = colorBtns[0].dataset.name;
+          setGuide(`Brush: ${currentColorName}`);
+        }
+      });
+
+      brushSizeInput.addEventListener('input', (e) => {
+        brushSize = parseInt(e.target.value, 10) || 10;
+        sizeVal.textContent = brushSize;
+        setGuide(`Brush size: ${brushSize}px`);
+      });
+
+      // Save exact fitted screen view (including Done 3D spin/tilt/depth)
+      saveBtn.addEventListener('click', () => {
+        try {
+          const dpr = window.devicePixelRatio || 1;
+          const out = document.createElement('canvas');
+          out.width = canvas.width;
+          out.height = canvas.height;
+          const oCtx = out.getContext('2d');
+          oCtx.drawImage(bgLayer, 0, 0);
+          oCtx.drawImage(canvas, 0, 0);
+
+          if (hasCutout) {
+            const topSlice = extrusionGroup.querySelector('canvas:last-child');
+            if (topSlice && topSlice.width > 0 && topSlice.height > 0) {
+              const w = parseFloat(extrusionGroup.style.width) || 0;
+              const h = parseFloat(extrusionGroup.style.height) || 0;
+              const yawDeg = parseInt(rotY.value, 10) || 0;
+              const pitchDeg = parseInt(rotX.value, 10) || 0;
+              const yawRad = (yawDeg * Math.PI) / 180;
+              const pitchRad = (pitchDeg * Math.PI) / 180;
+              const fit = (isDoneLocked || yawDeg !== 0 || pitchDeg !== 0 || zDepthPx !== 0)
+                ? computeFitScale(yawDeg, pitchDeg, zDepthPx)
+                : 1;
+              const scaleX = Math.max(0.18, Math.abs(Math.cos(yawRad))) * fit;
+              const scaleY = Math.max(0.25, Math.abs(Math.cos(pitchRad))) * fit;
+              const skewX = Math.sin(yawRad) * Math.sin(pitchRad) * 0.25;
+
+              const steps = 8;
+              for (let s = 0; s < steps; s++) {
+                const t = s / steps;
+                const ox = Math.sin(yawRad) * (t - 0.5) * 14 * dpr;
+                const oy = -Math.sin(pitchRad) * (t - 0.5) * 14 * dpr;
+                oCtx.save();
+                oCtx.translate((logicalWidth / 2) * dpr + ox, (logicalHeight / 2) * dpr + oy);
+                oCtx.transform(scaleX, skewX, 0, scaleY, 0, 0);
+                oCtx.globalAlpha = s === steps - 1 ? 1 : 0.28;
+                oCtx.drawImage(topSlice, (-w * dpr) / 2, (-h * dpr) / 2, w * dpr, h * dpr);
+                oCtx.restore();
+              }
+            }
+          }
+
+          const link = document.createElement('a');
+          link.download = isDoneLocked ? 'done-3d-view.png' : 'paint-cutout.png';
+          link.href = out.toDataURL('image/png');
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setGuide('Saved fitted screen view as PNG');
+        } catch (_) {
+          setGuide('Save blocked by browser');
+        }
+      });
+
+    })();
+  </script>
+</body>
+</html>
