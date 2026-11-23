@@ -5,8 +5,28 @@
     Round:'M3 32a29 29 0 1 0 58 0a29 29 0 1 0-58 0Z',
     Star:'M32 3 42 17 60 18 50 33 53 58 32 53 11 58 14 33 4 18 22 17Z',
     Heart:'M32 61C25 58 3 36 3 19C3 5 22 1 32 15C42 1 61 5 61 19C61 36 39 58 32 61Z',
-    Flower:'M32 10C41-3 57 6 54 21C67 27 64 44 52 45C51 60 38 65 32 54C24 65 10 60 12 45C-1 44-3 27 10 21C7 6 23-3 32 10Z',
-    Bear:'M13 19C2 8 16-2 25 11Q32 8 39 11C48-2 62 8 51 19C66 39 54 60 32 60C10 60-2 39 13 19Z'
+    Bear:'M13 19C2 8 16-2 25 11Q32 8 39 11C48-2 62 8 51 19C66 39 54 60 32 60C10 60-2 39 13 19Z',
+    Bunny:'M12 34C8 26 7 4 14 3C21 2 23 18 25 23Q32 20 39 23C41 18 43 2 50 3C57 4 56 26 52 34C62 49 52 61 32 61C12 61 2 49 12 34Z',
+    Moon:'M49 8C28 -5 6 9 3 30C0 50 17 64 38 60Q55 58 61 44C43 51 35 40 36 29Q36 14 49 8Z',
+    Fish:'M44 20L59 12V52L44 44C27 58 9 52 3 33C9 14 27 7 44 20Z',
+    Butterfly:'M30 21C17 0 1 4 3 21C4 29 9 33 16 34C1 39 6 57 19 57C25 57 30 49 32 44C34 49 39 57 45 57C58 57 63 39 48 34C55 33 60 29 61 21C63 4 47 0 34 21Z',
+    Leaf:'M58 5C34 3 10 13 7 34C5 48 14 55 26 54L17 61L22 63L34 52C51 48 59 29 58 5Z',
+    Dinosaur:'M3 37C11 39 13 30 22 24Q31 17 41 23L43 13C45 3 58 4 61 13L61 22L49 25L48 43L52 56H41L36 48H28L24 56H13L16 44Q7 47 3 37Z',
+    Turtle:'M6 32Q10 30 16 32C17 6 50 6 52 32C62 27 66 39 58 43L53 43L54 52Q49 59 43 51H25Q20 59 14 52L15 44Q3 43 6 32Z',
+    Owl:'M12 5L22 14Q32 9 42 14L52 5L52 24C63 42 52 60 32 60C12 60 1 42 12 24Z',
+    Elephant:'M14 16C6 10 0 19 4 30Q6 39 14 37L14 54H24L26 46H35L38 54H48V36C53 45 63 39 62 31L56 28Q55 33 52 29L51 18Q45 6 29 9Q19 8 14 16Z',
+    Duck:'M11 28Q4 24 4 18L17 19C19 4 41 2 44 18Q46 23 40 28C47 31 56 32 61 26C62 45 52 57 34 57C17 57 5 47 7 34Z',
+    Rocket:'M32 2C44 10 49 25 47 38L58 53L43 51L39 61H25L21 51L6 53L17 38C15 25 20 10 32 2Z',
+    Train:'M7 27H13V14H23V26H33V9H54V36H60V49H55Q55 59 47 59Q40 59 38 53H25Q22 59 16 59Q8 59 8 50H4V37Z',
+    Boat:'M8 33H17L28 7H38V28H54L50 33H61L52 54H15Z',
+    Car:'M5 33L13 30L19 17H43L53 29L59 32L61 48H54Q52 57 46 57Q39 57 37 50H25Q23 57 16 57Q10 57 8 50H3Z'
+  };
+  const holeCenters={
+    Bunny:[32,42,.95,.84],Moon:[22,34,0.85,1],Fish:[27,32,0.9,0.8],
+    Butterfly:[28,33,0.95,0.75],Leaf:[30,32,0.95,0.85],Dinosaur:[35,35,0.75,0.65],
+    Turtle:[34,34,0.85,0.85],Owl:[32,35,1,.95],Elephant:[32,29,.93,.84],
+    Duck:[30,34,0.8,1],Rocket:[32,34,0.8,0.9],Train:[31,38,1,0.7],
+    Boat:[34,41,1,0.65],Car:[32,36,1,.71]
   };
   const batches=[[1,2,3,4],[5,6,7,8],[9,10,11,12]];
   // The countable holes use stable, spaced rows inside every silhouette.
@@ -19,15 +39,14 @@
 
   function cookiePicture(quantity,shape){
     const holes=quantity<=6?smallPatterns[quantity]:holeRows.flatMap(y=>[22,32,42].map(x=>[x,y])).slice(0,quantity);
-    const radius=quantity<=6?4.6:3.3;
+    const [anchorX,anchorY,scaleX,scaleY]=holeCenters[shape]||(shape==='Round'?[32,32,1,1]:[32,34,.78,.9]);
+    const radius=(quantity<=6?4.6:3.3)*Math.min(scaleX,scaleY);
     const cutouts=holes.map(([x,y])=>{
-      if(shape!=='Round'){
-        x=32+(x-32)*.78;
-        y=34+(y-32)*.9;
-      }
+      x=anchorX+(x-32)*scaleX;
+      y=anchorY+(y-32)*scaleY;
       return `M${x-radius} ${y}a${radius} ${radius} 0 1 0 ${2*radius} 0a${radius} ${radius} 0 1 0 ${-2*radius} 0Z`;
     }).join(' ');
-    return `<svg viewBox="0 0 64 64" aria-hidden="true"><path d="${shapes[shape]} ${cutouts}" fill="#e7a458" fill-rule="evenodd" stroke="#743c23" stroke-width="1.1" stroke-linejoin="round"/><path d="${shapes[shape]}" fill="none" stroke="#743c23" stroke-width="2.3" stroke-linejoin="round"/></svg>`;
+    return `<svg viewBox="0 0 64 64" aria-hidden="true"><path d="${shapes[shape]} ${cutouts}" fill="url(#cookie-baked-texture) #e7a458" fill-rule="evenodd" stroke="#743c23" stroke-width="1.1" stroke-linejoin="round"/><path d="${shapes[shape]}" fill="none" stroke="#743c23" stroke-width="2.3" stroke-linejoin="round"/></svg>`;
   }
 
   function trayPicture(quantity,shape){
