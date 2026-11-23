@@ -493,8 +493,28 @@
     }
     return [];
   }
+  const boardToolbar=$('art-tools');
+  const boardStrip=$('item-progress-strip');
   function returnBoardControls(){
-    if(boardClear.parentElement!==boardControls)boardControls.append(boardClear,boardHistory,boardActions);
+    const toggle=boardToolbar.querySelector('.white-board-choice');
+    if(toggle)boardStrip.insertBefore(toggle,boardStrip.lastElementChild);
+    for(const control of [boardClear,boardHistory,boardActions]){
+      if(control.parentElement!==boardControls)boardControls.append(control);
+    }
+  }
+  function placeBlankBoardControls(){
+    if(!boardStrip.hasAttribute('data-board-blank'))return;
+    const full=app.classList.contains('immersive');
+    const toggle=(full?boardStrip:boardToolbar).querySelector('.white-board-choice');
+    if(!toggle)return;
+    if(full){
+      boardToolbar.append(toggle,boardActions);
+      boardControls.append(boardClear,boardHistory);
+    }else{
+      boardStrip.insertBefore(toggle,boardStrip.lastElementChild);
+      boardStrip.firstElementChild.append(boardHistory);
+      boardStrip.lastElementChild.append(boardClear,boardActions);
+    }
   }
   function showBoardChoices(){
     const strip=$('item-progress-strip');
@@ -518,6 +538,7 @@
         strip.querySelector('.white-board-strip-right').append(boardClear,boardActions);
       }
     }
+    placeBlankBoardControls();
     for(const button of strip.querySelectorAll('[data-board-guide]')){
       const selected=button.dataset.boardGuide===selectedGuide;
       button.classList.toggle('is-current',selected);
@@ -736,6 +757,7 @@
       }
       selectAgeBoard();
     }
+    if(active)placeBlankBoardControls();
     $('white-board-heading').hidden=!active||!full;
     boardFullscreen.setAttribute('aria-pressed',String(full));
     boardFullscreen.setAttribute('aria-label',full?'Exit White Board full screen':'White Board full screen');
@@ -1291,7 +1313,7 @@
   }
   // The shared visible strip replaces the hidden legacy brush thumbnail row.
   // Handle manual choice in both Brush Clean and Finger Paint modes.
-  $('item-progress-strip').addEventListener('click',event=>{
+  function handleBrushChoice(event){
     if(state.activity!=='brush')return;
     const guideButton=event.target.closest('[data-board-guide]');
     if(guideButton&&onWhiteBoard()){
@@ -1305,7 +1327,7 @@
       whiteBoardSelected=!whiteBoardSelected;
       state.paintMode=whiteBoardSelected||previousBrushPaintMode;
       resetRound();
-      if(event.detail===0)$('item-progress-strip').querySelector('.white-board-choice').focus({preventScroll:true});
+      if(event.detail===0)app.querySelector('.white-board-choice')?.focus({preventScroll:true});
       return;
     }
     const index=Number(button.dataset.brushChoice);
@@ -1315,7 +1337,9 @@
     resetRound();
     hint(`Selected ${artPicture().name}. ${state.paintMode?'Choose a color and paint inside the lines!':'Brush away the dirt to reveal the colors!'}`);
     popObject($('item-progress-strip').querySelector(`[data-brush-choice="${index}"]`),'drawing');
-  });
+  }
+  boardStrip.addEventListener('click',handleBrushChoice);
+  boardToolbar.addEventListener('click',handleBrushChoice);
   function updateGameItemStrip(){
     if(onCookies())return;
     if(state.activity==='puzzle'){picturePuzzle.syncStrip();return;}
