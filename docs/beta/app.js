@@ -745,7 +745,6 @@
       toggleCreativeStudio(false);
       returnBoardControls();
     }
-    rainbowButton.hidden=!active;
     studioButton.hidden=!active;
     app.toggleAttribute('data-white-board',active);
     whiteBoard.hidden=!active;
@@ -1658,13 +1657,18 @@
   function renderPaint(){
     scene.setAttribute('aria-label',`Paint the ${artPicture().name}`);
     scene.innerHTML=`<defs><clipPath id="picture-clip">${artPicture().region}</clipPath></defs><g data-art-picture=""><g fill="#fffaf0">${artPicture().region}</g><g id="strokes" clip-path="url(#picture-clip)"></g><g pointer-events="none">${pictureArt(true)}</g></g>`;
+    const gradient=$('white-board-rainbow-ink').cloneNode(true);
+    gradient.id='picture-rainbow-ink';
+    scene.querySelector('defs').append(gradient);
     state.coverage=[];
     for(let y=65;y<397;y+=9)for(let x=255;x<750;x+=9)if(insidePicture({x,y}))state.coverage.push({x,y,painted:false});
     progress(0,5);
   }
   function insidePicture(point){return [...scene.querySelectorAll('#picture-clip > *')].some(shape=>shape.isPointInFill(new DOMPoint(point.x,point.y)));}
   function updateArtTools(){
-    const rainbowActive=onWhiteBoard()&&rainbowBrush&&!state.erase;
+    const canPaint=state.activity==='brush'&&state.paintMode;
+    const rainbowActive=canPaint&&rainbowBrush&&!state.erase;
+    rainbowButton.hidden=!canPaint;
     rainbowButton.setAttribute('aria-pressed',String(rainbowActive));
     document.querySelectorAll('[data-brush-size]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.brushSize===state.brushSize)));
     $('erase-paint').hidden=!state.paintMode;$('erase-paint').disabled=!state.paintMode;$('erase-paint').setAttribute('aria-pressed',String(state.paintMode&&state.erase));
@@ -1687,7 +1691,8 @@
       mask.innerHTML='<rect width="1000" height="440" fill="white"/>';scene.querySelector('defs').appendChild(mask);
       // Give WebKit a full picture bounding box so masks retain round stroke caps.
       const layer=document.createElementNS('http://www.w3.org/2000/svg','g');layer.setAttribute('mask',`url(#${maskId})`);layer.innerHTML='<rect width="1000" height="440" fill="none"/>';
-      const path=strokePath(state.paintColor,width);path.dataset.stroke='';path.dataset.mask=maskId;layer.appendChild(path);$('strokes').appendChild(layer);state.strokes.push(path);paths.push(path);
+      const color=rainbowBrush?'url(#picture-rainbow-ink)':state.paintColor;
+      const path=strokePath(color,width);path.dataset.stroke='';path.dataset.mask=maskId;layer.appendChild(path);$('strokes').appendChild(layer);state.strokes.push(path);paths.push(path);
     }
     const pointer={id,kind:'paint',paths,d:`M${point.x.toFixed(1)} ${point.y.toFixed(1)}l.1 .1`,last:point,width,erase:state.erase};
     paths.forEach(path=>path.setAttribute('d',pointer.d));paintCoverage(pointer,point);return pointer;
@@ -2131,7 +2136,7 @@
   document.querySelectorAll('[data-bubble-speed]').forEach(button=>button.addEventListener('click',()=>{state.bubbleSpeed=button.dataset.bubbleSpeed;updateBubbleSettings();save();}));
   document.querySelectorAll('[data-bubble-size]').forEach(button=>button.addEventListener('click',()=>{state.bubbleSize=button.dataset.bubbleSize;updateBubbleSettings();fitBubbleField();save();}));
   $('paint-mode').addEventListener('click',()=>{state.paintMode=true;resetRound();});$('clean-mode').addEventListener('click',()=>{state.paintMode=false;resetRound();});
-  document.querySelectorAll('[data-paint]').forEach(button=>button.addEventListener('click',()=>{if(demoActive)stopDemo();cancelGesture();if(state.paintMode){state.erase=false;state.paintColor=button.dataset.paint;if(onWhiteBoard())rainbowBrush=false;}else state.brushColor=button.dataset.paint;updateArtTools();tone(620);popObject(button,'paint-color');}));
+  document.querySelectorAll('[data-paint]').forEach(button=>button.addEventListener('click',()=>{if(demoActive)stopDemo();cancelGesture();if(state.paintMode){state.erase=false;state.paintColor=button.dataset.paint;rainbowBrush=false;}else state.brushColor=button.dataset.paint;updateArtTools();tone(620);popObject(button,'paint-color');}));
   document.querySelectorAll('[data-brush-size]').forEach(button=>button.addEventListener('click',()=>{if(demoActive)stopDemo();cancelGesture();state.brushSize=button.dataset.brushSize;updateArtTools();}));
   $('erase-paint').addEventListener('click',()=>{cancelGesture();state.erase=!state.erase;updateArtTools();hint(onWhiteBoard()?(state.erase?'Rub over your marks to erase.':'Write or draw anywhere on the White Board.'):state.erase?'Rub over the paint to erase. The picture stays safe.':`Choose a color and paint inside the ${artPicture().name}.`);});
   function soundButton(){$('sound').setAttribute('aria-pressed',String(state.sound));$('sound').setAttribute('aria-label',state.sound?'All sound on':'All sound off');$('sound').title=state.sound?'Sound on · gentle touch chirps enabled':'Sound off · turn on for gentle touch chirps';$('sound').style.opacity='1';window.dispatchEvent(new CustomEvent('sana-sound-change',{detail:{enabled:state.sound}}));}
