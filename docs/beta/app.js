@@ -416,6 +416,58 @@
   const boardFullscreen=$('white-board-fullscreen'),boardHaptics=$('white-board-haptics');
   const guideSelect=$('white-board-guide'),guideArt=$('white-board-template');
   const guideBoundary=$('white-board-boundary');
+  let guideTrigger=null,guideMenu=null;
+  if(typeof HTMLElement.prototype.showPopover==='function'){
+    guideTrigger=document.createElement('button');
+    guideTrigger.type='button';
+    guideTrigger.id='white-board-guide-trigger';
+    guideTrigger.hidden=true;
+    guideTrigger.setAttribute('aria-expanded','false');
+    guideTrigger.setAttribute('aria-controls','white-board-guide-menu');
+    guideSelect.after(guideTrigger);
+    guideMenu=document.createElement('div');
+    guideMenu.id='white-board-guide-menu';
+    guideMenu.setAttribute('popover','auto');
+    guideMenu.setAttribute('role','group');
+    guideMenu.setAttribute('aria-label','White Board categories');
+    for(const option of guideSelect.options){
+      const choice=document.createElement('button');
+      choice.type='button';
+      choice.textContent=option.text;
+      choice.dataset.category=option.value;
+      choice.addEventListener('click',()=>{
+        guideSelect.value=option.value;
+        guideSelect.dispatchEvent(new Event('change'));
+        guideMenu.hidePopover();
+        guideTrigger.focus({preventScroll:true});
+      });
+      guideMenu.append(choice);
+    }
+    document.body.append(guideMenu);
+    guideTrigger.addEventListener('click',()=>{
+      if(guideMenu.matches(':popover-open')){guideMenu.hidePopover();return;}
+      const rect=guideTrigger.getBoundingClientRect();
+      guideMenu.style.width=rect.width+'px';
+      guideMenu.style.left=rect.left+'px';
+      const below=innerHeight-rect.bottom-6,above=rect.top-6;
+      guideMenu.style.maxHeight=Math.max(below,above)+'px';
+      const opensUp=below<guideMenu.children.length*36+2&&above>below;
+      guideMenu.style.top=opensUp?'auto':rect.bottom+3+'px';
+      guideMenu.style.bottom=opensUp?innerHeight-rect.top+3+'px':'auto';
+      guideMenu.showPopover();
+      guideMenu.querySelector('[aria-current="true"]').focus({preventScroll:true});
+    });
+    guideMenu.addEventListener('toggle',event=>guideTrigger.setAttribute('aria-expanded',String(event.newState==='open')));
+    window.addEventListener('resize',()=>{if(guideMenu.matches(':popover-open'))guideMenu.hidePopover();});
+  }
+  function updateGuidePicker(){
+    if(!guideTrigger)return;
+    const label=guideSelect.selectedOptions[0].text;
+    guideTrigger.textContent=label;
+    guideTrigger.setAttribute('aria-label','White Board category: '+label);
+    for(const choice of guideMenu.children)choice.setAttribute('aria-current',String(choice.dataset.category===guideSelect.value));
+  }
+
   const hitCanvas=document.createElement('canvas');
   hitCanvas.width=200;
   hitCanvas.height=140;
@@ -471,6 +523,7 @@
     const open=!app.hasAttribute('data-creative-studio');
     if(open&&guideSelect.value){
       guideSelect.value='';
+      updateGuidePicker();
       chooseBoardGuide('');
     }
     toggleCreativeStudio(open);
@@ -701,6 +754,7 @@
     hint(value==='÷'?'Draw a flat line, then tap a dot above it and a dot below it.':value?'Trace the gray guide.':'Write or draw anywhere on the White Board.');
   }
   guideSelect.addEventListener('change',()=>{
+    updateGuidePicker();
     if(!onWhiteBoard())return;
     if(app.hasAttribute('data-creative-studio'))toggleCreativeStudio(false);
     chooseBoardGuide(guideChoices(guideSelect.value)[0]||'');
@@ -748,7 +802,9 @@
     studioButton.hidden=!active;
     app.toggleAttribute('data-white-board',active);
     whiteBoard.hidden=!active;
-    guideSelect.hidden=!active;
+    guideSelect.hidden=!active||Boolean(guideTrigger);
+    if(guideTrigger)guideTrigger.hidden=!active;
+    if(!active&&guideMenu?.matches(':popover-open'))guideMenu.hidePopover();
     guideSelect.disabled=!active;
     if(!active)directions.hidden=true;
     if(active){
@@ -760,6 +816,7 @@
       }
       selectAgeBoard();
     }
+    updateGuidePicker();
     if(active&&$('item-progress-strip').dataset.boardChoices)placeBoardControls();
     $('white-board-heading').hidden=!active||!full;
     boardFullscreen.setAttribute('aria-pressed',String(full));
