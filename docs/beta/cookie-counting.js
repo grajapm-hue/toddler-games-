@@ -80,7 +80,13 @@
     function showShapes(){
       shapeStrip.hidden=false;
       shapeStrip.setAttribute('aria-label','Choose cookie shape');
-      shapeStrip.innerHTML=Object.keys(shapes).map(name=>'<button type="button" class="item-chip cookie-shape" data-cookie-shape="'+name+'" aria-pressed="'+(shape===name)+'">'+cookiePicture(3,name)+'<span>'+name+'</span></button>').join('');
+      shapeStrip.innerHTML=Object.keys(shapes).map((name,index)=>{
+        const atlas=Math.floor(index/9)+1,tile=index%9;
+        const column=tile%3,row=Math.floor(tile/3);
+        return '<button type="button" class="item-chip cookie-shape" data-cookie-shape="'+name+'" aria-pressed="'+(shape===name)+'">'
+          +'<span class="cookie-shape-image" data-atlas="'+atlas+'" style="background-position:'+column*50+'% '+row*50+'%" aria-hidden="true"></span>'
+          +'<span>'+name+'</span></button>';
+      }).join('');
     }
 
     function setShape(name){
