@@ -21,6 +21,22 @@
     Boat:'M8 33H17L28 7H38V28H54L50 33H61L52 54H15Z',
     Car:'M5 33L13 30L19 17H43L53 29L59 32L61 48H54Q52 57 46 57Q39 57 37 50H25Q23 57 16 57Q10 57 8 50H3Z'
   };
+  const shapeNames=Object.keys(shapes);
+  function artTile(index){
+    return {atlas:Math.floor(index/9)+1,column:index%3,row:Math.floor((index%9)/3)};
+  }
+
+  function installCookieArt(){
+    const patterns=document.getElementById('cookie-art-patterns');
+    patterns.insertAdjacentHTML('beforeend',shapeNames.map((name,index)=>{
+      const {atlas,column,row}=artTile(index);
+      const mirror=['Dinosaur','Duck','Train'].includes(name)?' transform="translate(64 0) scale(-1 1)"':'';
+      return '<pattern id="cookie-art-'+name+'" width="64" height="64" patternUnits="userSpaceOnUse">'
+        +'<rect width="64" height="64" fill="url(#cookie-baked-texture) #e7a458"/>'
+        +'<image href="cookie-thumbnails-'+atlas+'.png" x="'+(-68*column-2)+'" y="'+(-68*row-2)+'" width="204" height="204"'+mirror+'/>'
+        +'</pattern>';
+    }).join(''));
+  }
   const holeCenters={
     Bunny:[32,42,.95,.84],Moon:[22,34,0.85,1],Fish:[27,32,0.9,0.8],
     Butterfly:[28,33,0.95,0.75],Leaf:[30,32,0.95,0.85],Dinosaur:[35,35,0.75,0.65],
@@ -46,7 +62,7 @@
       y=anchorY+(y-32)*scaleY;
       return `M${x-radius} ${y}a${radius} ${radius} 0 1 0 ${2*radius} 0a${radius} ${radius} 0 1 0 ${-2*radius} 0Z`;
     }).join(' ');
-    return `<svg viewBox="0 0 64 64" aria-hidden="true"><path d="${shapes[shape]} ${cutouts}" fill="url(#cookie-baked-texture) #e7a458" fill-rule="evenodd" stroke="#743c23" stroke-width="1.1" stroke-linejoin="round"/><path d="${shapes[shape]}" fill="none" stroke="#743c23" stroke-width="2.3" stroke-linejoin="round"/></svg>`;
+    return `<svg viewBox="0 0 64 64" aria-hidden="true"><path d="${shapes[shape]} ${cutouts}" fill="url(#cookie-art-${shape}) #e7a458" fill-rule="evenodd" stroke="#743c23" stroke-width="1.1" stroke-linejoin="round"/><path d="${shapes[shape]}" fill="none" stroke="#743c23" stroke-width="2.3" stroke-linejoin="round"/></svg>`;
   }
 
   function trayPicture(quantity,shape){
@@ -69,6 +85,7 @@
     const message=root.querySelector('[data-cookie-status]');
     const next=root.querySelector('[data-cookie-next]');
     let batch=0,selected=null,drag=null,muteClick=null,advanceTimer=null,shape='Round';
+    installCookieArt();
     const lastOrder=new Map();
     const placed=new Set();
 
@@ -80,9 +97,8 @@
     function showShapes(){
       shapeStrip.hidden=false;
       shapeStrip.setAttribute('aria-label','Choose cookie shape');
-      shapeStrip.innerHTML=Object.keys(shapes).map((name,index)=>{
-        const atlas=Math.floor(index/9)+1,tile=index%9;
-        const column=tile%3,row=Math.floor(tile/3);
+      shapeStrip.innerHTML=shapeNames.map((name,index)=>{
+        const {atlas,column,row}=artTile(index);
         return '<button type="button" class="item-chip cookie-shape" data-cookie-shape="'+name+'" aria-pressed="'+(shape===name)+'">'
           +'<span class="cookie-shape-image" data-atlas="'+atlas+'" style="background-position:'+column*50+'% '+row*50+'%" aria-hidden="true"></span>'
           +'<span>'+name+'</span></button>';
