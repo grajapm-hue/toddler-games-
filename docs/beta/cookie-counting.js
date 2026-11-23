@@ -30,6 +30,11 @@
     return `<svg viewBox="0 0 64 64" aria-hidden="true"><path d="${shapes[shape]} ${cutouts}" fill="#e7a458" fill-rule="evenodd" stroke="#743c23" stroke-width="1.1" stroke-linejoin="round"/><path d="${shapes[shape]}" fill="none" stroke="#743c23" stroke-width="2.3" stroke-linejoin="round"/></svg>`;
   }
 
+  function trayPicture(quantity,shape){
+    const placeholder='<svg class="cookie-placeholder" viewBox="0 0 64 64" aria-hidden="true"><path d="'+shapes[shape]+'" fill="#fff" stroke="#008bc4" stroke-width="1.25" stroke-linejoin="round"/></svg>';
+    return placeholder+cookiePicture(quantity,shape);
+  }
+
   function shuffled(values){
     const result=[...values];
     for(let i=result.length-1;i>0;i--){
@@ -65,7 +70,7 @@
       for(const button of shapeStrip.querySelectorAll('[data-cookie-shape]')){
         button.setAttribute('aria-pressed',String(button.dataset.cookieShape===shape));
       }
-      for(const button of tray.querySelectorAll('[data-cookie-value]'))button.innerHTML=cookiePicture(Number(button.dataset.cookieValue),shape);
+      for(const button of tray.querySelectorAll('[data-cookie-value]'))button.innerHTML=trayPicture(Number(button.dataset.cookieValue),shape);
       for(const spot of spots.querySelectorAll(':disabled')){
         const value=Number(spot.dataset.cookieSpot);
         spot.innerHTML=cookiePicture(value,shape)+'<span>'+value+'</span>';
@@ -102,8 +107,6 @@
       const focused=document.activeElement===cookie||document.activeElement===spot;
       choose(null);
       cookie.disabled=true;
-      // Leave its empty tray slot in place, so the other cookies stay under the same coordinates.
-      cookie.style.visibility='hidden';
       spot.innerHTML=cookiePicture(number,shape)+'<span>'+number+'</span>';
       spot.setAttribute('aria-label',number+' matched');
       spot.disabled=true;
@@ -141,7 +144,7 @@
       if(order.join(',')===lastOrder.get(batch))order.push(order.shift());
       lastOrder.set(batch,order.join(','));
       spots.innerHTML=order.map(value=>'<button type="button" class="cookie-spot" data-cookie-spot="'+value+'" aria-label="Number '+value+'"><span>'+value+'</span></button>').join('');
-      tray.innerHTML=shuffled(values).map(value=>'<button type="button" class="cookie-piece" data-cookie-value="'+value+'" aria-label="Cookie with '+value+' '+(value===1?'hole':'holes')+'" aria-pressed="false">'+cookiePicture(value,shape)+'</button>').join('');
+      tray.innerHTML=shuffled(values).map(value=>'<button type="button" class="cookie-piece" data-cookie-value="'+value+'" aria-label="Cookie with '+value+' '+(value===1?'hole':'holes')+'" aria-pressed="false">'+trayPicture(value,shape)+'</button>').join('');
       report('Count the holes. Tap a cookie and its number, or drag it to the number.');
     }
 
