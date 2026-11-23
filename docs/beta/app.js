@@ -453,7 +453,7 @@
           frame.removeAttribute('src');
           whiteBoard.append(frame);
         }
-        frame.src='whiteboard-creative-studio.html?v260';
+        frame.src='whiteboard-creative-studio.html?v262';
         studiosByAge.set(state.age,frame);
       }
       if(frame!==studioFrame){
@@ -502,18 +502,22 @@
       if(control.parentElement!==boardControls)boardControls.append(control);
     }
   }
-  function placeBlankBoardControls(){
-    if(!boardStrip.hasAttribute('data-board-blank'))return;
+  function placeBoardControls(){
     const full=app.classList.contains('immersive');
-    const toggle=(full?boardStrip:boardToolbar).querySelector('.white-board-choice');
-    if(!toggle)return;
-    if(full){
-      boardToolbar.append(toggle,boardActions);
-      boardControls.append(boardClear,boardHistory);
-    }else{
-      boardStrip.insertBefore(toggle,boardStrip.lastElementChild);
-      boardStrip.firstElementChild.append(boardHistory);
-      boardStrip.lastElementChild.append(boardClear,boardActions);
+    const blank=boardStrip.hasAttribute('data-board-blank');
+    const target=blank?boardToolbar:boardStrip;
+    const toggle=app.querySelector('.white-board-choice');
+    if(toggle&&toggle.parentElement!==target){
+      if(blank)target.append(toggle);
+      else target.insertBefore(toggle,target.lastElementChild);
+    }
+    if(blank){
+      if(boardClear.parentElement!==boardControls)boardControls.append(boardClear,boardHistory);
+    }
+    const actionsTarget=full?(blank?boardToolbar:boardControls):$('game-mid-controls');
+    if(boardActions.parentElement!==actionsTarget){
+      if(full)actionsTarget.append(boardActions);
+      else actionsTarget.insertBefore(boardActions,playSettings);
     }
   }
   function showBoardChoices(){
@@ -538,7 +542,7 @@
         strip.querySelector('.white-board-strip-right').append(boardClear,boardActions);
       }
     }
-    placeBlankBoardControls();
+    placeBoardControls();
     for(const button of strip.querySelectorAll('[data-board-guide]')){
       const selected=button.dataset.boardGuide===selectedGuide;
       button.classList.toggle('is-current',selected);
@@ -757,7 +761,7 @@
       }
       selectAgeBoard();
     }
-    if(active)placeBlankBoardControls();
+    if(active&&$('item-progress-strip').dataset.boardChoices)placeBoardControls();
     $('white-board-heading').hidden=!active||!full;
     boardFullscreen.setAttribute('aria-pressed',String(full));
     boardFullscreen.setAttribute('aria-label',full?'Exit White Board full screen':'White Board full screen');
