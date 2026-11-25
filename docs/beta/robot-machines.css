@@ -140,8 +140,8 @@
 #robot-machines-room .robot-store-label{grid-column:2;grid-row:1;min-width:0;align-self:center}
 #robot-machines-room .robot-variant-label{grid-column:3;grid-row:1;min-width:0}
 #robot-machines-room .robot-store-label select{width:100%;min-width:0}
-#robot-machines-room #robot-parts button{grid-template-rows:minmax(0,1fr) minmax(23px,auto);overflow:visible;align-content:stretch}
-#robot-machines-room #robot-parts button img{max-height:100%;object-fit:contain;min-height:0}
+#robot-machines-room #robot-parts button{grid-template-rows:minmax(0,1fr) minmax(23px,auto);overflow:hidden;align-content:stretch}
+#robot-machines-room #robot-parts button img{max-width:100%;max-height:100%;object-fit:contain;min-height:0}
 #robot-machines-room #robot-parts button span{position:relative;display:block;line-height:1.15;min-height:18px;padding:2px 1px;background:#e4efdf;border-radius:4px;align-self:end;z-index:1}
 #robot-machines-room .robot-toolbar{gap:3px}
 #robot-machines-room .robot-control-heading{gap:3px}
@@ -178,3 +178,17 @@
 #robot-machines-room .robot-help-content p{font-size:14px;line-height:1.45;margin:8px 0}
 #robot-machines-room #robot-help-close{float:right}
 #robot-machines-room #robot-help{min-width:32px;font-weight:900}
+
+/* Keep the robot list anchored to Stores on browsers with customizable selects. */
+@supports (appearance:base-select) {
+  #robot-variant, #robot-variant::picker(select) { appearance:base-select }
+  #robot-variant { min-width:0; gap:4px }
+  #robot-variant selectedcontent { overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+  #robot-variant::picker(select) {
+    box-sizing:border-box; width:152px; min-width:0; max-width:calc(100vw - 12px);
+    position-try-fallbacks:flip-block, flip-inline, flip-block flip-inline;
+    border:1px solid #729c85; border-radius:9px; background:#fffdf3; color:#173e35;
+  }
+  #robot-variant option { min-height:32px; padding:4px 7px; font:700 13px system-ui }
+  #robot-variant option:checked { background:#d7efdc }
+}
