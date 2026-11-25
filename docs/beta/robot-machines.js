@@ -110,6 +110,37 @@
     let keyboard=false,cursor=null,canvasFrame=0,view=null,pendingLayout=false,grid=false;
     const touches=new Map(),masks=new Map();
     let demoSavedView=null,picture=null,groupMode=false,editRevision=0,saveSerial=0,clipboard=null,selectionStroke=null,rectangleIds=[];
+    const variant=$('variant');
+    const modelDetails=document.createElement('details');
+    modelDetails.id='robot-variant-menu';
+    modelDetails.innerHTML='<summary aria-label="Machine model"></summary><div id="robot-variant-options" role="group" aria-label="Robot choices"></div>';
+    variant.hidden=true;
+    variant.after(modelDetails);
+    const modelSummary=modelDetails.querySelector('summary'),modelOptions=$('variant-options');
+    function syncModelMenu(){
+      modelSummary.textContent=variant.selectedOptions[0]?.text||'Machine model';
+      modelSummary.setAttribute('aria-label','Machine model: '+modelSummary.textContent);
+      modelDetails.open=false;
+      modelOptions.replaceChildren(...Array.from(variant.options,option=>{
+        const button=document.createElement('button');
+        button.type='button';
+        button.textContent=option.text;
+        button.disabled=option.disabled;
+        button.setAttribute('aria-current',String(option.selected));
+        button.addEventListener('click',()=>{
+          variant.value=option.value;
+          variant.dispatchEvent(new Event('change'));
+          syncModelMenu();
+          modelSummary.focus({preventScroll:true});
+        });
+        return button;
+      }));
+    }
+    modelSummary.addEventListener('click',event=>{if(state.locked||demoActive||variant.disabled)event.preventDefault();});
+    document.addEventListener('click',event=>{if(modelDetails.open&&!modelDetails.contains(event.target))modelDetails.open=false;});
+    modelDetails.addEventListener('keydown',event=>{
+      if(event.key==='Escape'&&modelDetails.open){event.stopPropagation();modelDetails.open=false;modelSummary.focus();}
+    });
     const pose=()=>storeModel,ready=()=>active&&state.age===5&&!!storeModel;
     const displayScale=part=>{
       const base=part.storeScale||1;
@@ -192,6 +223,7 @@
       $('grid').setAttribute('aria-pressed',String(grid));$('grid').disabled=state.locked||demoActive;
     }
     function renderShelf(){
+      if(!modelDetails.open)syncModelMenu();
       page=Math.min(page,pageCount()-1);const range=pageRange();room.dataset.pageSize=range.size;
       const parts=ready()?[...pose().parts].sort((a,b)=>shelfIndex(a)-shelfIndex(b)).slice(range.start,range.end):[];
       $('parts').innerHTML=parts.map(part=>`<button type="button" data-robot-part="${part.id}" aria-label="${esc(part.name)}" aria-pressed="${storePick===part}" ${state.locked||look||groupMode||demoActive?'disabled':''}><img src="${part.asset}" alt="" draggable="false"><span>${esc(part.name)}</span></button>`).join('');
