@@ -754,7 +754,8 @@
     function demo(){
       if(!ready()||state.locked||!view)return;if(demoActive){cancel();hint(buildHint());return;}
       stopGesture();setLook(false);demoSavedView={...view,basis:{...view.basis}};viewport.reset(view);renderView();demoActive=true;demoParts=[];document.getElementById('show-me').setAttribute('aria-pressed','true');
-      const sample=(pose().category==='cars'?pose().parts.slice(0,3):['chest','head','upper_arm_L'].map(id=>pose().parts.find(p=>p.id===id))).filter(Boolean);let step=0;
+      const namedParts=['chest','head','upper_arm_L'].map(id=>pose().parts.find(p=>p.id===id)).filter(Boolean);
+      const sample=namedParts.length?namedParts:pose().parts.slice(0,3);let step=0;
       const next=()=>{
         if(!active||!demoActive)return;
         if(step===sample.length){cancel();hint(buildHint());return;}
