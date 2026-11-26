@@ -110,37 +110,60 @@
     let keyboard=false,cursor=null,canvasFrame=0,view=null,pendingLayout=false,grid=false;
     const touches=new Map(),masks=new Map();
     let demoSavedView=null,picture=null,groupMode=false,editRevision=0,saveSerial=0,clipboard=null,selectionStroke=null,rectangleIds=[];
-    const variant=$('variant');
-    const modelDetails=document.createElement('details');
-    modelDetails.id='robot-variant-menu';
-    modelDetails.innerHTML='<summary aria-label="Machine model"></summary><div id="robot-variant-options" role="group" aria-label="Robot choices"></div>';
-    variant.hidden=true;
-    variant.after(modelDetails);
-    const modelSummary=modelDetails.querySelector('summary'),modelOptions=$('variant-options');
-    function syncModelMenu(){
-      modelSummary.textContent=variant.selectedOptions[0]?.text||'Machine model';
-      modelSummary.setAttribute('aria-label','Machine model: '+modelSummary.textContent);
-      modelDetails.open=false;
-      modelOptions.replaceChildren(...Array.from(variant.options,option=>{
-        const button=document.createElement('button');
-        button.type='button';
-        button.textContent=option.text;
-        button.disabled=option.disabled;
-        button.setAttribute('aria-current',String(option.selected));
-        button.addEventListener('click',()=>{
-          variant.value=option.value;
-          variant.dispatchEvent(new Event('change'));
-          syncModelMenu();
-          modelSummary.focus({preventScroll:true});
-        });
-        return button;
-      }));
-    }
-    modelSummary.addEventListener('click',event=>{if(state.locked||demoActive||variant.disabled)event.preventDefault();});
-    document.addEventListener('click',event=>{if(modelDetails.open&&!modelDetails.contains(event.target))modelDetails.open=false;});
-    modelDetails.addEventListener('keydown',event=>{
-      if(event.key==='Escape'&&modelDetails.open){event.stopPropagation();modelDetails.open=false;modelSummary.focus();}
+    const menus=Array.from(room.querySelectorAll('select'),select=>{
+      const details=document.createElement('details');
+      details.className='robot-picker';
+      details.id=select.id+'-menu';
+      const summary=document.createElement('summary');
+      const options=document.createElement('div');
+      const label=select.getAttribute('aria-label').split(' · ')[0];
+      options.id=select.id+'-options';
+      options.className='robot-picker-options';
+      options.setAttribute('role','group');
+      options.setAttribute('aria-label',label+' choices');
+      details.append(summary,options);
+      select.hidden=true;
+      select.after(details);
+      function sync(){
+        summary.textContent=select.selectedOptions[0]?.text||label;
+        summary.setAttribute('aria-label',label+': '+summary.textContent);
+        summary.setAttribute('aria-disabled',String(select.disabled));
+      }
+      summary.addEventListener('click',event=>{
+        if(select.disabled||state.locked||demoActive){event.preventDefault();return;}
+        if(details.open)return;
+        const rect=summary.getBoundingClientRect(),bounds=room.getBoundingClientRect();
+        const below=Math.min(innerHeight,bounds.bottom)-rect.bottom-3;
+        const above=rect.top-Math.max(0,bounds.top)-3;
+        const opensUp=below<180&&above>below;
+        details.classList.toggle('opens-up',opensUp);
+        options.style.maxHeight=Math.max(0,Math.min(180,opensUp?above:below))+'px';
+        options.replaceChildren(...Array.from(select.options,option=>{
+          const button=document.createElement('button');
+          button.type='button';
+          button.textContent=option.text;
+          button.disabled=option.disabled;
+          button.setAttribute('aria-current',String(option.selected));
+          button.addEventListener('click',()=>{
+            select.value=option.value;
+            select.dispatchEvent(new Event('change',{bubbles:true}));
+            sync();
+            details.open=false;
+            summary.focus({preventScroll:true});
+          });
+          return button;
+        }));
+      });
+      select.addEventListener('change',()=>queueMicrotask(sync));
+      details.addEventListener('keydown',event=>{
+        if(event.key==='Escape'&&details.open){event.stopPropagation();details.open=false;summary.focus();}
+      });
+      return {details,sync};
     });
+    document.addEventListener('click',event=>{
+      for(const {details} of menus)if(details.open&&!details.contains(event.target))details.open=false;
+    });
+    window.addEventListener('resize',()=>{for(const {details} of menus)details.open=false;});
     const pose=()=>storeModel,ready=()=>active&&state.age===5&&!!storeModel;
     const displayScale=part=>{
       const base=part.storeScale||1;
@@ -220,10 +243,11 @@
       $('zoom-level').disabled=viewControlsDisabled;
       $('view-fit').disabled=!ready()||!view||demoActive||!!pointer;
       for(const id of ['part-axis','part-original','rotate-left','rotate-right'])$(id).disabled=!editable;
+      for(const menu of menus)menu.sync();
       $('grid').setAttribute('aria-pressed',String(grid));$('grid').disabled=state.locked||demoActive;
     }
     function renderShelf(){
-      if(!modelDetails.open)syncModelMenu();
+      for(const menu of menus)menu.sync();
       page=Math.min(page,pageCount()-1);const range=pageRange();room.dataset.pageSize=range.size;
       const parts=ready()?[...pose().parts].sort((a,b)=>shelfIndex(a)-shelfIndex(b)).slice(range.start,range.end):[];
       $('parts').innerHTML=parts.map(part=>`<button type="button" data-robot-part="${part.id}" aria-label="${esc(part.name)}" aria-pressed="${storePick===part}" ${state.locked||look||groupMode||demoActive?'disabled':''}><img src="${part.asset}" alt="" draggable="false"><span>${esc(part.name)}</span></button>`).join('');
@@ -667,7 +691,7 @@
       variant.value=storeModel?.id||'';
     }
     function configureAge(age){
-      const enabled=Number(age)===5,category=$('category'),variant=$('variant');$('store').disabled=!enabled;
+      const enabled=Number(age)===5,category=$('category'),variant=$('variant');$('store').disabled=!enabled;variant.disabled=!enabled;
       if(!enabled){storeModel=null;category.innerHTML='<option value="">No models for this age yet</option>';category.value='';category.disabled=true;variant.innerHTML='<option value="">No models for this age yet</option>';variant.value='';variant.disabled=true;return;}
       const previous=storeModel;
       category.innerHTML=['robots','cars','ships','planes','rockets'].map(key=>{const present=availableModels.some(item=>(item.category||'robots')===key);return '<option value="'+key+'" '+(present?'':'disabled')+'>'+key[0].toUpperCase()+key.slice(1)+(present?'':' — later')+'</option>';}).join('');
