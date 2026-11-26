@@ -218,3 +218,11 @@
   #robot-machines-room #robot-parts { grid-row:3 }
   #robot-machines-room .robot-pages { grid-row:4 }
 }
+
+/* Keep the Stores category and its arrow together. */
+#robot-machines-room #robot-category-menu summary {
+  white-space:nowrap; overflow-wrap:normal; padding-inline:4px; gap:2px;
+}
+@container (min-width:341px) and (max-width:520px) {
+  #robot-machines-room .robot-stores .robot-heading h2 { font-size:clamp(13px,3.2cqw,17px) }
+}
