@@ -184,8 +184,19 @@
 }
 
 /* v2.77 shared dropdown and text-tab appearance, including immersive play. */
-#app :is(select,select option,.mode-button,.levels .level,.age-radio,[role="tab"],.glossy-category-tab,.glossy-category-menu button,.glossy-inventory-tab,.glossy-palette>summary,#robot-variant-menu summary,#robot-variant-options button,#play-settings>summary){font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;font-weight:400!important;color:#173e35!important;background-color:#fff!important}
+#app :is(select,select option,.mode-button,.levels .level,.age-radio,[role="tab"],.glossy-category-tab,.glossy-category-menu button,.glossy-inventory-tab,.glossy-palette>summary,#robot-machines-room .robot-picker summary,#robot-machines-room .robot-picker-options button,#play-settings>summary){font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;font-weight:800!important;color:#173e35!important;background-color:#fff!important}
 #app :is(select,.mode-button,.levels .level,[role="tab"],.glossy-category-tab,#robot-variant-menu summary){max-width:100%;min-width:0;box-sizing:border-box}
 #app :is(#robot-variant-menu summary,#robot-variant-options button,.glossy-category-menu button){white-space:normal;overflow-wrap:anywhere}
-#app #robot-variant-options,#app .glossy-category-menu,#app #glossy-category-name{background-color:#fff!important;font-weight:400!important}
+#app #robot-variant-options,#app .glossy-category-menu,#app #glossy-category-name{background-color:#fff!important;font-weight:800!important}
 #app :is(.mode-button,.levels .level,[role="tab"],.glossy-category-menu button,#robot-variant-options button):is([aria-pressed="true"],[aria-selected="true"],[aria-current="true"],.active){outline:1px solid #527e62;outline-offset:-2px}
+
+/* Match text-bearing Stores and Assemble controls across portrait and landscape. */
+#app #robot-machines-room :is(.robot-picker summary,.robot-picker-options button,.robot-edit-tools label,.robot-assemble-title output),
+#app #robot-machines-room .robot-toolbar .robot-tool-row button:not(:is(#robot-rotate-left,#robot-rotate-right,#robot-zoom-out,#robot-zoom-in)) {
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;
+  font-weight:800!important;
+}
+#app #robot-machines-room :is(.robot-picker summary,.robot-picker-options button,.robot-edit-tools label,.robot-assemble-title output) {
+  font-size:12px!important;
+  line-height:1.2;
+}
