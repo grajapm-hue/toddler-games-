@@ -297,7 +297,7 @@
     function renderBoard(){
       svg.dataset.assembly=JSON.stringify(state.placed);
       svg.dataset.canvasBounds=JSON.stringify(view?viewport.rect(view):referenceBounds);
-      svg.innerHTML=look?pose().parts.map(part=>pieceImage(part,{x:part.x+(referenceBounds.width-pose().width)/2,y:part.y+(referenceBounds.height-pose().height)/2,baseScale:1},'pointer-events="none" aria-hidden="true"')).join(''):Object.values(state.placed).sort((a,b)=>Number(b.part.id.startsWith('connector-'))-Number(a.part.id.startsWith('connector-'))).map(at=>pieceImage(at.part,at,`data-robot-placed="${at.id}" class="${selected===at.id?'robot-selected':''}" aria-label="${esc(at.part.name)}"`)).join('');
+      svg.innerHTML=look&&pose()?pose().parts.map(part=>pieceImage(part,{x:part.x+(referenceBounds.width-pose().width)/2,y:part.y+(referenceBounds.height-pose().height)/2,baseScale:1},'pointer-events="none" aria-hidden="true"')).join(''):Object.values(state.placed).sort((a,b)=>Number(b.part.id.startsWith('connector-'))-Number(a.part.id.startsWith('connector-'))).map(at=>pieceImage(at.part,at,`data-robot-placed="${at.id}" class="${selected===at.id?'robot-selected':''}" aria-label="${esc(at.part.name)}"`)).join('');
       renderGrid();renderStroke();
       const at=selectedPart(),preview=storePick||at?.part;
       if(keyboard&&preview&&!look){
@@ -660,7 +660,11 @@
       updateReference();
     }
     function updateReference(){
-      if(!pose())return;
+      if(!pose()){
+        $('reference').removeAttribute('src');
+        $('reference').alt='Completed machine reference';
+        return;
+      }
       $('reference').src=pose().reference||'';
       $('reference').alt=`${pose().label} reference`;
       pose().parts.forEach(warmMask);
@@ -800,6 +804,7 @@
       };next();
     }
     function start(age){
+      look=false;
       cancel();active=true;groupMode=false;app?.classList.add('robot-active');state=create(age);configureAge(age);room.hidden=false;
       $('age-note').hidden=true;room.querySelector('.robot-workspace').hidden=false;reset();
       if(ready())hint(buildHint());
