@@ -156,7 +156,7 @@
     shade.dataset.guideFor=game==='abacus'?({2:'count-apples',3:'count-carrots',4:'count-train',5:'count-beads'}[age]||'count-beads'):game;shade.dataset.guideMode=game==='brush'?(paint?'paint':'clean'):'';
     document.getElementById('guide-title').textContent='How to Play · '+titles[game];
     const lead=document.createElement('p');lead.className='guide-lead';lead.textContent=game==='home'?'Play together at your child’s pace. These notes match the controls on this page.':'Follow these steps together. The pictures below show the controls in this game.';body.append(lead);
-    if(game==='machines')lead.textContent=age===5?'Build and customize a robot or car together.':'Choose age 5 to build and customize a robot or car together.';
+    if(game==='machines')lead.textContent=age===5?'Build and customize robots together.':age===4?'Build and customize Robotic Giraffe together.':'Explore the Stores menus. Assembly models for this age are coming later.';
     if(game==='home'){common(body,true);return;}
     const notes=list(body);
     if(game==='drag'){

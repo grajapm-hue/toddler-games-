@@ -165,7 +165,7 @@
       for(const {details} of menus)if(details.open&&!details.contains(event.target))details.open=false;
     });
     window.addEventListener('resize',()=>{for(const {details} of menus)details.open=false;});
-    const pose=()=>storeModel,ready=()=>active&&state.age===5&&!!storeModel;
+    const pose=()=>storeModel,ready=()=>active&&!!storeModel;
     const displayScale=part=>{
       const base=part.storeScale||1;
       if(!part||!/(^|[_ -])head($|[_ -])/i.test(`${part.id} ${part.name}`)||!pose()?.parts)return base;
@@ -232,7 +232,8 @@
       $('clear').disabled=state.locked||!count||demoActive||!!pointer;
       $('snapshot').disabled=!canSave();
       $('snapshot').textContent=picture?.pending?'Preparing…':'Save';$('view-fit').textContent='Fit';$('view-fit').setAttribute('title','Fit current assembly to canvas without changing parts');
-      $('category').disabled=$('store').disabled=$('variant').disabled=$('look').disabled=!ready()||state.locked||demoActive;
+      $('category').disabled=$('store').disabled=$('variant').disabled=state.locked||demoActive;
+      $('look').disabled=!ready()||state.locked||demoActive;
       const at=selectedPart(),multi=rectangleParts().length>0,editable=!!at&&!pointer&&!multi,s=shapeOf(at),axis=$('part-axis').value,scales=axis==='both'?[s.widthScale,s.heightScale]:[axis==='width'?s.widthScale:s.heightScale];
       $('zoom-level').textContent=multi?`${Math.round(shapeOf(rectangleParts()[0]).widthScale*100)}%`:at?(axis==='both'&&s.widthScale!==s.heightScale?`${Math.round(s.widthScale*100)}×${Math.round(s.heightScale*100)}%`:`${Math.round(scales[0]*100)}%`):`${Math.round((view?.zoom||1)*100)}%`;
       $('zoom-level').setAttribute('aria-label',at?'Reset selected dimension to 100 percent':'Reset canvas to reference 100 percent');
@@ -676,27 +677,37 @@
       setLook(false);
       hint(`Pick a ${pose().label.toLowerCase()} part. ${buildHint()}`);
     });
-    // Only the finished age-five robot artwork is available in this trial.
-    const availableModels=Object.values(catalogue.poses).filter(item=>item.age==null||item.age===5);
+    const allModels=Object.values(catalogue.poses);
+    let availableModels=[];
     const specialIds=['shiny-bot-combo','dino-space-rover'];
     const regularModels=category=>availableModels.filter(item=>(item.category||'robots')===category&&!specialIds.includes(item.id));
     function refreshStoreOptions(){
       const store=$('store');
+      if(state.age!==5){
+        store.innerHTML='<option value="parts">Parts</option><option value="connectors" disabled>Connectors — later</option>';
+        return;
+      }
       store.innerHTML='<option value="parts">Parts</option><option value="connectors">Connectors</option>'+($('category').value==='robots'?specialIds.filter(id=>availableModels.includes(catalogue.poses[id])).map(id=>'<option value="'+esc(id)+'">'+esc(catalogue.poses[id].label)+'</option>').join(''):'');
     }
     function selectStore(preferred){
       const key=$('store').value,variant=$('variant');
       const models=key==='connectors'?[connectorPose]:specialIds.includes(key)?[catalogue.poses[key]]:regularModels($('category').value);
       storeModel=models.find(item=>item.id===preferred)||models[0]||null;
-      variant.innerHTML=models.map(item=>'<option value="'+esc(item.id)+'">'+esc(item.label)+'</option>').join('');
+      variant.innerHTML=models.length?models.map(item=>'<option value="'+esc(item.id)+'">'+esc(item.label)+'</option>').join(''):'<option value="" disabled>No models yet</option>';
       variant.value=storeModel?.id||'';
     }
     function configureAge(age){
-      const enabled=Number(age)===5,category=$('category'),variant=$('variant');$('store').disabled=!enabled;variant.disabled=!enabled;
-      if(!enabled){storeModel=null;category.innerHTML='<option value="">No models for this age yet</option>';category.value='';category.disabled=true;variant.innerHTML='<option value="">No models for this age yet</option>';variant.value='';variant.disabled=true;return;}
-      const previous=storeModel;
-      category.innerHTML=['robots','cars','ships','planes','rockets'].map(key=>{const present=availableModels.some(item=>(item.category||'robots')===key);return '<option value="'+key+'" '+(present?'':'disabled')+'>'+key[0].toUpperCase()+key.slice(1)+(present?'':' — later')+'</option>';}).join('');
-      category.value=previous?.category==='connectors'?'robots':previous?.category||'robots';category.disabled=false;
+      const category=$('category'),variant=$('variant');
+      availableModels=allModels.filter(item=>(item.age??5)===Number(age));
+      const previous=storeModel&&availableModels.includes(storeModel)?storeModel:state.age===5&&storeModel===connectorPose?storeModel:null;
+      category.innerHTML=['robots','cars','ships','planes','rockets'].map(key=>{
+        const present=availableModels.some(item=>(item.category||'robots')===key);
+        return '<option value="'+key+'" '+(present||key==='robots'?'':'disabled')+'>'+key[0].toUpperCase()+key.slice(1)+(present||key==='robots'?'':' — later')+'</option>';
+      }).join('');
+      category.value=previous?.category==='connectors'?'robots':previous?.category||'robots';
+      category.disabled=false;
+      $('store').disabled=false;
+      variant.disabled=false;
       refreshStoreOptions();$('store').value=previous?.id==='connectors'?'connectors':specialIds.includes(previous?.id)?previous.id:'parts';
       selectStore(previous?.id);
     }
@@ -789,10 +800,10 @@
       };next();
     }
     function start(age){
-      cancel();active=true;groupMode=false;app?.classList.add('robot-active');configureAge(age);state=create(age);room.hidden=false;
-      $('age-note').hidden=ready();room.querySelector('.robot-workspace').hidden=!ready();reset();
+      cancel();active=true;groupMode=false;app?.classList.add('robot-active');state=create(age);configureAge(age);room.hidden=false;
+      $('age-note').hidden=true;room.querySelector('.robot-workspace').hidden=false;reset();
       if(ready())hint(buildHint());
-      else hint('Choose age 5 for the machine assembly trial.');
+      else hint('More models are coming for this age.');
     }
     function leave(){cancel();active=false;room.hidden=true;app?.classList.remove('robot-active');}
     window.addEventListener('blur',cancel);window.addEventListener('pagehide',cancel);window.addEventListener('orientationchange',cancelPointer);
