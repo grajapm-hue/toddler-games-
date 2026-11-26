@@ -653,37 +653,37 @@
     });
     // Only the finished age-five robot artwork is available in this trial.
     const availableModels=Object.values(catalogue.poses).filter(item=>item.age==null||item.age===5);
+    const specialIds=['shiny-bot-combo','dino-space-rover'];
+    const regularModels=category=>availableModels.filter(item=>(item.category||'robots')===category&&!specialIds.includes(item.id));
+    function refreshStoreOptions(){
+      const store=$('store');
+      store.innerHTML='<option value="parts">Parts</option><option value="connectors">Connectors</option>'+($('category').value==='robots'?specialIds.filter(id=>availableModels.includes(catalogue.poses[id])).map(id=>'<option value="'+esc(id)+'">'+esc(catalogue.poses[id].label)+'</option>').join(''):'');
+    }
+    function selectStore(preferred){
+      const key=$('store').value,variant=$('variant');
+      const models=key==='connectors'?[connectorPose]:specialIds.includes(key)?[catalogue.poses[key]]:regularModels($('category').value);
+      storeModel=models.find(item=>item.id===preferred)||models[0]||null;
+      variant.innerHTML=models.map(item=>'<option value="'+esc(item.id)+'">'+esc(item.label)+'</option>').join('');
+      variant.value=storeModel?.id||'';
+    }
     function configureAge(age){
-      const enabled=Number(age)===5,category=$('category'),variant=$('variant');$('store').value='parts';$('store').disabled=!enabled;
+      const enabled=Number(age)===5,category=$('category'),variant=$('variant');$('store').disabled=!enabled;
       if(!enabled){storeModel=null;category.innerHTML='<option value="">No models for this age yet</option>';category.value='';category.disabled=true;variant.innerHTML='<option value="">No models for this age yet</option>';variant.value='';variant.disabled=true;return;}
-      category.innerHTML=['robots','cars','ships','planes','rockets'].map(key=>{const present=availableModels.some(item=>(item.category||'robots')===key);return '<option value="'+key+'" '+(present?'':'disabled')+'>'+key[0].toUpperCase()+key.slice(1)+(present?'':' — later')+'</option>';}).join('');category.value=(storeModel?.category||'robots');category.disabled=false;
-      variant.innerHTML=availableModels.filter(item=>(item.category||'robots')===category.value).map(item=>'<option value="'+esc(item.id)+'">'+esc(item.label)+'</option>').join('');
-      storeModel=storeModel||availableModels.find(item=>item.age===5)||availableModels[0];
-      variant.innerHTML=availableModels.filter(item=>(item.category||'robots')===category.value).map(item=>'<option value="'+esc(item.id)+'">'+esc(item.label)+'</option>').join('');variant.value=storeModel?.id||'';
+      const previous=storeModel;
+      category.innerHTML=['robots','cars','ships','planes','rockets'].map(key=>{const present=availableModels.some(item=>(item.category||'robots')===key);return '<option value="'+key+'" '+(present?'':'disabled')+'>'+key[0].toUpperCase()+key.slice(1)+(present?'':' — later')+'</option>';}).join('');
+      category.value=previous?.category==='connectors'?'robots':previous?.category||'robots';category.disabled=false;
+      refreshStoreOptions();$('store').value=previous?.id==='connectors'?'connectors':specialIds.includes(previous?.id)?previous.id:'parts';
+      selectStore(previous?.id);
     }
     $('store').addEventListener('change',()=>{
       if(state.locked||demoActive)return;
-      cancel();deselect();page=0;
-      if($('store').value==='connectors'){
-        storeModel=connectorPose;
-        $('variant').innerHTML='<option value="connectors">Flexible connectors</option>';
-        $('variant').value='connectors';
-      }else{
-        const models=availableModels.filter(item=>(item.category||'robots')===$('category').value);
-        storeModel=models[0]||availableModels[0];
-        $('variant').innerHTML=models.map(item=>'<option value="'+esc(item.id)+'">'+esc(item.label)+'</option>').join('');
-        $('variant').value=storeModel.id;
-      }
+      cancel();deselect();page=0;selectStore();
       updateReference();setLook(false);hint('Choose a part from this store.');
     });
     $('category').addEventListener('change',()=>{
       if(state.locked||demoActive)return;
-      $('store').value='parts';
-      const models=$('store').value==='connectors'?[connectorPose]:availableModels.filter(item=>(item.category||'robots')===$('category').value);
-      if(!models.length)return;
-      cancel();deselect();storeModel=models[0];page=0;
-      $('variant').innerHTML=models.map(item=>'<option value="'+esc(item.id)+'">'+esc(item.label)+'</option>').join('');
-      $('variant').value=storeModel.id;updateReference();setLook(false);hint(buildHint());
+      cancel();deselect();page=0;refreshStoreOptions();$('store').value='parts';selectStore();
+      updateReference();setLook(false);hint(buildHint());
     });
     $('clear').addEventListener('click',()=>{
       if(state.locked||demoActive||pointer)return;
