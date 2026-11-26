@@ -182,3 +182,10 @@
  #app #robot-machines-room .robot-toolbar .robot-tool-row button:is(#robot-zoom-out,#robot-zoom-in){width:30px!important;min-width:30px!important}
  #app #robot-machines-room .robot-toolbar .robot-tool-row #robot-zoom-level{width:32px!important;min-width:32px!important;padding-inline:0!important}
 }
+
+/* v2.77 shared dropdown and text-tab appearance, including immersive play. */
+#app :is(select,select option,.mode-button,.levels .level,.age-radio,[role="tab"],.glossy-category-tab,.glossy-category-menu button,.glossy-inventory-tab,.glossy-palette>summary,#robot-variant-menu summary,#robot-variant-options button,#play-settings>summary){font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;font-weight:400!important;color:#173e35!important;background-color:#fff!important}
+#app :is(select,.mode-button,.levels .level,[role="tab"],.glossy-category-tab,#robot-variant-menu summary){max-width:100%;min-width:0;box-sizing:border-box}
+#app :is(#robot-variant-menu summary,#robot-variant-options button,.glossy-category-menu button){white-space:normal;overflow-wrap:anywhere}
+#app #robot-variant-options,#app .glossy-category-menu,#app #glossy-category-name{background-color:#fff!important;font-weight:400!important}
+#app :is(.mode-button,.levels .level,[role="tab"],.glossy-category-menu button,#robot-variant-options button):is([aria-pressed="true"],[aria-selected="true"],[aria-current="true"],.active){outline:1px solid #527e62;outline-offset:-2px}
