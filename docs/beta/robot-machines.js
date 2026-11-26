@@ -135,9 +135,10 @@
         const rect=summary.getBoundingClientRect(),bounds=room.getBoundingClientRect();
         const below=Math.min(innerHeight,bounds.bottom)-rect.bottom-3;
         const above=rect.top-Math.max(0,bounds.top)-3;
-        const opensUp=below<180&&above>below;
+        const heightLimit=select.id==='robot-category'?select.options.length*48+2:180;
+        const opensUp=below<heightLimit&&above>below;
         details.classList.toggle('opens-up',opensUp);
-        options.style.maxHeight=Math.max(0,Math.min(180,opensUp?above:below))+'px';
+        options.style.maxHeight=Math.max(0,Math.min(heightLimit,opensUp?above:below))+'px';
         options.replaceChildren(...Array.from(select.options,option=>{
           const button=document.createElement('button');
           button.type='button';
