@@ -683,7 +683,7 @@
     });
     const allModels=Object.values(catalogue.poses);
     let availableModels=[];
-    const specialIds=['shiny-bot-combo','dino-space-rover'];
+    const specialIds=['shiny-bot-combo','dino-space-rover','robot-leg'];
     const regularModels=category=>availableModels.filter(item=>(item.category||'robots')===category&&!specialIds.includes(item.id));
     function refreshStoreOptions(){
       const store=$('store');
@@ -695,6 +695,7 @@
     }
     function selectStore(preferred){
       const key=$('store').value,variant=$('variant');
+      variant.closest('.robot-variant-label').hidden=key==='robot-leg';
       const models=key==='connectors'?[connectorPose]:specialIds.includes(key)?[catalogue.poses[key]]:regularModels($('category').value);
       storeModel=models.find(item=>item.id===preferred)||models[0]||null;
       variant.innerHTML=models.length?models.map(item=>'<option value="'+esc(item.id)+'">'+esc(item.label)+'</option>').join(''):'<option value="" disabled>No models yet</option>';
