@@ -177,7 +177,7 @@
     };
     const shelfOrder=new Map(['head','chest','waist','hip','upper_arm_L','upper_arm_R','forearm_L','forearm_R','hand_L','hand_R','thigh_L','thigh_R','shin_L','shin_R','foot_L','foot_R'].map((id,index)=>[id,index]));
     const shelfIndex=part=>shelfOrder.get(part.id)??shelfOrder.size;
-    const pageCapacity=()=>window.matchMedia('(max-height:650px) and (max-width:360px) and (orientation:portrait)').matches?3:6;
+    const pageCapacity=()=>pose()?.category==='cars'&&window.matchMedia('(orientation:portrait), (max-height:460px)').matches?2:window.matchMedia('(max-height:650px) and (max-width:360px) and (orientation:portrait)').matches?3:6;
     const pageCount=()=>ready()?Math.max(1,Math.ceil(pose().parts.length/pageCapacity())):1;
     const pageRange=()=>{const total=ready()?pose().parts.length:0,pages=pageCount(),base=Math.floor(total/pages),extra=total%pages,start=page*base+Math.min(page,extra);return{start,end:start+base+(page<extra?1:0),size:base+(page<extra?1:0)};};
     const partCount=()=>Object.keys(state.placed).length;
@@ -252,7 +252,7 @@
       for(const menu of menus)menu.sync();
       page=Math.min(page,pageCount()-1);const range=pageRange();room.dataset.pageSize=range.size;
       const parts=ready()?[...pose().parts].sort((a,b)=>shelfIndex(a)-shelfIndex(b)).slice(range.start,range.end):[];
-      $('parts').innerHTML=parts.map(part=>`<button type="button" data-robot-part="${part.id}" aria-label="${esc(part.name)}" aria-pressed="${storePick===part}" ${state.locked||look||groupMode||demoActive?'disabled':''}><img src="${part.asset}" alt="" draggable="false"><span>${esc(part.name)}</span></button>`).join('');
+      $('parts').innerHTML=parts.map(part=>`<button type="button" data-robot-part="${part.id}" aria-label="${esc(part.name)}" aria-pressed="${storePick===part}" ${state.locked||look||groupMode||demoActive?'disabled':''}><div class="robot-part-preview"><img src="${part.asset}" alt="" draggable="false"></div><span>${esc(part.name)}</span></button>`).join('');
       $('page-label').textContent=`${page+1} / ${pageCount()}`;$('previous-page').disabled=state.locked||page===0;$('next-page').disabled=state.locked||page===pageCount()-1;
       sizeShelfParts();
     }
@@ -708,7 +708,7 @@
         const present=availableModels.some(item=>(item.category||'robots')===key);
         return '<option value="'+key+'" '+(present||key==='robots'?'':'disabled')+'>'+key[0].toUpperCase()+key.slice(1)+(present||key==='robots'?'':' — later')+'</option>';
       }).join('');
-      category.value=previous?.category==='connectors'?'robots':previous?.category||'robots';
+      category.value=previous?.category==='connectors'?'robots':previous?.category||availableModels[0]?.category||'robots';
       category.disabled=false;
       $('store').disabled=false;
       variant.disabled=false;
