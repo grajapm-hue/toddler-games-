@@ -235,3 +235,9 @@
   width:100%!important; max-width:100%!important; min-width:0!important; white-space:normal!important; overflow-wrap:anywhere;
   margin:0; height:auto!important; min-height:30px!important; max-height:none!important; padding:4px 5px!important; line-height:1.2;
 }
+
+/* Selection precision controls appear while editing parts. */
+#robot-machines-room .robot-precision-tools{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:4px}
+#robot-machines-room .robot-precision-group{display:flex;align-items:center;gap:3px;white-space:nowrap}
+#robot-machines-room .robot-precision-group .soft-button{min-width:30px;min-height:30px;padding:2px 6px;font-size:12px}
+#robot-machines-room .robot-precision-group output{min-width:62px;text-align:center;font:700 12px system-ui}
