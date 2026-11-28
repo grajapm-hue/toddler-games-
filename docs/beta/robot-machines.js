@@ -714,8 +714,37 @@
       }
       finishTransform(before);
     }
-    $('turn-minus').addEventListener('click',()=>turnSelection(-1));
-    $('turn-plus').addEventListener('click',()=>turnSelection(1));
+    // Tap and keyboard activation use the normal click path. A held pointer
+    // repeats that same one-degree edit and consumes the release click.
+    for(const [id,step] of [['turn-minus',-1],['turn-plus',1]]){
+      const button=$(id);
+      let heldPointer=null,timer=0,repeated=false;
+      function stop(event){
+        if(event?.pointerId!=null&&event.pointerId!==heldPointer)return;
+        clearTimeout(timer);timer=0;heldPointer=null;
+      }
+      function repeat(){
+        if(heldPointer===null||button.disabled){stop();return;}
+        repeated=true;turnSelection(step);
+        timer=setTimeout(repeat,80);
+      }
+      button.addEventListener('pointerdown',event=>{
+        if(!event.isPrimary||event.button!==0||button.disabled)return;
+        stop();repeated=false;heldPointer=event.pointerId;
+        button.setPointerCapture(event.pointerId);
+        timer=setTimeout(repeat,350);
+      });
+      for(const event of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(event,stop);
+      button.addEventListener('contextmenu',event=>event.preventDefault());
+      window.addEventListener('blur',()=>stop());
+      window.addEventListener('pagehide',()=>stop());
+      document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});
+      button.addEventListener('click',event=>{
+        if(repeated&&event.detail>0){repeated=false;return;}
+        turnSelection(step);
+      });
+      button.title='Tap for 1°. Hold to keep turning.';
+    }
     $('transform-undo').addEventListener('click',()=>stepTransformHistory(transformUndo,transformRedo,'after','before'));
     $('transform-redo').addEventListener('click',()=>stepTransformHistory(transformRedo,transformUndo,'before','after'));
     $('part-mirror').addEventListener('click',()=>{
