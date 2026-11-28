@@ -243,3 +243,9 @@
 #robot-machines-room .robot-precision-group output{min-width:62px;text-align:center;font:700 12px system-ui}
 
 #robot-machines-room :is(#robot-turn-minus,#robot-turn-plus){touch-action:none;user-select:none;-webkit-touch-callout:none}
+
+#robot-machines-room .robot-layer-options{display:flex;flex-direction:column;width:min(190px,60vw);overflow:hidden}
+#robot-machines-room .robot-layers:not([open]) .robot-layer-options{display:none}
+#robot-layer-choices{min-height:0;overflow:auto;overscroll-behavior:contain}
+#robot-machines-room #robot-layer-choices button[aria-pressed="true"]{background:#dff2e5;box-shadow:inset 3px 0 #38865a}
+#robot-machines-room #robot-bring-front{flex:none;border-top:1px solid #729c85;background:#e8f5e9}

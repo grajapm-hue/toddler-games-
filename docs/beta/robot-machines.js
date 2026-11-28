@@ -22,6 +22,9 @@
 
   const normalizeAngle=degrees=>((degrees%360)+360)%360;
   const partCenter=at=>({x:at.x+at.part.width/2,y:at.y+at.part.height/2});
+  const isConnector=part=>part.id.startsWith('connector-');
+  const layerRank=at=>at.layer??(isConnector(at.part)?0:Number(at.id));
+  const placedByLayer=state=>Object.values(state.placed).sort((a,b)=>layerRank(a)-layerRank(b));
   function partBounds(part,at){
     const shape=shapeOf(at),angle=shape.angle*Math.PI/180;
     const c=Math.abs(Math.cos(angle)),s=Math.abs(Math.sin(angle));
@@ -43,6 +46,7 @@
     if(state.locked||!part||![center.x,center.y].every(Number.isFinite))return null;
     const id=String(state.nextId++);
     state.placed[id]={id,part,x:center.x-part.width/2,y:center.y-part.height/2,baseScale:part.assemblyScale||part.storeScale||1};
+    if(state.frontLayer&&!isConnector(part))state.placed[id].layer=++state.frontLayer;
     return id;
   }
 
@@ -100,7 +104,7 @@
           <div class="robot-toolbar" role="group" aria-label="Assembly tools">
             <div class="robot-tool-row robot-heading robot-control-heading"><button id="robot-look" type="button" class="soft-button" aria-pressed="false">Look</button><select id="robot-part-axis" aria-label="Part dimension"><option value="both">Both</option><option value="width">Width</option><option value="height">Height</option></select><button id="robot-rotate-left" class="soft-button" type="button" aria-label="Rotate selected part counterclockwise 45 degrees">↶</button><button id="robot-rotate-right" class="soft-button" type="button" aria-label="Rotate selected part clockwise 45 degrees">↷</button><button id="robot-copy" type="button" class="soft-button" disabled>Copy</button><button id="robot-paste" type="button" class="soft-button" disabled>Paste</button><button id="robot-remove" type="button" class="soft-button" aria-label="Remove" title="Remove selected part" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><span>Remove</span></button><button id="robot-clear" type="button" class="soft-button" disabled>Clear</button></div>
             <div class="robot-tool-row robot-view-tools"><button id="robot-zoom-out" class="soft-button" type="button" aria-label="Zoom out">−</button><button id="robot-zoom-level" class="soft-button" type="button" aria-label="Reset canvas to reference 100 percent">100%</button><button id="robot-zoom-in" class="soft-button" type="button" aria-label="Zoom in">+</button><button id="robot-view-fit" class="soft-button" type="button" aria-label="Fit the current assembly within the canvas" title="Fit assembly to screen">Fit</button><button id="robot-grid" class="soft-button" type="button" aria-pressed="false">Grid</button><button id="robot-done" type="button" class="soft-button" disabled>Done</button><button id="robot-snapshot" type="button" class="soft-button" disabled aria-label="Save picture" title="Save picture">Save</button></div>
-            <div class="robot-tool-row robot-edit-tools" role="group" aria-label="Selected part editing"><label class="robot-select-label">Select <select id="robot-selection-mode" aria-label="Selection shape · Rectangle selects all enclosed parts for color, move and resize"><option value="part">Tap part</option><option value="rect">Rectangle</option><option value="oval">Oval / Tube</option><option value="free" aria-label="Free Selection" title="Free Selection · dotted-square boundary">▧</option></select></label><label class="robot-color-label">Color <input id="robot-color" type="color" value="#8c55e9" aria-label="Choose color for selected part"/></label><button id="robot-apply-color" type="button" class="soft-button" title="Apply this color again to the selected part">Apply</button><button id="robot-part-original" class="soft-button" type="button">Original</button><button id="robot-part-mirror" class="soft-button" type="button" aria-label="Mirror selected part horizontally" aria-pressed="false" title="Flip selected part left or right">⇄ Mirror</button></div>
+            <div class="robot-tool-row robot-edit-tools" role="group" aria-label="Selected part editing"><details id="robot-layers" class="robot-picker robot-layers"><summary aria-controls="robot-layer-options">Layers</summary><div id="robot-layer-options" class="robot-picker-options robot-layer-options"><div id="robot-layer-choices" role="group" aria-label="Parts from top to bottom"></div><button id="robot-bring-front" type="button" disabled>Bring to Front</button></div></details><label class="robot-select-label">Select <select id="robot-selection-mode" aria-label="Selection shape · Rectangle selects all enclosed parts for color, move and resize"><option value="part">Tap part</option><option value="rect">Rectangle</option><option value="oval">Oval / Tube</option><option value="free" aria-label="Free Selection" title="Free Selection · dotted-square boundary">▧</option></select></label><label class="robot-color-label">Color <input id="robot-color" type="color" value="#8c55e9" aria-label="Choose color for selected part"/></label><button id="robot-apply-color" type="button" class="soft-button" title="Apply this color again to the selected part">Apply</button><button id="robot-part-original" class="soft-button" type="button">Original</button><button id="robot-part-mirror" class="soft-button" type="button" aria-label="Mirror selected part horizontally" aria-pressed="false" title="Flip selected part left or right">⇄ Mirror</button></div>
             <div id="robot-precision-tools" class="robot-precision-tools" role="group" aria-label="Precision transforms" hidden>
               <div id="robot-turn-controls" class="robot-precision-group">
                 <button id="robot-turn-minus" type="button" class="soft-button" aria-label="Rotate selection counterclockwise by one degree">−</button>
@@ -124,6 +128,15 @@
     let keyboard=false,cursor=null,canvasFrame=0,view=null,pendingLayout=false,grid=false;
     const touches=new Map(),masks=new Map();
     let demoSavedView=null,picture=null,groupMode=false,editRevision=0,saveSerial=0,clipboard=null,selectionStroke=null,rectangleIds=[];
+    const layers=$('layers'),layerSummary=layers.querySelector('summary'),layerChoices=$('layer-choices'),bringFront=$('bring-front');
+    function sizePicker(details,summary,options,heightLimit){
+      const rect=summary.getBoundingClientRect(),bounds=room.getBoundingClientRect();
+      const below=Math.min(innerHeight,bounds.bottom)-rect.bottom-3;
+      const above=rect.top-Math.max(0,bounds.top)-3;
+      const opensUp=below<heightLimit&&above>below;
+      details.classList.toggle('opens-up',opensUp);
+      options.style.maxHeight=Math.max(0,Math.min(heightLimit,opensUp?above:below))+'px';
+    }
     const menus=Array.from(room.querySelectorAll('select'),select=>{
       const details=document.createElement('details');
       details.className='robot-picker';
@@ -146,13 +159,7 @@
       summary.addEventListener('click',event=>{
         if(select.disabled||state.locked||demoActive){event.preventDefault();return;}
         if(details.open)return;
-        const rect=summary.getBoundingClientRect(),bounds=room.getBoundingClientRect();
-        const below=Math.min(innerHeight,bounds.bottom)-rect.bottom-3;
-        const above=rect.top-Math.max(0,bounds.top)-3;
-        const heightLimit=select.id==='robot-category'?select.options.length*48+2:180;
-        const opensUp=below<heightLimit&&above>below;
-        details.classList.toggle('opens-up',opensUp);
-        options.style.maxHeight=Math.max(0,Math.min(heightLimit,opensUp?above:below))+'px';
+        sizePicker(details,summary,options,select.id==='robot-category'?select.options.length*48+2:180);
         options.replaceChildren(...Array.from(select.options,option=>{
           const button=document.createElement('button');
           button.type='button';
@@ -170,15 +177,16 @@
         }));
       });
       select.addEventListener('change',()=>queueMicrotask(sync));
-      details.addEventListener('keydown',event=>{
-        if(event.key==='Escape'&&details.open){event.stopPropagation();details.open=false;summary.focus();}
-      });
-      return {details,sync};
+      return {details,summary,sync};
+    });
+    const pickers=[...menus,{details:layers,summary:layerSummary}];
+    for(const {details,summary} of pickers)details.addEventListener('keydown',event=>{
+      if(event.key==='Escape'&&details.open){event.stopPropagation();details.open=false;summary.focus();}
     });
     document.addEventListener('click',event=>{
-      for(const {details} of menus)if(details.open&&!details.contains(event.target))details.open=false;
+      for(const {details} of pickers)if(details.open&&!details.contains(event.target))details.open=false;
     });
-    window.addEventListener('resize',()=>{for(const {details} of menus)details.open=false;});
+    window.addEventListener('resize',()=>{for(const {details} of pickers)details.open=false;});
     const pose=()=>storeModel,ready=()=>active&&!!storeModel;
     const displayScale=part=>{
       const base=part.storeScale||1;
@@ -201,7 +209,7 @@
     let rectangleAngle=0;
     const clearRectangle=()=>{rectangleIds=[];selectionStroke=null;rectangleAngle=0;};
     const transformUndo=[],transformRedo=[];
-    const transformKeys=['x','y','widthScale','heightScale','angle','flipX','turnAtFullCircle'];
+    const transformKeys=['x','y','widthScale','heightScale','angle','flipX','turnAtFullCircle','layer'];
     const selectionPose=()=>({key:rectangleIds.join(','),angle:rectangleAngle});
     const captureTransform=parts=>({pose:selectionPose(),parts:parts.map(at=>({at,values:transformKeys.map(key=>at[key])}))});
     function updateRectangleBounds(){
@@ -292,7 +300,16 @@
       dirty();renderBoard();
     }
     const buildHint=()=>partCount()?'Build your way. Tap Done when you’re ready.':'Pick any part from Stores and place it where you like.';
+    function syncLayerSelection(){
+      const at=selectedPart(),top=layerChoices.firstElementChild?.dataset.layerPart;
+      for(const button of layerChoices.children)button.setAttribute('aria-pressed',String(button.dataset.layerPart===at?.id));
+      bringFront.disabled=!at||at.id===top;
+    }
     function syncButtons(){
+      const canChooseLayer=canMoveCanvas()&&!pointer&&!look&&!groupMode&&partCount()>0;
+      layerSummary.setAttribute('aria-disabled',String(!canChooseLayer));
+      if(!canChooseLayer)layers.open=false;
+      if(layers.open)syncLayerSelection();
       const count=partCount();
       $('progress').textContent=state.locked?'Locked':`${count} ${count===1?'part':'parts'}`;
       $('done').disabled=state.locked?false:!canFinish();$('done').textContent=state.locked?'Edit':'Done';$('done').setAttribute('aria-pressed',String(state.locked));$('done').setAttribute('title',state.locked?'Frozen: tap to edit again':'Editing: tap to freeze');$('done').classList.toggle('robot-frozen',state.locked);$('done').classList.toggle('robot-editing',!state.locked);
@@ -374,7 +391,7 @@
     function renderBoard(){
       svg.dataset.assembly=JSON.stringify(state.placed);
       svg.dataset.canvasBounds=JSON.stringify(view?viewport.rect(view):referenceBounds);
-      svg.innerHTML=look&&pose()?pose().parts.map(part=>pieceImage(part,{x:part.x+(referenceBounds.width-pose().width)/2,y:part.y+(referenceBounds.height-pose().height)/2,baseScale:1},'pointer-events="none" aria-hidden="true"')).join(''):Object.values(state.placed).sort((a,b)=>Number(b.part.id.startsWith('connector-'))-Number(a.part.id.startsWith('connector-'))).map(at=>pieceImage(at.part,at,`data-robot-placed="${at.id}" class="${selected===at.id?'robot-selected':''}" aria-label="${esc(at.part.name)}"`)).join('');
+      svg.innerHTML=look&&pose()?pose().parts.map(part=>pieceImage(part,{x:part.x+(referenceBounds.width-pose().width)/2,y:part.y+(referenceBounds.height-pose().height)/2,baseScale:1},'pointer-events="none" aria-hidden="true"')).join(''):placedByLayer(state).map(at=>pieceImage(at.part,at,`data-robot-placed="${at.id}" class="${selected===at.id?'robot-selected':''}" aria-label="${esc(at.part.name)}"`)).join('');
       renderGrid();renderStroke();
       const at=selectedPart(),preview=storePick||at?.part;
       if(keyboard&&preview&&!look){
@@ -425,7 +442,12 @@
       document.getElementById('show-me')?.setAttribute('aria-pressed','false');
       if(active)renderBoard();
     }
-    function cancelPointer(){keyboard=false;stopGesture();if(storePick)deselect(true);if(active)renderBoard();}
+    function cancelPointer(event){
+      const pendingTap=event?.type==='pointercancel'&&event.currentTarget===svg&&pointer?.placeOnTap&&!pointer.moved;
+      keyboard=false;stopGesture();
+      if(storePick&&!pendingTap)deselect(true);
+      if(active)renderBoard();
+    }
     function choose(part,id=null){
       if(!canMoveCanvas()||look||groupMode||!part)return;
       if(selected!==id)$('part-axis').value='both';if(rectangleIds.length)clearRectangle();
@@ -479,7 +501,7 @@
     }
     function pickPart(p,type){
       const tolerance=(type==='touch'?22:2)/viewport.scale(view);let nearest=null,distance=tolerance;
-      for(const at of Object.values(state.placed).reverse()){
+      for(const at of placedByLayer(state).reverse()){
         const part=at.part,{x,y}=localPoint(part,at,p),shape=shapeOf(at),mask=masks.get(part.asset),inside=x>=0&&x<part.width&&y>=0&&y<part.height;
         if(inside&&(!mask||mask.alpha[(Math.floor(y/part.height*mask.height)*mask.width+Math.floor(x/part.width*mask.width))*4+3]>96))return at;
         const scaleX=shape.widthScale*shape.baseScale,scaleY=shape.heightScale*shape.baseScale;
@@ -611,6 +633,10 @@
     for(const owner of [$('parts'),svg]){
       owner.addEventListener('pointermove',move);owner.addEventListener('pointerup',up);owner.addEventListener('pointercancel',cancelPointer);owner.addEventListener('lostpointercapture',event=>{if(pointer?.kind!=='pinch'&&pointer?.id===event.pointerId&&!pointer.owner.hasPointerCapture(event.pointerId))cancelPointer();});
     }
+    svg.addEventListener('click',event=>{
+      // WebKit can cancel the pointer sequence before dispatching a valid board tap.
+      if(event.isTrusted&&event.detail>0&&storePick&&!pointer)placeSelected(point(event.clientX,event.clientY));
+    });
     $('parts').addEventListener('click',event=>{
       const button=event.target.closest('[data-robot-part]');
       if(button&&event.detail===0)choose(pose()?.parts.find(part=>part.id===button.dataset.robotPart));
@@ -807,6 +833,36 @@
       if(mode==='rect')hint('Draw a rectangle around the center of one or more parts to select them whole.');
       else hint(mode==='part'?'Tap a complete part to select it.':'Draw a selection starting on a placed part, then tap Copy.');
     });
+    layerSummary.addEventListener('click',event=>{
+      if(layerSummary.getAttribute('aria-disabled')==='true'){event.preventDefault();return;}
+      if(layers.open)return;
+      const parts=placedByLayer(state).reverse();
+      layerChoices.innerHTML=parts.map((at,index)=>{
+        const label=index===0?'Top':index===parts.length-1?'Bottom':`Layer ${parts.length-index}`;
+        return `<button type="button" data-layer-part="${at.id}">${label} · ${esc(at.part.name)}</button>`;
+      }).join('');
+      sizePicker(layers,layerSummary,$('layer-options'),230);
+      syncLayerSelection();
+    });
+    layerChoices.addEventListener('click',event=>{
+      const at=state.placed[event.target.closest('[data-layer-part]')?.dataset.layerPart];
+      if(!at)return;
+      clearRectangle();
+      $('selection-mode').value='part';
+      choose(at.part,at.id);
+      renderStroke();
+    });
+    bringFront.addEventListener('click',()=>{
+      const at=selectedPart(),top=placedByLayer(state).at(-1);
+      if(!at||at===top||!canMoveCanvas()||pointer)return;
+      const before=captureTransform([at]);
+      state.frontLayer=Math.max(state.frontLayer??0,state.nextId-1)+1;
+      at.layer=state.frontLayer;
+      layers.open=false;
+      finishTransform(before);
+      layerSummary.focus({preventScroll:true});
+      hint(`${at.part.name} moved to the front.`);
+    });
     $('copy').addEventListener('click',async()=>{
       const at=selectedPart();if(!at)return;
       const stroke=selectionStroke?.placedId===at.id&&(selectionStroke.mode!=='free'||selectionStroke.closed)?{mode:selectionStroke.mode,points:[...selectionStroke.points]}:null;
@@ -926,7 +982,7 @@
         const ctx=canvas.getContext('2d');
         ctx.scale(scale,scale);
         const images=new Map();
-        const pieces=Object.values(finishedDesign.placed);
+        const pieces=placedByLayer(finishedDesign);
         for(const {part} of pieces)if(!images.has(part.asset)){
           const image=new Image();image.src=part.asset;
           images.set(part.asset,image);
