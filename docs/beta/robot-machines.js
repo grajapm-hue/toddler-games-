@@ -88,8 +88,9 @@
 
   function remove(state,id){if(!state.locked)delete state.placed[id];}
 
-  function designBounds(state){
-    const boxes=Object.values(state.placed).map(at=>partBounds(at.part,at));
+  const designBounds=state=>partsBounds(Object.values(state.placed));
+  function partsBounds(parts){
+    const boxes=parts.map(at=>partBounds(at.part,at));
     if(!boxes.length)return {...referenceBounds};
     const x=Math.min(...boxes.map(box=>box.x)),y=Math.min(...boxes.map(box=>box.y));
     const right=Math.max(...boxes.map(box=>box.x+box.width)),bottom=Math.max(...boxes.map(box=>box.y+box.height));
@@ -142,7 +143,8 @@
     let page=0,pointer=null,ghost=null,look=false,demoTimer=null,demoActive=false,demoParts=[];
     let keyboard=false,cursor=null,canvasFrame=0,view=null,pendingLayout=false,grid=false;
     const touches=new Map(),masks=new Map();
-    let demoSavedView=null,picture=null,groupMode=false,editRevision=0,saveSerial=0,clipboard=null,selectionStroke=null,rectangleIds=[];
+    let demoSavedView=null,picture=null,groupMode=false,editRevision=0,saveSerial=0,selectionStroke=null,rectangleIds=[];
+    let clipboard=null,copyRequest=0,copyPending=false;
     const bringFront=$('bring-front');
     function activateOnTap(control,activate){
       let press=null,lastTouch=-Infinity;
@@ -370,8 +372,8 @@
       $('progress').textContent=state.locked?'Locked':`${count} ${count===1?'part':'parts'}`;
       $('done').disabled=state.locked?false:!canFinish();$('done').textContent=state.locked?'Edit':'Done';$('done').setAttribute('aria-pressed',String(state.locked));$('done').setAttribute('title',state.locked?'Frozen: tap to edit again':'Editing: tap to freeze');$('done').classList.toggle('robot-frozen',state.locked);$('done').classList.toggle('robot-editing',!state.locked);
       $('remove').disabled=!selectedPart()||!!pointer;
-      $('copy').disabled=!selectedPart()||!!pointer;
-      $('paste').disabled=!clipboard||state.locked||groupMode||look||demoActive||!!pointer;
+      $('copy').disabled=!targets.length||!!pointer;
+      $('paste').disabled=!clipboard||copyPending||!canMoveCanvas()||groupMode||look||!!pointer;
       $('color').disabled=!selectionTargets().length||!!pointer;
        $('apply-color').disabled=!selectionTargets().length||!!pointer||state.locked;
       $('part-original').disabled=!selectedPart()||!!pointer;
@@ -430,17 +432,36 @@
       if(mode==='free')svg.insertAdjacentHTML('beforeend',pts.map((p,i)=>`<circle data-selection-stroke="" cx="${p.x}" cy="${p.y}" r="${(i===0?9:6)/viewport.scale(view)}" fill="${i===0?'#19b968':'#e43d3d'}" stroke="white" stroke-width="${2/viewport.scale(view)}" pointer-events="none"/>`).join(''));
     }
     async function copySelection(at,stroke){
-      if(!at||!stroke||stroke.points.length<2)return null;
-      const part=at.part,source=new Image();source.src=part.asset;await source.decode();
-      const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(part.width));canvas.height=Math.max(1,Math.round(part.height));
-      const ctx=canvas.getContext('2d');const pts=stroke.points.map(pt=>localPoint(part,at,pt));
-      const a=pts[0],b=pts[pts.length-1];ctx.beginPath();
-      if(stroke.mode==='rect')ctx.rect(Math.min(a.x,b.x),Math.min(a.y,b.y),Math.abs(a.x-b.x),Math.abs(a.y-b.y));
-      else if(stroke.mode==='oval'){ctx.ellipse((a.x+b.x)/2,(a.y+b.y)/2,Math.max(.1,Math.abs(a.x-b.x)/2),Math.max(.1,Math.abs(a.y-b.y)/2),0,0,Math.PI*2);}
+      const {part}=at,shape=shapeOf(at),center=partCenter(at);
+      const source=new Image();source.src=part.asset;await source.decode();
+      const canvas=document.createElement('canvas');
+      canvas.width=Math.max(1,Math.round(part.width));canvas.height=Math.max(1,Math.round(part.height));
+      const ctx=canvas.getContext('2d',{willReadFrequently:true});
+      const scaleX=shape.baseScale*shape.widthScale*(shape.flipX?-1:1),scaleY=shape.baseScale*shape.heightScale;
+      // Map the outline from the board into this part's image coordinates.
+      ctx.translate(part.width/2,part.height/2);
+      ctx.scale(1/scaleX,1/scaleY);
+      ctx.rotate(-shape.angle*Math.PI/180);
+      ctx.translate(-center.x,-center.y);
+      const pts=stroke.points,a=pts[0],b=pts.at(-1);ctx.beginPath();
+      if(stroke.mode==='oval')ctx.ellipse((a.x+b.x)/2,(a.y+b.y)/2,Math.abs(a.x-b.x)/2,Math.abs(a.y-b.y)/2,0,0,Math.PI*2);
       else{ctx.moveTo(a.x,a.y);pts.slice(1).forEach(pt=>ctx.lineTo(pt.x,pt.y));ctx.closePath();}
-      ctx.clip();ctx.drawImage(source,0,0,part.width,part.height);
-      const asset=canvas.toDataURL('image/png');
-      return {part:{...part,id:`cut-${Date.now()}`,name:`${part.name} selection`,asset},shape:{...shapeOf(at)}};
+      ctx.resetTransform();ctx.clip();ctx.drawImage(source,0,0,part.width,part.height);
+      const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+      for(let i=3;i<pixels.length;i+=4)if(pixels[i]){
+        const asset=canvas.toDataURL('image/png');
+        return {...at,originalAsset:undefined,part:{...part,id:`cut-${at.id}-${Date.now()}`,name:`${part.name} selection`,asset}};
+      }
+      return null;
+    }
+    function partsUnderStroke(stroke,ordered){
+      const points=stroke.mode==='oval'?[stroke.points[0],stroke.points.at(-1)]:stroke.points;
+      const xs=points.map(p=>p.x),ys=points.map(p=>p.y);
+      const left=Math.min(...xs),right=Math.max(...xs),top=Math.min(...ys),bottom=Math.max(...ys);
+      return ordered.filter(at=>{
+        const box=partBounds(at.part,at);
+        return box.x<right&&box.x+box.width>left&&box.y<bottom&&box.y+box.height>top;
+      });
     }
     function renderGrid(){svg.querySelector('[data-robot-grid]')?.remove();if(!grid||!view)return;const b=viewport.rect(view),step=100,lines=[];for(let x=Math.ceil(b.x/step)*step;x<=b.x+b.width;x+=step)lines.push(`M${x} ${b.y}v${b.height}`);for(let y=Math.ceil(b.y/step)*step;y<=b.y+b.height;y+=step)lines.push(`M${b.x} ${y}h${b.width}`);svg.insertAdjacentHTML('afterbegin',`<path data-robot-grid="" d="${lines.join(' ')}" fill="none" stroke="#88a885" stroke-width="1" vector-effect="non-scaling-stroke" opacity=".6" pointer-events="none"/>`);}
     function renderBoard(){
@@ -708,7 +729,8 @@
       syncButtons();
     }
     room.addEventListener('click',event=>{
-      if(!pointer&&(selectionStroke||selectedPart())&&!event.target.closest('#robot-board,button,summary,select,input,label'))deselect(true);
+      if(pointer||!(selectionStroke||selectedPart())||event.composedPath().includes(svg))return;
+      if(!event.target.closest('button,summary,select,input,label'))deselect(true);
     });
     $('parts').addEventListener('pointerdown',down);svg.addEventListener('pointerdown',down);
     for(const owner of [$('parts'),svg]){
@@ -929,40 +951,75 @@
       const targets=layersToRaise(selectionTargets());
       if(!targets.length)return;
       const before=captureTransform(targets);
-      state.frontLayer=Math.max(state.frontLayer??0,state.nextId-1);
-      for(const at of targets)at.layer=++state.frontLayer;
+      raiseParts(targets);
       finishTransform(before);
       hint(targets.length===1?targets[0].part.name+' moved to the front.':'Selected parts moved to the front.');
     }
+    function raiseParts(parts){
+      state.frontLayer=Math.max(state.frontLayer??0,state.nextId-1);
+      for(const at of parts)at.layer=++state.frontLayer;
+    }
     activateOnTap(bringFront,bringSelectionToFront);
-    $('copy').addEventListener('click',async()=>{
-      const at=selectedPart();if(!at)return;
-      const activeStroke=selectionStroke;
-      const stroke=activeStroke?.placedId===at.id&&activeStroke.closed?{mode:activeStroke.mode,points:[...activeStroke.points]}:null;
+    activateOnTap($('copy'),async()=>{
+      const targets=selectionTargets();
+      if(!canMoveCanvas()||pointer||look||!targets.length)return;
+      const request=++copyRequest,ordered=placedByLayer(state),selectedParts=new Set(targets);
+      const stroke=selectionStroke?.closed&&selectionStroke.mode!=='rect'?selectionStroke:null;
+      const angle=stroke?0:rectangleAngle;
+      const candidates=(stroke?partsUnderStroke(stroke,ordered):ordered.filter(at=>selectedParts.has(at))).map(at=>({...at}));
+      copyPending=true;syncButtons();
       try{
-        clipboard=stroke?await copySelection(at,stroke):{part:at.part,shape:{...shapeOf(at)}};
-        if(!clipboard)return;
-        if(selectionStroke===activeStroke)clearShapeSelection();
-        renderBoard();
-        hint('Copied. Tap Paste to make an independent piece.');
-      }catch{hint('Selection could not be copied. Try Tap part mode.');}
+        const parts=stroke?(await Promise.all(candidates.map(at=>copySelection(at,stroke)))).filter(Boolean):candidates;
+        if(request!==copyRequest||!active)return;
+        if(!parts.length){hint('Draw around visible artwork to copy it.');return;}
+        clipboard={parts,bounds:partsBounds(parts),angle};
+        hint(parts.length===1?'Copied one piece. Tap Paste to add an independent copy.':`Copied ${parts.length} parts together. Tap Paste to add the group.`);
+      }catch{
+        if(request===copyRequest&&active)hint('The selection could not be copied. Please try again.');
+      }finally{
+        if(request===copyRequest){copyPending=false;if(active)syncButtons();}
+      }
     });
-    $('paste').addEventListener('click',()=>{
-      if(!clipboard||state.locked||groupMode||look||demoActive)return;
-      const b=viewport.rect(view),last=state.placed[selected],offset=Math.max(clipboard.part.width*.8,95);
-      const center=last?{x:last.x+last.part.width/2+offset,y:last.y+last.part.height/2+Math.max(35,clipboard.part.height*.3)}:{x:b.x+b.width/2+offset/2,y:b.y+b.height/2};
-      const id=addPart(state,clipboard.part,center);if(!id)return;
-      const at=state.placed[id];
-      Object.assign(at,clipboard.shape);selected=id;storePick=null;clearShapeSelection();$('selection-mode').value='part';
-      recordTransform(captureTransform([at],false));
-      dirty();render();hint('Pasted. Drag or resize this copy independently.');
+    activateOnTap($('paste'),()=>{
+      if(!clipboard||copyPending||!canMoveCanvas()||pointer||groupMode||look)return;
+      const {parts,bounds,angle}=clipboard,visible=viewport.rect(view);
+      const targets=selectionTargets(),reference=targets.length?partsBounds(targets):visible;
+      const anchorX=reference.x+reference.width/2,anchorY=reference.y+reference.height/2;
+      const offsetX=Math.max(bounds.width*.8,95),offsetY=targets.length?Math.max(bounds.height*.3,35):0;
+      const marginX=Math.min(visible.width,bounds.width)/2,marginY=Math.min(visible.height,bounds.height)/2;
+      const fitX=x=>Math.max(visible.x+marginX,Math.min(visible.x+visible.width-marginX,x));
+      const x=fitX(anchorX+offsetX*(targets.length?1:.5));
+      const alternate=fitX(anchorX-offsetX);
+      const destX=targets.length&&Math.abs(x-anchorX)<Math.abs(alternate-anchorX)?alternate:x;
+      const destY=Math.max(visible.y+marginY,Math.min(visible.y+visible.height-marginY,anchorY+offsetY));
+      const dx=destX-bounds.x-bounds.width/2,dy=destY-bounds.y-bounds.height/2;
+      const copies=parts.map(original=>{
+        const center=partCenter(original);
+        const id=addPart(state,original.part,{x:center.x+dx,y:center.y+dy});
+        const at=state.placed[id];
+        Object.assign(at,shapeOf(original),{turnAtFullCircle:original.turnAtFullCircle,originalAsset:original.originalAsset});
+        return at;
+      });
+      storePick=null;keyboard=false;clearShapeSelection();
+      $('part-axis').value='both';
+      if(copies.length===1){
+        selected=copies[0].id;$('selection-mode').value='part';
+        cursor=partCenter(copies[0]);
+      }else{
+        raiseParts(copies);
+        selected=null;rectangleIds=copies.map(at=>at.id);rectangleAngle=angle;
+        selectionStroke={mode:'rect',points:[],closed:true};
+        $('selection-mode').value='rect';updateRectangleBounds();
+      }
+      recordTransform(captureTransform(copies,false));
+      dirty();render();hint(copies.length===1?'Pasted. Drag or resize this copy independently.':`Pasted ${copies.length} parts together. Drag the selection to move them.`);
     });
     $('grid').addEventListener('click',()=>{if(state.locked)return;grid=!grid;renderGrid();syncButtons();});
     function reset(keepHistory=false){
       cancel();onReset();recolorRequest++;
       if(keepHistory)state.placed={};
       else{transformUndo.length=transformRedo.length=0;state=create(state.age);}
-      clipboard=null;clearShapeSelection();dirty();groupMode=false;view=null;selected=null;storePick=null;page=0;keyboard=false;cursor=null;
+      clipboard=null;copyRequest++;copyPending=false;clearShapeSelection();dirty();groupMode=false;view=null;selected=null;storePick=null;page=0;keyboard=false;cursor=null;
       $('part-axis').value='both';
       setLook(false);
       updateReference();
