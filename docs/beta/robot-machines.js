@@ -63,6 +63,7 @@
     shape.heightScale=Math.max(.25,Math.min(4,shape.heightScale));
     shape.angle=((shape.angle%360)+360)%360;
     Object.assign(at,shape);
+    if(patch.angle!==undefined)delete at.turnAtFullCircle;
     return true;
   }
 
@@ -200,7 +201,7 @@
     let rectangleAngle=0;
     const clearRectangle=()=>{rectangleIds=[];selectionStroke=null;rectangleAngle=0;};
     const transformUndo=[],transformRedo=[];
-    const transformKeys=['x','y','widthScale','heightScale','angle','flipX'];
+    const transformKeys=['x','y','widthScale','heightScale','angle','flipX','turnAtFullCircle'];
     const selectionPose=()=>({key:rectangleIds.join(','),angle:rectangleAngle});
     const captureTransform=parts=>({pose:selectionPose(),parts:parts.map(at=>({at,values:transformKeys.map(key=>at[key])}))});
     function updateRectangleBounds(){
@@ -250,7 +251,8 @@
       $('turn-minus').disabled=$('turn-plus').disabled=!editing||!target;
       $('transform-undo').disabled=!canUndo;
       $('transform-redo').disabled=!canRedo;
-      $('turn-angle').textContent='Turn '+normalizeAngle(Math.round(multi?rectangleAngle:shapeOf(target).angle))+'°';
+      const angle=multi?rectangleAngle:normalizeAngle(Math.round(shapeOf(target).angle));
+      $('turn-angle').textContent='Turn '+(angle===0&&target?.turnAtFullCircle&&!multi?360:angle)+'°';
     }
     function rectangleSelect(){
       if(!selectionStroke||selectionStroke.mode!=='rect'||selectionStroke.points.length<2)return;
@@ -578,10 +580,16 @@
       }
       if(!pointer||pointer.id!==event.pointerId)return;
       if(pointer.kind==='selection'){
+        const moved=pointer.moved;
         const p=point(event.clientX,event.clientY);if(p)selectionStroke.points.push(p);
         const at=state.placed[selectionStroke.placedId];
         stopGesture();
         if(selectionStroke.mode==='rect'){
+          if(!moved){
+            clearRectangle();deselect();renderBoard();
+            hint('Selection cleared. Draw a rectangle to select parts.');
+            return;
+          }
           rectangleSelect();selected=null;storePick=null;render();
           const count=rectangleIds.length;
           hint(count?count+' whole '+(count===1?'part':'parts')+' selected. Drag to move, or use resize, turn and mirror.':'Draw a rectangle around the center of the parts to select.');
@@ -698,8 +706,12 @@
           positionPart(at,center.x+c*dx-s*dy,center.y+s*dx+c*dy);
         }
         at.angle=normalizeAngle(shapeOf(at).angle+step);
+        at.turnAtFullCircle=step>0&&at.angle===0?true:undefined;
       }
-      if(rectangleIds.length)rectangleAngle=normalizeAngle(rectangleAngle+step);
+      if(rectangleIds.length){
+        const next=normalizeAngle(rectangleAngle+step);
+        rectangleAngle=step>0&&next===0?360:next;
+      }
       finishTransform(before);
     }
     $('turn-minus').addEventListener('click',()=>turnSelection(-1));
@@ -718,7 +730,7 @@
       for(const at of group){
         const p=partCenter(at),shape=shapeOf(at);
         positionPart(at,2*center.x-p.x,p.y);
-        Object.assign(at,{angle:normalizeAngle(-shape.angle),flipX:!shape.flipX});
+        Object.assign(at,{angle:normalizeAngle(-shape.angle),flipX:!shape.flipX,turnAtFullCircle:undefined});
       }
       rectangleAngle=normalizeAngle(-rectangleAngle);
       finishTransform(before);hint('Selected parts mirrored together.');
