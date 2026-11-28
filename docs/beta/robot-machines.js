@@ -752,17 +752,12 @@
       if(!group.length){
         const at=selectedPart();if(!at)return;
         editPart({flipX:!shapeOf(at).flipX});
-        hint('Selected part mirrored. Drag or rotate it to create a new pose.');return;
+        hint('Selected part mirrored in place.');return;
       }
       if(!canMoveCanvas()||pointer)return;
-      const before=captureTransform(group),center=selectionCenter(group);
-      for(const at of group){
-        const p=partCenter(at),shape=shapeOf(at);
-        positionPart(at,2*center.x-p.x,p.y);
-        Object.assign(at,{angle:normalizeAngle(-shape.angle),flipX:!shape.flipX,turnAtFullCircle:undefined});
-      }
-      rectangleAngle=normalizeAngle(-rectangleAngle);
-      finishTransform(before);hint('Selected parts mirrored together.');
+      const before=captureTransform(group);
+      for(const at of group)at.flipX=!shapeOf(at).flipX;
+      finishTransform(before);hint('Selected parts mirrored in place.');
     });
     $('rotate-left').addEventListener('click',()=>editPart({angle:shapeOf(state.placed[selected]).angle-45}));$('rotate-right').addEventListener('click',()=>editPart({angle:shapeOf(state.placed[selected]).angle+45}));$('part-original').addEventListener('click',()=>{
       recolorRequest++;
