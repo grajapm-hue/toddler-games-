@@ -18,22 +18,11 @@
   const connectorPose={id:'connectors',label:'Flexible connectors',category:'connectors',age:5,width:848,height:1264,reference:'',parts:connectorParts};
   const referenceBounds={x:0,y:0,width:catalogue.poses.standing.width,height:catalogue.poses.standing.height};
   const create=(age=5)=>({age:Number(age),placed:{},nextId:1,locked:false});
-  const shapeOf=at=>({baseScale:at?.baseScale??1,widthScale:at?.widthScale??1,heightScale:at?.heightScale??1,angle:at?.angle??0,flipX:at?.flipX??false,...(at?.shear?{shear:at.shear}:{}),...(at?.tiltStep?{tiltStep:at.tiltStep}:{})});
+  const shapeOf=at=>({baseScale:at?.baseScale??1,widthScale:at?.widthScale??1,heightScale:at?.heightScale??1,angle:at?.angle??0,flipX:at?.flipX??false});
 
   const normalizeAngle=degrees=>((degrees%360)+360)%360;
   const partCenter=at=>({x:at.x+at.part.width/2,y:at.y+at.part.height/2});
-  function partMatrix(at){
-    const sh=shapeOf(at),angle=sh.angle*Math.PI/180,c=Math.cos(angle),s=Math.sin(angle);
-    const sx=sh.widthScale*sh.baseScale*(sh.flipX?-1:1),sy=sh.heightScale*sh.baseScale,k=(sh.shear||0)*sh.baseScale;
-    return {a:c*sx,b:s*sx,c:c*k-s*sy,d:s*k+c*sy};
-  }
   function partBounds(part,at){
-    if(at?.shear){
-      const m=partMatrix(at),center=partCenter({...at,part});
-      const width=part.width*Math.abs(m.a)+part.height*Math.abs(m.c);
-      const height=part.width*Math.abs(m.b)+part.height*Math.abs(m.d);
-      return {x:center.x-width/2,y:center.y-height/2,width,height};
-    }
     const shape=shapeOf(at),angle=shape.angle*Math.PI/180;
     const c=Math.abs(Math.cos(angle)),s=Math.abs(Math.sin(angle));
     const w=part.width*shape.widthScale*shape.baseScale,h=part.height*shape.heightScale*shape.baseScale;
@@ -45,7 +34,7 @@
     const shape=shapeOf(at),angle=shape.angle*Math.PI/180;
     const c=Math.cos(angle),s=Math.sin(angle),dx=p.x-at.x-part.width/2,dy=p.y-at.y-part.height/2;
     return {
-      x:(dx*c+dy*s-(shape.shear||0)/shape.heightScale*(-dx*s+dy*c))/(shape.widthScale*shape.baseScale*(shape.flipX?-1:1))+part.width/2,
+      x:(dx*c+dy*s)/(shape.widthScale*shape.baseScale*(shape.flipX?-1:1))+part.width/2,
       y:(-dx*s+dy*c)/(shape.heightScale*shape.baseScale)+part.height/2
     };
   }
@@ -116,11 +105,6 @@
                 <button id="robot-turn-minus" type="button" class="soft-button" aria-label="Rotate selection counterclockwise by one degree">−</button>
                 <output id="robot-turn-angle" aria-live="polite">Turn 0°</output>
                 <button id="robot-turn-plus" type="button" class="soft-button" aria-label="Rotate selection clockwise by one degree">+</button>
-              </div>
-              <div id="robot-tilt-controls" class="robot-precision-group">
-                <button id="robot-tilt-minus" type="button" class="soft-button" aria-label="Tilt selection back five degrees">−</button>
-                <output id="robot-tilt-angle" aria-live="polite">Tilt 0°</output>
-                <button id="robot-tilt-plus" type="button" class="soft-button" aria-label="Tilt selection forward five degrees">+</button>
               </div>
               <div id="robot-transform-history" class="robot-precision-group" role="group" aria-label="Transform history">
                 <button id="robot-transform-undo" type="button" class="soft-button" aria-label="Undo last selection transform">Undo</button>
@@ -213,11 +197,11 @@
     const selectedShape=()=>$('selection-mode').value;
     const rectangleParts=()=>rectangleIds.map(id=>state.placed[id]).filter(Boolean);
     const selectionTargets=()=>rectangleParts().length?rectangleParts():selectedPart()?[selectedPart()]:[];
-    let rectangleAngle=0,rectangleTilt=0;
-    const clearRectangle=()=>{rectangleIds=[];selectionStroke=null;rectangleAngle=rectangleTilt=0;};
+    let rectangleAngle=0;
+    const clearRectangle=()=>{rectangleIds=[];selectionStroke=null;rectangleAngle=0;};
     const transformUndo=[],transformRedo=[];
-    const transformKeys=['x','y','widthScale','heightScale','angle','flipX','shear','tiltStep'];
-    const selectionPose=()=>({key:rectangleIds.join(','),angle:rectangleAngle,tilt:rectangleTilt});
+    const transformKeys=['x','y','widthScale','heightScale','angle','flipX'];
+    const selectionPose=()=>({key:rectangleIds.join(','),angle:rectangleAngle});
     const captureTransform=parts=>({pose:selectionPose(),parts:parts.map(at=>({at,values:transformKeys.map(key=>at[key])}))});
     function updateRectangleBounds(){
       const parts=rectangleParts();
@@ -247,7 +231,7 @@
         if(!matchesTransform(entry,current))continue;
         for(const {at,fields} of entry.changes)for(const field of fields)at[field.key]=field[restore];
         const pose=entry[restore];
-        if(pose.key===selectionPose().key){rectangleAngle=pose.angle;rectangleTilt=pose.tilt;}
+        if(pose.key===selectionPose().key)rectangleAngle=pose.angle;
         to.push(entry);
         updateRectangleBounds();dirty();renderBoard();
         hint(restore==='before'?'Undid one selection transform.':'Redid one selection transform.');
@@ -260,29 +244,30 @@
       const canUndo=editing&&transformUndo.some(entry=>matchesTransform(entry,'after'));
       const canRedo=editing&&transformRedo.some(entry=>matchesTransform(entry,'before'));
       const target=targets[0],multi=rectangleIds.length>0;
-      const tilt=multi?rectangleTilt:target?.tiltStep||0;
       $('precision-tools').hidden=(!target&&!canUndo&&!canRedo)||state.locked||look||demoActive;
-      $('turn-controls').hidden=$('tilt-controls').hidden=!target;
+      $('turn-controls').hidden=!target;
       $('transform-history').hidden=!target&&!canUndo&&!canRedo;
       $('turn-minus').disabled=$('turn-plus').disabled=!editing||!target;
-      $('tilt-minus').disabled=!editing||!target||tilt<=-60;
-      $('tilt-plus').disabled=!editing||!target||tilt>=60;
       $('transform-undo').disabled=!canUndo;
       $('transform-redo').disabled=!canRedo;
       $('turn-angle').textContent='Turn '+normalizeAngle(Math.round(multi?rectangleAngle:shapeOf(target).angle))+'°';
-      $('tilt-angle').textContent='Tilt '+tilt+'°';
     }
     function rectangleSelect(){
       if(!selectionStroke||selectionStroke.mode!=='rect'||selectionStroke.points.length<2)return;
       const a=selectionStroke.points[0],b=selectionStroke.points.at(-1),left=Math.min(a.x,b.x),right=Math.max(a.x,b.x),top=Math.min(a.y,b.y),bottom=Math.max(a.y,b.y);
-      rectangleIds=Object.values(state.placed).filter(at=>{const c={x:at.x+at.part.width/2,y:at.y+at.part.height/2};return c.x>=left&&c.x<=right&&c.y>=top&&c.y<=bottom;}).map(at=>at.id);
-      selectionStroke.closed=true;rectangleAngle=rectangleTilt=0;
+      rectangleIds=Object.values(state.placed).filter(at=>{
+        const center=partCenter(at);
+        return center.x>=left&&center.x<=right&&center.y>=top&&center.y<=bottom;
+      }).map(at=>at.id);
+      selectionStroke.closed=true;
+      rectangleAngle=0;
+      updateRectangleBounds();
     }
     function resizeRectangle(factor){
       const parts=rectangleParts();if(!parts.length)return;
       const before=captureTransform(parts);
       const cx=parts.reduce((v,p)=>v+p.x+p.part.width/2,0)/parts.length,cy=parts.reduce((v,p)=>v+p.y+p.part.height/2,0)/parts.length;
-      for(const at of parts){const sh=shapeOf(at),nx=Math.max(.25,Math.min(4,sh.widthScale*factor)),ny=Math.max(.25,Math.min(4,sh.heightScale*factor));const actual=Math.min(nx/sh.widthScale,ny/sh.heightScale);at.x=cx+(at.x+at.part.width/2-cx)*actual-at.part.width/2;at.y=cy+(at.y+at.part.height/2-cy)*actual-at.part.height/2;at.widthScale=nx;at.heightScale=ny;if(sh.shear)at.shear=sh.shear*ny/sh.heightScale;}
+      for(const at of parts){const sh=shapeOf(at),nx=Math.max(.25,Math.min(4,sh.widthScale*factor)),ny=Math.max(.25,Math.min(4,sh.heightScale*factor));const actual=Math.min(nx/sh.widthScale,ny/sh.heightScale);at.x=cx+(at.x+at.part.width/2-cx)*actual-at.part.width/2;at.y=cy+(at.y+at.part.height/2-cy)*actual-at.part.height/2;at.widthScale=nx;at.heightScale=ny;}
       recordTransform(before);updateRectangleBounds();dirty();render();
     }
     const selectedPart=()=>!groupMode&&!look&&!state.locked&&!demoActive?state.placed[selected]:null;
@@ -328,7 +313,7 @@
       $('zoom-level').textContent=multi?`${Math.round(shapeOf(rectangleParts()[0]).widthScale*100)}%`:at?(axis==='both'&&s.widthScale!==s.heightScale?`${Math.round(s.widthScale*100)}×${Math.round(s.heightScale*100)}%`:`${Math.round(scales[0]*100)}%`):`${Math.round((view?.zoom||1)*100)}%`;
       $('zoom-level').setAttribute('aria-label',at?'Reset selected dimension to 100 percent':'Reset canvas to reference 100 percent');
       const target=multi?`${rectangleIds.length} selected parts`:at?`${at.part.name} ${axis==='both'?'size':axis}`:null;$('zoom-in').setAttribute('aria-label',target?`Increase ${target}`:'Zoom in');$('zoom-out').setAttribute('aria-label',target?`Decrease ${target}`:'Zoom out');
-      $('selected-label').textContent=multi?`${rectangleIds.length} parts · size`:at?`${at.part.name} · size`:'Canvas · zoom';
+      $('selected-label').textContent=multi?`${rectangleIds.length} ${rectangleIds.length===1?'part':'parts'} · size`:at?`${at.part.name} · size`:'Canvas · zoom';
       const viewControlsDisabled=!canMoveCanvas()||!!pointer;
       $('zoom-in').disabled=viewControlsDisabled||(multi?rectangleParts().every(p=>shapeOf(p).widthScale>=4-.000001):at?scales.every(n=>n>=4-.000001):view.zoom>=8);
       $('zoom-out').disabled=viewControlsDisabled||(multi?rectangleParts().every(p=>shapeOf(p).widthScale<=.25+.000001):at?scales.every(n=>n<=.25+.000001):view.zoom<=.5);
@@ -351,7 +336,7 @@
       if(!view)return;const m=svg.getScreenCTM(),base=m?Math.hypot(m.a,m.b)/(view.zoom||1):0;if(!(base>0))return;
       for(const image of $('parts').querySelectorAll('img')){const part=pose().parts.find(p=>p.id===image.closest('[data-robot-part]').dataset.robotPart),storeScale=displayScale(part);image.style.width=`${part.width*base*storeScale}px`;image.style.height=`${part.height*base*storeScale}px`;}
     }
-    const pieceImage=(part,placed,extra='')=>{const s=shapeOf(placed),cx=placed.x+part.width/2,cy=placed.y+part.height/2;return `<image href="${part.asset}" x="${placed.x}" y="${placed.y}" width="${part.width}" height="${part.height}" transform="translate(${cx} ${cy}) rotate(${s.angle})${s.shear?' matrix(1 0 '+(s.shear/s.heightScale)+' 1 0 0)':''} scale(${s.baseScale*s.widthScale*(s.flipX?-1:1)} ${s.baseScale*s.heightScale}) translate(${-cx} ${-cy})" preserveAspectRatio="xMidYMid meet" ${extra}/>`;};
+    const pieceImage=(part,placed,extra='')=>{const s=shapeOf(placed),cx=placed.x+part.width/2,cy=placed.y+part.height/2;return `<image href="${part.asset}" x="${placed.x}" y="${placed.y}" width="${part.width}" height="${part.height}" transform="translate(${cx} ${cy}) rotate(${s.angle}) scale(${s.baseScale*s.widthScale*(s.flipX?-1:1)} ${s.baseScale*s.heightScale}) translate(${-cx} ${-cy})" preserveAspectRatio="xMidYMid meet" ${extra}/>`;};
     function renderSelection(){
       svg.querySelector('[data-robot-selection]')?.remove();
       const at=selectedPart();
@@ -455,7 +440,9 @@
       hint(at?`${part.name} selected.`:`Place ${part.name} anywhere in Assemble.`);
     }
     function deselect(announce=false){
-      selected=null;storePick=null;keyboard=false;rectangleIds=[];
+      selected=null;storePick=null;keyboard=false;
+      if(selectionStroke?.mode==='rect')clearRectangle();else rectangleIds=[];
+      renderStroke();
       svg.querySelector('[data-robot-keyboard-preview]')?.remove();
       $('part-axis').value='both';
       for(const button of $('parts').querySelectorAll('[data-robot-part]'))button.setAttribute('aria-pressed','false');
@@ -596,7 +583,9 @@
         stopGesture();
         if(selectionStroke.mode==='rect'){
           rectangleSelect();selected=null;storePick=null;render();
-          hint(rectangleIds.length?`${rectangleIds.length} parts selected. Drag the rectangle or use the resize, turn, tilt and mirror controls.`:'No part centers inside rectangle. Draw a larger rectangle.');return;
+          const count=rectangleIds.length;
+          hint(count?count+' whole '+(count===1?'part':'parts')+' selected. Drag to move, or use resize, turn and mirror.':'Draw a rectangle around the center of the parts to select.');
+          return;
         }
         if(at){choose(at.part,at.id);renderStroke();hint('Selection ready. Tap Copy to copy the enclosed shape.');}
         else{selectionStroke=null;renderBoard();hint('Draw over an existing part to select an area.');}
@@ -687,11 +676,6 @@
     function editPart(patch){
       if(!selectedPart())return;
       stopGesture();
-      const shape=shapeOf(state.placed[selected]);
-      if(shape.shear&&patch.heightScale!==undefined){
-        const height=Math.max(.25,Math.min(4,patch.heightScale));
-        patch={...patch,shear:shape.shear*height/shape.heightScale};
-      }
       if(transform(state,selected,patch)){dirty();render();renderView();hint(buildHint());}
     }
     function selectionCenter(parts){
@@ -718,39 +702,8 @@
       if(rectangleIds.length)rectangleAngle=normalizeAngle(rectangleAngle+step);
       finishTransform(before);
     }
-    function tiltSelection(step){
-      const targets=selectionTargets();
-      if(!targets.length||!canMoveCanvas()||pointer)return;
-      const multi=rectangleIds.length>0,current=multi?rectangleTilt:targets[0].tiltStep||0;
-      const next=Math.max(-60,Math.min(60,current+step));
-      if(current===next)return;
-      // Project the group onto a tilted plane and carry each piece's affine
-      // transform into the canvas, hit testing and saved PNG.
-      const a=current*Math.PI/180,b=next*Math.PI/180;
-      const depth=Math.cos(b)/Math.cos(a),lean=.28*(Math.sin(b)-Math.sin(a))/Math.cos(a);
-      const projected=targets.map(at=>{
-        const m=partMatrix(at),p=partCenter(at),base=shapeOf(at).baseScale;
-        const x=m.a+lean*m.b,y=depth*m.b,u=m.c+lean*m.d,v=depth*m.d;
-        const signedWidth=Math.hypot(x,y)*(shapeOf(at).flipX?-1:1);
-        const cos=x/signedWidth,sin=y/signedWidth;
-        return {at,p,widthScale:Math.abs(signedWidth)/base,heightScale:(-sin*u+cos*v)/base,angle:normalizeAngle(Math.atan2(sin,cos)*180/Math.PI),shear:(cos*u+sin*v)/base};
-      });
-      if(projected.some(p=>p.widthScale<.25-.000001||p.widthScale>4+.000001||p.heightScale<.25-.000001||p.heightScale>4+.000001)){
-        hint('Resize the selection a little before tilting further.');return;
-      }
-      const before=captureTransform(targets),center=selectionCenter(targets);
-      for(const {at,p,...shape} of projected){
-        const offset=p.y-center.y;
-        positionPart(at,p.x+lean*offset,center.y+depth*offset);
-        Object.assign(at,shape);
-      }
-      if(multi)rectangleTilt=next;else targets[0].tiltStep=next;
-      finishTransform(before);
-    }
     $('turn-minus').addEventListener('click',()=>turnSelection(-1));
     $('turn-plus').addEventListener('click',()=>turnSelection(1));
-    $('tilt-minus').addEventListener('click',()=>tiltSelection(-5));
-    $('tilt-plus').addEventListener('click',()=>tiltSelection(5));
     $('transform-undo').addEventListener('click',()=>stepTransformHistory(transformUndo,transformRedo,'after','before'));
     $('transform-redo').addEventListener('click',()=>stepTransformHistory(transformRedo,transformUndo,'before','after'));
     $('part-mirror').addEventListener('click',()=>{
@@ -765,7 +718,7 @@
       for(const at of group){
         const p=partCenter(at),shape=shapeOf(at);
         positionPart(at,2*center.x-p.x,p.y);
-        Object.assign(at,{angle:normalizeAngle(-shape.angle),flipX:!shape.flipX,shear:-(shape.shear||0)});
+        Object.assign(at,{angle:normalizeAngle(-shape.angle),flipX:!shape.flipX});
       }
       rectangleAngle=normalizeAngle(-rectangleAngle);
       finishTransform(before);hint('Selected parts mirrored together.');
@@ -812,7 +765,12 @@
     };
     $('color').addEventListener('input',e=>{if(!state.locked)recolorSelection(e.target.value);});
     $('apply-color').addEventListener('click',()=>{if(!state.locked)recolorSelection($('color').value);});
-    $('selection-mode').addEventListener('change',()=>{clearRectangle();renderBoard();hint(selectedShape()==='part'?'Tap a complete part to select it.':'Draw a selection starting on a placed part, then tap Copy.');});
+    $('selection-mode').addEventListener('change',()=>{
+      clearRectangle();renderBoard();
+      const mode=selectedShape();
+      if(mode==='rect')hint('Draw a rectangle around the center of one or more parts to select them whole.');
+      else hint(mode==='part'?'Tap a complete part to select it.':'Draw a selection starting on a placed part, then tap Copy.');
+    });
     $('copy').addEventListener('click',async()=>{
       const at=selectedPart();if(!at)return;
       const stroke=selectionStroke?.placedId===at.id&&(selectionStroke.mode!=='free'||selectionStroke.closed)?{mode:selectionStroke.mode,points:[...selectionStroke.points]}:null;
@@ -944,7 +902,6 @@
           ctx.save();
           ctx.translate(at.x+part.width/2-bounds.x+padding,at.y+part.height/2-bounds.y+padding);
           ctx.rotate(shape.angle*Math.PI/180);
-          if(shape.shear)ctx.transform(1,0,shape.shear/shape.heightScale,1,0,0);
           ctx.scale(shape.widthScale*shape.baseScale*(shape.flipX?-1:1),shape.heightScale*shape.baseScale);
           ctx.drawImage(images.get(part.asset),-part.width/2,-part.height/2,part.width,part.height);
           ctx.restore();
