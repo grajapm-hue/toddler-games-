@@ -245,7 +245,61 @@
 #robot-machines-room :is(#robot-turn-minus,#robot-turn-plus){touch-action:none;user-select:none;-webkit-touch-callout:none}
 
 #robot-machines-room #robot-bring-front:not(:disabled){background:#c8e8d5;color:#153b2b;border-color:#729c85}
-@media(max-width:360px),(orientation:landscape) and (max-width:560px){
-  #app #robot-machines-room .robot-toolbar #robot-bring-front{font-size:0!important;width:auto!important}
-  #app #robot-machines-room #robot-bring-front::before{content:'Front';font-size:11px}
+
+#app #robot-machines-room .robot-assemble{
+  grid-template:"tools" auto "canvas" minmax(0,1fr) / minmax(0,1fr);
+}
+#app #robot-machines-room .robot-assemble .robot-toolbar{
+  --assembly-control-height:34px;
+  --assembly-label-size:12px;
+  --assembly-control-padding:6px;
+  display:flex;flex-flow:row wrap;align-items:center;align-content:start;
+  gap:4px;min-width:0;
+}
+#app #robot-machines-room .robot-toolbar .robot-assembly-heading{
+  flex:none;font-size:14px;line-height:1.1;padding-inline-end:3px;white-space:nowrap;
+}
+#app #robot-machines-room .robot-toolbar .robot-tool-group,
+#app #robot-machines-room .robot-toolbar .robot-precision-tools:not([hidden]){display:contents}
+#app #robot-machines-room .robot-toolbar :is(.robot-select-label,.robot-color-label,.robot-precision-group){
+  display:inline-flex;align-items:center;flex:none;gap:3px;min-height:0;
+  font-size:var(--assembly-label-size);white-space:nowrap;
+}
+#app #robot-machines-room .robot-toolbar :is(button.soft-button,.robot-picker summary){
+  display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;
+  flex:none;width:max-content;min-width:var(--assembly-control-height);max-width:100%;
+  height:var(--assembly-control-height);min-height:var(--assembly-control-height);
+  margin:0;padding:2px var(--assembly-control-padding);
+  font-size:var(--assembly-label-size);line-height:1;white-space:nowrap;
+}
+#app #robot-machines-room .robot-toolbar .robot-picker summary{justify-content:space-between;width:100%}
+#app #robot-machines-room .robot-toolbar #robot-part-axis-menu{width:auto;min-width:59px}
+#app #robot-machines-room .robot-toolbar #robot-selection-mode-menu{width:auto;min-width:88px}
+#app #robot-machines-room .robot-toolbar #robot-zoom-level{padding-inline:var(--assembly-control-padding)!important}
+#app #robot-machines-room .robot-toolbar :is(#robot-rotate-left,#robot-rotate-right,#robot-zoom-out,#robot-zoom-in,#robot-turn-minus,#robot-turn-plus){font-size:18px}
+#app #robot-machines-room .robot-toolbar #robot-remove span{display:inline}
+#app #robot-machines-room .robot-toolbar #robot-remove svg{display:none}
+#app #robot-machines-room .robot-toolbar #robot-color{
+  flex:none;width:calc(var(--assembly-control-height) - 4px);height:calc(var(--assembly-control-height) - 4px);
+}
+#app #robot-machines-room .robot-toolbar #robot-turn-angle{min-width:58px}
+#app #robot-machines-room .robot-toolbar .robot-selection-tools{display:inline-flex;align-items:center;gap:3px;flex:none}
+@media(max-width:500px),(max-height:460px){
+  #app #robot-machines-room .robot-assemble .robot-toolbar{
+    --assembly-control-height:30px;--assembly-label-size:11px;--assembly-control-padding:5px;gap:3px;
+  }
+}
+@media(max-width:360px),(max-height:360px){
+  #app #robot-machines-room .robot-assemble .robot-toolbar{
+    --assembly-control-height:28px;--assembly-control-padding:4px;gap:2px;
+  }
+}
+
+@media(orientation:landscape) and (max-width:620px){
+  #app #robot-machines-room .robot-stores{grid-template-columns:minmax(74px, .9fr) minmax(0,1fr)}
+  #app #robot-machines-room .robot-stores .robot-heading{grid-column:1/-1;grid-row:1;min-height:0}
+  #app #robot-machines-room .robot-stores .robot-store-label{grid-column:1;grid-row:2}
+  #app #robot-machines-room .robot-stores .robot-variant-label{grid-column:2;grid-row:2}
+  #app #robot-machines-room .robot-stores .robot-picker summary{font-size:11px!important;min-height:28px;padding:3px 4px}
+  #app #robot-machines-room .robot-stores #robot-store-menu summary{overflow-wrap:normal}
 }
