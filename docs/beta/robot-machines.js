@@ -33,6 +33,21 @@
     return {x:at.x+part.width/2-width/2,y:at.y+part.height/2-height/2,width,height};
   }
 
+  function selectionContains(mode,points,x,y){
+    const a=points[0],b=points.at(-1);
+    if(mode==='rect')return x>=Math.min(a.x,b.x)&&x<=Math.max(a.x,b.x)&&y>=Math.min(a.y,b.y)&&y<=Math.max(a.y,b.y);
+    if(mode==='oval'){
+      const rx=Math.abs(a.x-b.x)/2,ry=Math.abs(a.y-b.y)/2;
+      return rx>0&&ry>0&&((x-(a.x+b.x)/2)/rx)**2+((y-(a.y+b.y)/2)/ry)**2<=1;
+    }
+    let inside=false;
+    for(let i=0,j=points.length-1;i<points.length;j=i++){
+      const a=points[i],b=points[j];
+      if((a.y>y)!==(b.y>y)&&x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x)inside=!inside;
+    }
+    return inside;
+  }
+
   function localPoint(part,at,p){
     const shape=shapeOf(at),angle=shape.angle*Math.PI/180;
     const c=Math.cos(angle),s=Math.sin(angle),dx=p.x-at.x-part.width/2,dy=p.y-at.y-part.height/2;
@@ -104,7 +119,7 @@
           <div class="robot-toolbar" role="group" aria-label="Assembly tools">
             <div class="robot-tool-row robot-heading robot-control-heading"><button id="robot-look" type="button" class="soft-button" aria-pressed="false">Look</button><select id="robot-part-axis" aria-label="Part dimension"><option value="both">Both</option><option value="width">Width</option><option value="height">Height</option></select><button id="robot-rotate-left" class="soft-button" type="button" aria-label="Rotate selected part counterclockwise 45 degrees">↶</button><button id="robot-rotate-right" class="soft-button" type="button" aria-label="Rotate selected part clockwise 45 degrees">↷</button><button id="robot-copy" type="button" class="soft-button" disabled>Copy</button><button id="robot-paste" type="button" class="soft-button" disabled>Paste</button><button id="robot-remove" type="button" class="soft-button" aria-label="Remove" title="Remove selected part" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><span>Remove</span></button><button id="robot-clear" type="button" class="soft-button" disabled>Clear</button></div>
             <div class="robot-tool-row robot-view-tools"><button id="robot-zoom-out" class="soft-button" type="button" aria-label="Zoom out">−</button><button id="robot-zoom-level" class="soft-button" type="button" aria-label="Reset canvas to reference 100 percent">100%</button><button id="robot-zoom-in" class="soft-button" type="button" aria-label="Zoom in">+</button><button id="robot-view-fit" class="soft-button" type="button" aria-label="Fit the current assembly within the canvas" title="Fit assembly to screen">Fit</button><button id="robot-grid" class="soft-button" type="button" aria-pressed="false">Grid</button><button id="robot-done" type="button" class="soft-button" disabled>Done</button><button id="robot-snapshot" type="button" class="soft-button" disabled aria-label="Save picture" title="Save picture">Save</button></div>
-            <div class="robot-tool-row robot-edit-tools" role="group" aria-label="Selected part editing"><details id="robot-layers" class="robot-picker"><summary aria-controls="robot-layer-options">Layers</summary><div id="robot-layer-options" class="robot-picker-options robot-layer-options" role="group" aria-label="Parts from top to bottom"></div></details><button id="robot-bring-front" type="button" class="soft-button" aria-label="Bring to Front" title="Bring to Front" disabled>Bring to Front</button><label class="robot-select-label">Select <select id="robot-selection-mode" aria-label="Selection shape · Rectangle selects all enclosed parts for color, move and resize"><option value="part">Tap part</option><option value="rect">Rectangle</option><option value="oval">Oval / Tube</option><option value="free" aria-label="Free Selection" title="Free Selection · dotted-square boundary">▧</option></select></label><label class="robot-color-label">Color <input id="robot-color" type="color" value="#8c55e9" aria-label="Choose color for selected part"/></label><button id="robot-apply-color" type="button" class="soft-button" title="Apply this color again to the selected part">Apply</button><button id="robot-part-original" class="soft-button" type="button">Original</button><button id="robot-part-mirror" class="soft-button" type="button" aria-label="Mirror selected part horizontally" aria-pressed="false" title="Flip selected part left or right">⇄ Mirror</button></div>
+            <div class="robot-tool-row robot-edit-tools" role="group" aria-label="Selected part editing"><button id="robot-bring-front" type="button" class="soft-button" aria-label="Bring to Front" title="Bring to Front" disabled>Bring to Front</button><label class="robot-select-label">Select <select id="robot-selection-mode" aria-label="Selection shape · Rectangle selects all enclosed parts for color, move and resize"><option value="part">Tap part</option><option value="rect">Rectangle</option><option value="oval">Oval / Tube</option><option value="free" aria-label="Free Selection" title="Free Selection · dotted-square boundary">▧</option></select></label><label class="robot-color-label">Color <input id="robot-color" type="color" value="#8c55e9" aria-label="Choose color for selected part"/></label><button id="robot-apply-color" type="button" class="soft-button" title="Apply this color again to the selected part">Apply</button><button id="robot-part-original" class="soft-button" type="button">Original</button><button id="robot-part-mirror" class="soft-button" type="button" aria-label="Mirror selected part horizontally" aria-pressed="false" title="Flip selected part left or right">⇄ Mirror</button></div>
             <div id="robot-precision-tools" class="robot-precision-tools" role="group" aria-label="Precision transforms" hidden>
               <div id="robot-turn-controls" class="robot-precision-group">
                 <button id="robot-turn-minus" type="button" class="soft-button" aria-label="Rotate selection counterclockwise by one degree">−</button>
@@ -112,8 +127,8 @@
                 <button id="robot-turn-plus" type="button" class="soft-button" aria-label="Rotate selection clockwise by one degree">+</button>
               </div>
               <div id="robot-transform-history" class="robot-precision-group" role="group" aria-label="Transform history">
-                <button id="robot-transform-undo" type="button" class="soft-button" aria-label="Undo last selection transform">Undo</button>
-                <button id="robot-transform-redo" type="button" class="soft-button" aria-label="Redo last selection transform">Redo</button>
+                <button id="robot-transform-undo" type="button" class="soft-button" aria-label="Undo last Assembly edit">Undo</button>
+                <button id="robot-transform-redo" type="button" class="soft-button" aria-label="Redo last Assembly edit">Redo</button>
               </div>
             </div>
           </div>
@@ -128,7 +143,27 @@
     let keyboard=false,cursor=null,canvasFrame=0,view=null,pendingLayout=false,grid=false;
     const touches=new Map(),masks=new Map();
     let demoSavedView=null,picture=null,groupMode=false,editRevision=0,saveSerial=0,clipboard=null,selectionStroke=null,rectangleIds=[];
-    const layers=$('layers'),layerSummary=layers.querySelector('summary'),layerChoices=$('layer-options'),bringFront=$('bring-front');
+    const bringFront=$('bring-front');
+    function activateOnTap(control,activate){
+      let press=null,lastTouch=-Infinity;
+      control.addEventListener('pointerdown',event=>{
+        lastTouch=-Infinity;
+        if(event.pointerType==='touch'&&event.isPrimary)press={id:event.pointerId,x:event.clientX,y:event.clientY};
+      });
+      control.addEventListener('pointercancel',()=>{press=null;});
+      control.addEventListener('pointerup',event=>{
+        const tap=press;press=null;
+        if(!tap||tap.id!==event.pointerId||Math.hypot(event.clientX-tap.x,event.clientY-tap.y)>10)return;
+        if(!control.contains(document.elementFromPoint(event.clientX,event.clientY)))return;
+        // A touchscreen tap after a selection drag may end without a click.
+        lastTouch=performance.now();
+        activate();
+      });
+      control.addEventListener('click',event=>{
+        event.preventDefault();
+        if(event.detail===0||performance.now()-lastTouch>=500)activate();
+      });
+    }
     function sizePicker(details,summary,options,heightLimit){
       const rect=summary.getBoundingClientRect(),bounds=room.getBoundingClientRect();
       const below=Math.min(innerHeight,bounds.bottom)-rect.bottom-3;
@@ -156,9 +191,8 @@
         summary.setAttribute('aria-label',label+': '+summary.textContent);
         summary.setAttribute('aria-disabled',String(select.disabled));
       }
-      summary.addEventListener('click',event=>{
-        if(select.disabled||state.locked||demoActive){event.preventDefault();return;}
-        if(details.open)return;
+      const isSelection=select.id==='robot-selection-mode';
+      function showOptions(){
         sizePicker(details,summary,options,select.id==='robot-category'?select.options.length*48+2:180);
         options.replaceChildren(...Array.from(select.options,option=>{
           const button=document.createElement('button');
@@ -166,27 +200,39 @@
           button.textContent=option.text;
           button.disabled=option.disabled;
           button.setAttribute('aria-current',String(option.selected));
-          button.addEventListener('click',()=>{
+          const chooseOption=()=>{
+            if(button.disabled)return;
             select.value=option.value;
             select.dispatchEvent(new Event('change',{bubbles:true}));
             sync();
             details.open=false;
             summary.focus({preventScroll:true});
-          });
+          };
+          if(isSelection)activateOnTap(button,chooseOption);
+          else button.addEventListener('click',chooseOption);
           return button;
         }));
+      }
+      const unavailable=()=>select.disabled||state.locked||demoActive;
+      if(isSelection)activateOnTap(summary,()=>{
+        if(unavailable())return;
+        if(!details.open)showOptions();
+        details.open=!details.open;
+      });
+      else summary.addEventListener('click',event=>{
+        if(unavailable()){event.preventDefault();return;}
+        if(!details.open)showOptions();
       });
       select.addEventListener('change',()=>queueMicrotask(sync));
       return {details,summary,sync};
     });
-    const pickers=[...menus,{details:layers,summary:layerSummary}];
-    for(const {details,summary} of pickers)details.addEventListener('keydown',event=>{
+    for(const {details,summary} of menus)details.addEventListener('keydown',event=>{
       if(event.key==='Escape'&&details.open){event.stopPropagation();details.open=false;summary.focus();}
     });
     document.addEventListener('click',event=>{
-      for(const {details} of pickers)if(details.open&&!details.contains(event.target))details.open=false;
+      for(const {details} of menus)if(details.open&&!details.contains(event.target))details.open=false;
     });
-    window.addEventListener('resize',()=>{for(const {details} of pickers)details.open=false;});
+    window.addEventListener('resize',()=>{for(const {details} of menus)details.open=false;});
     const pose=()=>storeModel,ready=()=>active&&!!storeModel;
     const displayScale=part=>{
       const base=part.storeScale||1;
@@ -207,11 +253,18 @@
     const rectangleParts=()=>rectangleIds.map(id=>state.placed[id]).filter(Boolean);
     const selectionTargets=()=>rectangleParts().length?rectangleParts():selectedPart()?[selectedPart()]:[];
     let rectangleAngle=0;
-    const clearRectangle=()=>{rectangleIds=[];selectionStroke=null;rectangleAngle=0;};
+    const clearShapeSelection=()=>{rectangleIds=[];selectionStroke=null;rectangleAngle=0;};
+    function layersToRaise(targets){
+      if(!targets.length)return [];
+      const ordered=placedByLayer(state),selectedLayers=new Set(targets);
+      return ordered.slice(-targets.length).every(at=>selectedLayers.has(at))?[]:ordered.filter(at=>selectedLayers.has(at));
+    }
     const transformUndo=[],transformRedo=[];
-    const transformKeys=['x','y','widthScale','heightScale','angle','flipX','turnAtFullCircle','layer'];
+    const transformKeys=['x','y','widthScale','heightScale','angle','flipX','turnAtFullCircle','layer','part','originalAsset'];
     const selectionPose=()=>({key:rectangleIds.join(','),angle:rectangleAngle});
-    const captureTransform=parts=>({pose:selectionPose(),parts:parts.map(at=>({at,values:transformKeys.map(key=>at[key])}))});
+    const captureTransform=(parts,present=true)=>({
+      pose:selectionPose(),parts:parts.map(at=>({at,present,values:transformKeys.map(key=>at[key])}))
+    });
     function updateRectangleBounds(){
       const parts=rectangleParts();
       if(!parts.length||!selectionStroke?.closed)return;
@@ -222,28 +275,38 @@
       ];
     }
     function recordTransform(before){
-      const changes=before.parts.map(({at,values})=>({at,fields:transformKeys.flatMap((key,i)=>{
-        return at[key]===values[i]?[]:[{key,before:values[i],after:at[key]}];
-      })})).filter(change=>change.fields.length);
+      const changes=before.parts.map(({at,present,values})=>({
+        at,presence:{before:present,after:state.placed[at.id]===at},
+        fields:transformKeys.flatMap((key,i)=>at[key]===values[i]?[]:[{key,before:values[i],after:at[key]}])
+      })).filter(({presence,fields})=>presence.before!==presence.after||fields.length);
       if(!changes.length)return;
       transformUndo.push({changes,before:before.pose,after:selectionPose()});
       if(transformUndo.length>360)transformUndo.shift();
       transformRedo.length=0;
     }
     function matchesTransform(entry,side){
-      return entry.changes.every(({at,fields})=>state.placed[at.id]===at&&fields.every(field=>at[field.key]===field[side]));
+      return entry.changes.every(({at,presence,fields})=>{
+        const placed=state.placed[at.id];
+        return presence[side]?placed===at&&fields.every(field=>at[field.key]===field[side]):!placed;
+      });
     }
     function stepTransformHistory(from,to,current,restore){
       if(!canMoveCanvas()||pointer||look)return;
       while(from.length){
         const entry=from.pop();
         if(!matchesTransform(entry,current))continue;
-        for(const {at,fields} of entry.changes)for(const field of fields)at[field.key]=field[restore];
+        recolorRequest++;
+        for(const {at,presence,fields} of entry.changes){
+          if(presence[restore])state.placed[at.id]=at;
+          else delete state.placed[at.id];
+          for(const field of fields)at[field.key]=field[restore];
+        }
+        if((selected&&!state.placed[selected])||rectangleIds.some(id=>!state.placed[id]))deselect();
         const pose=entry[restore];
         if(pose.key===selectionPose().key)rectangleAngle=pose.angle;
         to.push(entry);
         updateRectangleBounds();dirty();renderBoard();
-        hint(restore==='before'?'Undid one selection transform.':'Redid one selection transform.');
+        hint(restore==='before'?'Undid the last Assembly edit.':'Redid the last Assembly edit.');
         return;
       }
       syncButtons();
@@ -301,11 +364,8 @@
     }
     const buildHint=()=>partCount()?'Build your way. Tap Done when you’re ready.':'Pick any part from Stores and place it where you like.';
     function syncButtons(){
-      const at=selectedPart();
-      const canChooseLayer=canMoveCanvas()&&!pointer&&!look&&!groupMode&&partCount()>0;
-      layerSummary.setAttribute('aria-disabled',String(!canChooseLayer));
-      if(!canChooseLayer)layers.open=false;
-      bringFront.disabled=!canChooseLayer||!at||at===placedByLayer(state).at(-1);
+      const at=selectedPart(),targets=selectionTargets();
+      bringFront.disabled=!canMoveCanvas()||!!pointer||look||groupMode||!layersToRaise(targets).length;
       const count=partCount();
       $('progress').textContent=state.locked?'Locked':`${count} ${count===1?'part':'parts'}`;
       $('done').disabled=state.locked?false:!canFinish();$('done').textContent=state.locked?'Edit':'Done';$('done').setAttribute('aria-pressed',String(state.locked));$('done').setAttribute('title',state.locked?'Frozen: tap to edit again':'Editing: tap to freeze');$('done').classList.toggle('robot-frozen',state.locked);$('done').classList.toggle('robot-editing',!state.locked);
@@ -315,7 +375,6 @@
       $('color').disabled=!selectionTargets().length||!!pointer;
        $('apply-color').disabled=!selectionTargets().length||!!pointer||state.locked;
       $('part-original').disabled=!selectedPart()||!!pointer;
-      const targets=selectionTargets();
       $('part-mirror').disabled=!targets.length||!!pointer;
       $('part-mirror').setAttribute('aria-pressed',String(targets.length>0&&targets.every(at=>shapeOf(at).flipX)));
       syncPrecisionTools(targets);
@@ -355,7 +414,7 @@
     function renderSelection(){
       svg.querySelector('[data-robot-selection]')?.remove();
       const at=selectedPart();
-      if(!at||!view)return;
+      if(!at||!view||selectionStroke)return;
       const bounds=partBounds(at.part,at),scale=viewport.scale(view),pad=4/scale;
       svg.insertAdjacentHTML('beforeend',`<rect data-robot-selection="${at.id}" class="robot-selection-outline" x="${bounds.x-pad}" y="${bounds.y-pad}" width="${bounds.width+pad*2}" height="${bounds.height+pad*2}" rx="${3/scale}" fill="none" stroke="#775400" stroke-width="${2/scale}" stroke-dasharray="${5/scale} ${4/scale}" pointer-events="none" aria-hidden="true"/>`);
     }
@@ -433,21 +492,23 @@
       if(pendingLayout)requestAnimationFrame(()=>{if(active){renderShelf();fitCanvas();}});
     }
     function cancel(){
-      stopGesture();if(storePick)deselect(true);clearTimeout(demoTimer);demoTimer=null;demoActive=false;demoParts=[];
+      const drawing=pointer?.kind==='selection';
+      stopGesture();if(storePick||drawing)deselect(true);clearTimeout(demoTimer);demoTimer=null;demoActive=false;demoParts=[];
       if(demoSavedView){view=demoSavedView;demoSavedView=null;const r=svg.getBoundingClientRect();viewport.resize(view,r.width,r.height);renderView();}
       document.getElementById('show-me')?.setAttribute('aria-pressed','false');
       if(active)renderBoard();
     }
     function cancelPointer(event){
       const pendingTap=event?.type==='pointercancel'&&event.currentTarget===svg&&pointer?.placeOnTap&&!pointer.moved;
+      const drawing=pointer?.kind==='selection';
       keyboard=false;stopGesture();
-      if(storePick&&!pendingTap)deselect(true);
+      if(drawing||(storePick&&!pendingTap))deselect(true);
       if(active)renderBoard();
     }
     function choose(part,id=null){
       if(!canMoveCanvas()||look||groupMode||!part)return;
-      if(selected!==id)$('part-axis').value='both';if(rectangleIds.length)clearRectangle();
-      if(selectionStroke&&selectionStroke.placedId!==id)selectionStroke=null;
+      if(selected!==id)$('part-axis').value='both';
+      if(rectangleIds.length||(selectionStroke&&selectionStroke.placedId!==id))clearShapeSelection();
       selected=id;
       storePick=id===null?part:null;
       keyboard=false;
@@ -456,12 +517,12 @@
       for(const node of svg.querySelectorAll('[data-robot-placed]'))node.classList.toggle('robot-selected',node.dataset.robotPlaced===id);
       const at=state.placed[id];
       cursor=at?{x:at.x+part.width/2,y:at.y+part.height/2}:{x:view.centerX,y:view.centerY};
-      renderSelection();syncButtons();
+      renderStroke();renderSelection();syncButtons();
       hint(at?`${part.name} selected.`:`Place ${part.name} anywhere in Assemble.`);
     }
     function deselect(announce=false){
       selected=null;storePick=null;keyboard=false;
-      if(selectionStroke?.mode==='rect')clearRectangle();else rectangleIds=[];
+      clearShapeSelection();
       renderStroke();
       svg.querySelector('[data-robot-keyboard-preview]')?.remove();
       $('part-axis').value='both';
@@ -478,8 +539,14 @@
         if(!id)return;
         selected=id;
         storePick=null;
+        recordTransform(captureTransform([state.placed[id]],false));
         feedback();
-      }else if(!movePart(state,selected,p))return;
+      }else{
+        const at=selectedPart();if(!at)return;
+        const before=captureTransform([at]);
+        if(!movePart(state,at.id,p))return;
+        recordTransform(before);
+      }
       keyboard=false;
       cursor=p;dirty();
       render();hint(buildHint());
@@ -507,6 +574,23 @@
       }
       return nearest;
     }
+    function completePartSelection(pointerType){
+      const {mode,points,placedId}=selectionStroke;
+      let at=state.placed[placedId];
+      if(!at&&mode==='oval'){
+        const a=points[0],b=points.at(-1);
+        at=pickPart({x:(a.x+b.x)/2,y:(a.y+b.y)/2},pointerType);
+      }
+      if(!at)at=placedByLayer(state).reverse().find(part=>{
+        const center=partCenter(part);
+        return selectionContains(mode,points,center.x,center.y);
+      });
+      if(!at){deselect();hint('Draw over an existing part to select an area.');return;}
+      selectionStroke.placedId=at.id;
+      selectionStroke.closed=true;
+      choose(at.part,at.id);
+      hint('Selection ready. Tap Copy to copy the enclosed shape.');
+    }
     function startPinch(){
       const points=[...touches.values()];if(points.length<2)return;
       ghost?.remove();ghost=null;delete svg.dataset.dragging;
@@ -517,30 +601,34 @@
     function down(event){
       if(!canMoveCanvas()||event.button>0)return;
       if(event.currentTarget===svg&&selectedShape()!=='part'&&!groupMode&&!look&&!storePick){
-        const p=point(event.clientX,event.clientY);if(!p)return;
-        if(selectedShape()==='rect'&&rectangleIds.length&&selectionStroke?.closed){
-          const a=selectionStroke.points[0],b=selectionStroke.points.at(-1);
-          if(p.x>=Math.min(a.x,b.x)&&p.x<=Math.max(a.x,b.x)&&p.y>=Math.min(a.y,b.y)&&p.y<=Math.max(a.y,b.y)){
-            pointer={kind:'rectangle-drag',transformStart:captureTransform(rectangleParts()),id:event.pointerId,owner:svg,startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastY:event.clientY,moved:false,type:event.pointerType};svg.setPointerCapture(event.pointerId);event.preventDefault();return;
+        if(pointer)return;
+        const p=point(event.clientX,event.clientY),mode=selectedShape();if(!p)return;
+        if(selectionStroke?.closed){
+          const inside=selectionContains(mode,selectionStroke.points,p.x,p.y);
+          if(inside){
+            if(mode==='rect'){
+              pointer={kind:'rectangle-drag',transformStart:captureTransform(rectangleParts()),id:event.pointerId,owner:svg,startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastY:event.clientY,moved:false,type:event.pointerType};
+              svg.setPointerCapture(event.pointerId);
+            }
+            event.preventDefault();return;
           }
+          if(mode==='free'){deselect(true);event.preventDefault();return;}
         }
-        rectangleIds=[];
-        if(selectedShape()==='free'){
-          if(selectionStroke?.mode==='free'&&!selectionStroke.closed){
-            const start=selectionStroke.points[0],near=Math.hypot(p.x-start.x,p.y-start.y)<22/viewport.scale(view);
-            if(near&&selectionStroke.points.length>=3){selectionStroke.closed=true;const at=state.placed[selectionStroke.placedId];if(at)choose(at.part,at.id);hint('Shape selected. Tap Copy, then Paste.');}
-            else selectionStroke.points.push(p);
-          }else{
-            const at=pickPart(p,event.pointerType);
-            selectionStroke={mode:'free',points:[p],placedId:at?.id||selected,closed:false};
-            hint('Tap red points around the shape, then tap the green start point to close.');
-          }
-          renderStroke();event.preventDefault();return;
+        if(mode==='free'&&selectionStroke){
+          const start=selectionStroke.points[0],near=Math.hypot(p.x-start.x,p.y-start.y)<22/viewport.scale(view);
+          if(near&&selectionStroke.points.length>=3)completePartSelection(event.pointerType);
+          else{selectionStroke.points.push(p);renderStroke();}
+          event.preventDefault();return;
         }
-        const at=pickPart(p,event.pointerType);
-        selectionStroke={mode:selectedShape(),points:[p],placedId:at?.id||selected,closed:false};
-        pointer={kind:'selection',id:event.pointerId,owner:svg,startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastY:event.clientY,moved:false,type:event.pointerType};
-        svg.setPointerCapture(event.pointerId);renderStroke();event.preventDefault();return;
+        const at=mode==='rect'?null:pickPart(p,event.pointerType);
+        deselect();
+        selectionStroke={mode,points:[p],placedId:at?.id,closed:false};
+        if(mode==='free')hint('Tap points around the shape, then tap the green start point to close.');
+        else{
+          pointer={kind:'selection',id:event.pointerId,owner:svg,startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastY:event.clientY,moved:false,type:event.pointerType};
+          svg.setPointerCapture(event.pointerId);
+        }
+        renderStroke();event.preventDefault();return;
       }
       if(groupMode&&!event.target.closest('[data-robot-part]')){const pt=point(event.clientX,event.clientY);if(!pt)return;pointer={kind:'group',id:event.pointerId,owner:svg,startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastY:event.clientY,moved:false,type:event.pointerType};svg.setPointerCapture(event.pointerId);event.preventDefault();return;}
       const source=event.target.closest('[data-robot-part]'),owner=source||svg;
@@ -598,23 +686,17 @@
       }
       if(!pointer||pointer.id!==event.pointerId)return;
       if(pointer.kind==='selection'){
-        const moved=pointer.moved;
+        const {moved,type}=pointer;
         const p=point(event.clientX,event.clientY);if(p)selectionStroke.points.push(p);
-        const at=state.placed[selectionStroke.placedId];
         stopGesture();
+        if(!moved){deselect(true);return;}
         if(selectionStroke.mode==='rect'){
-          if(!moved){
-            clearRectangle();deselect();renderBoard();
-            hint('Selection cleared. Draw a rectangle to select parts.');
-            return;
-          }
-          rectangleSelect();selected=null;storePick=null;render();
+          rectangleSelect();
           const count=rectangleIds.length;
+          if(!count)clearShapeSelection();
+          renderBoard();
           hint(count?count+' whole '+(count===1?'part':'parts')+' selected. Drag to move, or use resize, turn and mirror.':'Draw a rectangle around the center of the parts to select.');
-          return;
-        }
-        if(at){choose(at.part,at.id);renderStroke();hint('Selection ready. Tap Copy to copy the enclosed shape.');}
-        else{selectionStroke=null;renderBoard();hint('Draw over an existing part to select an area.');}
+        }else completePartSelection(type);
         return;
       }
       const drag=pointer,inside=clientInside(event.clientX,event.clientY),r=svg.getBoundingClientRect();
@@ -625,6 +707,9 @@
       }
       syncButtons();
     }
+    room.addEventListener('click',event=>{
+      if(!pointer&&(selectionStroke||selectedPart())&&!event.target.closest('#robot-board,button,summary,select,input,label'))deselect(true);
+    });
     $('parts').addEventListener('pointerdown',down);svg.addEventListener('pointerdown',down);
     for(const owner of [$('parts'),svg]){
       owner.addEventListener('pointermove',move);owner.addEventListener('pointerup',up);owner.addEventListener('pointercancel',cancelPointer);owner.addEventListener('lostpointercapture',event=>{if(pointer?.kind!=='pinch'&&pointer?.id===event.pointerId&&!pointer.owner.hasPointerCapture(event.pointerId))cancelPointer();});
@@ -655,7 +740,7 @@
     $('zoom-in').addEventListener('click',()=>zoomStep(.05));$('zoom-out').addEventListener('click',()=>zoomStep(-.05));
     $('view-fit').addEventListener('click',()=>{
       if(!ready()||!view||demoActive||pointer)return;
-      stopGesture();groupMode=false;clearRectangle();$('selection-mode').value='part';viewport.fit(view,partCount()?designBounds(state):referenceBounds);renderView();render();hint('Assembly fitted to screen. Tap any part to continue editing.');
+      stopGesture();groupMode=false;clearShapeSelection();$('selection-mode').value='part';viewport.fit(view,partCount()?designBounds(state):referenceBounds);renderView();render();hint('Assembly fitted to screen. Tap any part to continue editing.');
     });
     $('zoom-level').addEventListener('click',()=>{
       if(!canMoveCanvas())return;
@@ -704,9 +789,10 @@
     });
     $('part-axis').addEventListener('change',syncButtons);
     function editPart(patch){
-      if(!selectedPart())return;
+      const at=selectedPart();if(!at)return;
       stopGesture();
-      if(transform(state,selected,patch)){dirty();render();renderView();hint(buildHint());}
+      const before=captureTransform([at]);
+      if(transform(state,at.id,patch)){recordTransform(before);dirty();render();renderView();hint(buildHint());}
     }
     function selectionCenter(parts){
       const centers=parts.map(partCenter);
@@ -767,8 +853,8 @@
       });
       button.title='Tap for 1°. Hold to keep turning.';
     }
-    $('transform-undo').addEventListener('click',()=>stepTransformHistory(transformUndo,transformRedo,'after','before'));
-    $('transform-redo').addEventListener('click',()=>stepTransformHistory(transformRedo,transformUndo,'before','after'));
+    activateOnTap($('transform-undo'),()=>stepTransformHistory(transformUndo,transformRedo,'after','before'));
+    activateOnTap($('transform-redo'),()=>stepTransformHistory(transformRedo,transformUndo,'before','after'));
     $('part-mirror').addEventListener('click',()=>{
       const group=rectangleParts();
       if(!group.length){
@@ -784,7 +870,11 @@
     $('rotate-left').addEventListener('click',()=>editPart({angle:shapeOf(state.placed[selected]).angle-45}));$('rotate-right').addEventListener('click',()=>editPart({angle:shapeOf(state.placed[selected]).angle+45}));$('part-original').addEventListener('click',()=>{
       recolorRequest++;
       const at=selectedPart();if(!at)return;
-      if(at.originalAsset){at.part={...at.part,asset:at.originalAsset};delete at.originalAsset;dirty();render();hint('Original colors restored.');}
+      if(at.originalAsset){
+        const before=captureTransform([at]);
+        at.part={...at.part,asset:at.originalAsset};delete at.originalAsset;
+        finishTransform(before);hint('Original colors restored.');
+      }
     });
     let recolorRequest=0;
     async function recolorPart(at,color,request,region=null){
@@ -799,7 +889,7 @@
       const family=hist.indexOf(Math.max(...hist));if(!hist[family])return false;
       const target=[1,3,5].map(n=>parseInt(color.slice(n,n+2),16));
       const pts=region?.points.map(pt=>localPoint(at.part,at,pt));
-      const inside=(x,y)=>{if(!pts)return true;const a=pts[0],b=pts.at(-1);if(region.mode==='rect')return x>=Math.min(a.x,b.x)&&x<=Math.max(a.x,b.x)&&y>=Math.min(a.y,b.y)&&y<=Math.max(a.y,b.y);if(region.mode==='oval'){const rx=Math.abs(a.x-b.x)/2,ry=Math.abs(a.y-b.y)/2;return rx>0&&ry>0&&((x-(a.x+b.x)/2)/rx)**2+((y-(a.y+b.y)/2)/ry)**2<=1;}let hit=false;for(let j=0,k=pts.length-1;j<pts.length;k=j++){const a=pts[j],b=pts[k];if((a.y>y)!==(b.y>y)&&x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x)hit=!hit;}return hit;};
+      const inside=(x,y)=>!pts||selectionContains(region.mode,pts,x,y);
       let changed=0;
       for(let i=0;i<d.length;i+=4){const x=(i/4)%canvas.width,y=Math.floor(i/4/canvas.width);if(d[i+3]<170||!inside(x,y))continue;
         const r=d[i],g=d[i+1],b=d[i+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b),sat=mx-mn;
@@ -811,60 +901,49 @@
         for(let c=0;c<3;c++)d[i+c]=Math.round(Math.min(255,Math.max(0,target[c]*light))*mix+d[i+c]*(1-mix));changed++;
       }
       if(!changed||request!==recolorRequest||state.locked||state.placed[at.id]!==at)return false;
-      ctx.putImageData(pixels,0,0);at.originalAsset=original;at.part={...at.part,asset:canvas.toDataURL('image/png')};return true;
+      ctx.putImageData(pixels,0,0);
+      return {at,originalAsset:original,part:{...at.part,asset:canvas.toDataURL('image/png')}};
     }
     const recolorSelection=async color=>{
       const targets=selectionTargets(),request=++recolorRequest;if(!targets.length)return;
       const region=rectangleParts().length?null:selectionStroke?.closed?{mode:selectionStroke.mode,points:[...selectionStroke.points]}:null;
-      const changed=await Promise.all(targets.map(at=>recolorPart(at,color,request,region)));
-      if(request!==recolorRequest)return;
-      if(changed.some(Boolean)){dirty();render();hint(`${changed.filter(Boolean).length} selected part(s) recolored. Painted surfaces match the chosen color; details preserved.`);}
-      else hint('No eligible colored surface found. Try a different part or selection.');
+      const results=await Promise.all(targets.map(at=>recolorPart(at,color,request,region)));
+      if(request!==recolorRequest||state.locked)return;
+      const changes=results.filter(change=>change&&state.placed[change.at.id]===change.at);
+      if(!changes.length){hint('No eligible colored surface found. Try a different part or selection.');return;}
+      const before=captureTransform(changes.map(({at})=>at));
+      for(const {at,originalAsset,part} of changes)Object.assign(at,{originalAsset,part});
+      finishTransform(before);
+      hint(`${changes.length} selected part(s) recolored. Painted surfaces match the chosen color; details preserved.`);
     };
     $('color').addEventListener('input',e=>{if(!state.locked)recolorSelection(e.target.value);});
     $('apply-color').addEventListener('click',()=>{if(!state.locked)recolorSelection($('color').value);});
     $('selection-mode').addEventListener('change',()=>{
-      clearRectangle();renderBoard();
+      stopGesture();deselect();
       const mode=selectedShape();
       if(mode==='rect')hint('Draw a rectangle around the center of one or more parts to select them whole.');
       else hint(mode==='part'?'Tap a complete part to select it.':'Draw a selection starting on a placed part, then tap Copy.');
     });
-    layerSummary.addEventListener('click',event=>{
-      if(layerSummary.getAttribute('aria-disabled')==='true'){event.preventDefault();return;}
-      if(layers.open)return;
-      const parts=placedByLayer(state).reverse(),activePart=selectedPart();
-      layerChoices.innerHTML=parts.map((at,index)=>{
-        const label=index===0?'Top':index===parts.length-1?'Bottom':`Layer ${parts.length-index}`;
-        return `<button type="button" data-layer-part="${at.id}" aria-pressed="${at===activePart}">${label} · ${esc(at.part.name)}</button>`;
-      }).join('');
-      sizePicker(layers,layerSummary,layerChoices,230);
-    });
-    layerChoices.addEventListener('click',event=>{
-      const at=state.placed[event.target.closest('[data-layer-part]')?.dataset.layerPart];
-      if(!at)return;
-      clearRectangle();
-      $('selection-mode').value='part';
-      choose(at.part,at.id);
-      renderStroke();
-      layers.open=false;
-      layerSummary.focus({preventScroll:true});
-    });
-    bringFront.addEventListener('click',()=>{
-      const at=selectedPart(),top=placedByLayer(state).at(-1);
-      if(!at||at===top||!canMoveCanvas()||pointer)return;
-      const before=captureTransform([at]);
-      state.frontLayer=Math.max(state.frontLayer??0,state.nextId-1)+1;
-      at.layer=state.frontLayer;
-      layers.open=false;
+    function bringSelectionToFront(){
+      if(!canMoveCanvas()||pointer||look||groupMode)return;
+      const targets=layersToRaise(selectionTargets());
+      if(!targets.length)return;
+      const before=captureTransform(targets);
+      state.frontLayer=Math.max(state.frontLayer??0,state.nextId-1);
+      for(const at of targets)at.layer=++state.frontLayer;
       finishTransform(before);
-      hint(`${at.part.name} moved to the front.`);
-    });
+      hint(targets.length===1?targets[0].part.name+' moved to the front.':'Selected parts moved to the front.');
+    }
+    activateOnTap(bringFront,bringSelectionToFront);
     $('copy').addEventListener('click',async()=>{
       const at=selectedPart();if(!at)return;
-      const stroke=selectionStroke?.placedId===at.id&&(selectionStroke.mode!=='free'||selectionStroke.closed)?{mode:selectionStroke.mode,points:[...selectionStroke.points]}:null;
+      const activeStroke=selectionStroke;
+      const stroke=activeStroke?.placedId===at.id&&activeStroke.closed?{mode:activeStroke.mode,points:[...activeStroke.points]}:null;
       try{
         clipboard=stroke?await copySelection(at,stroke):{part:at.part,shape:{...shapeOf(at)}};
-        if(!clipboard)return;selectionStroke=null;renderBoard();syncButtons();
+        if(!clipboard)return;
+        if(selectionStroke===activeStroke)clearShapeSelection();
+        renderBoard();
         hint('Copied. Tap Paste to make an independent piece.');
       }catch{hint('Selection could not be copied. Try Tap part mode.');}
     });
@@ -873,12 +952,17 @@
       const b=viewport.rect(view),last=state.placed[selected],offset=Math.max(clipboard.part.width*.8,95);
       const center=last?{x:last.x+last.part.width/2+offset,y:last.y+last.part.height/2+Math.max(35,clipboard.part.height*.3)}:{x:b.x+b.width/2+offset/2,y:b.y+b.height/2};
       const id=addPart(state,clipboard.part,center);if(!id)return;
-      Object.assign(state.placed[id],clipboard.shape);selected=id;storePick=null;selectionStroke=null;$('selection-mode').value='part';renderStroke();
+      const at=state.placed[id];
+      Object.assign(at,clipboard.shape);selected=id;storePick=null;clearShapeSelection();$('selection-mode').value='part';
+      recordTransform(captureTransform([at],false));
       dirty();render();hint('Pasted. Drag or resize this copy independently.');
     });
     $('grid').addEventListener('click',()=>{if(state.locked)return;grid=!grid;renderGrid();syncButtons();});
-    function reset(){
-      cancel();onReset();transformUndo.length=transformRedo.length=0;state=create(state.age);clipboard=null;selectionStroke=null;dirty();groupMode=false;view=null;selected=null;storePick=null;page=0;keyboard=false;cursor=null;
+    function reset(keepHistory=false){
+      cancel();onReset();recolorRequest++;
+      if(keepHistory)state.placed={};
+      else{transformUndo.length=transformRedo.length=0;state=create(state.age);}
+      clipboard=null;clearShapeSelection();dirty();groupMode=false;view=null;selected=null;storePick=null;page=0;keyboard=false;cursor=null;
       $('part-axis').value='both';
       setLook(false);
       updateReference();
@@ -952,14 +1036,17 @@
     });
     $('clear').addEventListener('click',()=>{
       if(state.locked||demoActive||pointer)return;
-      reset();hint(buildHint());
+      const before=captureTransform(Object.values(state.placed));
+      reset(true);
+      recordTransform(before);syncButtons();hint(buildHint());
     });
     $('remove').addEventListener('click',()=>{
-      if(!selectedPart()||pointer)return;
-      remove(state,selected);dirty();deselect();render();hint(buildHint());
+      const at=selectedPart();if(!at||pointer)return;
+      const before=captureTransform([at]);
+      remove(state,at.id);recordTransform(before);dirty();deselect();render();hint(buildHint());
     });
     $('done').addEventListener('click',()=>{
-      if(state.locked){state.locked=false;picture=null;groupMode=false;clearRectangle();stopGesture();$('selection-mode').value='part';render();hint('Edit mode. Tap any part to move, rotate, resize or recolor it.');return;}
+      if(state.locked){state.locked=false;picture=null;groupMode=false;clearShapeSelection();stopGesture();$('selection-mode').value='part';render();hint('Edit mode. Tap any part to move, rotate, resize or recolor it.');return;}
       if(!canFinish()||!lock(state))return;
       stopGesture();deselect();if(look)setLook(false);else render();
       hint('Frozen posture. Save now, or tap Edit to change it.');
