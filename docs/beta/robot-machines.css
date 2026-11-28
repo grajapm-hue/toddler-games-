@@ -244,8 +244,10 @@
 
 #robot-machines-room :is(#robot-turn-minus,#robot-turn-plus){touch-action:none;user-select:none;-webkit-touch-callout:none}
 
-#robot-machines-room .robot-layer-options{display:flex;flex-direction:column;width:min(190px,60vw);overflow:hidden}
-#robot-machines-room .robot-layers:not([open]) .robot-layer-options{display:none}
-#robot-layer-choices{min-height:0;overflow:auto;overscroll-behavior:contain}
-#robot-machines-room #robot-layer-choices button[aria-pressed="true"]{background:#dff2e5;box-shadow:inset 3px 0 #38865a}
-#robot-machines-room #robot-bring-front{flex:none;border-top:1px solid #729c85;background:#e8f5e9}
+#robot-machines-room .robot-layer-options{width:min(190px,60vw);overscroll-behavior:contain}
+#robot-machines-room .robot-layer-options button[aria-pressed="true"]{background:#dff2e5;box-shadow:inset 3px 0 #38865a}
+#robot-machines-room #robot-bring-front:not(:disabled){background:#c8e8d5;color:#153b2b;border-color:#729c85}
+@media(max-width:360px),(orientation:landscape) and (max-width:560px){
+  #app #robot-machines-room .robot-toolbar #robot-bring-front{font-size:0!important;width:auto!important}
+  #app #robot-machines-room #robot-bring-front::before{content:'Front';font-size:11px}
+}

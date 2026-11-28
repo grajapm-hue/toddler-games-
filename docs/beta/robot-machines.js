@@ -104,7 +104,7 @@
           <div class="robot-toolbar" role="group" aria-label="Assembly tools">
             <div class="robot-tool-row robot-heading robot-control-heading"><button id="robot-look" type="button" class="soft-button" aria-pressed="false">Look</button><select id="robot-part-axis" aria-label="Part dimension"><option value="both">Both</option><option value="width">Width</option><option value="height">Height</option></select><button id="robot-rotate-left" class="soft-button" type="button" aria-label="Rotate selected part counterclockwise 45 degrees">↶</button><button id="robot-rotate-right" class="soft-button" type="button" aria-label="Rotate selected part clockwise 45 degrees">↷</button><button id="robot-copy" type="button" class="soft-button" disabled>Copy</button><button id="robot-paste" type="button" class="soft-button" disabled>Paste</button><button id="robot-remove" type="button" class="soft-button" aria-label="Remove" title="Remove selected part" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><span>Remove</span></button><button id="robot-clear" type="button" class="soft-button" disabled>Clear</button></div>
             <div class="robot-tool-row robot-view-tools"><button id="robot-zoom-out" class="soft-button" type="button" aria-label="Zoom out">−</button><button id="robot-zoom-level" class="soft-button" type="button" aria-label="Reset canvas to reference 100 percent">100%</button><button id="robot-zoom-in" class="soft-button" type="button" aria-label="Zoom in">+</button><button id="robot-view-fit" class="soft-button" type="button" aria-label="Fit the current assembly within the canvas" title="Fit assembly to screen">Fit</button><button id="robot-grid" class="soft-button" type="button" aria-pressed="false">Grid</button><button id="robot-done" type="button" class="soft-button" disabled>Done</button><button id="robot-snapshot" type="button" class="soft-button" disabled aria-label="Save picture" title="Save picture">Save</button></div>
-            <div class="robot-tool-row robot-edit-tools" role="group" aria-label="Selected part editing"><details id="robot-layers" class="robot-picker robot-layers"><summary aria-controls="robot-layer-options">Layers</summary><div id="robot-layer-options" class="robot-picker-options robot-layer-options"><div id="robot-layer-choices" role="group" aria-label="Parts from top to bottom"></div><button id="robot-bring-front" type="button" disabled>Bring to Front</button></div></details><label class="robot-select-label">Select <select id="robot-selection-mode" aria-label="Selection shape · Rectangle selects all enclosed parts for color, move and resize"><option value="part">Tap part</option><option value="rect">Rectangle</option><option value="oval">Oval / Tube</option><option value="free" aria-label="Free Selection" title="Free Selection · dotted-square boundary">▧</option></select></label><label class="robot-color-label">Color <input id="robot-color" type="color" value="#8c55e9" aria-label="Choose color for selected part"/></label><button id="robot-apply-color" type="button" class="soft-button" title="Apply this color again to the selected part">Apply</button><button id="robot-part-original" class="soft-button" type="button">Original</button><button id="robot-part-mirror" class="soft-button" type="button" aria-label="Mirror selected part horizontally" aria-pressed="false" title="Flip selected part left or right">⇄ Mirror</button></div>
+            <div class="robot-tool-row robot-edit-tools" role="group" aria-label="Selected part editing"><details id="robot-layers" class="robot-picker"><summary aria-controls="robot-layer-options">Layers</summary><div id="robot-layer-options" class="robot-picker-options robot-layer-options" role="group" aria-label="Parts from top to bottom"></div></details><button id="robot-bring-front" type="button" class="soft-button" aria-label="Bring to Front" title="Bring to Front" disabled>Bring to Front</button><label class="robot-select-label">Select <select id="robot-selection-mode" aria-label="Selection shape · Rectangle selects all enclosed parts for color, move and resize"><option value="part">Tap part</option><option value="rect">Rectangle</option><option value="oval">Oval / Tube</option><option value="free" aria-label="Free Selection" title="Free Selection · dotted-square boundary">▧</option></select></label><label class="robot-color-label">Color <input id="robot-color" type="color" value="#8c55e9" aria-label="Choose color for selected part"/></label><button id="robot-apply-color" type="button" class="soft-button" title="Apply this color again to the selected part">Apply</button><button id="robot-part-original" class="soft-button" type="button">Original</button><button id="robot-part-mirror" class="soft-button" type="button" aria-label="Mirror selected part horizontally" aria-pressed="false" title="Flip selected part left or right">⇄ Mirror</button></div>
             <div id="robot-precision-tools" class="robot-precision-tools" role="group" aria-label="Precision transforms" hidden>
               <div id="robot-turn-controls" class="robot-precision-group">
                 <button id="robot-turn-minus" type="button" class="soft-button" aria-label="Rotate selection counterclockwise by one degree">−</button>
@@ -128,7 +128,7 @@
     let keyboard=false,cursor=null,canvasFrame=0,view=null,pendingLayout=false,grid=false;
     const touches=new Map(),masks=new Map();
     let demoSavedView=null,picture=null,groupMode=false,editRevision=0,saveSerial=0,clipboard=null,selectionStroke=null,rectangleIds=[];
-    const layers=$('layers'),layerSummary=layers.querySelector('summary'),layerChoices=$('layer-choices'),bringFront=$('bring-front');
+    const layers=$('layers'),layerSummary=layers.querySelector('summary'),layerChoices=$('layer-options'),bringFront=$('bring-front');
     function sizePicker(details,summary,options,heightLimit){
       const rect=summary.getBoundingClientRect(),bounds=room.getBoundingClientRect();
       const below=Math.min(innerHeight,bounds.bottom)-rect.bottom-3;
@@ -300,16 +300,12 @@
       dirty();renderBoard();
     }
     const buildHint=()=>partCount()?'Build your way. Tap Done when you’re ready.':'Pick any part from Stores and place it where you like.';
-    function syncLayerSelection(){
-      const at=selectedPart(),top=layerChoices.firstElementChild?.dataset.layerPart;
-      for(const button of layerChoices.children)button.setAttribute('aria-pressed',String(button.dataset.layerPart===at?.id));
-      bringFront.disabled=!at||at.id===top;
-    }
     function syncButtons(){
+      const at=selectedPart();
       const canChooseLayer=canMoveCanvas()&&!pointer&&!look&&!groupMode&&partCount()>0;
       layerSummary.setAttribute('aria-disabled',String(!canChooseLayer));
       if(!canChooseLayer)layers.open=false;
-      if(layers.open)syncLayerSelection();
+      bringFront.disabled=!canChooseLayer||!at||at===placedByLayer(state).at(-1);
       const count=partCount();
       $('progress').textContent=state.locked?'Locked':`${count} ${count===1?'part':'parts'}`;
       $('done').disabled=state.locked?false:!canFinish();$('done').textContent=state.locked?'Edit':'Done';$('done').setAttribute('aria-pressed',String(state.locked));$('done').setAttribute('title',state.locked?'Frozen: tap to edit again':'Editing: tap to freeze');$('done').classList.toggle('robot-frozen',state.locked);$('done').classList.toggle('robot-editing',!state.locked);
@@ -328,7 +324,7 @@
       $('snapshot').textContent=picture?.pending?'Preparing…':'Save';$('view-fit').textContent='Fit';$('view-fit').setAttribute('title','Fit current assembly to canvas without changing parts');
       $('category').disabled=$('store').disabled=$('variant').disabled=state.locked||demoActive;
       $('look').disabled=!ready()||state.locked||demoActive;
-      const at=selectedPart(),multi=rectangleParts().length>0,editable=!!at&&!pointer&&!multi,s=shapeOf(at),axis=$('part-axis').value,scales=axis==='both'?[s.widthScale,s.heightScale]:[axis==='width'?s.widthScale:s.heightScale];
+      const multi=rectangleParts().length>0,editable=!!at&&!pointer&&!multi,s=shapeOf(at),axis=$('part-axis').value,scales=axis==='both'?[s.widthScale,s.heightScale]:[axis==='width'?s.widthScale:s.heightScale];
       $('zoom-level').textContent=multi?`${Math.round(shapeOf(rectangleParts()[0]).widthScale*100)}%`:at?(axis==='both'&&s.widthScale!==s.heightScale?`${Math.round(s.widthScale*100)}×${Math.round(s.heightScale*100)}%`:`${Math.round(scales[0]*100)}%`):`${Math.round((view?.zoom||1)*100)}%`;
       $('zoom-level').setAttribute('aria-label',at?'Reset selected dimension to 100 percent':'Reset canvas to reference 100 percent');
       const target=multi?`${rectangleIds.length} selected parts`:at?`${at.part.name} ${axis==='both'?'size':axis}`:null;$('zoom-in').setAttribute('aria-label',target?`Increase ${target}`:'Zoom in');$('zoom-out').setAttribute('aria-label',target?`Decrease ${target}`:'Zoom out');
@@ -836,13 +832,12 @@
     layerSummary.addEventListener('click',event=>{
       if(layerSummary.getAttribute('aria-disabled')==='true'){event.preventDefault();return;}
       if(layers.open)return;
-      const parts=placedByLayer(state).reverse();
+      const parts=placedByLayer(state).reverse(),activePart=selectedPart();
       layerChoices.innerHTML=parts.map((at,index)=>{
         const label=index===0?'Top':index===parts.length-1?'Bottom':`Layer ${parts.length-index}`;
-        return `<button type="button" data-layer-part="${at.id}">${label} · ${esc(at.part.name)}</button>`;
+        return `<button type="button" data-layer-part="${at.id}" aria-pressed="${at===activePart}">${label} · ${esc(at.part.name)}</button>`;
       }).join('');
-      sizePicker(layers,layerSummary,$('layer-options'),230);
-      syncLayerSelection();
+      sizePicker(layers,layerSummary,layerChoices,230);
     });
     layerChoices.addEventListener('click',event=>{
       const at=state.placed[event.target.closest('[data-layer-part]')?.dataset.layerPart];
@@ -851,6 +846,8 @@
       $('selection-mode').value='part';
       choose(at.part,at.id);
       renderStroke();
+      layers.open=false;
+      layerSummary.focus({preventScroll:true});
     });
     bringFront.addEventListener('click',()=>{
       const at=selectedPart(),top=placedByLayer(state).at(-1);
@@ -860,7 +857,6 @@
       at.layer=state.frontLayer;
       layers.open=false;
       finishTransform(before);
-      layerSummary.focus({preventScroll:true});
       hint(`${at.part.name} moved to the front.`);
     });
     $('copy').addEventListener('click',async()=>{
